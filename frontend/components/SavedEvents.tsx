@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { api, type Event, type Me } from "@/lib/api";
 import { categoryStyle } from "@/lib/categories";
+import { FOCUSABLE } from "@/components/Modal";
 
 // ---- date helpers ----
 const DAY = 86_400_000;
@@ -44,7 +45,11 @@ type Props = {
   onClose: () => void;
 };
 
-export function SavedEvents({ me, reveal, onClose }: Props) {
+export const SavedEvents = memo(function SavedEvents({
+  me,
+  reveal,
+  onClose,
+}: Props) {
   const open = reveal > 0;
   const [events, setEvents] = useState<Event[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,6 +70,47 @@ export function SavedEvents({ me, reveal, onClose }: Props) {
       .finally(() => setLoading(false));
   }, [open]);
 
+  // Dialog focus management (Modal.tsx-style): once fully open, move focus in,
+  // trap Tab, and restore on close. Gated on reveal >= 1 so a drag "peek"
+  // doesn't steal focus mid-gesture. Escape is handled globally by EventsView.
+  const fullyOpen = reveal >= 1;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!fullyOpen) return;
+    restoreRef.current = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
+    (first ?? panel)?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !panel) return;
+      const items = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const firstEl = items[0];
+      const lastEl = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === firstEl || active === panel)) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && active === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      restoreRef.current?.focus?.();
+    };
+  }, [fullyOpen]);
+
   if (!open) return null;
 
   const list = events ?? [];
@@ -77,9 +123,12 @@ export function SavedEvents({ me, reveal, onClose }: Props) {
 
   return (
     <div
-      className="absolute inset-0 z-20 overflow-y-auto"
+      ref={panelRef}
+      tabIndex={-1}
+      className="absolute inset-0 z-20 overflow-y-auto outline-none"
       style={{ opacity: reveal }}
       role="dialog"
+      aria-modal="true"
       aria-label="Saved events"
     >
       <div className="min-h-full bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff_0%,#EEEBF5_55%,#E6E1F2_100%)]">
@@ -135,7 +184,7 @@ export function SavedEvents({ me, reveal, onClose }: Props) {
       </div>
     </div>
   );
-}
+});
 
 /* ---------------- sections & cards ---------------- */
 
