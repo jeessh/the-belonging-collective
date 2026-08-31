@@ -1,20 +1,7 @@
 # The Belonging Collective
 
 An accessible, needs-first platform where Kitchener-Waterloo nonprofits post
-community programming and members discover what fits them. Built for a one-day
-hackathon with KW Hab.
-
-## Member experience
-
-One big card at a time. To attend a program: drag the card into the slot, press
-and hold it (2s), or hold the ↓ arrow key (1.5s) — all resolve to the same "drop
-into the slot → you're attending" moment, no forms. Arrows move between programs;
-the person icon opens settings.
-
-Sign-up asks only for first and last name; the member then picks a 2-icon key
-(e.g. 🌳🐱 = `tree_cat`), and those icons *are* the password. Forgotten it? Staff
-re-issue a new key from the admin console — there is no email on a member
-account to send anything to.
+community programming and members discover what fits them.
 
 ## Stack
 - **Frontend:** Next.js (App Router) · Tailwind · Framer Motion — see [`frontend/`](frontend)
