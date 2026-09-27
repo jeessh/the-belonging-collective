@@ -2,11 +2,15 @@
 
 import { useEffect, useId, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { X } from "lucide-react";
 
 export const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-// Accessible dialog shell: focus trap, Esc/backdrop to close, focus restore.
+// Accessible dialog shell: focus trap, Esc/backdrop/X to close, focus restore.
+// Drawn as the design's Modal Card: large radius, blurred dim backdrop, X top
+// right. The X sits last in the DOM so the first control inside still takes
+// initial focus.
 export function Modal({
   title,
   onClose,
@@ -72,7 +76,7 @@ export function Modal({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-30 grid place-items-center overflow-y-auto bg-ink/50 px-4 py-8"
+        className="fixed inset-0 z-30 grid place-items-center overflow-y-auto bg-fg/40 px-4 py-8 backdrop-blur-sm"
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -87,19 +91,29 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-lift outline-none sm:p-7"
+          className="relative w-full max-w-lg rounded-card border border-line bg-surface p-6 shadow-lift outline-none sm:p-10"
         >
           {typeof title === "string" ? (
             <h2
               id={headingId}
-              className="font-display text-2xl font-extrabold text-ink"
+              className="pr-12 text-2xl font-medium text-fg sm:text-3xl"
             >
               {title}
             </h2>
           ) : (
-            <div id={headingId}>{title}</div>
+            <div id={headingId} className="pr-12">
+              {title}
+            </div>
           )}
           {children}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-6 sm:top-6"
+          >
+            <X aria-hidden="true" className="size-8" />
+          </button>
         </motion.div>
       </div>
     </AnimatePresence>

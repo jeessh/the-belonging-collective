@@ -51,7 +51,7 @@ const PALETTE = [
   "#E86A4C",
   "#2FA36B",
 ];
-function hashColor(key: string): string {
+export function hashColor(key: string): string {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
   return PALETTE[h % PALETTE.length];
