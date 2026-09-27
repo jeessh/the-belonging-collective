@@ -55,13 +55,92 @@ export function countdown(iso?: string | null): string {
   return `in ${weeks} ${weeks === 1 ? "week" : "weeks"}`;
 }
 
-export function whenLabel(iso?: string | null): string {
+/**
+ * Everything below renders in America/Toronto, whoever is looking. The
+ * programs happen in Kitchener-Waterloo; a caregiver checking from another
+ * zone still wants the time on the door, not the time on their laptop.
+ */
+export const TIME_ZONE = "America/Toronto";
+
+/** Calendar day in Toronto as a UTC-midnight timestamp, so days subtract. */
+function torontoDay(at: Date): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(at);
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(get("year"), get("month") - 1, get("day"));
+}
+
+/**
+ * "Today", "Tomorrow", "In 7 days", "In 3 weeks"; "Yesterday", "5 days ago".
+ * Counted in Toronto calendar days, so a 1 AM program is "Tomorrow" all
+ * evening rather than "Today" once the clock passes 1 AM UTC-equivalent.
+ */
+export function relativeDay(iso?: string | null, now = new Date()): string {
+  if (!iso) return "Date to be announced";
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "Date to be announced";
+  const days = Math.round((torontoDay(at) - torontoDay(now)) / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  if (days === -1) return "Yesterday";
+  const n = Math.abs(days);
+  const unit = n < 14 ? `${n} days` : `${Math.round(n / 7)} weeks`;
+  return days > 0 ? `In ${unit}` : `${unit} ago`;
+}
+
+/** "August 28, 2026". */
+export function longDate(iso?: string | null): string {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return at.toLocaleDateString("en-CA", {
+    timeZone: TIME_ZONE,
+    month: "long",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    year: "numeric",
   });
+}
+
+/** "1:00PM", as the design sets it — no space before the meridiem. */
+export function clockTime(iso: string): string {
+  return new Date(iso)
+    .toLocaleTimeString("en-CA", {
+      timeZone: TIME_ZONE,
+      hour: "numeric",
+      minute: "2-digit",
+    })
+    .replace(/\s?([ap])\.?m\.?$/i, (_, m: string) => `${m.toUpperCase()}M`);
+}
+
+/** "1:00PM - 3:00PM", or just the start when there is no end. */
+export function timeRange(
+  start?: string | null,
+  end?: string | null,
+): string {
+  if (!start || Number.isNaN(new Date(start).getTime())) return "";
+  const from = clockTime(start);
+  if (!end || Number.isNaN(new Date(end).getTime())) return from;
+  return `${from} - ${clockTime(end)}`;
+}
+
+/**
+ * The card's two-line "when": `day` is "In 7 days · August 28, 2026" and
+ * `time` is "1:00PM - 3:00PM". An undated program gets the placeholder and
+ * an empty time.
+ */
+export function whenLine(ev: {
+  starts_at?: string | null;
+  ends_at?: string | null;
+}): { day: string; time: string } {
+  const date = longDate(ev.starts_at);
+  const rel = relativeDay(ev.starts_at);
+  return {
+    day: date ? `${rel} · ${date}` : rel,
+    time: timeRange(ev.starts_at, ev.ends_at),
+  };
 }
