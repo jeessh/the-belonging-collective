@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, api, apiMessage } from "@/lib/api";
-import { AdminShell } from "@/components/AdminShell";
+import { Upload } from "lucide-react";
+import { ApiError, api, apiMessage, type Event } from "@/lib/api";
+import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import { PageHeader } from "@/components/host/PageHeader";
 import {
   EMPTY_FORM,
   EventForm,
@@ -12,84 +15,91 @@ import {
   type EventFormValues,
 } from "@/components/host/EventForm";
 
-export default function NewProgramPage() {
-  return (
-    <AdminShell title="Create a new event" bare>
-      {() => <NewProgramForm />}
-    </AdminShell>
-  );
+export default function NewEventPage() {
+  return <AdminShell>{(ctx) => <NewEventForm ctx={ctx} />}</AdminShell>;
 }
 
-function NewProgramForm() {
+const FORM_ID = "new-event";
+
+function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
+  const { show } = useToast();
   const [values, setValues] = useState<EventFormValues>(EMPTY_FORM);
-  const [organization, setOrganization] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Whose name this goes out under. Worth stating plainly on a shared console:
-  // a superadmin posting for one agency shouldn't have to infer it.
-  useEffect(() => {
-    api<{ name: string }>("/hosts/me")
-      .then((h) => setOrganization(h.name))
-      .catch(() => {});
-  }, []);
-
-  async function submit() {
+  async function publish() {
     setBusy(true);
     setError(null);
     try {
-      const created = await api<{ id: string }>("/events", {
+      const created = await api<Event>("/events", {
         method: "POST",
         body: JSON.stringify(payloadFrom(values)),
       });
-      router.push(`/host/events?created=${created.id}`);
+      // Undo matters more than the confirmation does: publishing to a shared
+      // calendar is where "wait, no" arrives a second late.
+      show({
+        title: "Event Successfully Published!",
+        description: created.title,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void api(`/events/${created.id}?series=true`, { method: "DELETE" })
+              .then(() => router.push("/host/events"))
+              .catch(() =>
+                show({
+                  title: "Couldn't undo that.",
+                  description: "Open the event and un-publish it instead.",
+                  tone: "alert",
+                }),
+              );
+          },
+        },
+      });
+      router.push(`/host/events/${created.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         router.replace("/host");
         return;
       }
       setError(
-        apiMessage(e, "Couldn't post that event. Check the fields and retry."),
+        apiMessage(e, "Couldn't publish that event. Check the fields and retry."),
       );
       setBusy(false);
     }
   }
 
   return (
-    <div className="mx-auto w-full max-w-[900px] px-8 py-8">
-      <Link
-        href="/host/events"
-        aria-label="Back to posted events"
-        className="inline-block text-3xl text-ink transition-transform hover:-translate-x-1"
-      >
-        ←
-      </Link>
-
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <h1 className="font-display text-5xl font-extrabold text-ink">
-          Create a new event
-        </h1>
-        {organization && (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-muted">
-            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
-            Posting under {organization}
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4">
-        <EventForm
-          values={values}
-          onChange={setValues}
-          organization={organization}
-          submitting={busy}
-          submitLabel="Post Event"
-          onSubmit={() => void submit()}
-          onClear={() => setValues(EMPTY_FORM)}
-          error={error}
-        />
-      </div>
+    <div className="flex flex-col gap-9">
+      <PageHeader
+        title="Create a New Event"
+        backHref="/host/events"
+        actions={
+          <>
+            <span className="text-base text-fg-muted">
+              Posting under {ctx.org.name}
+            </span>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              disabled={busy}
+              trailingIcon={<Upload />}
+            >
+              {busy ? "Publishing…" : "Publish Event"}
+            </Button>
+          </>
+        }
+      />
+      <EventForm
+        id={FORM_ID}
+        mode="create"
+        values={values}
+        onChange={setValues}
+        submitting={busy}
+        onSubmit={() => void publish()}
+        error={error}
+      />
     </div>
   );
 }

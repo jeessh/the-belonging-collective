@@ -1,157 +1,131 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
-import { api, apiMessage, logout, updateMyOrg, type AdminAccount } from "@/lib/api";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { apiMessage, logout, updateMyOrg, type AdminAccount } from "@/lib/api";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
-import { SearchBox } from "@/components/member/GridFeed";
-import { CYAN } from "@/components/host/PostedEvents";
 
 /**
- * The chrome every console page shares: search, who you are, and — for
- * superadmins — the way between events and the account panels.
- *
- * The links are here rather than in a sidebar because there are three of them.
- * A whole navigation column for three destinations is furniture.
+ * The bar every console page shares: who you are, the way out, and — for
+ * superadmins — the switch between managing events and managing accounts.
  */
+
+type Area = "events" | "accounts";
+
+const AREA_HOME: Record<Area, string> = {
+  events: "/host/events",
+  accounts: "/host/admins",
+};
+
 export function ConsoleHeader({
+  org,
   isSuper,
-  organization,
-  query,
-  onQuery,
+  onLogoChanged,
 }: {
+  org: AdminAccount;
   isSuper: boolean;
-  organization: string;
-  /** Omit both to hide the search box on pages that have nothing to search. */
-  query?: string;
-  onQuery?: (v: string) => void;
+  onLogoChanged: (url: string | null) => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [editingLogo, setEditingLogo] = useState(false);
-  const [logo, setLogo] = useState("");
 
-  // Fetched here rather than threaded through every console page — the header
-  // is the only thing that needs it, and /hosts/me already returns it.
-  useEffect(() => {
-    let alive = true;
-    api<AdminAccount>("/hosts/me")
-      .then((me) => {
-        if (alive) setLogo(me.logo_url ?? "");
-      })
-      .catch(() => {
-        /* the header still works without it */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const tabs = [
-    { href: "/host/events", label: "Events", superOnly: false },
-    { href: "/host/users", label: "Users", superOnly: true },
-    { href: "/host/admins", label: "Organizations", superOnly: true },
-  ].filter((t) => isSuper || !t.superOnly);
+  const area: Area =
+    pathname.startsWith("/host/admins") || pathname.startsWith("/host/users")
+      ? "accounts"
+      : "events";
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="flex min-w-[280px] flex-1 flex-col gap-4">
-        {query !== undefined && onQuery && (
-          <SearchBox value={query} onChange={onQuery} />
-        )}
-        {tabs.length > 0 && (
-          <nav aria-label="Console sections" className="flex flex-wrap gap-2">
-            {tabs.map((t) => {
-              const active = pathname === t.href;
-              return (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`rounded-full px-4 py-2 text-base font-medium text-ink transition-colors ${
-                    active ? "text-ink" : "hover:bg-[#EDECF1]"
-                  }`}
-                  style={active ? { background: CYAN } : undefined}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
-      </div>
-
-      <div className="text-right">
-        <p className="text-sm font-medium uppercase tracking-wide text-muted">
-          {isSuper ? "KWHab administrative access" : "Administrative access"}
-        </p>
-        {/* The logo is the organization's own to set — members recognise them
-            by it in the feed, and having to ask KW Hab to upload a file was a
-            strange place to need permission. */}
-        <button
-          onClick={() => setEditingLogo(true)}
-          className="mt-1 inline-flex min-h-[44px] items-center gap-2 rounded-full pl-1 pr-3 text-lg text-ink transition-colors hover:bg-[#EDECF1]"
-          title="Change your organization's logo"
+    <header className="no-print border-b border-line bg-surface">
+      <div className="mx-auto flex min-h-[92px] w-full max-w-[1440px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 sm:px-9">
+        <Link
+          href="/host/events"
+          className="inline-flex items-center gap-3 rounded-control py-1 text-fg"
         >
-          <span
-            aria-hidden
-            className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#E8318A] text-white"
-          >
-            {logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logo} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="9" r="3.4" fill="currentColor" />
-                <path
-                  d="M5.5 19c1.4-3 4-4.4 6.5-4.4S17.1 16 18.5 19"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="" className="size-11 rounded-control" />
+          <span className="text-xl font-medium leading-tight sm:text-2xl">
+            The Belonging Collective
           </span>
-          {organization || "Signed in"}
-        </button>
-        <button
-          onClick={() => {
-            void logout()
-              .catch(() => {})
-              .then(() => router.replace("/host"));
-          }}
-          // 20px tall as a bare text link. Right-aligned padding keeps the
-          // dense header looking the same while giving it a real target.
-          className="mt-0.5 block w-full py-2 text-right text-sm font-medium text-muted underline underline-offset-2 hover:text-ink"
-        >
-          Sign out
-        </button>
+        </Link>
+
+        {isSuper && (
+          <SegmentedToggle<Area>
+            label="Console area"
+            className="order-last w-full justify-center sm:order-none sm:w-auto"
+            value={area}
+            onChange={(next) => {
+              if (next !== area) router.push(AREA_HOME[next]);
+            }}
+            segments={[
+              { value: "accounts", label: "Account Management" },
+              { value: "events", label: "Event Management" },
+            ]}
+          />
+        )}
+
+        <div className="flex items-center gap-4">
+          {/* The logo is the organization's own to set — members recognise
+              them by it in the feed. */}
+          <button
+            type="button"
+            onClick={() => setEditingLogo(true)}
+            title="Change your organization's logo"
+            className="inline-flex min-h-11 items-center gap-3 rounded-control px-1 text-left hover:bg-surface-subtle"
+          >
+            {org.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={org.logo_url}
+                alt=""
+                className="size-9 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <Avatar name={org.name} size={36} />
+            )}
+            <span className="flex flex-col leading-tight text-fg-muted">
+              <span className="text-lg font-bold">{org.name}</span>
+              <span className="text-base">
+                {isSuper ? "Super admin" : "Admin"}
+              </span>
+            </span>
+          </button>
+          <Button
+            variant="ghost"
+            leadingIcon={<LogOut />}
+            onClick={() => {
+              void logout()
+                .catch(() => {})
+                .then(() => router.replace("/host"));
+            }}
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
 
       {editingLogo && (
         <LogoModal
-          value={logo}
-          organization={organization}
+          value={org.logo_url ?? ""}
+          organization={org.name}
           onSaved={(url) => {
-            setLogo(url);
+            onLogoChanged(url || null);
             setEditingLogo(false);
           }}
           onClose={() => setEditingLogo(false)}
         />
       )}
-    </div>
+    </header>
   );
 }
 
-/**
- * Setting your own organization's logo.
- *
- * Same uploader the rest of the console uses, so the file is checked and
- * resized in the browser before it goes anywhere.
- */
+/** Setting your own organization's logo. Same uploader as the event form. */
 function LogoModal({
   value,
   organization,
@@ -181,33 +155,23 @@ function LogoModal({
 
   return (
     <Modal title="Your organization's logo" onClose={onClose}>
-      <p className="mt-2 text-base text-muted">
-        This is how members pick {organization || "you"} out in the feed. A
-        square image works best.
+      <p className="mt-2 text-lg text-fg-muted">
+        This is how members pick {organization} out in the feed. A square
+        image works best.
       </p>
       <div className="mt-4">
-        <ImageDrop label="" sizing="logo" value={url} onChange={setUrl} />
+        <ImageDrop label="Logo" sizing="logo" value={url} onChange={setUrl} />
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-base font-semibold text-red-600">
+        <p role="alert" className="mt-3 text-base text-danger-fg">
           {error}
         </p>
       )}
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          onClick={() => void save()}
-          disabled={busy}
-          className="rounded-lg px-6 py-3 font-display text-lg font-semibold text-ink transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
-          style={{ background: CYAN }}
-        >
+      <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="primary" disabled={busy} onClick={() => void save()}>
           {busy ? "Saving…" : "Save logo"}
-        </button>
-        <button
-          onClick={onClose}
-          className="rounded-lg bg-[#D9D9D9] px-6 py-3 font-display text-lg font-semibold text-ink transition-colors hover:bg-[#CDCDCD]"
-        >
-          Cancel
-        </button>
+        </Button>
       </div>
     </Modal>
   );
