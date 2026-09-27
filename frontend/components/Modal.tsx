@@ -11,17 +11,29 @@ export const FOCUSABLE =
 // Drawn as the design's Modal Card: large radius, blurred dim backdrop, X top
 // right. The X sits last in the DOM so the first control inside still takes
 // initial focus.
+const SIZE = {
+  md: "max-w-lg",
+  lg: "max-w-[960px]",
+};
+
 export function Modal({
   title,
   onClose,
   children,
   labelId,
+  size = "md",
 }: {
+  /**
+   * The heading. Pass null when the heading is inside `children` (with
+   * `labelId` naming it), as the event dialog does.
+   */
   title: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   /** Optional id override for the heading (defaults to a generated id). */
   labelId?: string;
+  /** `lg` is the design's Expanded Card width. */
+  size?: keyof typeof SIZE;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -36,7 +48,16 @@ export function Modal({
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? panel)?.focus();
 
+    // Only the topmost dialog owns the keyboard: a share sheet opened from the
+    // event dialog must not have Escape close both, or Tab cycle the one
+    // underneath.
+    function topmost(): boolean {
+      const all = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      return all[all.length - 1] === panel;
+    }
+
     function onKeyDown(e: KeyboardEvent) {
+      if (!topmost()) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
@@ -91,9 +112,9 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="relative w-full max-w-lg rounded-card border border-line bg-surface p-6 shadow-lift outline-none sm:p-10"
+          className={`relative w-full ${SIZE[size]} rounded-card border border-line bg-surface p-6 shadow-lift outline-none sm:p-10`}
         >
-          {typeof title === "string" ? (
+          {title == null ? null : typeof title === "string" ? (
             <h2
               id={headingId}
               className="pr-12 text-2xl font-medium text-fg sm:text-3xl"

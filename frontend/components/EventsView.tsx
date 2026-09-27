@@ -277,6 +277,16 @@ export function EventsView({
     }
   }, []);
 
+  // Counting the click before leaving; losing the count must never cost the
+  // member the link.
+  const openRegistration = useCallback((ev: Event) => {
+    if (!ev.registration_url) return;
+    window.open(ev.registration_url, "_blank", "noopener,noreferrer");
+    void api(`/events/${ev.id}/registration-click`, { method: "POST" }).catch(
+      () => {},
+    );
+  }, []);
+
   const attend = useCallback(
     async (ev: Event) => {
       if (savedRef.current.has(ev.id)) return;
@@ -290,15 +300,23 @@ export function EventsView({
       );
       try {
         await api(`/events/${ev.id}/attend`, { method: "POST" });
+        // Saving is only a bookmark. Where registration lives on the
+        // organizer's site, the next step is that, not the calendar.
+        const external =
+          ev.requires_signup &&
+          ev.registration_mode === "external" &&
+          !!ev.registration_url;
         const calendar = googleCalendarUrl(ev);
         toast.show({
           title: "Event saved",
-          action: calendar
-            ? {
-                label: "Add to calendar",
-                onClick: () => window.open(calendar, "_blank", "noopener"),
-              }
-            : undefined,
+          action: external
+            ? { label: "Register", onClick: () => openRegistration(ev) }
+            : calendar
+              ? {
+                  label: "Add to calendar",
+                  onClick: () => window.open(calendar, "_blank", "noopener"),
+                }
+              : undefined,
         });
         void syncSaved();
       } catch (e) {
@@ -312,7 +330,7 @@ export function EventsView({
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
-    [toSignIn, syncSaved, toast],
+    [toSignIn, syncSaved, toast, openRegistration],
   );
 
   const unsave = useCallback(
@@ -336,14 +354,6 @@ export function EventsView({
       }
     },
     [savedEvents, syncSaved, toast, attend],
-  );
-
-  const toggleSave = useCallback(
-    (ev: Event) => {
-      if (savedRef.current.has(ev.id)) void unsave(ev);
-      else void attend(ev);
-    },
-    [attend, unsave],
   );
 
   // Re-read the profile so the feed, the sidebar and the chrome all agree that
@@ -372,16 +382,6 @@ export function EventsView({
     }
     if (pending) void attend(pending);
   }, [authFor, attend]);
-
-  // Counting the click before leaving; losing the count must never cost the
-  // member the link.
-  const openRegistration = useCallback((ev: Event) => {
-    if (!ev.registration_url) return;
-    window.open(ev.registration_url, "_blank", "noopener,noreferrer");
-    void api(`/events/${ev.id}/registration-click`, { method: "POST" }).catch(
-      () => {},
-    );
-  }, []);
 
   /**
    * Save the current card, flying it into the sidebar on the way. Every save
@@ -807,14 +807,14 @@ export function EventsView({
           {/* The saved list opens over the main column; the sidebar stays. */}
           <SavedEvents
             me={me}
-            reveal={view === "saved" ? 1 : 0}
+            open={view === "saved"}
+            events={savedEvents}
             onClose={closeSaved}
             onSignIn={() => {
               closeSaved();
               toSignIn();
             }}
-            saved={saved}
-            onToggleSave={toggleSave}
+            onUnsave={(ev) => void unsave(ev)}
             onOpen={setDetailFor}
           />
 
@@ -959,6 +959,21 @@ export function EventsView({
         </section>
       </div>
 
+      {detailFor && (
+        <EventDetailModal
+          event={detailFor}
+          saved={saved.has(detailFor.id)}
+          onClose={() => setDetailFor(null)}
+          onSave={(ev) => void attend(ev)}
+          onUnsave={(ev) => void unsave(ev)}
+          onOpenRegistration={openRegistration}
+          onSignIn={() => toSignIn()}
+        />
+      )}
+
+      {/* Last, so it stacks above the listing it was opened from — saving
+          there while signed out asks for sign-in on top of it, and Escape
+          reaches the sign-in first. */}
       {authOpen && (
         <LoginOverlay
           onClose={() => {
@@ -966,19 +981,6 @@ export function EventsView({
             setAuthFor(null);
           }}
           onSignedIn={() => void handleSignedIn()}
-        />
-      )}
-
-      {detailFor && (
-        <EventDetailModal
-          event={detailFor}
-          saved={saved.has(detailFor.id)}
-          onClose={() => setDetailFor(null)}
-          onSave={(ev) => {
-            setDetailFor(null);
-            void attend(ev);
-          }}
-          onOpenRegistration={openRegistration}
         />
       )}
     </motion.main>
