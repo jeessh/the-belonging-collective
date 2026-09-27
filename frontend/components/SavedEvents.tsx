@@ -15,7 +15,7 @@ import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { savedCalendarUrl } from "@/lib/calendar";
 import { listShareText } from "@/lib/share";
-import { FOCUSABLE } from "@/components/Modal";
+import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
@@ -74,8 +74,7 @@ export const SavedEvents = memo(function SavedEvents({
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Tab" || !panel) return;
       // A share sheet or print preview on top owns the keyboard while it's up.
-      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== panel)
-        return;
+      if (!isTopmostDialog(panel)) return;
       const items = Array.from(
         panel.querySelectorAll<HTMLElement>(FOCUSABLE),
       ).filter((el) => el.offsetParent !== null || el === document.activeElement);
@@ -143,7 +142,8 @@ export const SavedEvents = memo(function SavedEvents({
       role="dialog"
       aria-modal="true"
       // Not "Saved events": that is the sidebar's name, and two landmarks
-      // called the same thing read as one.
+      // called the same thing read as one. The feed's Escape handler finds
+      // the panel by this label.
       aria-label="All saved events"
       className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none"
     >

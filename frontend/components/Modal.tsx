@@ -16,6 +16,17 @@ const SIZE = {
   lg: "max-w-[960px]",
 };
 
+/**
+ * Is this dialog the one on top? Sheets portal to the end of `<body>`, so
+ * the last modal dialog in document order is the one the keyboard belongs
+ * to. Every keyboard trap on a dialog should ask this before acting.
+ */
+export function isTopmostDialog(el: Element | null): boolean {
+  if (!el) return false;
+  const all = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+  return all[all.length - 1] === el;
+}
+
 export function Modal({
   title,
   onClose,
@@ -51,13 +62,8 @@ export function Modal({
     // Only the topmost dialog owns the keyboard: a share sheet opened from the
     // event dialog must not have Escape close both, or Tab cycle the one
     // underneath.
-    function topmost(): boolean {
-      const all = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
-      return all[all.length - 1] === panel;
-    }
-
     function onKeyDown(e: KeyboardEvent) {
-      if (!topmost()) return;
+      if (!isTopmostDialog(panel)) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();

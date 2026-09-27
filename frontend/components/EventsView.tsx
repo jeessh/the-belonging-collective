@@ -35,6 +35,7 @@ import { HeadCursor } from "@/components/HeadCursor";
 import { CalibrationOverlay } from "@/components/CalibrationOverlay";
 import { eventToSpeech } from "@/lib/eventSpeech";
 import { SavedEvents } from "@/components/SavedEvents";
+import { isTopmostDialog } from "@/components/Modal";
 import { oneCardPerProgram, personalizedFeed } from "@/lib/feed";
 import { useToast } from "@/components/ui/Toast";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
@@ -608,7 +609,16 @@ export function EventsView({
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
       if (view === "saved") {
-        if (e.key === "Escape") closeSaved();
+        // Not while a share sheet or print preview sits on top of the
+        // panel — Escape is theirs first.
+        if (
+          e.key === "Escape" &&
+          isTopmostDialog(
+            document.querySelector('[role="dialog"][aria-label="All saved events"]'),
+          )
+        ) {
+          closeSaved();
+        }
         return;
       }
       // Don't steal arrows from whatever the person is actually using: a

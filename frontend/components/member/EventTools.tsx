@@ -44,7 +44,13 @@ export function EventTools({ event }: { event: Event }) {
           <EventDetails
             event={event}
             titleAs="h3"
-            going={<GoingCount count={event.saved_count} />}
+            // On paper only a number means anything; the anonymous
+            // "See who else is going" has nothing to open.
+            going={
+              typeof event.saved_count === "number" ? (
+                <GoingCount count={event.saved_count} />
+              ) : undefined
+            }
           />
         </PrintPreview>
       )}
