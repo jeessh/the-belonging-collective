@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EventsView } from "@/components/EventsView";
-import { ApiError, api, type Event, type Me } from "@/lib/api";
+import { ApiError, api, fetchAllEvents, type Event, type Me } from "@/lib/api";
 
 /**
  * The front door is the feed.
@@ -20,19 +20,7 @@ export default function HomePage() {
   // requires.
   const [eventsPromise] = useState<Promise<Event[]>>(() => {
     if (typeof window === "undefined") return Promise.resolve([]);
-    // Paginated, not a bare call: the API defaults to 100 and caps at 200, so
-    // a single request silently truncates the feed once the agencies get going
-    // — and "personalization sorts, never filters" quietly stops being true.
-    const p = (async () => {
-      const PAGE = 200;
-      const all: Event[] = [];
-      for (let offset = 0; offset < 5000; offset += PAGE) {
-        const page = await api<Event[]>(`/events?limit=${PAGE}&offset=${offset}`);
-        all.push(...page);
-        if (page.length < PAGE) break;
-      }
-      return all;
-    })();
+    const p = fetchAllEvents();
     p.catch(() => {});
     return p;
   });

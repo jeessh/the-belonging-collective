@@ -209,10 +209,12 @@ export function useHeadTracking(
     } else if (zone && now - d.start >= DWELL_MS) {
       // Held long enough → fire, then reset (leave + re-enter to repeat).
       const h2 = handlersRef.current;
-      if (zone === "left") h2.onBack?.();
-      else if (zone === "right") h2.onNext?.();
-      else if (zone === "down") h2.onAdd?.();
-      else if (zone === "up") h2.onSettings?.();
+      // Mirrors the screen: the saved sidebar is on the left, the ↑ / ↓
+      // buttons page, and the saved list takes the remaining edge.
+      if (zone === "left") h2.onAdd?.();
+      else if (zone === "right") h2.onSettings?.();
+      else if (zone === "down") h2.onNext?.();
+      else if (zone === "up") h2.onBack?.();
       d.zone = null;
       d.stage = "idle";
       d.start = now;

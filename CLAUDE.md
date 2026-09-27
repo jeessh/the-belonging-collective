@@ -67,20 +67,35 @@ value produces links nobody can open.
 ## Frontend architecture
 
 ### Member app
-- `components/EventsView.tsx` (~1.7k lines) is the member experience — the whole
-  one-card-at-a-time discovery/attend flow lives here and orchestrates every
-  accessibility mode below.
+- `components/EventsView.tsx` (~900 lines) is the member feed and orchestrates
+  every accessibility mode below. Its parts live in `components/member/`:
+  `FeedHeader` (account + the Accessibility Tools menu), `SavedSidebar` (the
+  left column — open panel or collapsed rail; its forwarded ref is the drop
+  target every save animates into), `FeedFilters` (chips + sort), `FeedCard`
+  (the one card, on `ui/EventSummary`) and `ListFeed` (the rows). The saved
+  list overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **Every save path ends in `flyToDrop`** — drag the card left into the
+  sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
+  head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
+  hold saves; head zones are left = save, right = saved list, up/down =
+  previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
+  not `attend`, or it skips the animation; the toast comes from `attend`.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,
   `useHeadTracking` (head-pose cursor + `CalibrationOverlay`), `useHold`
-  (press-and-hold-to-attend). Toggling a mode PATCHes `/users/me` and flips the
+  (the ← hold). Toggling a mode PATCHes `/users/me` and flips the
   hook — keep the persisted pref and the active hook in sync.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
-  nothing is hidden. The only things that remove cards are the member's own
-  explicit cost/organization filters. Ties fall back to the server's
-  deterministic order, so the feed never reshuffles between renders.
+  nothing is hidden. The only things that remove cards are the filter chips in
+  `FeedFilters` (FREE + `CATEGORIES`), which are the member's own explicit
+  choice; "For you" (match score) vs "Soonest" (server order) is the only sort.
+  Ties fall back to the server's deterministic order, so the feed never
+  reshuffles between renders.
+- `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See
+  who else is going" and opens sign-in. The feed re-reads `/events` on sign-in
+  (`fetchAllEvents`) so the counts appear, and nulls them on sign-out.
 
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session before
