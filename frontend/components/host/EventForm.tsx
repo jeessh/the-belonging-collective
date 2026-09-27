@@ -157,7 +157,7 @@ export function payloadFrom(v: EventFormValues) {
       ...(v.requiresSignup ? [] : ["no_registration"]),
     ]),
   );
-  const registrationUrl = v.requiresSignup ? v.registrationUrl.trim() : "";
+  const registrationUrl = v.registrationUrl.trim();
   return {
     title: v.title.trim(),
     description: v.description.trim(),
@@ -662,35 +662,37 @@ export function EventForm({
             </Section>
           )}
 
-          {values.requiresSignup && (
-            <div className="flex flex-col gap-2">
-              <TextField
-                label="Sign-up link"
-                type="text"
-                inputMode="url"
-                value={values.registrationUrl}
-                onChange={(e) => set("registrationUrl", e.target.value)}
-                placeholder="yourorg.ca/register"
-                error={
-                  signupHint?.tone === "error" ? signupHint.message : null
-                }
-              />
-              {/* A caution, not a refusal: some agencies really do have one
-                  page, and blocking that gets the link left out entirely. */}
-              <p
-                role="status"
-                className={`text-base ${
-                  signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-tag-dropin-fg"
-                    : "text-fg-muted"
-                }`}
-              >
-                {signupHint?.tone === "warn"
-                  ? signupHint.message
-                  : "Where people register on your own site. Leave it blank if they sign up here instead."}
-              </p>
-            </div>
-          )}
+          {/* Shown for drop-ins too: many carry a posting link, and hiding
+              the field would blank it on the next save. */}
+          <div className="flex flex-col gap-2">
+            <TextField
+              label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+              type="text"
+              inputMode="url"
+              value={values.registrationUrl}
+              onChange={(e) => set("registrationUrl", e.target.value)}
+              placeholder="yourorg.ca/register"
+              error={
+                signupHint?.tone === "error" ? signupHint.message : null
+              }
+            />
+            {/* A caution, not a refusal: some agencies really do have one
+                page, and blocking that gets the link left out entirely. */}
+            <p
+              role="status"
+              className={`text-base ${
+                signupHint?.tone === "warn"
+                  ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-tag-dropin-fg"
+                  : "text-fg-muted"
+              }`}
+            >
+              {signupHint?.tone === "warn"
+                ? signupHint.message
+                : values.requiresSignup
+                  ? "Where people register on your own site. Leave it blank if they sign up here instead."
+                  : "The program's page on your own site, if it has one."}
+            </p>
+          </div>
         </div>
       </div>
 
