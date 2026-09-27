@@ -185,13 +185,20 @@ the design says one thing and a recorded decision (`docs/product-context.md`
 recommendation, where there is one, is marked.
 
 1. **Member credential: icon key vs. email + password.** *FigJam* gives caregivers email + password; *Figma* gives **every** member name → required email → password (min 5), email+password login, no forgot-password, and no icon picker anywhere (README 06). *Record:* the two-icon key **is** the password (A-1, CLAUDE.md), recovery is superadmin re-issue (A-3), contact details never required (R-7). Options: (a) keep icons, treat the password screens as superseded, add an *optional* email later for reminders and caregiver mail; (b) passwords replace icons — icons nullable, email-keyed login, a member reset flow, and the memory barrier A-1 was designed around comes back; (c) both, icons default (the dormant `custom_password` path in `auth.py:118-165` is the seed). **Blocks:** the whole onboarding modal redesign, A-8, R-7, the share-mail greeting, member password reset. *Recommend (a).*
+   **RESOLVED 2026-09-27 (product-context.md §3.10, item 1):** neither (a) nor (b) — both, symmetric, via a switch at sign-in/up (`MemberAuthFlow.tsx`). A password account still allocates an icon set for the unique constraint, never shown.
 2. **Saved sidebar + drag-left vs. bottom save zone + full-screen saved overlay.** Every card/list frame draws a persistent left sidebar with a dashed drop zone and a collapsed rail; the card is dragged **left**; the design's ↓ button is *next card*. The build drags **down**, ArrowDown *saves*, ↑ opens the saved list, and all six save paths (X-1), the fly-to-target animation and reduced motion (X-7) are wired to that. **Blocks:** P-5 mobile (the layout would be cut twice), D-14 list view chrome, O-2 tour content, D-15. Options: (a) adopt the sidebar and re-wire all six paths together (L); (b) keep the bottom zone, take the sidebar's *content* (thumbnails, count, actions) as the collapsed rail on wide screens only. *Recommend deciding before any member layout work.*
+   **RESOLVED 2026-09-27 (§3.10, item 2):** (a) — `SavedSidebar.tsx`, drag-left, all six save paths through `flyToDrop`.
 3. **Save and internal registration are one record vs. save as a bookmark, register later.** Today a save on an internal+signup program *is* the registration (`EventActions.tsx:12`), and a grant report can't tell "bookmarked" from "signed up". The board's note "Do we really want users to automatically sign-up?" and its bookmark framing want them split; the design's saved page and modal only ever say Save / Un-Save. Splitting = `event_attendees.status` gains `registered`, a Register action from Saved, capacity counted on `registered`, an "I registered on their site" confirmation for external. **Blocks:** R-9, and what M-1 / D-7a count.
+   **RESOLVED 2026-09-27 (§3.10, item 3):** don't split — a save is only ever a bookmark, for every registration mode; the capacity gate on save is removed (`attendance.py:49-56`).
 4. **Filter chips: filter or sort, and which words.** The same chip row is titled "EVENT FILTERS" (543:12713) and "SORT EVENTS BY 0 FILTERS" (399:9447); the accordion component is multi-select checkboxes. The record allows only the member's *explicit* cost/organization filters to remove cards; interests sort (D-1). The chip vocabulary FREE / SPORTS / FOOD / SOCIAL / ART / GAMES / INFORMATIVE is **not** `CATEGORIES` — that half is not a decision: the chips must render the canonical list (CLAUDE.md, D-1a/D-1b). The decision is whether topic chips *filter* (as explicit choices, allowed) or *sort-boost*. **Blocks:** D-10, D-13 placement. *Recommend: FREE / organization / this-week filter; topic chips filter too, as the member's explicit act — never the profile's interests.*
+   **RESOLVED 2026-09-27 (§3.10, item 4):** topic chips filter, as recommended (`FeedFilters.tsx`), vocabulary is `CATEGORIES`; organization and "this week" chips are not built (D-10 stays partial).
 5. **Public attendance count.** "20 Attendees" / "20 People Going" on every member card and console card (design), "tells the user who is going" and "registration mandatory even for drop-ins so we can count" (board). Record: D-7 attendance private; M-1 console counts descoped. The data already exists for every state (a save writes a row), so the question is display and label: show an aggregate count to members and NPOs (yes/no), and call it "saved" or "going" (a save is not attendance). Never names without A-8. **Blocks:** D-7a, M-1 wording, and the board's drop-in question (do not add a registration *step* to drop-ins either way).
+   **RESOLVED 2026-09-27 (§3.10, item 5):** show it — "N going" (`GoingCount`, from `saved_count`), signed-in viewers only; anonymous viewers get "See who else is going" → sign in. It is a save count, not a registration count (item 3).
 6. **What "guest" is.** FigJam: "Sign-up as guest → input necessary information → saved". Figma: a "Continue as guest" button and a guest toast — under a header that shows a signed-in "Sophie L." Record: browsing is already open and saving needs an account (§3.7, R-3); an attendance row needs a `users` row (FK `RESTRICT`), so a "guest" is an account with a name and no key — unrecoverable. Options: (a) guest = anonymous (built; the toast is a one-line nudge); (b) guest = `auth_type='guest'` name-only account with a claim path, which makes P-3a (creation cap) urgent and reopens name enumeration. **Blocks:** R-10, the sign-in modal chooser. *Recommend (a).*
+   **RESOLVED 2026-09-27 (§3.10, item 6):** (a) — guest = anonymous, as recommended. The chooser's "Continue as guest" (`MemberAuthFlow.tsx`) just closes the dialog; no guest account.
 7. **Shareable saved-list link.** 465:14401 offers "Share by Link — Https//SamKWEventslist": a public URL to a member's saved programs, no approval step, for a vulnerable population. D-7 recorded "with known people, with approval". If wanted: opt-in token creation, revocation, `noindex`, and an expiry. **Blocks:** M-11.
 8. **Important Links ×3 vs. the typed `registration_url`.** The v2 form replaces the single Posting link with three untyped links (483:12966); the modal, details page, print and mail all show a LINKS list. §3.1's four registration states hang off `registration_mode` + `registration_url`; three untyped links cannot tell the member app which one is the sign-up. Options: (a) keep the typed registration link and add up to two "more links" (`events.links`); (b) Link 1 = registration by convention (fragile). **Blocks:** N-9. *Recommend (a).*
+   **RESOLVED 2026-09-27** as part of §3.10 item 2: (a) — `events.links` (≤3) alongside `registration_url`, which stays separate.
 9. **Per-person organizer identities vs. one login per organization (§3.5).** The superadmin table (486:14826) lists several named people per agency; the NPO create page (403:15951) asks first/last name; the header says "Sophia L. / Admin". Record: `Host` *is* the org, one shared login, revisit only if an agency asks (A-6). Options: (a) show the organization in the Name column (today), drop the person fields; (b) store contact names on the host as display-only; (c) reopen §3.5 (per-staff accounts, audit trail, off-boarding). **Blocks:** N-10 invite form shape, the console header copy.
 10. **Member profile pictures.** FigJam sticky (76%); the design shows only a coloured avatar circle. The icon is the password and must not become the picture (`LoginOverlay.tsx:182`) — and `SavedEvents.tsx:147` currently renders `icons[0]`; that comes out in Phase 0 regardless. Decide: (a) member-uploaded photo (new member upload route, moderation on a shared platform); (b) a chosen emblem from a set outside the icon pool; (c) nothing — the org logo is the recognition picture that shipped. **Blocks:** A-11.
 11. **Mail sender and branding.** The templates (465:14503, 469:16790) and the organizer pages carry "KW Habilitation" / "KWEvents tool"; the app and console say The Belonging Collective; `MAIL_FROM` is one mailbox that six agencies' members would send through. Decide the product name on outbound mail and pages, and whose address sends. **Blocks:** P-6 templates, N-10, M-10.
@@ -214,6 +221,34 @@ each so they are not re-litigated by "matching the Figma":
 ---
 
 ## 6. Phased implementation plan
+
+**Shipped 2026-09-27 (PRs #46–#51).** §5 items 1–6 and 8 are decided (each
+marked `RESOLVED` above) and mostly built already:
+
+- **Done or matching this phasing:** R-8 `.ics` + Google Calendar link
+  (#46/#49); D-11 date/time on every card, D-12 tag pills, D-16
+  labels/toasts/Un-Save (#49/#51); UX-0 staff link removed from the feed,
+  A-11a icon removed from the saved panel, D-14 list view, D-15 saved
+  sidebar + drag-left — jumped ahead of its own Phase 2 slot — (#49); D-7a
+  "N going" (folded into D-7, #49/#51); N-9 Important Links, N-11 console
+  details page, N-11a "Un-publish" wording, N-12 form parity (#46/#50); N-10
+  emailed invites, plain text (#46); M-9 share, client-side (#51).
+- **Shipped lighter than planned:** M-1 console counts (saved only, no
+  click-through); M-8 print (member side only, console still has no
+  poster/list/QR); M-10 share by email (`mailto:`, not server mail — P-6
+  wasn't needed for it after all); D-10/D-1/D-2 filter chips (FREE +
+  `CATEGORIES` only, no organization or "this week" chip).
+- **Regressed, not just stale:** D-3 organization filtering — the member
+  feed's old grouping dimensions were removed and nothing replaced them, so
+  this is worse than before #49. R-6 capacity limits — the gate was removed
+  on purpose (item 3), so the row now reads ❌ rather than ✅.
+- **Still open from Phases 0–2:** P-6 HTML mail; O-1 view-preference
+  persistence; O-2 first-run tour; D-13 "for you this week"; A-9 unlisted
+  programs; A-10 restricted programs; A-8 caregiver accounts; A-11 profile
+  picture (beyond A-11a); M-3/M-4 analytics; M-11 shareable saved-list link
+  (still no decision — the five decisions did not reach it); F-1 feedback;
+  P-5 mobile/tablet — now unblocked, since item 2 (the layout decision) is
+  made.
 
 Sizes: S ≤ 1 day, M 2–4 days, L a week or more. "Migration" means an Alembic
 revision that must run against prod before deploy (`CLAUDE.md`, P-1). Items
