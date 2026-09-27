@@ -124,7 +124,12 @@ def _live_member_by_email(db: Session, email: str) -> User | None:
 
 
 @router.post("/signup/user", status_code=status.HTTP_201_CREATED)
-def signup_user(body: UserSignup, response: Response, db: Session = Depends(get_db)):
+def signup_user(
+    body: UserSignup,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     """Create a password account. The icon door is POST /auth/user.
 
     Icons are still allocated because the column and uq_users_username_icons
@@ -132,7 +137,14 @@ def signup_user(body: UserSignup, response: Response, db: Session = Depends(get_
     """
     username = _make_username(body.first_name, body.last_name)
     email = body.email.strip().lower()
+    # Same budget as login, keyed on the same thing: the 409 below says
+    # whether an address has an account, so a sweep here has to cost what a
+    # sweep of the login route costs.
+    ip_key = client_key(request)
+    id_key = f"user:{email}"
+    enforce_rate_limit(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
     if _live_member_by_email(db, email):
+        record(db, id_key, ip_key)
         raise HTTPException(
             status.HTTP_409_CONFLICT, "That email already has an account."
         )
@@ -151,11 +163,19 @@ def signup_user(body: UserSignup, response: Response, db: Session = Depends(get_
     db.add(user)
     try:
         db.commit()
-    except IntegrityError:
-        # Lost a race on the email index; the icon pair was checked free above.
+    except IntegrityError as exc:
+        # Both pre-checks are check-then-insert, so either constraint can
+        # lose a race: the email index to a concurrent signup with the same
+        # address, or the icon pair to a same-named member signing up at the
+        # same moment.
         db.rollback()
+        if getattr(exc.orig.diag, "constraint_name", None) == "uq_users_email_live":
+            record(db, id_key, ip_key)
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "That email already has an account."
+            )
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "That email already has an account."
+            status.HTTP_409_CONFLICT, "Something collided — please try again."
         )
     db.refresh(user)
 
