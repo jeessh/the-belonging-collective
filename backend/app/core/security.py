@@ -6,6 +6,9 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 
+# One rule for every typed password — organizer and member alike.
+PASSWORD_MIN_LENGTH = 8
+
 
 def _to_bytes(password: str) -> bytes:
     # bcrypt only considers the first 72 bytes; truncate so long inputs don't

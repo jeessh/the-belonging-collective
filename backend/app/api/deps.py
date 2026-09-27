@@ -89,6 +89,23 @@ def get_optional_user(
     return user if _key_still_current(p, user) else None
 
 
+def get_optional_host(
+    request: Request, db: Session = Depends(get_db)
+) -> Host | None:
+    """The signed-in organizer, or None — get_optional_user for hosts."""
+    p = _payload(request)
+    if not p or p.get("role") != "host":
+        return None
+    host = db.get(Host, uuid.UUID(p["sub"]))
+    if not host or host.deleted_at is not None:
+        return None
+    return (
+        host
+        if payload_cv(p) == credential_fingerprint(host.password_hash)
+        else None
+    )
+
+
 def get_current_host(request: Request, db: Session = Depends(get_db)) -> Host:
     p = _payload(request)
     if not p or p.get("role") != "host":

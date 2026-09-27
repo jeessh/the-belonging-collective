@@ -112,55 +112,58 @@ def _allocate_unique_icons(
     )
 
 
-# ---------- Community members (icon auth) ----------
+# ---------- Community members (email + password) ----------
+
+
+def _live_member_by_email(db: Session, email: str) -> User | None:
+    return (
+        db.query(User)
+        .filter(User.email == email, User.deleted_at.is_(None))
+        .first()
+    )
 
 
 @router.post("/signup/user", status_code=status.HTTP_201_CREATED)
 def signup_user(body: UserSignup, response: Response, db: Session = Depends(get_db)):
-    using_custom = bool(body.custom_password)
+    """Create a password account. The icon door is POST /auth/user.
+
+    Icons are still allocated because the column and uq_users_username_icons
+    need them; they are never returned for this kind of account.
+    """
     username = _make_username(body.first_name, body.last_name)
-
-    if body.icons is not None:
-        try:
-            icons = validate_icon_selection(body.icons)
-        except ValueError as exc:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
-    else:
-        icons = _allocate_unique_icons(db, username)
-
-    password = body.custom_password or credential(username, icons)
+    email = body.email.strip().lower()
+    if _live_member_by_email(db, email):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "That email already has an account."
+        )
 
     user = User(
         first_name=body.first_name.strip(),
         last_name=body.last_name.strip(),
         username=username,
-        password_hash=hash_password(password),
-        auth_type="password" if using_custom else "icon",
-        icons=icons,
+        email=email,
+        password_hash=hash_password(body.password),
+        auth_type="password",
+        icons=_allocate_unique_icons(db, username),
         accessibility_prefs=body.accessibility_prefs,
         interest_categories=body.interest_categories,
     )
     db.add(user)
     try:
-        # Unique on (username, icons): a clash needs the same name AND the same
-        # ordered icon selection.
         db.commit()
     except IntegrityError:
+        # Lost a race on the email index; the icon pair was checked free above.
         db.rollback()
         raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "That name and icon combination is already taken — pick a different "
-            "set of icons.",
+            status.HTTP_409_CONFLICT, "That email already has an account."
         )
     db.refresh(user)
 
     _sign_in_member(response, user)
-    # Return the icons so the FE can show the member their login credentials.
     # Prefs are intentionally omitted here — the wizard re-reads GET /users/me.
     return {
         "id": str(user.id),
-        "username": user.username,
-        "icons": user.icons,
+        "email": user.email,
         "auth_type": user.auth_type,
     }
 
@@ -172,24 +175,21 @@ def login_user(
     response: Response,
     db: Session = Depends(get_db),
 ):
-    username = body.username.strip().lower()
+    email = body.email.strip().lower()
     ip_key = client_key(request)
-    id_key = f"user:{username}"
+    id_key = f"user:{email}"
     enforce_rate_limit(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
 
-    # Usernames are not unique, so check the password against every match.
-    candidates = (
-        db.query(User)
-        .filter(User.username == username, User.deleted_at.is_(None))
-        .all()
-    )
-    for user in candidates:
-        if verify_password(body.password, user.password_hash):
-            clear_rate_limit(db, id_key)
-            _sign_in_member(response, user)
-            return {"id": str(user.id), "username": user.username, "role": "user"}
-    record(db, id_key, ip_key)
-    raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid username or password")
+    user = _live_member_by_email(db, email)
+    if not user or not verify_password(body.password, user.password_hash):
+        record(db, id_key, ip_key)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+    clear_rate_limit(db, id_key)
+    _sign_in_member(response, user)
+    return {"id": str(user.id), "email": user.email, "role": "user"}
+
+
+# ---------- Community members (icon key) ----------
 
 
 @router.post("/user")
@@ -216,17 +216,20 @@ def auth_user(
     enforce_rate_limit(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
 
     # 1) Existing record? The key is name + icons, so verify the credential
-    #    against each same-named account (usernames alone aren't unique).
+    #    against each same-named icon account (usernames alone aren't unique).
     # Archived members stay in `same_name` — they still hold their
     # (username, icons) slot, so the conflict check below has to see them — but
-    # they can't sign in.
-    same_name = db.query(User).filter(User.username == username).all()
+    # they can't sign in. Password accounts are left out entirely: their
+    # icons aren't a key anyone tapped, so they can't be what was mistapped.
+    same_name = (
+        db.query(User)
+        .filter(User.username == username, User.auth_type == "icon")
+        .all()
+    )
     for user in same_name:
         if user.deleted_at is not None:
             continue
-        if user.auth_type == "icon" and verify_password(
-            password, user.password_hash
-        ):
+        if verify_password(password, user.password_hash):
             clear_rate_limit(db, id_key)
             _sign_in_member(response, user)
             return {
@@ -243,10 +246,6 @@ def auth_user(
     #    actually own, while the UI congratulates them. Memory is a stated top
     #    barrier for these members, so mistaps are expected, not exceptional.
     #    Hand the decision back to the UI; `create_new` is the confirmed override.
-    #    Note this counts same-named custom-password accounts too, where a
-    #    mistap can't be the explanation. Unreachable today (nothing calls
-    #    /auth/signup/user with a custom_password); revisit if that route is
-    #    ever wired up.
     if same_name and not body.create_new:
         # A wrong icon key against a name that exists is exactly the signal a
         # brute-force sweep produces, so it counts against the budget.
@@ -525,6 +524,7 @@ def me(request: Request, db: Session = Depends(get_db)):
         return {"authenticated": False}
     role = payload.get("role")
     is_admin = payload.get("is_admin", False)
+    member: User | None = None
     if role == "user":
         # Same reasoning as the host branch below: the token outlives the
         # account. Without this an archived member's session still reports
@@ -538,6 +538,7 @@ def me(request: Request, db: Session = Depends(get_db)):
         # a signed-in app in which nothing works.
         if payload.get("cv") != credential_fingerprint(user.password_hash):
             return {"authenticated": False}
+        member = user
     if role == "host":
         # Tokens last a week and carry whatever is_admin was true at login, so a
         # demoted superadmin would keep seeing superadmin UI until it expired.
@@ -554,9 +555,15 @@ def me(request: Request, db: Session = Depends(get_db)):
         if payload.get("cv") != credential_fingerprint(host.password_hash):
             return {"authenticated": False}
         is_admin = host.is_admin
-    return {
+    out = {
         "authenticated": True,
         "role": role,
         "is_admin": is_admin,
         "id": payload.get("sub"),
     }
+    if member:
+        # Which door they came through, so the UI knows what to show (and
+        # never shows an icon key to a password account).
+        out["email"] = member.email
+        out["auth_type"] = member.auth_type
+    return out
