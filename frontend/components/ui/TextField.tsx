@@ -24,7 +24,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         <label htmlFor={inputId} className="text-lg font-medium text-fg">
           {label}
           {required && (
-            <span aria-hidden="true" className="ml-1 text-tag-virtual-fg">
+            <span aria-hidden="true" className="ml-1 text-danger-fg">
               *
             </span>
           )}
@@ -35,13 +35,13 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={`min-h-12 rounded border bg-surface px-4 py-3 text-lg text-fg placeholder:text-fg-muted ${
-            error ? "border-tag-virtual-fg" : "border-line"
+          className={`min-h-12 rounded-field border bg-surface px-4 py-3 text-lg text-fg placeholder:text-fg-muted ${
+            error ? "border-danger-border" : "border-line"
           }`}
           {...rest}
         />
         {error && (
-          <p id={errorId} className="text-base text-tag-virtual-fg">
+          <p id={errorId} className="text-base text-danger-fg">
             {error}
           </p>
         )}

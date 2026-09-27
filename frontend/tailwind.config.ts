@@ -75,10 +75,12 @@ const config: Config = {
           info: "#00CDFF",
           alert: "#FD9BA6",
         },
-        // The "Yes, delete" fill.
+        // The "Yes, delete" fill and border; `fg` is the readable red for
+        // error text, since the pink border fails contrast as type.
         danger: {
           DEFAULT: "#FFD0D5",
           border: "#FD9BA6",
+          fg: "#7F000E",
         },
       },
       borderRadius: {
