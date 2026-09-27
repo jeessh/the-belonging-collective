@@ -1,80 +1,41 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Building2,
+  ChevronDown,
+  Circle,
+  CircleDollarSign,
+  Clipboard,
+  Contact,
+  PartyPopper,
+} from "lucide-react";
 import type { Event } from "@/lib/api";
-import { CATEGORIES } from "@/lib/categories";
-
-export const CYAN = "#35CDEE";
+import { DIMENSIONS, bucketsFor, type DimensionKey } from "@/lib/dimensions";
+import { buttonClass } from "@/components/ui/Button";
+import { EventSummary } from "@/components/ui/EventSummary";
+import { GoingCount } from "@/components/ui/GoingCount";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 
 /* ---------------- filters ---------------- */
 
-export type HostFilters = {
-  orgs: string[];
-  price: string[]; // "free" | "paid"
-  registration: string[]; // "dropin" | "required"
-  eventType: string[]; // "virtual" | "inperson" | "youth"
-  activity: string[];
-  category: string[];
-  /** "open" | "full" — capacity against how many have saved it. */
-  space: string[];
-  age: string[];
-};
+/** Chosen bucket ids per dimension. Empty means "don't filter on this". */
+export type HostFilters = Partial<Record<DimensionKey, string[]>>;
 
-export const NO_HOST_FILTERS: HostFilters = {
-  orgs: [],
-  price: [],
-  registration: [],
-  eventType: [],
-  activity: [],
-  category: [],
-  space: [],
-  age: [],
-};
+export const NO_HOST_FILTERS: HostFilters = {};
 
 export function applyHostFilters(
   events: Event[],
-  f: HostFilters,
+  filters: HostFilters,
   query: string,
 ): Event[] {
   const q = query.trim().toLowerCase();
+  const active = DIMENSIONS.filter((d) => filters[d.key]?.length);
   return events.filter((ev) => {
-    if (f.orgs.length && !f.orgs.includes(ev.host_name)) return false;
-    if (f.price.length) {
-      const key = ev.is_free ? "free" : "paid";
-      if (!f.price.includes(key)) return false;
-    }
-    if (f.registration.length) {
-      const key = ev.requires_signup ? "required" : "dropin";
-      if (!f.registration.includes(key)) return false;
-    }
-    if (f.eventType.length) {
-      // Any-of: a youth in-person program matches either box, which is what
-      // ticking two boxes reads as.
-      const keys = [
-        ev.is_virtual ? "virtual" : "inperson",
-        ...(ev.is_youth ? ["youth"] : []),
-      ];
-      if (!f.eventType.some((k) => keys.includes(k))) return false;
-    }
-    // "Activity Type" is the topic list — Cooking, Sports, Arts.
-    if (f.activity.length && !f.activity.includes(ev.category ?? ""))
-      return false;
-    if (f.category.length && !f.category.includes(ev.category ?? ""))
-      return false;
-    if (f.space.length) {
-      // No capacity set means no limit, so it can never be full.
-      const full =
-        ev.capacity != null && (ev.saved_count ?? 0) >= ev.capacity;
-      if (!f.space.includes(full ? "full" : "open")) return false;
-    }
-    if (f.age.length) {
-      const key =
-        ev.min_age == null && ev.max_age == null
-          ? "any"
-          : ev.max_age != null && ev.max_age <= 17
-            ? "youth"
-            : "adults";
-      if (!f.age.includes(key)) return false;
+    for (const d of active) {
+      if (!filters[d.key]?.includes(d.bucket(ev).id)) return false;
     }
     if (q) {
       const hay = [ev.title, ev.description, ev.location, ev.host_name]
@@ -87,518 +48,163 @@ export function applyHostFilters(
   });
 }
 
-type Group = { key: keyof HostFilters; label: string; emoji: string };
+// The design's icon per group. Its "Price" is the feed's "Cost" dimension.
+const GROUP: Record<DimensionKey, { label: string; icon: ReactNode }> = {
+  org: { label: "Non-Profit Org.", icon: <Building2 /> },
+  price: { label: "Price", icon: <CircleDollarSign /> },
+  registration: { label: "Registration Type", icon: <Clipboard /> },
+  eventType: { label: "Event Type", icon: <Contact /> },
+  activityType: { label: "Activity Type", icon: <PartyPopper /> },
+};
 
-const GROUPS: Group[] = [
-  { key: "orgs", label: "Non-Profit Org.", emoji: "🏢" },
-  { key: "price", label: "Price", emoji: "💲" },
-  { key: "registration", label: "Registration Type", emoji: "📋" },
-  { key: "eventType", label: "Event Type", emoji: "🗂️" },
-  { key: "activity", label: "Activity Type", emoji: "🎉" },
-  { key: "space", label: "Spaces Left", emoji: "🪑" },
-  { key: "age", label: "Age", emoji: "🎂" },
-];
-
+/**
+ * The accordion beside the list. Groups are the feed's dimensions, so a
+ * console filter and a member's "See events by" can never disagree about
+ * which bucket a program is in. Options are whatever the loaded programs
+ * actually fall into — a group with nothing to choose says so.
+ */
 export const FilterPanel = memo(function FilterPanel({
-  orgs,
+  events,
   filters,
   onChange,
 }: {
-  orgs: string[];
+  events: Event[];
   filters: HostFilters;
   onChange: (next: HostFilters) => void;
 }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [open, setOpen] = useState<Partial<Record<DimensionKey, boolean>>>({});
 
-  const optionsFor = (key: keyof HostFilters): { value: string; label: string }[] => {
-    switch (key) {
-      case "orgs":
-        return orgs.map((o) => ({ value: o, label: o }));
-      case "price":
-        return [
-          { value: "free", label: "Free" },
-          { value: "paid", label: "Paid" },
-        ];
-      case "registration":
-        return [
-          { value: "dropin", label: "Drop-In" },
-          { value: "required", label: "Registration Required" },
-        ];
-      case "eventType":
-        return [
-          { value: "virtual", label: "Virtual" },
-          { value: "inperson", label: "In-person" },
-          { value: "youth", label: "Youth" },
-        ];
-      case "activity":
-        return CATEGORIES.map((c) => ({ value: c.label, label: c.label }));
-      case "space":
-        return [
-          { value: "open", label: "Spaces left" },
-          { value: "full", label: "Full" },
-        ];
-      case "age":
-        return [
-          { value: "any", label: "All ages" },
-          { value: "youth", label: "Under 18" },
-          { value: "adults", label: "Adults" },
-        ];
-      default:
-        return CATEGORIES.map((c) => ({ value: c.label, label: c.label }));
+  const options = useMemo(() => {
+    const byKey = new Map<DimensionKey, { id: string; label: string }[]>();
+    for (const d of DIMENSIONS) {
+      byKey.set(
+        d.key,
+        bucketsFor(events, d).sort((a, b) => a.label.localeCompare(b.label)),
+      );
     }
-  };
+    return byKey;
+  }, [events]);
 
-  function toggle(key: keyof HostFilters, value: string) {
-    const cur = filters[key];
+  function toggle(key: DimensionKey, id: string) {
+    const cur = filters[key] ?? [];
     onChange({
       ...filters,
-      [key]: cur.includes(value)
-        ? cur.filter((v) => v !== value)
-        : [...cur, value],
+      [key]: cur.includes(id) ? cur.filter((v) => v !== id) : [...cur, id],
     });
   }
 
+  const anyChosen = DIMENSIONS.some((d) => filters[d.key]?.length);
+
   return (
-    <aside className="w-full max-w-[430px] shrink-0">
-      <p className="text-sm font-medium uppercase tracking-wide text-muted">
-        See events by
-      </p>
-      <div className="mt-2 rounded-2xl border border-[#C9C7D2] bg-white p-4">
-        {GROUPS.map((g) => {
-          const isOpen = open[g.key] ?? false;
-          const options = optionsFor(g.key);
-          const chosen = filters[g.key];
-          return (
-            <div key={g.key} className="py-1.5">
-              <button
-                onClick={() => setOpen((o) => ({ ...o, [g.key]: !isOpen }))}
-                aria-expanded={isOpen}
-                className="flex w-full items-center gap-4 py-1.5 text-left"
-              >
-                <span aria-hidden className="w-5 text-center">
-                  {g.emoji}
+    <aside
+      aria-label="Filter events"
+      className="w-full rounded-control border border-line bg-surface px-2.5 py-3.5 lg:w-[431px] lg:shrink-0"
+    >
+      {DIMENSIONS.map((d) => {
+        const isOpen = open[d.key] ?? false;
+        const chosen = filters[d.key] ?? [];
+        const group = GROUP[d.key];
+        const choices = options.get(d.key) ?? [];
+        return (
+          <div key={d.key} className="border-b border-line-active">
+            <button
+              type="button"
+              onClick={() => setOpen((o) => ({ ...o, [d.key]: !isOpen }))}
+              aria-expanded={isOpen}
+              className="flex min-h-11 w-full items-center gap-6 px-3 py-2 text-left text-2xl text-fg"
+            >
+              <span aria-hidden="true" className="w-6 shrink-0 text-fg-icon [&>svg]:size-6">
+                {group.icon}
+              </span>
+              <span className="flex-1">{group.label}</span>
+              {chosen.length > 0 && (
+                <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-base font-medium text-fg">
+                  {chosen.length}
+                  <span className="sr-only"> selected</span>
                 </span>
-                <span className="flex-1 text-xl text-ink">{g.label}</span>
-                {chosen.length > 0 && (
-                  <span
-                    className="grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-sm font-bold text-ink"
-                    style={{ background: CYAN }}
-                  >
-                    {chosen.length}
-                  </span>
-                )}
-                <span
-                  aria-hidden
-                  className={`text-muted transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
-                >
-                  ⌄
-                </span>
-              </button>
-
-              {isOpen && (
-                <div className="ml-9 mt-1 flex flex-col gap-2 pb-2">
-                  {options.length === 0 && (
-                    <p className="text-base text-muted">Nothing to filter by yet.</p>
-                  )}
-                  {options.map((o) => (
-                    <label
-                      key={o.value}
-                      className="flex items-center gap-3 text-lg text-ink"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={chosen.includes(o.value)}
-                        onChange={() => toggle(g.key, o.value)}
-                        className="h-5 w-5 rounded"
-                      />
-                      {o.label}
-                    </label>
-                  ))}
-                </div>
               )}
-            </div>
-          );
-        })}
+              <ChevronDown
+                aria-hidden="true"
+                className={`size-6 shrink-0 text-fg-icon transition-transform ${
+                  isOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {isOpen && (
+              <div className="flex flex-col gap-2 px-3 pb-3 pl-[60px]">
+                {choices.length === 0 && (
+                  <p className="text-lg text-fg-muted">Nothing to filter by yet.</p>
+                )}
+                {choices.map((o) => (
+                  <label
+                    key={o.id}
+                    className="flex min-h-11 items-center gap-3 text-xl text-fg"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={chosen.includes(o.id)}
+                      onChange={() => toggle(d.key, o.id)}
+                      className="size-5 shrink-0 accent-primary-border"
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
-        <button
-          onClick={() => onChange(NO_HOST_FILTERS)}
-          className="mt-1 flex w-full items-center gap-4 py-2 text-left"
-        >
-          <span aria-hidden className="w-5 text-center text-muted">
-            ○
-          </span>
-          <span className="text-xl text-ink">All Events</span>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => onChange(NO_HOST_FILTERS)}
+        aria-pressed={!anyChosen}
+        className="flex min-h-11 w-full items-center gap-6 px-3 py-2 text-left text-2xl text-fg"
+      >
+        <span aria-hidden="true" className="grid w-6 shrink-0 place-items-center text-fg-icon">
+          <Circle className={`size-3 ${anyChosen ? "" : "fill-current"}`} />
+        </span>
+        All Events
+      </button>
     </aside>
   );
 });
 
 /* ---------------- event card ---------------- */
 
+/**
+ * One program in the list: the shared summary in a bordered card, with "N
+ * going", a copy-link button (every row needs one — that is how organizers
+ * advertise) and the way to the details page.
+ */
 export const PostedEventCard = memo(function PostedEventCard({
   event,
-  dateCount,
-  canEdit,
-  canDelete,
-  onEdit,
-  onShare,
-  onDelete,
 }: {
   event: Event;
-  /** Live dates this row stands for — the card is the program, not one date. */
-  dateCount?: number;
-  /** Own programs for an admin; anything for a superadmin. */
-  canEdit: boolean;
-  /** Removal reaches beyond one agency once anyone has saved it. */
-  canDelete: boolean;
-  onEdit: (event: Event) => void;
-  onShare: (event: Event) => void;
-  onDelete: (event: Event) => void;
 }) {
   return (
     <article
       id={`event-${event.id}`}
-      className="rounded-2xl border border-[#C9C7D2] bg-white p-5"
+      aria-label={event.title}
+      className="rounded-control border border-line bg-surface p-6"
     >
-      <div className="flex gap-5">
-        <button
-          onClick={() => canEdit && onEdit(event)}
-          aria-label={canEdit ? `Edit ${event.title}` : event.title}
-          aria-disabled={!canEdit || undefined}
-          className={`h-[150px] w-[150px] shrink-0 overflow-hidden rounded-xl bg-[#BDBDBD] ${
-            canEdit ? "" : "cursor-default"
-          }`}
-        >
-          {event.cover_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={event.cover_image_url}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          )}
-        </button>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-muted">
-              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
-              Posted by {event.host_name}
-              {event.event_no ? (
-                <span className="normal-case tracking-normal">
-                  · #{event.event_no}
-                </span>
-              ) : null}
-            </p>
-            <div className="flex gap-2">
-              <Pill tone="green">{event.is_free ? "Free" : "Paid"}</Pill>
-              <Pill tone="pink">
-                {event.requires_signup ? "Registration" : "Drop-in"}
-              </Pill>
-              {event.is_virtual && <Pill tone="blue">Virtual</Pill>}
-              {event.is_youth && <Pill tone="amber">Youth</Pill>}
-              {event.recurrence && (
-                // How it repeats, and how many live dates the row stands for.
-                // The row is the whole program now, so "3/16" — the position of
-                // whichever date happened to be on the card — was answering a
-                // question nobody asked and hiding the one they had.
-                <Pill tone="blue">
-                  {event.recurrence}
-                  {dateCount && dateCount > 1 ? ` · ${dateCount} dates` : ""}
-                </Pill>
-              )}
-              {event.capacity != null &&
-                ((event.saved_count ?? 0) >= event.capacity ? (
-                  <Pill tone="pink">Full</Pill>
-                ) : (
-                  <Pill tone="blue">
-                    {event.capacity - (event.saved_count ?? 0)} left
-                  </Pill>
-                ))}
-            </div>
-          </div>
-
-          {canEdit ? (
-            <button
-              onClick={() => onEdit(event)}
-              className="mt-1 block text-left font-display text-2xl font-bold text-ink hover:underline"
+      <EventSummary
+        event={event}
+        going={<GoingCount count={event.saved_count} />}
+        actions={
+          <>
+            <CopyLinkButton eventId={event.id} title={event.title} iconOnly />
+            <Link
+              href={`/host/events/${event.id}`}
+              className={buttonClass("secondary")}
             >
-              {event.title}
-            </button>
-          ) : (
-            <h3 className="mt-1 font-display text-2xl font-bold text-ink">
-              {event.title}
-            </h3>
-          )}
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-base text-ink">
-            {event.starts_at && (
-              <>
-                <span className="inline-flex items-center gap-1.5">
-                  <ClockIcon />
-                  {new Date(event.starts_at).toLocaleTimeString(undefined, {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarIcon />
-                  {new Date(event.starts_at).toLocaleDateString(undefined, {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </>
-            )}
-            {event.location && (
-              <span className="inline-flex items-center gap-1.5">
-                <PinIcon />
-                {event.location}
-              </span>
-            )}
-          </div>
-
-          {event.description && (
-            <p className="mt-2 line-clamp-3 text-base leading-relaxed text-ink">
-              {event.description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-4 no-print">
-        <IconButton
-          label={`Print ${event.title}`}
-          onClick={() => {
-            // Mark just this card, print, then put the page back.
-            const el = document.getElementById(`event-${event.id}`);
-            el?.classList.add("print-target");
-            window.print();
-            el?.classList.remove("print-target");
-          }}
-        >
-          <PrinterIcon />
-        </IconButton>
-        <IconButton label={`Share ${event.title}`} onClick={() => onShare(event)}>
-          <SendIcon />
-        </IconButton>
-        {canEdit && (
-          <IconButton label={`Edit ${event.title}`} onClick={() => onEdit(event)}>
-            <PencilIcon />
-          </IconButton>
-        )}
-        {canDelete && (
-          <button
-            onClick={() => onDelete(event)}
-            aria-label={`Delete ${event.title}`}
-            className="grid h-9 w-9 place-items-center rounded-full bg-[#F8C9D4] text-[#C2185B] transition-transform hover:scale-110"
-          >
-            <TrashIcon />
-          </button>
-        )}
-      </div>
+              View Details
+              <span className="sr-only"> for {event.title}</span>
+              <ArrowRight aria-hidden="true" className="size-6" />
+            </Link>
+          </>
+        }
+      />
     </article>
   );
 });
-
-function Pill({
-  tone,
-  children,
-}: {
-  tone: "green" | "pink" | "blue" | "amber";
-  children: React.ReactNode;
-}) {
-  const tones = {
-    green: "bg-[#A8E6A3] text-[#14532D]",
-    pink: "bg-[#F9A8D4] text-[#831843]",
-    blue: "bg-[#A5D8F5] text-[#0B3A4A]",
-    amber: "bg-[#FBD38D] text-[#7B341E]",
-  } as const;
-  return (
-    <span
-      className={`rounded-md px-3 py-1 text-sm font-semibold uppercase tracking-wide ${tones[tone]}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-function IconButton({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    // The glyph is 22px; the button is 36. The console is deliberately dense,
-    // but these sat at the icon's own size — under any minimum-target guidance
-    // — and Edit is two icons away from Delete on the same row. Density is a
-    // reason to keep them small, not a reason to make deleting a program a
-    // plausible outcome of aiming at editing one.
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-full text-ink transition-transform hover:scale-110 hover:bg-black/5"
-    >
-      {children}
-    </button>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-function CalendarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-function PinIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
-      <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-function PrinterIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M6 9V3h12v6M6 18H4v-6h16v6h-2" />
-      <rect x="6" y="14" width="12" height="7" rx="1" />
-    </svg>
-  );
-}
-function SendIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 3L3 10.5l7 2.5 2.5 7L21 3z" />
-    </svg>
-  );
-}
-function PencilIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13" />
-    </svg>
-  );
-}
-
-/* ---------------- toast ---------------- */
-
-/**
- * Confirms what happened, with a way back.
- *
- * Undo matters more than the confirmation does: publishing to a shared calendar
- * and removing something other agencies' members have saved are both actions
- * where "wait, no" arrives a second late.
- */
-export const UndoToast = memo(function UndoToast({
-  message,
-  tone,
-  onUndo,
-  onDismiss,
-}: {
-  message: string;
-  tone: "posted" | "deleted";
-  /** Omitted for things that can't be undone — the button is then not drawn.
-      It used to be required, so the copy-link confirmation passed an empty
-      function and staff got an Undo that did nothing. */
-  onUndo?: () => void;
-  onDismiss: () => void;
-}) {
-  return (
-    <div
-      role="status"
-      className="fixed left-1/2 top-6 z-50 w-[min(92vw,540px)] -translate-x-1/2 rounded-2xl border-2 bg-white p-6 shadow-lift"
-      style={{ borderColor: tone === "posted" ? "#5BD75B" : "#E05070" }}
-    >
-      <p className="text-xl text-ink">{message}</p>
-      <div className="mt-3 flex gap-3">
-        {onUndo && (
-          <button
-            onClick={onUndo}
-            className="rounded-lg bg-[#D9D9D9] px-4 py-2 font-medium text-ink transition-colors hover:bg-[#CDCDCD]"
-          >
-            Undo
-          </button>
-        )}
-        <button
-          onClick={onDismiss}
-          className="rounded-lg px-4 py-2 font-medium text-muted hover:text-ink"
-        >
-          Dismiss
-        </button>
-      </div>
-    </div>
-  );
-});
-
-/* ---------------- confirm ---------------- */
-
-export const ConfirmDelete = memo(function ConfirmDelete({
-  onCancel,
-  onConfirm,
-}: {
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/10 px-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-delete-title"
-    >
-      <div className="w-full max-w-[600px] rounded-2xl bg-white p-8 shadow-lift">
-        <h2
-          id="confirm-delete-title"
-          className="font-display text-2xl font-bold text-ink"
-        >
-          Are you sure you want to delete this event?
-        </h2>
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-lg bg-[#D9D9D9] px-5 py-2.5 font-display text-lg font-semibold text-ink hover:bg-[#CDCDCD]"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-lg px-5 py-2.5 font-display text-lg font-semibold text-ink transition-transform hover:scale-[1.02]"
-            style={{ background: CYAN }}
-          >
-            Yes, delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-export { applyHostFilters as filterPosted };
-export const useHostFilters = () => useState<HostFilters>(NO_HOST_FILTERS);

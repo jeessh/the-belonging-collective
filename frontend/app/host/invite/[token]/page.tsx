@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { ApiError, api, apiMessage } from "@/lib/api";
-import { CYAN } from "@/components/host/PostedEvents";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Accepting an invitation to join as an organization.
@@ -12,12 +12,8 @@ import { CYAN } from "@/components/host/PostedEvents";
  * point of inviting rather than creating an account and reading a password out:
  * nobody else ever knows it.
  */
-export default function AcceptInvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
+export default function AcceptInvitePage() {
+  const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [invite, setInvite] = useState<
     { organization: string; email: string } | null | undefined
@@ -130,14 +126,15 @@ export default function AcceptInvitePage({
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
+                className="mt-2"
                 disabled={busy || password.length < 8 || !confirm}
-                className="mt-2 rounded-lg px-6 py-3 font-display text-lg font-semibold text-ink transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
-                style={{ background: CYAN }}
-              >
-                {busy ? "Setting up…" : "Create my account"}
-              </button>
+                >
+                  {busy ? "Setting up…" : "Create my account"}
+                </Button>
             </form>
           </>
         )}

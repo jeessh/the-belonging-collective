@@ -1,10 +1,10 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, apiMessage } from "@/lib/api";
-import { CYAN } from "@/components/host/PostedEvents";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Choosing a new password from a reset link.
@@ -14,12 +14,8 @@ import { CYAN } from "@/components/host/PostedEvents";
  * following a link in an email is right to be wary, and a page that names the
  * account is what separates this from a page that just asks for a password.
  */
-export default function ResetPasswordPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
+export default function ResetPasswordPage() {
+  const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [target, setTarget] = useState<
     { organization: string; email: string } | null | undefined
@@ -134,14 +130,15 @@ export default function ResetPasswordPage({
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
+                className="mt-2"
                 disabled={busy || password.length < 8 || !confirm}
-                className="mt-2 rounded-lg px-6 py-3 font-display text-lg font-semibold text-ink transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
-                style={{ background: CYAN }}
-              >
-                {busy ? "Saving…" : "Save new password"}
-              </button>
+                >
+                  {busy ? "Saving…" : "Save new password"}
+                </Button>
             </form>
           </>
         )}

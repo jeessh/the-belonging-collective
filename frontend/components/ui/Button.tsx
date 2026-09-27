@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -10,6 +10,9 @@ const VARIANT: Record<ButtonVariant, string> = {
     "border border-line bg-surface hover:bg-surface-subtle disabled:bg-surface-subtle disabled:text-fg-muted",
   ghost:
     "border border-transparent bg-transparent hover:bg-surface-subtle disabled:text-fg-muted",
+  // The design's "Un-publish" / "Yes, delete": pink fill, red edge.
+  danger:
+    "border border-danger-border bg-danger hover:bg-[#FFBFC6] disabled:border-line disabled:bg-surface-subtle disabled:text-fg-muted",
 };
 
 // Both clear 44px; `lg` is the design's 20px-text control for member CTAs,

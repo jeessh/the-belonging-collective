@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { KeyRound, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import {
   ApiError,
-  api,
   apiMessage,
   createMember,
   deleteMember,
@@ -14,101 +13,31 @@ import {
   updateMember,
   type MemberAccount,
 } from "@/lib/api";
-import { AdminShell } from "@/components/AdminShell";
-import { ConsoleHeader } from "@/components/host/ConsoleHeader";
-import { Button, EmptyRow, Field, TableCard, inputClass } from "@/components/AdminTable";
-import { Modal } from "@/components/Modal";
 import { emojiFor } from "@/lib/icons";
-import { CYAN } from "@/components/host/PostedEvents";
+import { AdminShell } from "@/components/AdminShell";
+import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/TextField";
+import { useToast } from "@/components/ui/Toast";
+import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import { Modal } from "@/components/Modal";
+import { AccountsNav } from "@/components/host/AccountsNav";
 
 /**
- * Everyone with an account, in two tabs.
- *
- * Organizers and community members are different enough that one table would
- * have to hedge on every column — one has an email and an access level, the
- * other has an icon key and no way to be contacted at all.
+ * Community member accounts. This page is the whole of member account
+ * recovery: there is no "forgot password" for members, so the only way back
+ * in is a superadmin re-issuing the key here and reading it out.
  */
 export default function UsersPage() {
-  return (
-    <AdminShell title="Users" requireSuperadmin bare>
-      {() => <UsersTabs />}
-    </AdminShell>
-  );
+  return <AdminShell requireSuperadmin>{() => <Members />}</AdminShell>;
 }
 
-function UsersTabs() {
-  const [tab, setTab] = useState<"members" | "admins">("members");
-  const [organization, setOrganization] = useState("");
-
-  useEffect(() => {
-    api<{ name: string }>("/hosts/me")
-      .then((h) => setOrganization(h.name))
-      .catch(() => {});
-  }, []);
-
-  return (
-    <div className="min-h-dvh bg-white">
-    <div className="mx-auto w-full max-w-[1500px] px-8 py-6">
-      <ConsoleHeader isSuper organization={organization} />
-
-      <h1 className="mb-6 mt-12 font-display text-5xl font-extrabold text-ink">
-        Users
-      </h1>
-      <div
-        role="tablist"
-        aria-label="Account type"
-        className="inline-flex items-center gap-1 rounded-full bg-[#E7E5EC] p-1"
-      >
-        {(
-          [
-            ["members", "Community Members"],
-            ["admins", "Organizers"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            role="tab"
-            aria-selected={tab === value}
-            onClick={() => setTab(value)}
-            className={`rounded-full px-5 py-2 text-base font-medium text-ink transition-colors ${
-              tab === value ? "bg-white shadow-sm" : "hover:bg-white/60"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-5">
-        {tab === "members" ? (
-          <MembersTab />
-        ) : (
-          <p className="text-slate-600">
-            Organizer accounts live on their own page, where removing one also
-            has to say what happens to its programs.{" "}
-            <Link
-              href="/host/admins"
-              className="font-semibold text-accent underline underline-offset-2"
-            >
-              Open organizers
-            </Link>
-          </p>
-        )}
-      </div>
-    </div>
-    </div>
-  );
-}
-
-function MembersTab() {
+function Members() {
   const router = useRouter();
+  const { show } = useToast();
   const [members, setMembers] = useState<MemberAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
-  const [notice, setNotice] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<MemberAccount | null>(null);
   const [removing, setRemoving] = useState<MemberAccount | null>(null);
@@ -118,7 +47,6 @@ function MembersTab() {
   );
 
   async function load() {
-    setLoading(true);
     try {
       setMembers(await listMembers());
       setLoadError(false);
@@ -142,7 +70,7 @@ function MembersTab() {
     const q = search.trim().toLowerCase();
     if (!q) return members;
     return members.filter((m) =>
-      `${m.first_name} ${m.last_name}`.toLowerCase().includes(q),
+      `${m.first_name} ${m.last_name} ${m.email ?? ""}`.toLowerCase().includes(q),
     );
   }, [members, search]);
 
@@ -150,13 +78,12 @@ function MembersTab() {
     const m = removing;
     if (!m) return;
     setRemoving(null);
-    setError(null);
     try {
       await deleteMember(m.id);
-      setNotice(`Removed ${m.first_name} ${m.last_name}.`);
+      show({ title: `Removed ${m.first_name} ${m.last_name}.`, tone: "alert" });
       await load();
     } catch (e) {
-      setError(apiMessage(e, "Couldn't remove that account."));
+      show({ title: apiMessage(e, "Couldn't remove that account."), tone: "alert" });
     }
   }
 
@@ -164,7 +91,6 @@ function MembersTab() {
     const m = resetting;
     if (!m) return;
     setResetting(null);
-    setError(null);
     try {
       const updated = await resetMemberKey(m.id);
       // Straight into the same "write this down" modal the add flow ends on —
@@ -175,123 +101,158 @@ function MembersTab() {
       });
       await load();
     } catch (e) {
-      setError(apiMessage(e, "Couldn't reset that key."));
+      show({ title: apiMessage(e, "Couldn't reset that key."), tone: "alert" });
     }
   }
 
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex min-w-[220px] flex-1 flex-col gap-1.5">
-          <label
-            htmlFor="m-search"
-            className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-          >
-            Search
-          </label>
+    <div className="flex flex-col gap-8">
+      <AccountsNav />
+
+      <div className="flex flex-col gap-3">
+        <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+          Community Members
+        </h1>
+        <p className="text-xl text-fg">
+          Everyone with a member account and how they sign in. Reset key issues
+          a new icon key when someone can&apos;t remember theirs.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <label className="relative block w-full max-w-[428px]">
+          <span className="sr-only">Search members</span>
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-6 top-1/2 size-6 -translate-y-1/2 text-fg-icon"
+          />
           <input
-            id="m-search"
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name…"
-            className={inputClass}
+            placeholder="Search by name or email"
+            className="min-h-14 w-full rounded-control border border-line bg-surface-subtle py-3 pl-16 pr-6 text-xl text-fg placeholder:text-fg-muted"
           />
-        </div>
+        </label>
         <Button
-          tone="primary"
-          onClick={() => {
-            setNotice("");
-            setAdding(true);
-          }}
+          variant="primary"
+          trailingIcon={<Plus />}
+          onClick={() => setAdding(true)}
         >
           Add member
         </Button>
       </div>
 
-      <p role="status" aria-live="polite" className="mt-3 text-sm text-slate-600">
+      <p role="status" aria-live="polite" className="sr-only">
         {loading
-          ? "Loading members…"
-          : notice ||
-            `${shown.length} of ${members.length} ${
-              members.length === 1 ? "member" : "members"
-            }`}
+          ? "Loading members"
+          : `${shown.length} of ${members.length} members shown`}
       </p>
 
-      {error && (
-        <p role="alert" className="mt-2 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-
       {loadError ? (
-        <p role="alert" className="mt-6 font-medium text-red-600">
+        <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load members. Please refresh and try again.
         </p>
       ) : (
-        <div className="mt-3">
-          <TableCard
-            caption="Community member accounts and their sign-in keys."
-            head={["Name", "Sign-in key", "Joined", "Actions"]}
-          >
-            {loading ? (
-              <EmptyRow colSpan={4} text="Loading…" />
-            ) : shown.length === 0 ? (
-              <EmptyRow
-                colSpan={4}
-                text={
-                  members.length === 0
-                    ? "No members yet."
-                    : "No members match that."
-                }
-              />
-            ) : (
-              shown.map((m) => (
-                <tr key={m.id} className="align-top hover:bg-slate-50">
-                  <th
-                    scope="row"
-                    className="px-4 py-3 text-left font-semibold text-slate-900"
-                  >
-                    {m.first_name} {m.last_name}
-                  </th>
-                  <td className="px-4 py-3 text-2xl">
-                    <span aria-hidden>
-                      {m.icons.map((i) => emojiFor(i)).join(" ")}
+        <TableCard
+          caption="Community member accounts and how they sign in."
+          head={["Name", "Sign-in", "Joined", ""]}
+        >
+          {loading ? (
+            <EmptyRow colSpan={4} text="Loading…" />
+          ) : shown.length === 0 ? (
+            <EmptyRow
+              colSpan={4}
+              text={members.length === 0 ? "No members yet." : "No members match that."}
+            />
+          ) : (
+            shown.map((m) => (
+              <tr key={m.id} className="align-middle">
+                <th scope="row" className="px-3 py-3 font-normal">
+                  {m.first_name} {m.last_name}
+                </th>
+                <td className="px-3 py-3">
+                  {m.auth_type === "password" ? (
+                    <span className="inline-flex flex-wrap items-center gap-3">
+                      <Pill>Password</Pill>
+                      <span className="break-all">{m.email}</span>
                     </span>
-                    <span className="sr-only">{m.icons.join(", ")}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                    {m.created_at
-                      ? new Date(m.created_at).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={() => setEditing(m)}>
-                        Edit<span className="sr-only"> {m.first_name}</span>
-                      </Button>
-                      <Button onClick={() => setResetting(m)}>
-                        Reset key
-                        <span className="sr-only"> for {m.first_name}</span>
-                      </Button>
-                      <Button tone="danger" onClick={() => setRemoving(m)}>
-                        Remove<span className="sr-only"> {m.first_name}</span>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </TableCard>
-        </div>
+                  ) : (
+                    <>
+                      <span aria-hidden="true" className="text-3xl">
+                        {m.icons.map((i) => emojiFor(i)).join(" ")}
+                      </span>
+                      <span className="sr-only">
+                        Icons: {m.icons.join(", ")}
+                      </span>
+                    </>
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 text-fg-muted">
+                  {m.created_at ? new Date(m.created_at).toLocaleDateString() : "—"}
+                </td>
+                <td className="px-3 py-3">
+                  <span className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      aria-label={`Edit ${m.first_name}`}
+                      title="Edit name"
+                      onClick={() => setEditing(m)}
+                      leadingIcon={<Pencil />}
+                    />
+                    <Button
+                      variant="ghost"
+                      onClick={() => setResetting(m)}
+                      leadingIcon={<KeyRound />}
+                    >
+                      Reset key
+                      <span className="sr-only"> for {m.first_name}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      aria-label={`Remove ${m.first_name}`}
+                      title="Remove"
+                      style={{ color: "#CC0000" }}
+                      onClick={() => setRemoving(m)}
+                      leadingIcon={<Trash2 />}
+                    />
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
+        </TableCard>
       )}
 
       {adding && (
-        <AddMemberModal
+        <NameModal
+          title="Add a member"
+          lead="For setting someone up in person. Their icon key is generated and shown once."
+          submitLabel="Create"
           onClose={() => setAdding(false)}
-          onCreated={(name, icons) => {
+          onSubmit={async (first, last) => {
+            const created = await createMember({ first_name: first, last_name: last });
             setAdding(false);
-            setNewKey({ name, icons });
+            setNewKey({
+              name: `${created.first_name} ${created.last_name}`,
+              icons: created.icons,
+            });
+            void load();
+          }}
+        />
+      )}
+
+      {editing && (
+        <NameModal
+          title="Edit member"
+          lead="To change the sign-in icons, use Reset key instead — a set typed in here could collide with another account under the same name."
+          submitLabel="Save"
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSubmit={async (first, last) => {
+            await updateMember(editing.id, { first_name: first, last_name: last });
+            setEditing(null);
+            show({ title: `Updated ${first} ${last}.` });
             void load();
           }}
         />
@@ -299,41 +260,25 @@ function MembersTab() {
 
       {newKey && (
         <Modal title="Write this down" onClose={() => setNewKey(null)}>
-          <p className="mt-2 text-lg text-ink">
+          <p className="mt-2 text-lg text-fg">
             {newKey.name} signs in with their name and{" "}
             {newKey.icons.length === 1 ? "this icon" : "these icons"}
             {newKey.icons.length > 1 ? ", in this order" : ""}.
           </p>
-          <p className="mt-4 text-center text-5xl" aria-hidden>
+          <p className="mt-4 text-center text-5xl" aria-hidden="true">
             {newKey.icons.map((i) => emojiFor(i)).join(" ")}
           </p>
           <p className="sr-only">{newKey.icons.join(", ")}</p>
-          <p className="mt-4 text-base text-muted">
+          <p className="mt-4 text-base text-fg-muted">
             Written down is best, but nothing is lost if it isn&apos;t — the key
             is listed in the table, and Reset key issues a new one.
           </p>
-          <div className="mt-5 flex justify-end">
-            <button
-              onClick={() => setNewKey(null)}
-              className="rounded-lg px-5 py-2.5 font-display text-lg font-semibold text-ink"
-              style={{ background: CYAN }}
-            >
+          <div className="mt-6 flex justify-end">
+            <Button variant="primary" onClick={() => setNewKey(null)}>
               Done
-            </button>
+            </Button>
           </div>
         </Modal>
-      )}
-
-      {editing && (
-        <EditMemberModal
-          member={editing}
-          onClose={() => setEditing(null)}
-          onSaved={(name) => {
-            setEditing(null);
-            setNotice(`Updated ${name}.`);
-            void load();
-          }}
-        />
       )}
 
       {resetting && (
@@ -341,16 +286,20 @@ function MembersTab() {
           title={`Reset ${resetting.first_name}'s key?`}
           onClose={() => setResetting(null)}
         >
-          <p className="mt-2 text-lg text-ink">
-            They get new icons to sign in with. The ones they have now stop
-            working, so only do this if they can be told.
+          <p className="mt-2 text-lg text-fg">
+            They get new icons to sign in with. What they have now stops
+            working
+            {resetting.auth_type === "password"
+              ? ", including their password — the account becomes an icon account"
+              : ""}
+            , so only do this if they can be told.
           </p>
-          <p className="mt-3 text-base text-muted">
+          <p className="mt-3 text-base text-fg-muted">
             Nothing else changes — their saved programs and topics stay.
           </p>
-          <div className="mt-5 flex justify-end gap-3">
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
             <Button onClick={() => setResetting(null)}>Cancel</Button>
-            <Button tone="primary" onClick={() => void resetKey()}>
+            <Button variant="primary" onClick={() => void resetKey()}>
               Reset key
             </Button>
           </div>
@@ -358,32 +307,44 @@ function MembersTab() {
       )}
 
       {removing && (
-        <Modal title={`Remove ${removing.first_name}?`} onClose={() => setRemoving(null)}>
-          <p className="mt-2 text-lg text-ink">
+        <Modal
+          title={`Remove ${removing.first_name}?`}
+          onClose={() => setRemoving(null)}
+        >
+          <p className="mt-2 text-lg text-fg">
             They won&apos;t be able to sign in. Their saved programs stay
             counted for the organizations that ran them.
           </p>
-          <div className="mt-5 flex justify-end gap-3">
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
             <Button onClick={() => setRemoving(null)}>Cancel</Button>
-            <Button tone="danger" onClick={() => void remove()}>
-              Remove
+            <Button variant="danger" onClick={() => void remove()}>
+              Yes, remove
             </Button>
           </div>
         </Modal>
       )}
-    </>
+    </div>
   );
 }
 
-function AddMemberModal({
+/** First + last name, for adding a member and for renaming one. */
+function NameModal({
+  title,
+  lead,
+  submitLabel,
+  initial,
   onClose,
-  onCreated,
+  onSubmit,
 }: {
+  title: string;
+  lead: string;
+  submitLabel: string;
+  initial?: { first_name: string; last_name: string };
   onClose: () => void;
-  onCreated: (name: string, icons: string[]) => void;
+  onSubmit: (first: string, last: string) => Promise<void>;
 }) {
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
+  const [first, setFirst] = useState(initial?.first_name ?? "");
+  const [last, setLast] = useState(initial?.last_name ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -391,132 +352,50 @@ function AddMemberModal({
     setBusy(true);
     setError(null);
     try {
-      const created = await createMember({
-        first_name: first.trim(),
-        last_name: last.trim(),
-      });
-      onCreated(`${created.first_name} ${created.last_name}`, created.icons);
+      await onSubmit(first.trim(), last.trim());
     } catch (e) {
-      setError(apiMessage(e, "Couldn't create that account."));
+      setError(apiMessage(e, "Couldn't save that. Please try again."));
       setBusy(false);
     }
   }
 
   return (
-    <Modal title="Add a member" onClose={onClose}>
-      <p className="mt-1 text-base text-muted">
-        For setting someone up in person. The three-icon key is generated and
-        shown once.
-      </p>
-      <div className="mt-4 flex flex-col gap-4">
-        <Field label="First name" htmlFor="nm-first">
-          <input
-            id="nm-first"
-            autoFocus
-            value={first}
-            onChange={(e) => setFirst(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Last name" htmlFor="nm-last">
-          <input
-            id="nm-last"
-            value={last}
-            onChange={(e) => setLast(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-      </div>
-      {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-      <div className="mt-5 flex justify-end gap-3">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          tone="primary"
-          disabled={busy || !first.trim() || !last.trim()}
-          onClick={() => void submit()}
-        >
-          {busy ? "Creating…" : "Create"}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
-function EditMemberModal({
-  member,
-  onClose,
-  onSaved,
-}: {
-  member: MemberAccount;
-  onClose: () => void;
-  onSaved: (name: string) => void;
-}) {
-  const [first, setFirst] = useState(member.first_name);
-  const [last, setLast] = useState(member.last_name);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      await updateMember(member.id, {
-        first_name: first.trim(),
-        last_name: last.trim(),
-      });
-      onSaved(`${first.trim()} ${last.trim()}`);
-    } catch (e) {
-      setError(apiMessage(e, "Couldn't save that."));
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title="Edit member" onClose={onClose}>
-      <div className="mt-4 flex flex-col gap-4">
-        <Field label="First name" htmlFor="em-first">
-          <input
-            id="em-first"
-            autoFocus
-            value={first}
-            onChange={(e) => setFirst(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Last name" htmlFor="em-last">
-          <input
-            id="em-last"
-            value={last}
-            onChange={(e) => setLast(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-      </div>
-      {/* Not editable by hand: the icons are the password, and a set typed in
-          here could collide with another account under the same name. Reset
-          key allocates a free one instead. */}
-      <p className="mt-3 text-sm text-slate-600">
-        To change the sign-in icons, use Reset key on the members table.
-      </p>
-      {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-      <div className="mt-5 flex justify-end gap-3">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          tone="primary"
-          disabled={busy || !first.trim() || !last.trim()}
-          onClick={() => void submit()}
-        >
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </div>
+    <Modal title={title} onClose={onClose}>
+      <p className="mt-2 text-lg text-fg-muted">{lead}</p>
+      <form
+        className="mt-4 flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && first.trim() && last.trim()) void submit();
+        }}
+      >
+        <TextField
+          label="First name"
+          autoFocus
+          value={first}
+          onChange={(e) => setFirst(e.target.value)}
+        />
+        <TextField
+          label="Last name"
+          value={last}
+          onChange={(e) => setLast(e.target.value)}
+        />
+        {error && (
+          <p role="alert" className="text-base text-danger-fg">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={busy || !first.trim() || !last.trim()}
+          >
+            {busy ? "Saving…" : submitLabel}
+          </Button>
+        </div>
+      </form>
     </Modal>
   );
 }

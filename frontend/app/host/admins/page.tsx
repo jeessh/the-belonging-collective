@@ -2,66 +2,59 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Copy, ImageIcon, SendHorizontal, Trash2 } from "lucide-react";
 import {
   ApiError,
-  api,
   apiMessage,
   createAdmin,
   createInvite,
-  listInvites,
-  revokeInvite,
-  type HostInvite,
   deleteAdmin,
   listAdmins,
+  listInvites,
+  revokeInvite,
   updateAdmin,
   type AdminAccount,
-  type Session,
+  type HostInvite,
 } from "@/lib/api";
-import { AdminShell } from "@/components/AdminShell";
-import { ConsoleHeader } from "@/components/host/ConsoleHeader";
-import { CYAN } from "@/components/host/PostedEvents";
+import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/TextField";
+import { useToast } from "@/components/ui/Toast";
+import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
 import { ImageDrop } from "@/components/ImageDrop";
-import {
-  Button,
-  EmptyRow,
-  Field,
-  Pill,
-  TableCard,
-  inputClass,
-} from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
+import { AccountsNav } from "@/components/host/AccountsNav";
 
+/**
+ * Account Management: every organization with access, and the way to add one.
+ *
+ * The organization is the account — one login per agency — so the table has
+ * no per-person name column. Removing one archives the account and every
+ * program it posted, which is why the trash icon leads to a confirmation that
+ * says how many.
+ */
 export default function AdminsPage() {
   return (
-    <AdminShell title="Organizations" requireSuperadmin bare>
-      {(session) => <AdminsTable session={session} />}
+    <AdminShell requireSuperadmin>
+      {(ctx) => <Accounts ctx={ctx} />}
     </AdminShell>
   );
 }
 
-function AdminsTable({ session }: { session: Session }) {
+function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
+  const { show } = useToast();
   const [admins, setAdmins] = useState<AdminAccount[]>([]);
+  const [invites, setInvites] = useState<HostInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
   const [logoFor, setLogoFor] = useState<AdminAccount | null>(null);
-  const [invites, setInvites] = useState<HostInvite[]>([]);
-  const [inviting, setInviting] = useState(false);
-  const [inviteLink, setInviteLink] = useState<{ org: string; url: string } | null>(
-    null,
-  );
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const myId = session.id ?? null;
-  const [organization, setOrganization] = useState("");
 
   async function load() {
-    setLoading(true);
     try {
       const [rows, pending] = await Promise.all([
         listAdmins(),
@@ -83,194 +76,63 @@ function AdminsTable({ session }: { session: Session }) {
 
   useEffect(() => {
     void load();
-    api<{ name: string }>("/hosts/me")
-      .then((h) => setOrganization(h.name))
-      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function setAccess(admin: AdminAccount, makeSuper: boolean) {
     setBusyId(admin.id);
-    setError(null);
-    // Clear the previous action's message first, so the live region announces
-    // this action rather than sitting on a stale one.
-    setNotice("");
     try {
       await updateAdmin(admin.id, { is_admin: makeSuper });
-      setNotice(
-        `${admin.name} is now ${makeSuper ? "a superadmin" : "an admin"}.`,
-      );
+      show({
+        title: `${admin.name} is now ${makeSuper ? "a superadmin" : "an admin"}.`,
+      });
       await load();
     } catch (e) {
-      setError(
-        apiMessage(e, "Couldn't change that account. Please try again."),
-      );
+      show({
+        title: apiMessage(e, "Couldn't change that account. Please try again."),
+        tone: "alert",
+      });
     } finally {
       setBusyId(null);
     }
   }
 
   return (
-    <div className="min-h-dvh bg-white">
-    <div className="mx-auto w-full max-w-[1500px] px-8 py-6">
-      <ConsoleHeader isSuper organization={organization} />
+    <div className="flex flex-col gap-8">
+      <AccountsNav />
 
-      <div className="mt-12 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-5xl font-extrabold text-ink">
-          Organizations
+      <div className="flex flex-col gap-3">
+        <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+          Administrative Accounts
         </h1>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => {
-              setNotice("");
-              setInviting(true);
-            }}
-            className="rounded-lg px-5 py-3 font-display text-lg font-semibold text-ink transition-transform hover:scale-[1.02]"
-            style={{ background: CYAN }}
-          >
-            + Invite an organization
-          </button>
-          <button
-            onClick={() => {
-              setNotice("");
-              setAdding(true);
-            }}
-            className="rounded-lg bg-[#D9D9D9] px-5 py-3 font-display text-lg font-semibold text-ink transition-colors hover:bg-[#CDCDCD]"
-          >
-            Create directly
-          </button>
-        </div>
+        <p className="text-xl text-fg">
+          Organizations with access to post and manage events on The Belonging
+          Collective.
+        </p>
       </div>
 
-      <p role="status" aria-live="polite" className="mt-3 text-base text-muted">
-        {loading
-          ? "Loading organizations…"
-          : notice ||
-            `${admins.length} ${admins.length === 1 ? "account" : "accounts"}`}
-      </p>
-
-      {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-
-      {loadError ? (
-        <p role="alert" className="mt-6 font-medium text-red-600">
-          Couldn&apos;t load admins. Please refresh and try again.
-        </p>
-      ) : (
-        <div className="mt-3">
-          <TableCard
-            caption="Organizer accounts, their access level, and how many programs each owns."
-            head={["Name", "Email", "Access", "Programs", "Actions"]}
-          >
-            {loading ? (
-              <EmptyRow colSpan={5} text="Loading…" />
-            ) : admins.length === 0 ? (
-              <EmptyRow colSpan={5} text="No admin accounts yet." />
-            ) : (
-              admins.map((a) => {
-                const isMe = a.id === myId;
-                const busy = busyId === a.id;
-                return (
-                  <tr key={a.id} className="align-top hover:bg-slate-50">
-                    <th
-                      scope="row"
-                      className="px-4 py-3 text-left font-semibold text-slate-900"
-                    >
-                      {a.name}
-                      {isMe && (
-                        <span className="ml-2">
-                          <Pill tone="good">You</Pill>
-                        </span>
-                      )}
-                    </th>
-                    <td className="px-4 py-3 text-slate-600">{a.email}</td>
-                    <td className="px-4 py-3">
-                      {a.is_admin ? (
-                        <Pill tone="warn">Superadmin</Pill>
-                      ) : (
-                        <Pill>Admin</Pill>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {a.event_count}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isMe ? (
-                        // The API refuses self-demotion and self-deletion —
-                        // that refusal is what guarantees at least one
-                        // superadmin always remains. Say so instead of
-                        // offering buttons that will fail.
-                        <span className="text-xs text-slate-500">
-                          You can&apos;t change your own account
-                        </span>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            disabled={busy}
-                            onClick={() => void setAccess(a, !a.is_admin)}
-                          >
-                            {a.is_admin ? "Make admin" : "Make superadmin"}
-                            <span className="sr-only"> — {a.name}</span>
-                          </Button>
-                          <Button
-                            disabled={busy}
-                            onClick={() => {
-                              setNotice("");
-                              setLogoFor(a);
-                            }}
-                          >
-                            Logo<span className="sr-only"> for {a.name}</span>
-                          </Button>
-                          <Button
-                            tone="danger"
-                            disabled={busy}
-                            onClick={() => {
-                              setNotice("");
-                              setRemoving(a);
-                            }}
-                          >
-                            Remove<span className="sr-only"> {a.name}</span>
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </TableCard>
-        </div>
-      )}
+      <InviteForm onSent={() => void load()} onAddDirectly={() => setAdding(true)} />
 
       {invites.length > 0 && (
-        <section className="mt-6">
-          <h2 className="font-display text-lg font-bold text-slate-900">
-            Invitations waiting
-          </h2>
-          <ul className="mt-2 flex flex-col gap-2">
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-medium text-fg">Invitations waiting</h2>
+          <ul className="flex flex-col divide-y divide-line-active border-t border-line-active">
             {invites.map((inv) => (
               <li
                 key={inv.id}
-                className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-2.5"
+                className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-xl text-fg"
               >
-                <span className="font-semibold text-slate-900">
-                  {inv.organization}
-                </span>
-                <span className="text-slate-600">{inv.email}</span>
-                {inv.expired ? (
-                  <Pill tone="warn">Expired</Pill>
-                ) : (
-                  <Pill>Pending</Pill>
-                )}
+                <span className="min-w-[200px]">{inv.organization}</span>
+                <span className="text-fg-muted">{inv.email}</span>
+                <Pill tone={inv.expired ? "warn" : "neutral"}>
+                  {inv.expired ? "Expired" : "Pending"}
+                </Pill>
                 <span className="ml-auto">
                   <Button
-                    tone="danger"
+                    variant="ghost"
                     onClick={() => {
                       void revokeInvite(inv.id).then(() => {
-                        setNotice(`Revoked the invite for ${inv.organization}.`);
+                        show({ title: `Revoked the invite for ${inv.organization}.` });
                         void load();
                       });
                     }}
@@ -284,43 +146,96 @@ function AdminsTable({ session }: { session: Session }) {
         </section>
       )}
 
-      {inviting && (
-        <InviteModal
-          onClose={() => setInviting(false)}
-          onCreated={(org, url) => {
-            setInviting(false);
-            setInviteLink({ org, url });
-            void load();
-          }}
-        />
-      )}
-
-      {inviteLink && (
-        <Modal title="Send them this link" onClose={() => setInviteLink(null)}>
-          <p className="mt-2 text-slate-700">
-            {inviteLink.org} sets their own password when they open it. It works
-            once, and expires in two weeks.
-          </p>
-          <p className="mt-3 break-all rounded-md bg-slate-100 p-3 font-mono text-sm text-slate-900">
-            {inviteLink.url}
-          </p>
-          {/* Shown once — only a hash is stored, so it can't be looked up. */}
-          <p className="mt-2 text-sm text-slate-600">
-            Copy it now; it isn&apos;t stored and can&apos;t be shown again.
-          </p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              onClick={() => {
-                void navigator.clipboard?.writeText(inviteLink.url);
-              }}
-            >
-              Copy link
-            </Button>
-            <Button tone="primary" onClick={() => setInviteLink(null)}>
-              Done
-            </Button>
-          </div>
-        </Modal>
+      {loadError ? (
+        <p role="alert" className="text-lg text-danger-fg">
+          Couldn&apos;t load accounts. Please refresh and try again.
+        </p>
+      ) : (
+        <TableCard
+          caption="Organizer accounts, their access level, and how many programs each owns."
+          head={["Name", "Email", "Access", "Programs", ""]}
+        >
+          {loading ? (
+            <EmptyRow colSpan={5} text="Loading…" />
+          ) : admins.length === 0 ? (
+            <EmptyRow colSpan={5} text="No accounts yet." />
+          ) : (
+            admins.map((a) => {
+              const isMe = a.id === ctx.session.id;
+              const busy = busyId === a.id;
+              return (
+                <tr key={a.id} className="align-middle">
+                  <th scope="row" className="px-3 py-3 font-normal">
+                    {a.name}
+                    {isMe && (
+                      <span className="ml-3">
+                        <Pill tone="good">You</Pill>
+                      </span>
+                    )}
+                  </th>
+                  <td className="px-3 py-3">
+                    <span className="inline-flex items-center gap-3">
+                      {a.logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={a.logo_url}
+                          alt=""
+                          className="size-9 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <Avatar name={a.name} />
+                      )}
+                      <span className="break-all">{a.email}</span>
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className="inline-flex flex-wrap items-center gap-3">
+                      <Pill tone={a.is_admin ? "warn" : "neutral"}>
+                        {a.is_admin ? "Superadmin" : "Admin"}
+                      </Pill>
+                      {/* The API refuses self-demotion — that refusal is what
+                          keeps at least one superadmin in the system. */}
+                      {!isMe && (
+                        <Button
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => void setAccess(a, !a.is_admin)}
+                        >
+                          {a.is_admin ? "Make admin" : "Make superadmin"}
+                          <span className="sr-only"> — {a.name}</span>
+                        </Button>
+                      )}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">{a.event_count}</td>
+                  <td className="px-3 py-3">
+                    <span className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        aria-label={`Logo for ${a.name}`}
+                        title="Logo"
+                        disabled={busy}
+                        onClick={() => setLogoFor(a)}
+                        leadingIcon={<ImageIcon />}
+                      />
+                      {!isMe && (
+                        <Button
+                          variant="ghost"
+                          aria-label={`Remove ${a.name}`}
+                          title="Remove"
+                          disabled={busy}
+                          onClick={() => setRemoving(a)}
+                          style={{ color: "#CC0000" }}
+                          leadingIcon={<Trash2 />}
+                        />
+                      )}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </TableCard>
       )}
 
       {adding && (
@@ -328,7 +243,7 @@ function AdminsTable({ session }: { session: Session }) {
           onClose={() => setAdding(false)}
           onCreated={(name) => {
             setAdding(false);
-            setNotice(`Added ${name}.`);
+            show({ title: `Added ${name}.` });
             void load();
           }}
         />
@@ -339,7 +254,7 @@ function AdminsTable({ session }: { session: Session }) {
           onClose={() => setLogoFor(null)}
           onSaved={(name) => {
             setLogoFor(null);
-            setNotice(`Updated the logo for ${name}.`);
+            show({ title: `Updated the logo for ${name}.` });
             void load();
           }}
         />
@@ -350,41 +265,45 @@ function AdminsTable({ session }: { session: Session }) {
           onClose={() => setRemoving(null)}
           onRemoved={(name, retired) => {
             setRemoving(null);
-            setNotice(
-              retired > 0
-                ? `Removed ${name}. ${retired} ${
-                    retired === 1 ? "program" : "programs"
-                  } retired with the account.`
-                : `Removed ${name}.`,
-            );
+            show({
+              title: `Removed ${name}.`,
+              description:
+                retired > 0
+                  ? `${retired} ${retired === 1 ? "program" : "programs"} retired with the account.`
+                  : undefined,
+              tone: "alert",
+            });
             void load();
           }}
         />
       )}
     </div>
-    </div>
   );
 }
 
 /**
- * An organization's logo is how members recognise it in the feed's stepper, so
- * it has to be changeable after the account exists — most will be created
- * before anyone has the file to hand.
+ * Invite an organization by email. The API mails the accept link and hands
+ * the token back once, so the link can also be copied and passed on by hand
+ * if the mail doesn't arrive.
  */
-function InviteModal({
-  onClose,
-  onCreated,
+function InviteForm({
+  onSent,
+  onAddDirectly,
 }: {
-  onClose: () => void;
-  onCreated: (organization: string, url: string) => void;
+  onSent: () => void;
+  onAddDirectly: () => void;
 }) {
+  const { show } = useToast();
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
   const [isSuper, setIsSuper] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ org: string; email: string; url: string } | null>(
+    null,
+  );
 
-  async function submit() {
+  async function send() {
     setBusy(true);
     setError(null);
     try {
@@ -393,75 +312,114 @@ function InviteModal({
         email: email.trim(),
         is_admin: isSuper,
       });
-      onCreated(
-        inv.organization,
-        `${window.location.origin}/host/invite/${inv.token}`,
-      );
+      setSent({
+        org: inv.organization,
+        email: inv.email,
+        url: `${window.location.origin}/host/invite/${inv.token}`,
+      });
+      setOrganization("");
+      setEmail("");
+      setIsSuper(false);
+      onSent();
     } catch (e) {
-      setError(apiMessage(e, "Couldn't create that invitation."));
+      setError(apiMessage(e, "Couldn't send that invitation."));
+    } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Modal title="Invite an organization" onClose={onClose}>
-      <p className="mt-1 text-sm text-slate-600">
-        They choose their own password, so nobody has to read one out or
-        remember to change it later.
-      </p>
-      <div className="mt-4 flex flex-col gap-4">
-        <Field label="Organization" htmlFor="inv-org">
-          <input
-            id="inv-org"
-            autoFocus
+    <section className="flex max-w-[1026px] flex-col gap-3">
+      <div>
+        <h2 className="text-xl font-medium text-fg">Invite an organization</h2>
+        <p className="text-xl text-fg">
+          Send a unique invite link by email. They choose their own password
+          when they open it.
+        </p>
+      </div>
+
+      {sent && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-control border-[3px] border-toast-success bg-tag-free-bg px-5 py-3 text-lg text-fg"
+        >
+          <span className="flex-1">
+            Invitation sent to <strong>{sent.email}</strong> for {sent.org}. It
+            works once and expires in 14 days.
+          </span>
+          <Button
+            leadingIcon={<Copy />}
+            onClick={() => {
+              void navigator.clipboard
+                ?.writeText(sent.url)
+                .then(() => show({ title: "Invite link copied." }))
+                .catch(() => window.prompt("Copy this link:", sent.url));
+            }}
+          >
+            Copy link
+          </Button>
+          <Button variant="ghost" onClick={() => setSent(null)}>
+            Send another
+          </Button>
+        </div>
+      )}
+
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && organization.trim() && email.trim()) void send();
+        }}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <TextField
+            label="Organization"
+            className="flex-1 [&>label]:sr-only"
             value={organization}
             onChange={(e) => setOrganization(e.target.value)}
-            placeholder="Extend-A-Family"
-            className={inputClass}
+            placeholder="Organization name"
+            autoComplete="organization"
           />
-        </Field>
-        <Field label="Email" htmlFor="inv-email">
-          <input
-            id="inv-email"
+          <TextField
+            label="Email"
+            className="flex-1 [&>label]:sr-only"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
+            placeholder="Enter email"
+            autoComplete="off"
           />
-        </Field>
-      </div>
-      <label className="mt-4 flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-        <input
-          type="checkbox"
-          checked={isSuper}
-          onChange={(e) => setIsSuper(e.target.checked)}
-          className="mt-0.5 h-4 w-4"
-        />
-        <span className="text-sm">
-          <span className="font-semibold text-slate-900">
-            Can manage other organizations
-          </span>
-          <span className="block text-slate-600">
-            Leave this off unless they&apos;re KW Hab staff.
-          </span>
-        </span>
-      </label>
-      {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-      <div className="mt-5 flex justify-end gap-2">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          tone="primary"
-          disabled={busy || !organization.trim() || !email.trim()}
-          onClick={() => void submit()}
-        >
-          {busy ? "Creating…" : "Create invite"}
-        </Button>
-      </div>
-    </Modal>
+          <Button
+            type="submit"
+            variant="secondary"
+            className="min-h-12"
+            disabled={busy || !organization.trim() || !email.trim()}
+            trailingIcon={<SendHorizontal />}
+          >
+            {busy ? "Sending…" : "Send"}
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex min-h-11 items-center gap-3 text-lg text-fg">
+            <input
+              type="checkbox"
+              checked={isSuper}
+              onChange={(e) => setIsSuper(e.target.checked)}
+              className="size-5 accent-primary-border"
+            />
+            Can manage other organizations (KW Habilitation staff only)
+          </label>
+          <Button variant="ghost" onClick={onAddDirectly}>
+            Create an account directly instead
+          </Button>
+        </div>
+        {error && (
+          <p role="alert" className="text-base text-danger-fg">
+            {error}
+          </p>
+        )}
+      </form>
+    </section>
   );
 }
 
@@ -493,6 +451,9 @@ function LogoModal({
 
   return (
     <Modal title={`Logo for ${admin.name}`} onClose={onClose}>
+      <p className="mt-2 text-lg text-fg-muted">
+        Members recognise organizations by their logo in the feed.
+      </p>
       <div className="mt-4">
         <ImageDrop
           label="Organization logo"
@@ -502,15 +463,15 @@ function LogoModal({
         />
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+        <p role="alert" className="mt-3 text-base text-danger-fg">
           {error}
         </p>
       )}
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-6 flex flex-wrap justify-end gap-3">
         <Button disabled={busy} onClick={onClose}>
           Cancel
         </Button>
-        <Button tone="primary" disabled={busy} onClick={() => void submit()}>
+        <Button variant="primary" disabled={busy} onClick={() => void submit()}>
           {busy ? "Saving…" : "Save"}
         </Button>
       </div>
@@ -529,7 +490,6 @@ function AddAdminModal({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSuper, setIsSuper] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -544,7 +504,6 @@ function AddAdminModal({
         email: email.trim(),
         password,
         is_admin: isSuper,
-        logo_url: logoUrl || null,
       });
       onCreated(name.trim());
     } catch (e) {
@@ -560,10 +519,10 @@ function AddAdminModal({
   }
 
   return (
-    <Modal title="Add an admin" onClose={onClose}>
-      <p className="mt-1 text-sm text-slate-600">
-        They sign in with this email and password. Share the password with them
-        directly and ask them to change it.
+    <Modal title="Create an account" onClose={onClose}>
+      <p className="mt-2 text-lg text-fg-muted">
+        For setting an organization up in person. Share the temporary password
+        with them directly and ask them to change it.
       </p>
       <form
         className="mt-5 flex flex-col gap-4"
@@ -572,76 +531,44 @@ function AddAdminModal({
           if (valid && !busy) void submit();
         }}
       >
-        <Field label="Organization or person" htmlFor="a-name">
-          <input
-            id="a-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Email" htmlFor="a-email">
-          <input
-            id="a-email"
-            type="email"
-            autoComplete="off"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-        <Field
-          label="Temporary password"
-          htmlFor="a-password"
-          hint="At least 8 characters."
-        >
-          <input
-            id="a-password"
-            type="text"
-            autoComplete="off"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-
-        {/* Members identify organizations by their logo in the feed's stepper,
-            so this is the organization's face, not decoration. */}
-        <ImageDrop
-          label="Organization logo"
-          sizing="logo"
-          value={logoUrl}
-          onChange={setLogoUrl}
+        <TextField
+          label="Organization"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
         />
-
-        <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="off"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          label="Temporary password (at least 8 characters)"
+          type="text"
+          autoComplete="off"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <label className="flex min-h-11 items-center gap-3 text-lg text-fg">
           <input
             type="checkbox"
             checked={isSuper}
             onChange={(e) => setIsSuper(e.target.checked)}
-            className="mt-0.5 h-4 w-4"
+            className="size-5 accent-primary-border"
           />
-          <span className="text-sm">
-            <span className="font-semibold text-slate-900">
-              Can manage other admins
-            </span>
-            <span className="block text-slate-600">
-              Superadmins can add and remove admins, and edit any program — not
-              just their own.
-            </span>
-          </span>
+          Can manage other organizations
         </label>
-
         {error && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-base text-danger-fg">
             {error}
           </p>
         )}
-
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-3">
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" tone="primary" disabled={!valid || busy}>
-            {busy ? "Adding…" : "Add admin"}
+          <Button type="submit" variant="primary" disabled={!valid || busy}>
+            {busy ? "Creating…" : "Create account"}
           </Button>
         </div>
       </form>
@@ -668,45 +595,50 @@ function RemoveAdminModal({
       await deleteAdmin(admin.id);
       onRemoved(admin.name, admin.event_count);
     } catch (e) {
-      setError(
-        apiMessage(e, "Couldn't remove that account. Please try again."),
-      );
+      setError(apiMessage(e, "Couldn't remove that account. Please try again."));
       setBusy(false);
     }
   }
 
   return (
-    <Modal title={`Remove ${admin.name}?`} onClose={onClose}>
-      <p className="mt-2 text-sm text-slate-700">
-        This account will no longer be able to sign in.
+    <Modal
+      onClose={onClose}
+      title={
+        <>
+          <p className="text-2xl text-fg">
+            Are you sure you want to remove this account?
+          </p>
+          <p className="mt-1 text-2xl font-medium italic text-fg">{admin.name}</p>
+        </>
+      }
+    >
+      <p className="mt-3 text-lg text-fg-muted">
+        They won&apos;t be able to sign in.{" "}
+        {admin.event_count > 0 ? (
+          <>
+            Their{" "}
+            <strong className="text-fg">
+              {admin.event_count} {admin.event_count === 1 ? "program" : "programs"}
+            </strong>{" "}
+            will leave the member feed. Nothing is deleted — the programs stay
+            filed under {admin.name}, and attendance already recorded still
+            counts.
+          </>
+        ) : (
+          "They don't own any programs."
+        )}
       </p>
-      {admin.event_count > 0 ? (
-        <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          Their{" "}
-          <strong>
-            {admin.event_count}{" "}
-            {admin.event_count === 1 ? "program" : "programs"}
-          </strong>{" "}
-          will leave the member feed. Nothing is deleted — the programs stay
-          filed under {admin.name}, and attendance already recorded still
-          counts.
-        </p>
-      ) : (
-        <p className="mt-3 text-sm text-slate-600">
-          They don&apos;t own any programs.
-        </p>
-      )}
-
       {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+        <p role="alert" className="mt-3 text-base text-danger-fg">
           {error}
         </p>
       )}
-
-      <div className="mt-6 flex justify-end gap-2">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button tone="danger" disabled={busy} onClick={() => void submit()}>
-          {busy ? "Removing…" : "Remove account"}
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button onClick={onClose} disabled={busy}>
+          Cancel
+        </Button>
+        <Button variant="danger" disabled={busy} onClick={() => void submit()}>
+          {busy ? "Removing…" : "Yes, remove"}
         </Button>
       </div>
     </Modal>
