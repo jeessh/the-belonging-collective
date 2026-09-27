@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lexend_Deca } from "next/font/google";
 import { siteUrl } from "@/lib/serverApi";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 const lexend = Lexend_Deca({
@@ -29,7 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={lexend.variable}>
-      <body>{children}</body>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }
