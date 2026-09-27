@@ -1,8 +1,7 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import type { Event } from "@/lib/api";
-import type { Dimension } from "@/lib/dimensions";
 import { repeatLabel } from "@/lib/recurrence";
 import { sessionLabel } from "@/lib/time";
 import { CYAN, SKY_DEEP } from "@/components/member/FeedParts";
@@ -87,8 +86,8 @@ export const GridCard = memo(function GridCard({
         </div>
       </button>
 
-      {/* Saving is a property of the card, so it lives on the card — and it's
-          the only place in the app that can un-save. */}
+      {/* Saving is a property of the card, so it lives on the card — and,
+          until the detail modal grows an un-save, the place that un-saves. */}
       <button
         onClick={() => onToggleSave(event)}
         aria-pressed={saved}
@@ -187,106 +186,6 @@ function PinIcon() {
   );
 }
 
-/* ---------------- the grid ---------------- */
-
-/**
- * The grid's sections, from the "See events by" choice.
- *
- * The dropdown sat above this grid doing nothing at all — picking Activity Type
- * where Non-Profit Organization had been returned a byte-identical list. It
- * only ever drove the one-at-a-time view's stepper.
- *
- * It groups, it does not filter: every program is in exactly one section and
- * none are removed, which is the same rule the stepper follows.
- */
-function groupByDimension(
-  events: Event[],
-  dimension: Dimension,
-): { id: string; label: string; color: string; events: Event[] }[] {
-  const sections = new Map<
-    string,
-    { id: string; label: string; color: string; events: Event[] }
-  >();
-  for (const event of events) {
-    const b = dimension.bucket(event);
-    const found = sections.get(b.id);
-    if (found) found.events.push(event);
-    else sections.set(b.id, { ...b, events: [event] });
-  }
-  return [...sections.values()];
-}
-
-export const GridFeed = memo(function GridFeed({
-  events,
-  dimension,
-  saved,
-  query,
-  onOpen,
-  onToggleSave,
-}: {
-  events: Event[];
-  /** Which "See events by" choice sections the grid. */
-  dimension: Dimension;
-  saved: Set<string>;
-  query: string;
-  onOpen: (event: Event) => void;
-  onToggleSave: (event: Event) => void;
-}) {
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return events;
-    return events.filter((ev) =>
-      [ev.title, ev.location, ev.host_name, ev.description]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [events, query]);
-
-  const sections = useMemo(
-    () => groupByDimension(filtered, dimension),
-    [filtered, dimension],
-  );
-
-  if (filtered.length === 0) {
-    return (
-      <p className="mt-16 text-center font-display text-2xl text-muted">
-        Nothing matches that.
-      </p>
-    );
-  }
-
-  return (
-    <div className="w-full max-w-6xl flex-1 overflow-y-auto pb-10">
-      {sections.map((section) => (
-        <section key={section.id} className="mb-10">
-          <h2 className="mb-4 flex items-baseline gap-3 font-display text-2xl text-ink">
-            <span
-              aria-hidden
-              className="inline-block h-3 w-3 shrink-0 translate-y-px rounded-full"
-              style={{ background: section.color }}
-            />
-            <span className="font-bold">{section.label}</span>
-            <span className="text-muted">{section.events.length}</span>
-          </h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {section.events.map((ev) => (
-              <GridCard
-                key={ev.id}
-                event={ev}
-                saved={saved.has(ev.id)}
-                onOpen={onOpen}
-                onToggleSave={onToggleSave}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-});
-
 /* ---------------- search ---------------- */
 
 export const SearchBox = memo(function SearchBox({
@@ -330,28 +229,3 @@ export const SearchBox = memo(function SearchBox({
   );
 });
 
-/* ---------------- saved-events button ---------------- */
-
-export const SavedEventsButton = memo(function SavedEventsButton({
-  count,
-  onClick,
-}: {
-  count: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="relative inline-flex items-center gap-2.5 rounded-xl border border-[#C9C7D2] bg-white px-5 py-3 font-display text-lg text-ink transition-transform hover:scale-[1.02]"
-    >
-      <BookmarkIcon filled={false} />
-      Saved Events
-      <span
-        className="absolute -right-3 -top-3 grid h-8 w-8 place-items-center rounded-full font-display text-base font-bold text-ink"
-        style={{ background: CYAN }}
-      >
-        {count}
-      </span>
-    </button>
-  );
-});

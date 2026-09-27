@@ -1,86 +1,71 @@
 "use client";
 
 import {
-  forwardRef,
-  memo,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
 import {
-  AnimatePresence,
   animate,
   motion,
   useMotionValue,
   useReducedMotion,
   useTransform,
 } from "framer-motion";
+import { ArrowDown, ArrowUp, GalleryVerticalEnd, List } from "lucide-react";
 import {
   ApiError,
   api,
+  fetchAllEvents,
   logout,
   updateMe,
   type Event,
   type Me,
   type MePrefs,
 } from "@/lib/api";
-import { countdown, isUpcoming } from "@/lib/time";
+import { isUpcoming, whenLine } from "@/lib/time";
+import { googleCalendarUrl } from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
 import { useHeadTracking } from "@/lib/useHeadTracking";
+import { useHold } from "@/lib/useHold";
 import { HeadCursor } from "@/components/HeadCursor";
 import { CalibrationOverlay } from "@/components/CalibrationOverlay";
 import { eventToSpeech } from "@/lib/eventSpeech";
 import { SavedEvents } from "@/components/SavedEvents";
-import { SELECTABLE_TAGS } from "@/lib/accessibility";
-import { CATEGORIES } from "@/lib/categories";
 import { oneCardPerProgram, personalizedFeed } from "@/lib/feed";
-import {
-  bucketsFor,
-  dimensionByKey,
-  groupByBucket,
-  type DimensionKey,
-} from "@/lib/dimensions";
-import {
-  AccountChip,
-  SeeEventsBy,
-  ViewToggle,
-  type ViewMode,
-} from "@/components/member/MemberChrome";
+import { useToast } from "@/components/ui/Toast";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
+import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
+import { SavedSidebar } from "@/components/member/SavedSidebar";
 import {
-  GridFeed,
-  SavedEventsButton,
-  SearchBox,
-} from "@/components/member/GridFeed";
-import { RegisterPrompt } from "@/components/member/RegisterPrompt";
-import {
-  BucketStepper,
-  CardDropTab,
-  SaveZone,
-  WideEventCard,
-} from "@/components/member/FeedParts";
+  FeedFilters,
+  passesFilters,
+  type FeedSort,
+} from "@/components/member/FeedFilters";
+import { FeedCard } from "@/components/member/FeedCard";
+import { ListFeed } from "@/components/member/ListFeed";
 
-const DROP_THRESHOLD = 150; // drag-down px to save
-const SETTINGS_THRESHOLD = 130; // drag-up px to open settings
-const SWIPE_THRESHOLD = 90; // px sideways to page to the next/previous card
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+const DROP_THRESHOLD = 150; // drag-left px to save
+const SWIPE_THRESHOLD = 90; // drag up/down px to page
+const HOLD_MS = 1000; // ← held this long saves
+const HOLD_TRAVEL = 140; // how far the card slides toward the sidebar while held
 
-// Card date format, e.g. "July 13, 2026".
-function fullDate(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+type ViewMode = "card" | "list";
+
+const VIEWS = [
+  { value: "card" as const, label: "Card View", icon: <GalleryVerticalEnd /> },
+  { value: "list" as const, label: "List View", icon: <List /> },
+];
+
+const startMs = (e: Event) =>
+  e.starts_at ? new Date(e.starts_at).getTime() : 0;
+// A one-off is its own program, keyed by id.
+const programKey = (ev: Event) => ev.series_id ?? ev.id;
 
 export function EventsView({
   initialMe,
@@ -93,34 +78,25 @@ export function EventsView({
   attendedPromise: Promise<Event[]>;
 }) {
   const reduceMotion = useReducedMotion();
+  const toast = useToast();
   const [me, setMe] = useState<Me | null>(initialMe);
   const [events, setEvents] = useState<Event[]>([]);
   const [i, setI] = useState(0);
-  const [saved, setSaved] = useState<Set<string>>(new Set());
-  // How many programs are saved, which is not how many rows are saved.
-  //
-  // `saved` holds every occurrence id, because that is what answers "is this
-  // card saved?" for whichever date is on screen. Counting it told a member who
-  // pressed Save once on an eight-week league that they had eight saved things.
-  // Tracked as its own set rather than derived from `events`, which loads on a
-  // separate promise — deriving it flashed the row count until the feed
-  // arrived. A one-off is its own program, keyed by id.
-  const [savedPrograms, setSavedPrograms] = useState<Set<string>>(new Set());
-  const programKey = (ev: Event) => ev.series_id ?? ev.id;
+  // What the server says is saved (every occurrence row), plus this session's
+  // optimistic saves. The card asks "is this id saved?"; the sidebar shows one
+  // entry per program.
+  const [savedEvents, setSavedEvents] = useState<Event[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty">(
     "loading",
   );
-  const [view, setView] = useState<"events" | "settings">("events");
-  const [confirming, setConfirming] = useState(false);
-
+  const [view, setView] = useState<"events" | "saved">("events");
   const [flying, setFlying] = useState(false);
-  const [dropPulse, setDropPulse] = useState(false);
+  // A card is on its way to the sidebar — the drop zone tints.
+  const [dragActive, setDragActive] = useState(false);
   const [srMessage, setSrMessage] = useState("");
 
-  // Voice-accessibility prefs (seeded from initialMe, persisted on toggle).
-  // A signed-out visitor still gets every accessibility mode; they just live
-  // for the session instead of on a profile. Withholding them until someone has
-  // an account would gate the app on the barrier it exists to remove.
+  // Accessibility prefs (seeded from initialMe, persisted on toggle). A
+  // signed-out visitor still gets every mode; they just live for the session.
   const [ttsEnabled, setTtsEnabled] = useState(
     initialMe?.tts_enabled ?? false,
   );
@@ -132,40 +108,44 @@ export function EventsView({
   );
   const signedIn = me !== null;
 
-  // panels
   const [a11yOpen, setA11yOpen] = useState(false);
-  // One card at a time, or the grid. The grid is a placeholder layout.
-  const [viewMode, setViewMode] = useState<ViewMode>("carousel");
-  // How the feed is grouped for the stepper — the "See events by" choice.
-  const [dimensionKey, setDimensionKey] = useState<DimensionKey>("org");
-  const [dimOpen, setDimOpen] = useState(false);
-  // The program someone was looking at when they were asked to sign in, and
-  // the one to offer registration for once they have.
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const [chips, setChips] = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<FeedSort>("foryou");
+  // Open on a desktop, the rail below `lg` — the design is desktop-first.
+  // Starts open on both server and client, then corrects after mount, so the
+  // first client render matches the server's.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  }, []);
+  // Below `sm` the view toggle is icons only, or it is wider than the column.
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  // The program someone was looking at when they were asked to sign in; the
+  // save completes once they have.
   const [authFor, setAuthFor] = useState<Event | null>(null);
-  const [registerFor, setRegisterFor] = useState<Event | null>(null);
-  // Open with no pending program — someone signing in of their own accord
-  // rather than because they tried to save something.
   const [authOpen, setAuthOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [detailFor, setDetailFor] = useState<Event | null>(null);
-
-  const [saveReveal, setSaveReveal] = useState(0);
-  const [settingsReveal, setSettingsReveal] = useState(0);
 
   // Drag transforms (inner card).
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-180, 180], [-9, 9]);
-  // Hold-grow / pop / fly transforms (outer wrapper).
+  const rotate = useTransform(x, [-180, 180], [-6, 6]);
+  // Fly-to-sidebar transforms (outer wrapper).
   const flyX = useMotionValue(0);
   const flyY = useMotionValue(0);
   const cardScale = useMotionValue(1);
   const cardOpacity = useMotionValue(1);
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
-  const dropRef = useRef<HTMLButtonElement>(null); // fly target: the drop zone
-
-
+  const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
 
   const {
     supported: ttsSupported,
@@ -179,7 +159,7 @@ export function EventsView({
   useEffect(() => {
     let alive = true;
     eventsPromise
-      .catch(() => api<Event[]>("/events"))
+      .catch(() => fetchAllEvents())
       .then((evRes) => {
         if (!alive) return;
         setEvents(evRes);
@@ -193,26 +173,12 @@ export function EventsView({
     };
   }, [eventsPromise]);
 
-  // Seed `saved` with the server's attended events so the card badge, count,
-  // and saved state survive a reload. Merge with anything saved this session;
-  // a failure is non-fatal (leave `saved` as-is).
+  // Signed-out resolves to [] rather than rejecting, so no fallback here.
   useEffect(() => {
     let alive = true;
-    // No .catch fallback: the route resolves this to [] rather than rejecting,
-    // because signed-out is a normal outcome here, not a failure to retry.
     attendedPromise
       .then((attended) => {
-        if (!alive) return;
-        setSaved((prevSaved) => {
-          const merged = new Set(prevSaved);
-          attended.forEach((ev) => merged.add(ev.id));
-          return merged;
-        });
-        setSavedPrograms((prev) => {
-          const merged = new Set(prev);
-          attended.forEach((ev) => merged.add(programKey(ev)));
-          return merged;
-        });
+        if (alive) setSavedEvents(attended);
       })
       .catch(() => {});
     return () => {
@@ -220,52 +186,43 @@ export function EventsView({
     };
   }, [attendedPromise]);
 
-  // The feed the member actually browses: their filters applied, then ordered
-  // by how well each program matches their interests. Nothing is hidden by
-  // personalization — best matches simply come first.
+  const saved = useMemo(
+    () => new Set(savedEvents.map((ev) => ev.id)),
+    [savedEvents],
+  );
+  // The sidebar: upcoming, soonest first, one per program.
+  const savedList = useMemo(
+    () =>
+      oneCardPerProgram(
+        savedEvents.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b)),
+      ),
+    [savedEvents],
+  );
+
+  // The feed the member browses: their explicit filters applied, then ordered
+  // by how well each program matches them ("For you") or by date. Nothing is
+  // hidden by personalization — only the chips remove cards.
   //
   // Keyed on the two profile arrays rather than `me`: setPref rebuilds `me` on
-  // every preference write, so depending on the whole object would re-sort (and
-  // hand the memoized stepper a new array) every time someone toggled, say,
-  // text-to-speech — which has no bearing on order.
+  // every preference write, and toggling text-to-speech must not re-sort.
   const interests = me?.interest_categories;
   const accessPrefs = me?.accessibility_prefs;
-  const scoredFeed = useMemo(() => {
-    // A program that already happened is not a thing anyone can attend.
-    // Measured from when it ends, so this week's session drops off the feed as
-    // it finishes and the next one takes its place — see lib/time.
-    const upcoming = events.filter(isUpcoming);
-    return personalizedFeed(upcoming, {
-      interests: interests ?? [],
-      accessPrefs: accessPrefs ?? [],
-    });
-  }, [events, interests, accessPrefs]);
-
-  // What "See events by" is grouping on. Declared before the feed because the
-  // one-at-a-time order depends on it.
-  const dimension = useMemo(
-    () => dimensionByKey(dimensionKey),
-    [dimensionKey],
-  );
-
-  // One card per program rather than one per date, in both views.
-  //
-  // The grid used to keep every date, which was right while it was sectioned by
-  // day — a weekly program belongs on each day it runs, and the heading above
-  // told them apart. Sectioning by organization or topic took that away, and
-  // the same program repeated twelve times down a section with nothing to
-  // distinguish the copies.
-  const programs = useMemo(
-    () => oneCardPerProgram(scoredFeed),
-    [scoredFeed],
-  );
-
-  // The order Next and Back walk: each stepper bucket's programs together, in
-  // the order the stepper shows them.
-  const feed = useMemo(
-    () => groupByBucket(programs, dimension),
-    [programs, dimension],
-  );
+  const feed = useMemo(() => {
+    // Measured from when it ends, so this week's session drops off as it
+    // finishes and the next takes its place — see lib/time.
+    const upcoming = events.filter(
+      (ev) => isUpcoming(ev) && passesFilters(ev, chips),
+    );
+    // The server already orders by starts_at, so "Soonest" is its order.
+    const ordered =
+      sort === "foryou"
+        ? personalizedFeed(upcoming, {
+            interests: interests ?? [],
+            accessPrefs: accessPrefs ?? [],
+          })
+        : upcoming;
+    return oneCardPerProgram(ordered);
+  }, [events, chips, sort, interests, accessPrefs]);
 
   // A filter change can shorten the feed out from under the cursor.
   useEffect(() => {
@@ -274,10 +231,8 @@ export function EventsView({
 
   const current = feed[i];
 
-  // +1 = advancing (new card slides in from the right), -1 = going back.
+  // +1 = advancing (next slides up from below), -1 = going back.
   const [dir, setDir] = useState(1);
-  // Wrapping needs the live length, but next/prev must keep a stable identity
-  // (they feed the memoized side zones and the voice/head action handlers).
   const feedLenRef = useRef(feed.length);
   feedLenRef.current = feed.length;
   const next = useCallback(() => {
@@ -287,116 +242,36 @@ export function EventsView({
   const prev = useCallback(() => {
     setDir(-1);
     setI(
-      (n) =>
-        (n - 1 + feedLenRef.current) % Math.max(feedLenRef.current, 1),
+      (n) => (n - 1 + feedLenRef.current) % Math.max(feedLenRef.current, 1),
     );
   }, []);
 
-  // Non-wrapping window: the five cards always read left→right in order.
-
-  // Buckets of the chosen dimension, in the order they appear in the feed.
-  // Read off the grouped feed, so each bucket's index is the start of a
-  // contiguous run and jumping to a dot lands on that run's first program.
-  const buckets = useMemo(
-    () => bucketsFor(feed, dimension),
-    [feed, dimension],
-  );
-  // Which bucket the current card belongs to — what the stepper highlights and
-  // what the label under the dropdown names.
-  const activeBucket = current
-    ? dimension.bucket(current)
-    : { id: "", label: "", color: "#8A8AA0" };
-
-  /**
-   * How far along the rail the current program sits, 0→1.
-   *
-   * Measured against the dots rather than straight off `i / feed.length`,
-   * because the sections aren't the same size: Extend-A-Family has eight
-   * programs and Independent Living five, so a linear fill would sit between
-   * two rings at the moment the member is standing on one. This lands exactly
-   * on a ring when they reach it, and interpolates across the gap in between.
-   *
-   * Clamped at 1: the last ring is the end of the rail, so once they're in the
-   * final section the bar is full and stays full.
-   */
-  const railProgress = useMemo(() => {
-    if (buckets.length <= 1 || feed.length === 0) return 0;
-    const at = buckets.findIndex((b) => b.id === activeBucket.id);
-    if (at < 0) return 0;
-    const start = buckets[at].index;
-    const end = at + 1 < buckets.length ? buckets[at + 1].index : feed.length;
-    const within = clamp01((i - start) / Math.max(1, end - start));
-    return Math.min(1, (at + within) / (buckets.length - 1));
-  }, [buckets, activeBucket.id, i, feed.length]);
-
-
-  // Read `saved` through a ref so `attend` (and everything built on it) keeps
-  // a stable identity across saves.
+  // Refs so the gesture and voice handlers keep a stable identity.
   const savedRef = useRef(saved);
   savedRef.current = saved;
-  // Latest profile, for handlers that must stay identity-stable.
   const meRef = useRef(me);
   meRef.current = me;
-  // Read through a ref so `attend` keeps a stable identity for the memoized
-  // gesture handlers.
   const signedInRef = useRef(signedIn);
   signedInRef.current = signedIn;
+  const flyingRef = useRef(flying);
+  flyingRef.current = flying;
 
   // Sign in over the feed rather than navigating away: the program stays on
-  // screen behind the overlay, so there is nothing to find again afterwards.
-  const toSignIn = useCallback((ev: Event) => {
+  // screen behind the overlay.
+  const toSignIn = useCallback((ev: Event | null = null) => {
     setAuthFor(ev);
     setAuthOpen(true);
   }, []);
 
-  // Re-read the profile so the feed, the saved list and the chrome all agree
-  // that somebody is here now.
-  const handleSignedIn = useCallback(async () => {
-    setAuthOpen(false);
-    const pending = authFor;
-    setAuthFor(null);
-    try {
-      const [profile, attended] = await Promise.all([
-        api<Me>("/users/me"),
-        // Their saved programs, which were unreadable a moment ago. Without
-        // this the count sits at zero and the list looks empty until a reload
-        // — someone signs in precisely to see this and finds nothing.
-        api<Event[]>("/users/me/events").catch(() => [] as Event[]),
-      ]);
-      setMe(profile);
-      setSaved((prevSaved) => {
-        const merged = new Set(prevSaved);
-        attended.forEach((ev) => merged.add(ev.id));
-        return merged;
-      });
-      setSavedPrograms((prev) => {
-        const merged = new Set(prev);
-        attended.forEach((ev) => merged.add(programKey(ev)));
-        return merged;
-      });
-    } catch {
-      /* the cookie is set; the next read will pick the profile up */
-    }
-    if (pending) setRegisterFor(pending);
-  }, [authFor]);
-
   /**
-   * Re-read what is actually saved, after a save or an un-save has landed.
-   *
-   * Saving a series-priced program enrols the member across the run, and
-   * un-saving releases the run — but bounded by what the price covered and by
-   * the date they joined, which is a rule the server owns and the client cannot
-   * reproduce from an Event. Optimistically we touch the one id we know about,
-   * so the press feels instant; this then reconciles with the truth. Without it
-   * an eight-week league un-saved from one card left the other seven dates
-   * still showing a filled bookmark until a reload.
+   * Re-read what is actually saved after a save or un-save has landed. Saving
+   * a series-priced program enrols the member across the run, a rule the
+   * server owns; the optimistic touch of one id is reconciled here.
    */
   const syncSaved = useCallback(async () => {
     if (!signedInRef.current) return;
     try {
-      const attended = await api<Event[]>("/users/me/events");
-      setSaved(new Set(attended.map((ev) => ev.id)));
-      setSavedPrograms(new Set(attended.map(programKey)));
+      setSavedEvents(await api<Event[]>("/users/me/events"));
     } catch {
       /* leave the optimistic state; the next reload settles it */
     }
@@ -410,27 +285,26 @@ export function EventsView({
         return;
       }
       setSrMessage(`Saved ${ev.title}`);
-      setSaved((prevSaved) => new Set(prevSaved).add(ev.id));
-      setSavedPrograms((prev) => new Set(prev).add(programKey(ev)));
+      setSavedEvents((prev) =>
+        prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
+      );
       try {
         await api(`/events/${ev.id}/attend`, { method: "POST" });
+        const calendar = googleCalendarUrl(ev);
+        toast.show({
+          title: "Event saved",
+          action: calendar
+            ? {
+                label: "Add to calendar",
+                onClick: () => window.open(calendar, "_blank", "noopener"),
+              }
+            : undefined,
+        });
         void syncSaved();
       } catch (e) {
-        // Roll the badge back on any failure, including an expired session.
-        // Leaving it would tell someone a program is saved when the server has
-        // no record of it — they find out by turning up to nothing, or by
-        // reloading and watching it vanish.
-        setSaved((prevSaved) => {
-          const next = new Set(prevSaved);
-          next.delete(ev.id);
-          return next;
-        });
-        setSavedPrograms((prev) => {
-          const next = new Set(prev);
-          next.delete(programKey(ev));
-          return next;
-        });
-        // Signed in a moment ago, not any more: the cookie expired mid-request.
+        // Roll back on any failure, including an expired session. Leaving it
+        // would tell someone a program is saved when the server has no record.
+        setSavedEvents((prev) => prev.filter((s) => s.id !== ev.id));
         if (e instanceof ApiError && e.status === 401) {
           toSignIn(ev);
           return;
@@ -438,31 +312,31 @@ export function EventsView({
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
-    [toSignIn, syncSaved],
+    [toSignIn, syncSaved, toast],
   );
 
-  const unsave = useCallback(async (ev: Event) => {
-    setSaved((prevSaved) => {
-      const next = new Set(prevSaved);
-      next.delete(ev.id);
-      return next;
-    });
-    setSavedPrograms((prev) => {
-      const next = new Set(prev);
-      next.delete(programKey(ev));
-      return next;
-    });
-    setSrMessage(`Removed ${ev.title}`);
-    try {
-      await api(`/events/${ev.id}/attend`, { method: "DELETE" });
-      void syncSaved();
-    } catch {
-      // Put it back rather than show it gone when it isn't.
-      setSaved((prevSaved) => new Set(prevSaved).add(ev.id));
-      setSavedPrograms((prev) => new Set(prev).add(programKey(ev)));
-      setSrMessage(`Could not remove ${ev.title}.`);
-    }
-  }, [syncSaved]);
+  const unsave = useCallback(
+    async (ev: Event) => {
+      const before = savedEvents;
+      setSavedEvents((prev) =>
+        prev.filter((s) => programKey(s) !== programKey(ev)),
+      );
+      setSrMessage(`Removed ${ev.title}`);
+      try {
+        await api(`/events/${ev.id}/attend`, { method: "DELETE" });
+        toast.show({
+          title: `${ev.title} was unsaved`,
+          tone: "info",
+          action: { label: "Undo", onClick: () => void attend(ev) },
+        });
+        void syncSaved();
+      } catch {
+        setSavedEvents(before);
+        setSrMessage(`Could not remove ${ev.title}.`);
+      }
+    },
+    [savedEvents, syncSaved, toast, attend],
+  );
 
   const toggleSave = useCallback(
     (ev: Event) => {
@@ -471,6 +345,33 @@ export function EventsView({
     },
     [attend, unsave],
   );
+
+  // Re-read the profile so the feed, the sidebar and the chrome all agree that
+  // somebody is here now, then finish the save they came for.
+  const handleSignedIn = useCallback(async () => {
+    setAuthOpen(false);
+    const pending = authFor;
+    setAuthFor(null);
+    try {
+      const [profile, attended, refreshed] = await Promise.all([
+        api<Me>("/users/me"),
+        api<Event[]>("/users/me/events").catch(() => [] as Event[]),
+        // "N going" is withheld from anonymous viewers, so the rows fetched
+        // before sign-in carry null counts.
+        fetchAllEvents().catch(() => null),
+      ]);
+      setMe(profile);
+      setSavedEvents(attended);
+      if (refreshed?.length) setEvents(refreshed);
+      // The refs update on render; the pending save must not wait for one.
+      meRef.current = profile;
+      signedInRef.current = true;
+      savedRef.current = new Set(attended.map((ev) => ev.id));
+    } catch {
+      /* the cookie is set; the next read will pick the profile up */
+    }
+    if (pending) void attend(pending);
+  }, [authFor, attend]);
 
   // Counting the click before leaving; losing the count must never cost the
   // member the link.
@@ -482,138 +383,71 @@ export function EventsView({
     );
   }, []);
 
-  const saveCurrent = useCallback(async () => {
-    const ev = feed[i];
-    if (!ev) return;
-    // Only celebrate a save that actually happened. Signed out this bounces to
-    // the sign-in overlay, and already-saved is a no-op — sweeping "Saved!"
-    // across the card in either case tells the member something untrue.
-    if (!signedInRef.current || savedRef.current.has(ev.id)) {
-      void attend(ev);
-      return;
-    }
-    setConfirming(true);
-    void attend(ev);
-    window.setTimeout(() => setConfirming(false), 1300);
-  }, [feed, i, attend]);
+  /**
+   * Save the current card, flying it into the sidebar on the way. Every save
+   * path lands here — drag, the ← hold, the Save button, voice and head
+   * tracking — so they all end in the same place. `fromX` is where the card
+   * already is when a drag or hold hands it over.
+   */
+  const flyToDrop = useCallback(
+    async (fromX = 0) => {
+      const ev = feed[i];
+      if (!ev || flyingRef.current) return;
+      // Signed out this opens sign-in and already-saved is a no-op; flying the
+      // card away in either case would say something untrue.
+      if (!signedInRef.current || savedRef.current.has(ev.id)) {
+        void animate(x, 0, { duration: 0.2 });
+        setDragActive(false);
+        void attend(ev);
+        return;
+      }
+      const wrap = cardWrapRef.current;
+      const target = dropRef.current;
+      if (reduceMotion || !wrap || !target) {
+        x.set(0);
+        setDragActive(false);
+        await attend(ev);
+        return;
+      }
 
-  // Voice "attend": ease the card into the slot (ramping the glow), then commit.
-  const dragToAttend = useCallback(async () => {
-    const ev = feed[i];
-    if (!ev || flying) return;
-    if (reduceMotion) {
-      void saveCurrent();
-      return;
-    }
-    // Drive the slot glow off the card's y-position as it descends.
-    const unsub = y.on("change", (v) =>
-      setSaveReveal(clamp01(v / DROP_THRESHOLD)),
-    );
-    await animate(y, DROP_THRESHOLD + 8, {
-      type: "spring",
-      stiffness: 220,
-      damping: 26,
-    });
-    await new Promise((r) => window.setTimeout(r, 180)); // "release" beat
-    unsub();
-    setSaveReveal(0);
-    await animate(y, 0, { duration: 0.28, ease: "easeOut" });
-    void saveCurrent();
-  }, [feed, i, flying, reduceMotion, y, saveCurrent]);
-  // Stable identity for the memoized DropZone (dragToAttend changes on every
-  // card navigation, which would defeat its memo).
-  const dragToAttendRef = useRef(dragToAttend);
-  dragToAttendRef.current = dragToAttend;
-  const saveFromButton = useCallback(() => {
-    void dragToAttendRef.current();
-  }, []);
+      setFlying(true);
+      setDragActive(true);
+      // The wrapper's box is where the card rests; the drag moved only the
+      // inner element, so the hand-off puts that offset on the wrapper.
+      const card = wrap.getBoundingClientRect();
+      const drop = target.getBoundingClientRect();
+      const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
+      const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
+      x.set(0);
+      flyX.set(fromX);
 
-  // Hold complete: pop the card, shrink it into the drop zone, attend, advance.
-  const flyToDrop = useCallback(async () => {
-    const ev = feed[i];
-    if (!ev || flying) return;
-    setFlying(true);
+      const EASE = [0.4, 0, 0.2, 1] as const;
+      await animate(cardScale, 1.06, { duration: 0.12, ease: "easeOut" });
+      await Promise.all([
+        animate(flyX, dx, { duration: 0.46, ease: EASE }),
+        animate(flyY, dy, { duration: 0.46, ease: EASE }),
+        animate(cardScale, 0.1, { duration: 0.46, ease: EASE }),
+        animate(cardOpacity, 0, { duration: 0.46, ease: "easeIn" }),
+      ]);
 
-    const wrap = cardWrapRef.current;
-    const target = dropRef.current;
-
-    if (reduceMotion || !wrap || !target) {
       await attend(ev);
       next();
       flyX.set(0);
       flyY.set(0);
       cardScale.set(1);
       cardOpacity.set(1);
+      setDragActive(false);
       setFlying(false);
-      return;
-    }
+    },
+    [feed, i, reduceMotion, attend, next, x, flyX, flyY, cardScale, cardOpacity],
+  );
+  // Stable identity for the voice / head handlers and the Save button.
+  const flyToDropRef = useRef(flyToDrop);
+  flyToDropRef.current = flyToDrop;
+  const saveFromButton = useCallback(() => void flyToDropRef.current(), []);
 
-    const card = wrap.getBoundingClientRect();
-    const drop = target.getBoundingClientRect();
-    const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
-    const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
-
-    const EASE = [0.4, 0, 0.2, 1] as const;
-    await animate(cardScale, 1.09, { duration: 0.12, ease: "easeOut" });
-    await Promise.all([
-      animate(flyX, dx, { duration: 0.46, ease: EASE }),
-      animate(flyY, dy, { duration: 0.46, ease: EASE }),
-      animate(cardScale, 0.08, { duration: 0.46, ease: EASE }),
-      animate(cardOpacity, 0, { duration: 0.46, ease: "easeIn" }),
-    ]);
-    setDropPulse(true);
-    window.setTimeout(() => setDropPulse(false), 300);
-
-    await attend(ev);
-    next();
-
-    flyX.set(120);
-    flyY.set(0);
-    cardScale.set(1);
-    void animate(cardOpacity, 1, { duration: 0.3 });
-    await animate(flyX, 0, { type: "spring", stiffness: 260, damping: 26 });
-    setFlying(false);
-  }, [
-    feed,
-    i,
-    flying,
-    reduceMotion,
-    attend,
-    next,
-    flyX,
-    flyY,
-    cardScale,
-    cardOpacity,
-  ]);
-
-  const openSettings = useCallback(() => {
-    setSettingsReveal(1);
-    setView("settings");
-  }, []);
-  const closeSettings = useCallback(() => {
-    setSettingsReveal(0);
-    setView("events");
-  }, []);
-
-  // Read inside stable callbacks without re-creating them every render.
-  const flyingRef = useRef(flying);
-  flyingRef.current = flying;
-  const viewRef = useRef(view);
-  viewRef.current = view;
-
-  // Arrows are buttons. They used to build a dwell on hover — rest a pointer
-  // near one and the feed began paging on its own, and kept paging. That is a
-  // gesture for people who cannot click, and head tracking calls next/back
-  // directly without it, so it was only ever surprising the people who could.
-  const navBlocked = () => flyingRef.current || viewRef.current === "settings";
-  const clickNavLeft = useCallback(() => {
-    if (!navBlocked()) prev();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prev]);
-  const clickNavRight = useCallback(() => {
-    if (!navBlocked()) next();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [next]);
+  const openSaved = useCallback(() => setView("saved"), []);
+  const closeSaved = useCallback(() => setView("events"), []);
 
   // ---- preferences (persist to profile) ----
   const setPref = useCallback(async (patch: MePrefs) => {
@@ -626,7 +460,7 @@ export function EventsView({
     try {
       await updateMe(patch);
     } catch {
-      /* keep optimistic state for the demo even if the write fails */
+      /* keep the optimistic state even if the write fails */
     }
   }, []);
 
@@ -634,10 +468,33 @@ export function EventsView({
     (v: boolean) => void setPref({ tts_enabled: v }),
     [setPref],
   );
+  const toggleVoice = useCallback(
+    (v: boolean) => void setPref({ voice_commands_enabled: v }),
+    [setPref],
+  );
+  const toggleHead = useCallback(
+    (v: boolean) => void setPref({ eye_tracking_enabled: v }),
+    [setPref],
+  );
 
-  // Same shape as toggleInterest, and the same reason for setI(0): a need
-  // reorders the feed harder than a topic does, so leaving the cursor where it
-  // was would drop the member onto an unrelated program.
+  // Re-scoring reorders the feed under the cursor, so `i` goes to the top:
+  // they just said what they want to see first, so show them that.
+  const toggleInterest = useCallback(
+    (label: string) => {
+      const chosen = meRef.current?.interest_categories ?? [];
+      const adding = !chosen.includes(label);
+      void setPref({
+        interest_categories: adding
+          ? [...chosen, label]
+          : chosen.filter((c) => c !== label),
+      });
+      setI(0);
+      setSrMessage(
+        `${adding ? "Added" : "Removed"} ${label}. Showing your best matches from the start.`,
+      );
+    },
+    [setPref],
+  );
   const toggleAccessPref = useCallback(
     (slug: string, label: string) => {
       const chosen = meRef.current?.accessibility_prefs ?? [];
@@ -656,43 +513,16 @@ export function EventsView({
     },
     [setPref],
   );
-  const toggleVoice = useCallback(
-    (v: boolean) => void setPref({ voice_commands_enabled: v }),
-    [setPref],
-  );
-  const toggleHead = useCallback(
-    (v: boolean) => void setPref({ eye_tracking_enabled: v }),
-    [setPref],
-  );
 
-  // Adding or removing a topic re-scores the feed immediately (setPref merges
-  // into `me`, which `feed` derives from) and persists via PATCH /users/me.
-  // Reads through a ref so the handler keeps a stable identity for the memoized
-  // menu, and so the toggle isn't a side effect inside a state updater.
-  //
-  // Re-scoring reorders the feed under the cursor, so `i` has to move with it.
-  // Left alone, the member would silently land on whichever unrelated program
-  // happened to fall at their old index — and the read-aloud voice would start
-  // describing it. Going to the top is the one predictable answer: they just
-  // said what they want to see first, so show them that, and say so.
-  const toggleInterest = useCallback(
-    (label: string) => {
-      const chosen = meRef.current?.interest_categories ?? [];
-      const adding = !chosen.includes(label);
-      void setPref({
-        interest_categories: adding
-          ? [...chosen, label]
-          : chosen.filter((c) => c !== label),
-      });
-      setI(0);
-      setSrMessage(
-        adding
-          ? `Added ${label}. Showing your best matches from the start.`
-          : `Removed ${label}. Showing your best matches from the start.`,
-      );
-    },
-    [setPref],
-  );
+  const toggleChip = useCallback((chip: string) => {
+    setChips((prev) => {
+      const nextChips = new Set(prev);
+      if (nextChips.has(chip)) nextChips.delete(chip);
+      else nextChips.add(chip);
+      return nextChips;
+    });
+    setI(0);
+  }, []);
 
   const doLogout = useCallback(async () => {
     try {
@@ -700,52 +530,33 @@ export function EventsView({
     } catch {
       /* clear the session client-side regardless */
     }
-    // Clear it here rather than leaning on the navigation to remount us.
-    // This used to `router.replace("/")` from /events, which threw the
-    // component away and rebuilt it signed out. The feed is / now, so that
-    // replace is a no-op: the cookie was gone but the chip still showed the
-    // member's name and their saved programs were still on screen — signed out
-    // everywhere except the part they were looking at.
     setMe(null);
-    setSaved(new Set());
-    setSavedPrograms(new Set());
+    setSavedEvents([]);
+    // The counts are for signed-in eyes; drop them rather than refetch.
+    setEvents((evs) => evs.map((ev) => ({ ...ev, saved_count: null })));
     setDetailFor(null);
-    setRegisterFor(null);
-    closeSettings();
+    closeSaved();
     setSrMessage("Signed out.");
-  }, [closeSettings]);
+  }, [closeSaved]);
 
-  // The four card actions, shared by voice + head-tracking for identical behavior.
-  // Voice and head-tracking both drive these. In the grid there is no focused
-  // card, so next/back/add would move and save something invisible — the head
-  // cursor would fill and a program nobody had looked at would be saved. Only
-  // opening the saved list still makes sense there.
-  const cardActionsLive = view !== "settings" && viewMode === "carousel";
+  // The four actions voice and head tracking share. In the list there is no
+  // focused card, so only opening the saved list still makes sense there.
+  const cardActionsLive = view === "events" && viewMode === "card";
   const actionHandlers = useMemo(
     () => ({
       onNext: () => {
         if (cardActionsLive) next();
       },
       onBack: () =>
-        view === "settings" ? closeSettings() : cardActionsLive && prev(),
+        view === "saved" ? closeSaved() : cardActionsLive && prev(),
       onAdd: () => {
-        if (cardActionsLive) void dragToAttend();
+        if (cardActionsLive) void flyToDropRef.current();
       },
-      onSettings: () =>
-        view === "settings" ? closeSettings() : openSettings(),
+      onSettings: () => (view === "saved" ? closeSaved() : openSaved()),
     }),
-    [
-      view,
-      cardActionsLive,
-      next,
-      prev,
-      dragToAttend,
-      closeSettings,
-      openSettings,
-    ],
+    [view, cardActionsLive, next, prev, closeSaved, openSaved],
   );
 
-  // ---- voice commands (continuous while enabled) ----
   const { supported: voiceSupported, listening, lastHeard } = useSpeechCommands(
     voiceEnabled,
     actionHandlers,
@@ -753,7 +564,6 @@ export function EventsView({
     speaking,
   );
 
-  // ---- head tracking (cursor-dwell while enabled) ----
   const {
     supported: headSupported,
     calibrating,
@@ -768,31 +578,24 @@ export function EventsView({
     headEnabled,
     actionHandlers,
     // Freeze dwell while a panel is open so looking around doesn't fire actions.
-    view === "settings" || a11yOpen,
+    view === "saved" || a11yOpen,
   );
 
-  // Say which program is in focus. Arrowing through the whole feed used to be
-  // silent for a screen reader: the card is a div, not a live region, so
-  // nothing announced that anything had changed.
+  // Say which program is in focus: the card is a div, not a live region.
   useEffect(() => {
-    if (!current || view !== "events" || viewMode !== "carousel") return;
-    const when = current.starts_at
-      ? new Date(current.starts_at).toLocaleDateString(undefined, {
-          month: "long",
-          day: "numeric",
-        })
-      : "date to be announced";
+    if (!current || view !== "events" || viewMode !== "card") return;
+    const when = whenLine(current);
     setSrMessage(
-      `${current.title}. ${when}. ${current.location ?? ""}. ${i + 1} of ${feed.length}.`,
+      `${current.title}. ${when.day}${when.time ? `, ${when.time}` : ""}. ${
+        current.location ?? ""
+      }. ${i + 1} of ${feed.length}.`,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id, view, viewMode]);
 
   // ---- text-to-speech: read the current event when it changes ----
   useEffect(() => {
-    // Nothing to read in the grid: there is no "current card" on screen, so
-    // reading one aloud describes something the listener can't find.
-    if (ttsEnabled && current && view === "events" && viewMode === "carousel") {
+    if (ttsEnabled && current && view === "events" && viewMode === "card") {
       speak(eventToSpeech(current));
     } else {
       cancelSpeech();
@@ -800,54 +603,58 @@ export function EventsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, current?.id, ttsEnabled, view, viewMode]);
 
-  // ---- keyboard ----
+  // ---- keyboard: ↑ previous, ↓ next, ← held saves ----
+  const hold = useHold();
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
-      if (view === "settings") {
-        if (e.key === "Escape" || e.key === "ArrowDown") closeSettings();
+      if (view === "saved") {
+        if (e.key === "Escape") closeSaved();
         return;
       }
-      // Don't steal arrows from whatever the person is actually using. A
-      // select, a text field or an open menu owns its own arrow keys; swallowing
-      // them here made the organization picker unusable and, worse, started a
-      // hold-to-save the member could neither see nor cancel.
-      const target = e.target as HTMLElement | null;
+      // Don't steal arrows from whatever the person is actually using: a
+      // field, a menu, the view toggle or the filter chips own their own keys.
+      const target = e.target instanceof HTMLElement ? e.target : null;
       if (
         target &&
         (["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName) ||
           target.isContentEditable ||
-          target.closest('[role="menu"]') ||
-          target.closest('[role="dialog"]'))
+          target.closest(
+            '[role="menu"], [role="dialog"], [role="radiogroup"], [role="group"]',
+          ))
       ) {
         return;
       }
-      // The grid has no focused card, so the card actions have nothing to act
-      // on. Firing them anyway saved programs nobody had seen.
-      if (viewMode !== "carousel") return;
-      // Any overlay owns the keyboard while it's up.
-      if (authOpen || registerFor || detailFor || a11yOpen || dimOpen) return;
-      if (flying) return;
+      if (viewMode !== "card") return;
+      if (authOpen || detailFor || a11yOpen || flying) return;
       switch (e.key) {
-        case "ArrowRight":
-          if (!e.repeat) next();
-          break;
-        case "ArrowLeft":
-          if (!e.repeat) prev();
-          break;
         case "ArrowDown":
           e.preventDefault();
-          // Saves on the press. It used to need the key held for a second,
-          // which is the same auto-hold that fired for people resting a finger
-          // on the card and never fired for people who let go early.
-          if (!e.repeat) void saveCurrent();
+          if (!e.repeat) next();
           break;
         case "ArrowUp":
           e.preventDefault();
-          if (!e.repeat) openSettings();
+          if (!e.repeat) prev();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (e.repeat || hold.holding()) return;
+          setDragActive(true);
+          hold.start(
+            HOLD_MS,
+            (p) => {
+              if (!reduceMotion) x.set(-p * HOLD_TRAVEL);
+            },
+            () => void flyToDrop(reduceMotion ? 0 : -HOLD_TRAVEL),
+          );
           break;
       }
     };
     const onUp = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" || !hold.holding()) return;
+      // Let go early: nothing saved, the card settles back.
+      hold.cancel();
+      setDragActive(false);
+      void animate(x, 0, { duration: 0.2 });
     };
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
@@ -857,33 +664,51 @@ export function EventsView({
     };
   }, [
     view,
+    viewMode,
+    authOpen,
+    detailFor,
+    a11yOpen,
     flying,
     next,
     prev,
-    closeSettings,
+    closeSaved,
+    hold,
+    reduceMotion,
+    x,
+    flyToDrop,
   ]);
+
+  // Only re-render for the tint when the answer changes, not every drag frame.
+  const dragActiveRef = useRef(false);
+  const setDragTint = (on: boolean) => {
+    if (dragActiveRef.current === on) return;
+    dragActiveRef.current = on;
+    setDragActive(on);
+  };
 
   if (status === "loading") {
     return (
-      <main className="grid h-dvh place-items-center text-muted">
-        <p className="font-display text-2xl">Loading your programs…</p>
+      <main className="grid h-dvh place-items-center bg-surface text-fg-muted">
+        <p className="text-2xl">Loading your programs…</p>
       </main>
     );
   }
 
-  const alreadySaved = current ? saved.has(current.id) : false;
-  const empty = status === "empty" || !current;
+  const name = me ? `${me.first_name} ${me.last_name.charAt(0)}.` : null;
+  const heading =
+    viewMode === "card"
+      ? feed.length
+        ? `Event ${i + 1} of ${feed.length}`
+        : "No events"
+      : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
   return (
     <motion.main
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="relative h-dvh w-full select-none overflow-hidden"
+      transition={{ duration: 0.4 }}
+      className="relative flex h-dvh w-full select-none flex-col overflow-hidden bg-surface text-fg"
     >
-      {/* ambient ground */}
-      <div className="pointer-events-none absolute inset-0 bg-white" />
-
       {/* head tracking: cursor + one-time calibration overlay */}
       {headEnabled && headSupported && <HeadCursor cursor={cursor} />}
       {headEnabled && headSupported && calibrating && (
@@ -891,8 +716,8 @@ export function EventsView({
           onPoint={recordCalibrationPoint}
           onDone={() => {
             finishCalibration();
-            // Close the accessibility menu so dwell (paused while it's open)
-            // starts working the moment tracking goes live.
+            // Dwell is paused while the menu is open; close it so tracking
+            // works the moment it goes live.
             setA11yOpen(false);
           }}
           onCancel={() => void setPref({ eye_tracking_enabled: false })}
@@ -901,22 +726,18 @@ export function EventsView({
           setPreview={setPreview}
         />
       )}
-
-      {/* head tracking active indicator — stable text; the dot shows live status
-          (green = we see you) so intermittent detection doesn't spam readers */}
       {headEnabled && headSupported && !calibrating && (
-        <div className="pointer-events-none absolute left-4 top-4 z-40 inline-flex items-center gap-2 rounded-full bg-ink/85 px-3 py-1.5 text-sm font-medium text-white">
+        <div className="pointer-events-none absolute bottom-4 left-4 z-40 inline-flex items-center gap-2 rounded-full bg-fg/85 px-3 py-1.5 text-sm font-medium text-surface">
           <span
-            className={`h-2 w-2 rounded-full ${cursor.visible ? "bg-attend" : "bg-white/40"}`}
+            className={`size-2 rounded-full ${cursor.visible ? "bg-tag-free-bg" : "bg-white/40"}`}
           />
-          🧭 Head tracking on
+          Head tracking on
         </div>
       )}
-
       {headEnabled && headError && (
         <div
           role="alert"
-          className="pointer-events-none absolute left-4 top-16 z-40 max-w-xs rounded-xl bg-pop px-3 py-2 text-sm font-medium text-white"
+          className="pointer-events-none absolute bottom-16 left-4 z-40 max-w-xs rounded-control bg-danger px-3 py-2 text-sm font-medium text-danger-fg"
         >
           {headError}
         </div>
@@ -927,291 +748,215 @@ export function EventsView({
         {srMessage}
       </p>
 
-      {/* voice listening indicator */}
       {voiceEnabled && listening && (
         <div
-          className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2 rounded-full bg-ink/85 px-4 py-1.5 text-sm font-medium text-white"
+          className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-full bg-fg/85 px-4 py-1.5 text-sm font-medium text-surface"
           role="status"
         >
-          🎙 Listening…
+          Listening…
         </div>
       )}
 
-      {/* View toggle, top left. */}
-      <div className="absolute left-4 top-4 z-50">
-        <ViewToggle mode={viewMode} onChange={setViewMode} />
-      </div>
-
-      {/* Who you are, top right. Signed out it is the way in. */}
-      <div className="absolute right-4 top-4 z-50">
-        <AccountChip
-          name={me ? `${me.first_name} ${me.last_name.charAt(0)}.` : null}
-          onSignIn={() => setAuthOpen(true)}
-          onSignOut={() => void doLogout()}
-        />
-      </div>
-
-      {/* TEMPORARY — a way into the staff console from the feed, for testing.
-          The considered place for this is the sign-in overlay, where it also
-          lives; this one is on the feed itself so the admin flow is one click
-          away without signing in as a member first. Members have no use for it,
-          so it stays small and out of the way — and it should come out before
-          the agencies see this. */}
-      <div className="absolute bottom-3 left-4 z-50">
-        <Link
-          href="/host"
-          className="inline-flex min-h-[32px] items-center text-xs text-muted underline underline-offset-2 transition-colors hover:text-ink"
-        >
-          Staff sign-in
-        </Link>
-      </div>
-
-      {/* accessibility settings */}
-      <AccessibilityMenu
-        open={a11yOpen}
-        onOpenChange={setA11yOpen}
-        ttsEnabled={ttsEnabled}
-        voiceEnabled={voiceEnabled}
-        ttsSupported={ttsSupported}
-        voiceSupported={voiceSupported}
-        onToggleTts={toggleTts}
-        onToggleVoice={toggleVoice}
-        headEnabled={headEnabled}
-        headSupported={headSupported}
-        onToggleHead={toggleHead}
-        listening={voiceEnabled && listening}
-        lastHeard={lastHeard}
-        interests={me?.interest_categories ?? []}
-        onToggleInterest={toggleInterest}
-        accessPrefs={me?.accessibility_prefs ?? []}
-        onToggleAccessPref={toggleAccessPref}
-        signedIn={signedIn}
-        onSignIn={() => {
-          // Close this panel on the way out. The sign-in overlay covers it, so
-          // leaving it open left a hidden dialog still listening for Escape —
-          // which then stole focus to a trigger nobody could see.
-          setA11yOpen(false);
-          setAuthFor(null);
-          setAuthOpen(true);
-        }}
-      />
-
-      {/* Saved Events panel (opens via the settings gesture) */}
-      <SavedEvents
-        me={me}
-        reveal={settingsReveal}
-        onClose={closeSettings}
-        onSignIn={() => {
-          // Same reason as the accessibility panel above: otherwise Escape
-          // closes this panel behind the overlay instead of the overlay.
-          closeSettings();
-          setAuthFor(null);
-          setAuthOpen(true);
-        }}
-        saved={saved}
-        onToggleSave={toggleSave}
-        onOpen={setDetailFor}
-      />
-
-      {/* ---------------- EVENTS ---------------- */}
-      <div
-        className={`absolute inset-0 flex flex-col items-center px-6 pt-8 ${
-          viewMode === "grid" ? "pb-8" : "pb-44"
-        }`}
-        style={{
-          opacity: 1 - settingsReveal,
-          pointerEvents: view === "settings" ? "none" : "auto",
-        }}
+      <FeedHeader
+        name={name}
+        onSignIn={() => toSignIn()}
+        onSignOut={() => void doLogout()}
       >
-        {/* No filter bar: the design doesn't have one. Cost and organization
-            are two of the six ways to group instead, which is the design's
-            answer to the same need. */}
+        <AccessibilityMenu
+          open={a11yOpen}
+          onOpenChange={setA11yOpen}
+          ttsEnabled={ttsEnabled}
+          voiceEnabled={voiceEnabled}
+          ttsSupported={ttsSupported}
+          voiceSupported={voiceSupported}
+          onToggleTts={toggleTts}
+          onToggleVoice={toggleVoice}
+          headEnabled={headEnabled}
+          headSupported={headSupported}
+          onToggleHead={toggleHead}
+          listening={voiceEnabled && listening}
+          lastHeard={lastHeard}
+          interests={me?.interest_categories ?? []}
+          onToggleInterest={toggleInterest}
+          accessPrefs={me?.accessibility_prefs ?? []}
+          onToggleAccessPref={toggleAccessPref}
+          signedIn={signedIn}
+          onSignIn={() => {
+            // The sign-in overlay covers this menu; leaving it open left a
+            // hidden dialog still listening for Escape.
+            setA11yOpen(false);
+            toSignIn();
+          }}
+        />
+      </FeedHeader>
 
-        {empty ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-            <p className="font-display text-3xl text-muted">
-              No programs yet. Check back soon.
-            </p>
-          </div>
-        ) : (
-          <>
-            {viewMode === "grid" ? (
-              <div className="flex w-full max-w-6xl flex-wrap items-start justify-between gap-4 pb-6">
-                <SeeEventsBy
-                  dimension={dimension}
-                  open={dimOpen}
-                  onOpenChange={setDimOpen}
-                  onSelect={(key) => setDimensionKey(key)}
-                  align="left"
-                />
-                <div className="flex flex-col items-end gap-4">
-                  <SearchBox value={query} onChange={setQuery} />
-                  <SavedEventsButton
-                    count={savedPrograms.size}
-                    onClick={openSettings}
+      <div className="relative flex min-h-0 flex-1">
+        <SavedSidebar
+          ref={dropRef}
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen((o) => !o)}
+          events={savedList}
+          active={dragActive}
+          signedIn={signedIn}
+          onOpenSaved={openSaved}
+          onOpenEvent={setDetailFor}
+          onSignIn={() => toSignIn()}
+        />
+
+        <section className="relative flex min-w-0 flex-1 flex-col">
+          {/* The saved list opens over the main column; the sidebar stays. */}
+          <SavedEvents
+            me={me}
+            reveal={view === "saved" ? 1 : 0}
+            onClose={closeSaved}
+            onSignIn={() => {
+              closeSaved();
+              toSignIn();
+            }}
+            saved={saved}
+            onToggleSave={toggleSave}
+            onOpen={setDetailFor}
+          />
+
+          <div
+            className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:p-9"
+            style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h1 className="text-3xl font-medium text-fg">{heading}</h1>
+              <SegmentedToggle
+                label="View"
+                segments={narrow ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS}
+                value={viewMode}
+                onChange={setViewMode}
+              />
+            </div>
+
+            <FeedFilters
+              chips={chips}
+              onToggleChip={toggleChip}
+              sort={sort}
+              onSort={setSort}
+            />
+
+            {status === "empty" ? (
+              <p className="py-16 text-center text-2xl text-fg-muted">
+                No programs yet. Check back soon.
+              </p>
+            ) : viewMode === "list" ? (
+              <ListFeed
+                events={feed}
+                onOpen={setDetailFor}
+                onSignIn={() => toSignIn()}
+              />
+            ) : !current ? (
+              <p className="py-16 text-center text-2xl text-fg-muted">
+                No events match these filters.
+              </p>
+            ) : (
+              /* card view: one card on a stacked deck, ↑ / ↓ beside it */
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
+                <div className="relative w-full max-w-[880px]">
+                  {/* the deck beneath — purely decorative */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-x-12 -bottom-6 top-12 rounded-card border border-line-card bg-surface-subtle/70"
                   />
+                  <div
+                    aria-hidden
+                    className="absolute inset-x-6 -bottom-3 top-6 rounded-card border border-line-card bg-surface-subtle"
+                  />
+                  <motion.div
+                    ref={cardWrapRef}
+                    style={{
+                      x: flyX,
+                      y: flyY,
+                      scale: cardScale,
+                      opacity: cardOpacity,
+                    }}
+                    className="relative z-10"
+                  >
+                    {/* Enter-only slide from the travel direction, keyed by id
+                        so it never fights the drag transforms. */}
+                    <motion.div
+                      key={current.id}
+                      initial={
+                        reduceMotion
+                          ? false
+                          : { y: dir > 0 ? 80 : -80, opacity: 0 }
+                      }
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                    >
+                      <motion.div
+                        drag={!flying}
+                        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                        dragElastic={0.65}
+                        style={{ x, y, rotate: reduceMotion ? 0 : rotate }}
+                        whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
+                        onDrag={(_, info) => {
+                          // Leftward travel is a save in progress; anything
+                          // else leaves the zone alone.
+                          const dx = info.offset.x;
+                          setDragTint(
+                            dx < -24 && Math.abs(dx) > Math.abs(info.offset.y),
+                          );
+                        }}
+                        onDragEnd={(_, info) => {
+                          setDragTint(false);
+                          const { x: dx, y: dy } = info.offset;
+                          if (Math.abs(dx) > Math.abs(dy)) {
+                            const zone = dropRef.current?.getBoundingClientRect();
+                            const over = zone ? info.point.x <= zone.right : false;
+                            if (dx < -DROP_THRESHOLD || over) {
+                              void flyToDrop(x.get());
+                            }
+                            return;
+                          }
+                          // Vertical travel pages, like the ↑ / ↓ buttons.
+                          if (dy > SWIPE_THRESHOLD) next();
+                          else if (dy < -SWIPE_THRESHOLD) prev();
+                        }}
+                        className={`${flying ? "" : "cursor-grab active:cursor-grabbing"} ${
+                          dragActive ? "shadow-lift" : ""
+                        } rounded-card`}
+                      >
+                        <FeedCard
+                          event={current}
+                          saved={saved.has(current.id)}
+                          onMoreInfo={setDetailFor}
+                          onSave={saveFromButton}
+                          onSignIn={() => toSignIn()}
+                        />
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
+                </div>
+
+                <div className="flex shrink-0 gap-6 sm:flex-col sm:pt-24">
+                  <button
+                    type="button"
+                    aria-label="Previous event"
+                    onClick={prev}
+                    disabled={flying}
+                    className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
+                  >
+                    <ArrowUp aria-hidden="true" className="size-12" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next event"
+                    onClick={next}
+                    disabled={flying}
+                    className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
+                  >
+                    <ArrowDown aria-hidden="true" className="size-12" />
+                  </button>
                 </div>
               </div>
-            ) : (
-              <>
-                <SeeEventsBy
-                  dimension={dimension}
-                  open={dimOpen}
-                  onOpenChange={setDimOpen}
-                  onSelect={(key) => {
-                    setDimensionKey(key);
-                    setI(0);
-                    setSrMessage(
-                      `Showing events by ${dimensionByKey(key).heading}.`,
-                    );
-                  }}
-                />
-                <p className="mt-5 font-display text-2xl font-semibold text-ink">
-                  {activeBucket.label}
-                </p>
-                <BucketStepper
-                  buckets={buckets}
-                  activeId={activeBucket.id}
-                  progress={railProgress}
-                  onJump={setI}
-                />
-              </>
             )}
-
-            {viewMode === "grid" ? (
-              <GridFeed
-                events={programs}
-                dimension={dimension}
-                saved={saved}
-                query={query}
-                onOpen={setDetailFor}
-                onToggleSave={toggleSave}
-              />
-            ) : (
-            /* carousel */
-            <div className="relative flex w-full flex-1 items-center justify-center">
-              <SideZone side="left" onClick={clickNavLeft} />
-              <SideZone side="right" onClick={clickNavRight} />
-
-              {/* Card group.
-                  Pointer-events-none so its transparent flanks pass clicks
-                  through to the side zones; the card re-enables events. */}
-              <motion.div
-                // pb-14 is the drop tab's room. It hangs off the bottom of the
-                // card, so without reserving for it the tab disappears behind
-                // the save bar on a short window — exactly where the gesture it
-                // advertises has to land.
-                className="pointer-events-none absolute inset-0 z-30 grid place-items-center pb-14"
-              >
-                <motion.div
-                  ref={cardWrapRef}
-                  style={{
-                    x: flyX,
-                    y: flyY,
-                    scale: cardScale,
-                    opacity: cardOpacity,
-                    zIndex: 30,
-                  }}
-                  // Height-led, not width-led: the design's card is 37% of a
-                  // tall window, and holding its width on a short one grew it to
-                  // 46% and pushed the tab into the save bar. Width follows the
-                  // ratio, up to the design's 880.
-                  className="pointer-events-auto relative aspect-[2.3/1] h-full max-h-[382px] w-auto max-w-[880px]"
-                >
-                {/* Focused card slides in from the travel direction on next/back.
-                    Enter-only (keyed by id) so it won't fight the drag/fly transforms. */}
-                <motion.div
-                  key={current.id}
-                  initial={
-                    flying || reduceMotion
-                      ? false
-                      : { x: dir > 0 ? 300 : -300, opacity: 0 }
-                  }
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                  className="absolute inset-0"
-                >
-                <motion.div
-                  drag={!flying}
-                  dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                  dragElastic={0.65}
-                  style={{ x, y, rotate }}
-                  whileDrag={{ scale: 1.03 }}
-                  onDrag={(_, info) => {
-                    const dyy = info.offset.y;
-                    // Sideways travel is paging, not saving — don't fill the
-                    // save zone while someone is swiping across.
-                    if (Math.abs(info.offset.x) > Math.abs(dyy)) {
-                      setSaveReveal(0);
-                      setSettingsReveal(0);
-                      return;
-                    }
-                    if (dyy > 0) {
-                      setSaveReveal(clamp01(dyy / DROP_THRESHOLD));
-                      setSettingsReveal(0);
-                    } else {
-                      setSettingsReveal(clamp01(-dyy / SETTINGS_THRESHOLD));
-                      setSaveReveal(0);
-                    }
-                  }}
-                  onDragEnd={(_, info) => {
-                    const dyy = info.offset.y;
-                    const dxx = info.offset.x;
-                    setSaveReveal(0);
-                    setSettingsReveal(0);
-                    // Whichever axis they actually moved along. Comparing the
-                    // two stops a sloppy downward drag that wandered sideways
-                    // from paging instead of saving.
-                    if (Math.abs(dxx) > Math.abs(dyy)) {
-                      if (Math.abs(dxx) > SWIPE_THRESHOLD) {
-                        if (dxx < 0) next();
-                        else prev();
-                      }
-                      return;
-                    }
-                    if (dyy > DROP_THRESHOLD) void saveCurrent();
-                    else if (dyy < -SETTINGS_THRESHOLD) openSettings();
-                  }}
-                  // No press-and-hold to save. Resting a finger on the card
-                  // started a two-second countdown to saving it, which fired
-                  // for people who were only steadying the phone and never
-                  // fired for people who lifted early — the same mechanism
-                  // reported as "too fast" and as "doesn't work". Saving is the
-                  // drag, the arrow key and the button, all of which say what
-                  // they are.
-                  className="absolute inset-0 cursor-grab active:cursor-grabbing"
-                >
-                  {/* Behind the card so only the rounded tongue shows. */}
-                  <CardDropTab />
-                  <div className="relative h-full w-full overflow-hidden rounded-[28px] border-[1.5px] border-[#9A9A9A] bg-white">
-                    <WideEventCard
-                      event={current}
-                      saved={alreadySaved}
-                      onExpand={setDetailFor}
-                    />
-                    <AnimatePresence>
-                      {confirming && <ConfirmSweep />}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-                </motion.div>
-              </motion.div>
-              </motion.div>
-            </div>
-            )}
-          </>
-        )}
-
-        {/* Drop target for drag + hold-to-save, and the saved count. */}
-        {viewMode === "carousel" && (
-          <SaveZone
-            ref={dropRef}
-            active={saveReveal > 0 || dropPulse}
-            count={savedPrograms.size}
-            onSave={saveFromButton}
-            onOpen={openSettings}
-          />
-        )}
+          </div>
+        </section>
       </div>
 
       {authOpen && (
@@ -1236,460 +981,6 @@ export function EventsView({
           onOpenRegistration={openRegistration}
         />
       )}
-
-      {registerFor && (
-        <RegisterPrompt
-          title={registerFor.title}
-          external={
-            registerFor.requires_signup &&
-            registerFor.registration_mode === "external" &&
-            !!registerFor.registration_url
-          }
-          onSkip={() => setRegisterFor(null)}
-          onRegister={() => {
-            const ev = registerFor;
-            setRegisterFor(null);
-            void attend(ev);
-            // If registration lives on the organizer's site, saving is not
-            // registering — send them there too, or they turn up unregistered
-            // having pressed a button that said Register.
-            if (
-              ev.requires_signup &&
-              ev.registration_mode === "external" &&
-              ev.registration_url
-            ) {
-              openRegistration(ev);
-            }
-          }}
-        />
-      )}
     </motion.main>
-  );
-}
-
-/* ---------------- accessibility menu ---------------- */
-
-const AccessibilityMenu = memo(function AccessibilityMenu({
-  open,
-  onOpenChange,
-  ttsEnabled,
-  voiceEnabled,
-  ttsSupported,
-  voiceSupported,
-  onToggleTts,
-  onToggleVoice,
-  headEnabled,
-  headSupported,
-  onToggleHead,
-  listening,
-  lastHeard,
-  interests,
-  onToggleInterest,
-  accessPrefs,
-  onToggleAccessPref,
-  signedIn,
-  onSignIn,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  ttsEnabled: boolean;
-  voiceEnabled: boolean;
-  ttsSupported: boolean;
-  voiceSupported: boolean;
-  onToggleTts: (v: boolean) => void;
-  onToggleVoice: (v: boolean) => void;
-  headEnabled: boolean;
-  headSupported: boolean;
-  onToggleHead: (v: boolean) => void;
-  listening: boolean;
-  /** The recognizer's most recent transcript, for the voice hint. */
-  lastHeard: string;
-  interests: string[];
-  onToggleInterest: (label: string) => void;
-  /** Slugs from lib/accessibility — what the member needs a program to offer. */
-  accessPrefs: string[];
-  onToggleAccessPref: (slug: string, label: string) => void;
-  signedIn: boolean;
-  onSignIn: () => void;
-}) {
-  // Escape closes it, and focus goes back to the trigger — otherwise keyboard
-  // focus is stranded on a panel that is no longer there. A backdrop click was
-  // the only way out, which is no way out at all without a mouse.
-  //
-  // Listening here rather than in the feed's keydown handler because that one
-  // returns early for anything inside a [role="dialog"] and again while this
-  // menu is open. Both are right for arrow keys — the panel owns them — and
-  // wrong for Escape, which is how you leave. Capture, and without stopping
-  // propagation, matching the menus in MemberChrome.
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      onOpenChange(false);
-      triggerRef.current?.focus();
-    }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [open, onOpenChange]);
-
-  return (
-    // Sits under the view toggle, top left, as in the design.
-    <div className="absolute left-4 top-[4.75rem] z-50">
-      {open && (
-        <button
-          aria-hidden
-          tabIndex={-1}
-          onClick={() => onOpenChange(false)}
-          className="fixed inset-0 -z-10 cursor-default"
-        />
-      )}
-      <button
-        ref={triggerRef}
-        onClick={() => onOpenChange(!open)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label="Your settings: interests and accessibility"
-        className="relative inline-flex min-h-[44px] items-center gap-1 rounded-full py-1 pl-1 pr-2 text-ink transition-transform hover:scale-105"
-      >
-        <AccessibilityIcon />
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M6 9l6 6 6-6"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        {listening && (
-          <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-attend text-[10px] text-white shadow">
-            🎤
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          // Not role="menu": this holds headings, paragraphs and switches, none
-          // of which are menuitems. Screen readers entered application mode and
-          // then found nothing to navigate.
-          role="dialog"
-          aria-label="Your settings"
-          className="absolute left-0 mt-2 max-h-[80vh] w-80 overflow-y-auto rounded-2xl bg-white p-4 shadow-lift"
-        >
-          <h2 className="font-display text-lg font-bold text-ink">
-            What you like
-          </h2>
-          {/* Topics live on a profile, so there is nowhere to put them without
-              an account. The accessibility switches below need no account and
-              stay available either way. */}
-          {!signedIn ? (
-            <button
-              onClick={onSignIn}
-              className="mt-3 w-full rounded-2xl bg-accent px-6 py-3 text-lg font-semibold text-white"
-            >
-              Sign in to pick topics
-            </button>
-          ) : (
-          <>
-          <p className="mt-0.5 text-sm text-muted">
-            These come first in your programs.
-          </p>
-          <div
-            role="group"
-            aria-label="Things you are interested in"
-            className="mt-3 flex flex-wrap gap-2"
-          >
-            {CATEGORIES.map(({ label, emoji, color }) => {
-              const chosen = interests.includes(label);
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => onToggleInterest(label)}
-                  aria-pressed={chosen}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition-transform hover:scale-[1.04]"
-                  style={{ borderColor: chosen ? color : "#E2DEF0" }}
-                >
-                  <span aria-hidden>{emoji}</span>
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="sr-only" role="status" aria-live="polite">
-            {interests.length === 0
-              ? "Nothing chosen yet"
-              : `${interests.length} chosen: ${interests.join(", ")}`}
-          </p>
-
-          {/* Needs, not tastes — so they sort harder than topics do (see
-              ACCESS_WEIGHT in lib/feed). Still only sorting: nothing is hidden
-              from anyone, and most programs have said nothing either way. */}
-          <h2 className="mt-6 font-display text-lg font-bold text-ink">
-            What you need
-          </h2>
-          <p className="mt-0.5 text-sm text-muted">
-            Programs that offer these come first.
-          </p>
-          <div
-            role="group"
-            aria-label="Things you need a program to offer"
-            className="mt-3 flex flex-wrap gap-2"
-          >
-            {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
-              const chosen = accessPrefs.includes(slug);
-              return (
-                <button
-                  key={slug}
-                  type="button"
-                  onClick={() => onToggleAccessPref(slug, label)}
-                  aria-pressed={chosen}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition-transform hover:scale-[1.04]"
-                  style={{ borderColor: chosen ? "#35CDEE" : "#E2DEF0" }}
-                >
-                  <span aria-hidden>{emoji}</span>
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="sr-only" role="status" aria-live="polite">
-            {accessPrefs.length === 0
-              ? "Nothing chosen yet"
-              : `${accessPrefs.length} chosen`}
-          </p>
-          </>
-          )}
-
-          <h2 className="mt-6 font-display text-lg font-bold text-ink">
-            Accessibility
-          </h2>
-          <p className="mt-0.5 text-sm text-muted">
-            Turn these on or off any time.
-          </p>
-          <div className="mt-2 flex flex-col divide-y divide-edge">
-            <MenuToggle
-              label="Screen reader (read aloud)"
-              hint="Speaks each event as you browse."
-              checked={ttsEnabled}
-              disabled={!ttsSupported}
-              disabledHint="Not supported in this browser."
-              onChange={onToggleTts}
-            />
-            <MenuToggle
-              label="Speech to action"
-              hint={
-                // What it actually heard, once it has heard anything. The
-                // recognizer mishears a four-word vocabulary often enough that
-                // "it isn't working" and "it heard something else" look
-                // identical from the outside — this tells them apart.
-                listening && lastHeard
-                  ? `Heard “${lastHeard}”. Say “next”, “back”, “save”, or “list”.`
-                  : 'Say “next”, “back”, “save”, or “list”.'
-              }
-              checked={voiceEnabled}
-              disabled={!voiceSupported}
-              disabledHint="Not supported here (try Chrome or Edge)."
-              onChange={onToggleVoice}
-            />
-            <MenuToggle
-              label="Head tracking"
-              hint="Turn your head toward a screen edge to move, save, or open settings."
-              checked={headEnabled}
-              disabled={!headSupported}
-              disabledHint="Needs a webcam on Chrome or Edge over https."
-              onChange={onToggleHead}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
-
-function MenuToggle({
-  label,
-  hint,
-  checked,
-  disabled,
-  disabledHint,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  checked: boolean;
-  disabled?: boolean;
-  disabledHint?: string;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 py-3">
-      <div>
-        <p className="font-semibold text-ink">{label}</p>
-        <p className="text-xs text-muted">
-          {disabled ? disabledHint ?? hint : hint}
-        </p>
-      </div>
-      {/* The track stays 44×24 — the button around it is 44×44.
-          These three switches turn on the screen reader, voice control and head
-          tracking, so they are the controls the people this app is for are most
-          likely to need and least likely to hit precisely. A 24px-tall target
-          for that is backwards. */}
-      <button
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className="group relative grid h-11 w-11 shrink-0 place-items-center disabled:opacity-40"
-      >
-        <span
-          className={`relative block h-6 w-11 rounded-full transition-colors ${
-            checked ? "bg-accent" : "bg-edge"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-              checked ? "left-[22px]" : "left-0.5"
-            }`}
-          />
-        </span>
-      </button>
-    </div>
-  );
-}
-
-/* ---------------- confirm ---------------- */
-
-
-function ConfirmSweep() {
-  return (
-    <motion.div
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "spring", stiffness: 220, damping: 26 }}
-      className="absolute inset-0 grid place-items-center bg-attend text-white"
-    >
-      <div className="text-center">
-        <div className="text-6xl">✓</div>
-        <p className="mt-2 font-display text-3xl font-extrabold">Saved!</p>
-        <p className="mt-1 text-lg text-white/80">Added to your saved events.</p>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ---------------- side nav ---------------- */
-
-// Whole-flank target: click to move immediately, or hover/press to build a
-// dwell that slides the carousel and repeats while the pointer stays. The
-// arrow circle is a real button so keyboard and screen-reader users can
-// navigate; the rest of the zone stays decorative.
-const SideZone = memo(function SideZone({
-  side,
-  onClick,
-}: {
-  side: "left" | "right";
-  onClick: () => void;
-}) {
-  const isLeft = side === "left";
-  return (
-    <div
-      onClick={onClick}
-      className={`absolute z-20 flex cursor-pointer items-center ${
-        isLeft ? "left-0 justify-start pl-3" : "right-0 justify-end pr-3"
-      }`}
-      // A forgiving margin around the arrow, not the whole flank — 288 wide is
-      // nearly twice the arrow, so an imprecise press still lands. Nothing here
-      // reacts to hover any more: it is a click target, and only a click.
-      style={{
-        width: "min(288px, calc(50% - 300px))",
-        minWidth: "96px",
-        top: "50%",
-        transform: "translateY(-50%)",
-        height: "min(232px, 100%)",
-      }}
-    >
-      <div className="flex flex-col items-center gap-2 rounded-3xl px-4 py-6">
-        <button
-          type="button"
-          aria-label={isLeft ? "Previous event" : "Next event"}
-          onClick={(e) => {
-            // Zone onClick handles pointer clicks; stop the bubble so a
-            // button click (mouse or keyboard) doesn't navigate twice.
-            e.stopPropagation();
-            onClick();
-          }}
-          className="grid h-[86px] w-[152px] place-items-center rounded-full border-[1.5px] border-[#9A9A9A] bg-transparent text-6xl font-light leading-none text-[#5C5C5C] transition-transform hover:scale-[1.04] active:scale-[0.98]"
-        >
-          <span aria-hidden>{isLeft ? "←" : "→"}</span>
-        </button>
-        <span
-          className="font-display text-3xl font-medium text-[#424242]"
-          aria-hidden
-        >
-          {isLeft ? "Back" : "Next"}
-        </span>
-      </div>
-    </div>
-  );
-});
-
-/* ---------------- settings morph ---------------- */
-
-/* ---------------- icons ---------------- */
-
-function CalendarIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden
-    >
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M3 9h18M8 3v4M16 3v4" />
-    </svg>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" />
-      <circle cx="12" cy="10" r="2.5" />
-    </svg>
-  );
-}
-function AccessibilityIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-7 w-7"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="3.8" r="1.6" />
-      <path d="M4 8h16M12 8v6M12 14l-3.5 6M12 14l3.5 6" />
-    </svg>
   );
 }

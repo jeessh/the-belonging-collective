@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
-import { emojiFor } from "@/lib/icons";
+import { Bookmark } from "lucide-react";
 import { FOCUSABLE } from "@/components/Modal";
 import { CYAN } from "@/components/member/FeedParts";
 import { GridCard, SearchBox } from "@/components/member/GridFeed";
@@ -144,8 +144,6 @@ export const SavedEvents = memo(function SavedEvents({
 
   if (!open) return null;
 
-  const emoji = me?.icons?.[0] ? emojiFor(me.icons[0]) : "🔖";
-
   return (
     <div
       ref={panelRef}
@@ -159,8 +157,12 @@ export const SavedEvents = memo(function SavedEvents({
       <div className="mx-auto w-full max-w-6xl px-8 py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="flex items-center gap-3 font-display text-4xl font-extrabold tracking-tight text-ink">
-            {/* Their own sign-in icon, so the list is visibly theirs. */}
-            <span aria-hidden>{emoji}</span>
+            {/* A neutral emblem — never the member's sign-in icon, which is
+                half of their password. */}
+            <Bookmark
+              aria-hidden="true"
+              className="size-9 fill-primary-strong text-primary-strong"
+            />
             {me ? `${me.first_name}'s Saved Events` : "Saved Events"}
           </h1>
           <div className="flex items-center gap-3">
