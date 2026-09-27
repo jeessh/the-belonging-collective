@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.security import PASSWORD_MIN_LENGTH
+
 
 def _clean_name(value: str | None) -> str | None:
     """Trim, and reject a name that was only whitespace.
@@ -48,7 +50,7 @@ class HostCreate(BaseModel):
 
     name: str = Field(min_length=1)
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH)
     # Whether the new account can manage other admins. Off unless asked for.
     is_admin: bool = False
     # Shown in the member feed's organization stepper.
@@ -72,7 +74,7 @@ class HostUpdate(BaseModel):
     name: str | None = Field(None, min_length=1)
     is_admin: bool | None = None
     # Setting this resets the account's password; omitted leaves it alone.
-    password: str | None = Field(None, min_length=8)
+    password: str | None = Field(None, min_length=PASSWORD_MIN_LENGTH)
     logo_url: str | None = None
 
     _strip_name = field_validator("name")(_clean_name)

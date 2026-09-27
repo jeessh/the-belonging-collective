@@ -1,15 +1,31 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_host, get_db
+from app.api.deps import (
+    get_current_host,
+    get_db,
+    get_optional_host,
+    get_optional_user,
+)
+from app.core import ical
 from app.core.storage import StorageError, upload_image
 from app.models.attendance import Attendance
 from app.models.event import Event
 from app.models.event_image import EventImage
 from app.models.host import Host
+from app.models.user import User
 from app.core.recurrence import RecurrenceError, describe as describe_recurrence
 from app.core.recurrence import occurrences
 from app.schemas.event import (
@@ -93,6 +109,7 @@ _REQUIRED_FIELDS = frozenset(
         "registration_mode",
         "pricing_model",
         "event_no",
+        "links",
     }
 )
 
@@ -107,6 +124,28 @@ _EVENT_OUT_OPTIONS = (
 )
 
 
+def _public_view(rows: list[Event], signed_in: bool) -> list[EventOut]:
+    """Serialize for a public route. "N going" is for people who are signed
+    in — a member or an organizer — so anonymous visitors get null, not 0."""
+    out = [EventOut.model_validate(row) for row in rows]
+    if not signed_in:
+        for item in out:
+            item.saved_count = None
+    return out
+
+
+def _live_event(db: Session, event_id: uuid.UUID) -> Event:
+    event = (
+        db.query(Event)
+        .options(*_EVENT_OUT_OPTIONS)
+        .filter(Event.id == event_id, Event.deleted_at.is_(None))
+        .first()
+    )
+    if not event:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+    return event
+
+
 @router.get("", response_model=list[EventOut])
 def list_events(
     category: str | None = None,
@@ -115,6 +154,8 @@ def list_events(
     q: str | None = None,
     limit: int = Query(100, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    viewer: User | None = Depends(get_optional_user),
+    organizer: Host | None = Depends(get_optional_host),
     db: Session = Depends(get_db),
 ):
     """Public discovery feed with needs + accessibility filters."""
@@ -133,7 +174,7 @@ def list_events(
     # across requests. Without these, events sharing a starts_at (or both
     # undated → NULL) come back in arbitrary, varying order — which reads as the
     # feed being "out of order sometimes". created_at then id break ties.
-    return (
+    rows = (
         query.order_by(
             Event.starts_at.asc().nullslast(),
             Event.created_at.asc(),
@@ -143,19 +184,35 @@ def list_events(
         .offset(offset)
         .all()
     )
+    return _public_view(rows, bool(viewer or organizer))
 
 
 @router.get("/{event_id}", response_model=EventOut)
-def get_event(event_id: uuid.UUID, db: Session = Depends(get_db)):
-    event = (
-        db.query(Event)
-        .options(*_EVENT_OUT_OPTIONS)
-        .filter(Event.id == event_id, Event.deleted_at.is_(None))
-        .first()
+def get_event(
+    event_id: uuid.UUID,
+    viewer: User | None = Depends(get_optional_user),
+    organizer: Host | None = Depends(get_optional_host),
+    db: Session = Depends(get_db),
+):
+    event = _live_event(db, event_id)
+    return _public_view([event], bool(viewer or organizer))[0]
+
+
+@router.get("/{event_id}/calendar.ics")
+def event_calendar(event_id: uuid.UUID, db: Session = Depends(get_db)):
+    """The program as a calendar file. Public, like the page it sits on."""
+    event = _live_event(db, event_id)
+    if not event.starts_at:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "This program has no date to add."
+        )
+    return Response(
+        ical.build([event]),
+        media_type="text/calendar; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="program-{event.event_no}.ics"'
+        },
     )
-    if not event:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
-    return event
 
 
 @router.post("", response_model=EventOut, status_code=status.HTTP_201_CREATED)

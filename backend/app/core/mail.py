@@ -1,8 +1,8 @@
 """Outbound email.
 
-The platform has never sent mail before — member accounts deliberately have no
-address on them at all — so this exists for exactly one thing: an organizer who
-has forgotten their password and has nobody above them to reset it.
+Used for organizer mail only: password resets and invitations. Members are
+never mailed — an icon account has no address, and a password account's email
+is a sign-in name, not a channel.
 
 Plain smtplib rather than a provider SDK. It adds no dependency, and a nonprofit
 that already has Microsoft 365 or Google Workspace can point it at their own
@@ -26,18 +26,17 @@ def configured() -> bool:
 def send(to: str, subject: str, body: str) -> bool:
     """Send one plain-text message. True if it was handed to the server.
 
-    Never raises. A caller here is in the middle of a password reset, and the
-    endpoint deliberately answers the same way whether or not the address
-    exists — so it has to answer the same way when the mail server is down too,
-    rather than turning a delivery failure into a 500 that tells the sender
-    something about the account.
+    Never raises. The password-reset endpoint deliberately answers the same
+    way whether or not the address exists — so it has to answer the same way
+    when the mail server is down too, rather than turning a delivery failure
+    into a 500 that tells the sender something about the account.
     """
     if not configured():
         # Unconfigured is the normal state locally. Log the message so the flow
-        # can be completed in development without a mail server; the reset link
-        # is in the body, so this must never be enabled in production — which
-        # is why it is tied to SMTP_HOST being unset rather than to a flag
-        # somebody could turn on.
+        # can be completed in development without a mail server; the reset or
+        # invite link is in the body, so this must never be enabled in
+        # production — which is why it is tied to SMTP_HOST being unset rather
+        # than to a flag somebody could turn on.
         log.warning("SMTP not configured; would have sent to %s:\n%s", to, body)
         return False
 
