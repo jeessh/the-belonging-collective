@@ -116,12 +116,22 @@ value produces links nobody can open.
   decision not yet made, not an omission.
 
 ### Admin console (`/host/*`)
-- `components/AdminShell.tsx` is the chrome: resolves the session before
-  rendering, then a persistent sidebar (Programs / Admins / Members).
-  `components/AdminTable.tsx` holds the shared table/button/field primitives.
-- Dense, squared-off, table-first — **deliberately not** the soft
-  one-thing-at-a-time member idiom. Staff doing repetitive work want everything
-  one click away; don't "harmonize" the two surfaces.
+- `components/AdminShell.tsx` is the chrome: resolves the session and the
+  organizer's own account, then renders `components/host/ConsoleHeader.tsx` —
+  a header bar (logo, org name, sign out, and for superadmins a segmented
+  Event Management / Account Management switch) — over the page. **No
+  sidebar any more.**
+- Programs are cards, not table rows: `components/host/PostedEvents.tsx`'s
+  `PostedEventCard` (the shared `EventSummary` + "N going" + copy-link) beside
+  an accordion `FilterPanel`, with a Your Events / All Events toggle.
+  `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
+  link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
+  Accounts stay table-first — `components/AdminTable.tsx` still backs
+  `/host/admins` (Organizations) and `/host/users` (Community Members),
+  switched by `components/host/AccountsNav.tsx`.
+- Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
+  member idiom. Staff doing repetitive work want everything one click away;
+  don't "harmonize" the two surfaces just because the sidebar went.
 - Superadmin-only pages pass `requireSuperadmin` to `AdminShell`, which gates the
   page itself, not just the nav entry. The API refuses regardless.
 
