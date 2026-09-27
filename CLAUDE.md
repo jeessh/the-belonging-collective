@@ -94,8 +94,26 @@ value produces links nobody can open.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
 - `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See
-  who else is going" and opens sign-in. The feed re-reads `/events` on sign-in
+  who else is going" and opens sign-in (or links to `/signup?next=` on the
+  server-rendered page). The feed re-reads `/events` on sign-in
   (`fetchAllEvents`) so the counts appear, and nulls them on sign-out.
+- **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
+  full program — summary, DETAILS, LINKS (`event.links` plus the organizer's
+  `registration_url`) — for the "More information" dialog
+  (`member/EventDetailModal`), the public `/events/[id]` page and the print
+  preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
+  and bottom `actions`. Share and Print need no backend: `ShareModal` opens a
+  `mailto:` or copies text (`lib/share.ts`), `PrintPreview` is `window.print()`
+  over the `.print-target` CSS. Nested dialogs work because `Modal` only
+  answers Escape/Tab when it is the last `[role=dialog]` in the document, and
+  the sheets portal to `document.body` — keep both if you add another.
+- `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
+  it is handed the feed's `savedEvents`, so an un-save there and the Undo on
+  its toast show at once. Its dialog is named "All saved events" — the
+  sidebar already owns "Saved events".
+- There is no public link to a member's saved list; "Share list" is
+  `mailto:`/copy of the titles and per-event URLs only. That is a privacy
+  decision not yet made, not an omission.
 
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session before
