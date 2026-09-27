@@ -113,9 +113,12 @@ export function EventsView({
   const [chips, setChips] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<FeedSort>("foryou");
   // Open on a desktop, the rail below `lg` — the design is desktop-first.
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => typeof window === "undefined" || window.innerWidth >= 1024,
-  );
+  // Starts open on both server and client, then corrects after mount, so the
+  // first client render matches the server's.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  }, []);
   // Below `sm` the view toggle is icons only, or it is wider than the column.
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
