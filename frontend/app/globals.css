@@ -42,6 +42,11 @@ body {
    the console around it — filters, nav, buttons — and the thing somebody
    actually wanted on paper competed with the furniture. */
 @media print {
+  /* A dialog locks body scrolling while it is open; on paper that clipped the
+     preview to one page. */
+  body {
+    overflow: visible !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -53,6 +58,9 @@ body {
     position: absolute;
     inset: 0;
     padding: 24px;
+    /* The preview scrolls on screen; on paper it paginates. */
+    max-height: none !important;
+    overflow: visible !important;
   }
   .no-print {
     display: none !important;

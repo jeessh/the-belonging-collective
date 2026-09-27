@@ -131,16 +131,19 @@ export function timeRange(
 /**
  * The card's two-line "when": `day` is "In 7 days · August 28, 2026" and
  * `time` is "1:00PM - 3:00PM". An undated program gets the placeholder and
- * an empty time.
+ * an empty time. `rel` and `date` are the two halves of `day`, for a layout
+ * that wants to keep each on one line.
  */
 export function whenLine(ev: {
   starts_at?: string | null;
   ends_at?: string | null;
-}): { day: string; time: string } {
+}): { day: string; rel: string; date: string; time: string } {
   const date = longDate(ev.starts_at);
   const rel = relativeDay(ev.starts_at);
   return {
     day: date ? `${rel} · ${date}` : rel,
+    rel,
+    date,
     time: timeRange(ev.starts_at, ev.ends_at),
   };
 }

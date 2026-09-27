@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Bookmark, BookmarkCheck, ExternalLink, MapPin } from "lucide-react";
 import { ApiError, api, type Event } from "@/lib/api";
+import { mapsUrl } from "@/lib/share";
+import { Button, buttonClass } from "@/components/ui/Button";
 
 /**
- * What a member can do about this program. Four states, from
- * `requires_signup` × `registration_mode`:
- *
- *   no signup            → Save. Drop-in; there is nothing to register for.
- *   signup + internal    → Sign up here, which is the same record as a save.
- *   signup + external    → Leave for the organizer's site, and count the click.
- *
- * Saving needs an account; following a link never does.
+ * The public page's bottom row: the map, Save, and — when registration lives
+ * on the organizer's own site — Register, which counts the click. Saving needs
+ * an account; following a link never does.
  */
 export function EventActions({ event }: { event: Event }) {
   const router = useRouter();
@@ -25,6 +23,7 @@ export function EventActions({ event }: { event: Event }) {
     event.requires_signup &&
     event.registration_mode === "external" &&
     !!event.registration_url;
+  const maps = mapsUrl(event.location);
 
   const save = useCallback(
     async (resuming = false) => {
@@ -43,9 +42,6 @@ export function EventActions({ event }: { event: Event }) {
           router.push(`/signup?next=${next}`);
           return;
         }
-        // Reported either way. A resumed save that fails silently is the worst
-        // case: they did the work of signing in and nothing tells them it was
-        // for nothing.
         setError("That didn't save. Please try again.");
       } finally {
         setBusy(false);
@@ -75,57 +71,43 @@ export function EventActions({ event }: { event: Event }) {
     }).catch(() => {});
   }
 
-  // Registering elsewhere is the point of the visit, so it leads. Saving stays
-  // available in every state, but it's the lesser action here.
-  const saveLabel = saved
-    ? "Saved ✓"
-    : event.requires_signup && !external
-      ? "Sign up"
-      : "Save";
-  const saveClass = external
-    ? "rounded-2xl border-2 border-edge bg-white px-8 py-4 text-xl font-semibold text-ink transition-transform enabled:hover:scale-[1.02] disabled:opacity-60"
-    : "rounded-2xl bg-accent px-8 py-4 text-xl font-semibold text-white shadow-card transition-transform enabled:hover:scale-[1.02] disabled:opacity-60";
-
   return (
-    <div className="mt-8 flex flex-col gap-3">
-      {external && (
-        <>
-          <button
-            onClick={openRegistration}
-            className="rounded-2xl bg-accent px-8 py-4 text-xl font-semibold text-white shadow-card transition-transform hover:scale-[1.02]"
-          >
-            Sign up on their site ↗
-          </button>
-          {/* The awareness cue is the destination itself — a hostname says
-              "you are leaving" more plainly than a sentence about it does. */}
-          <p className="text-center text-sm text-muted">
-            {hostnameOf(event.registration_url)}
-          </p>
-        </>
+    <>
+      {maps && (
+        <a
+          href={maps}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClass("secondary", "lg")}
+        >
+          Google Maps
+          <MapPin aria-hidden="true" className="size-6 shrink-0" />
+        </a>
       )}
-
-      <button
+      <Button
+        variant={external || saved ? "secondary" : "primary"}
+        size="lg"
         onClick={() => void save()}
         disabled={busy || saved}
-        className={saveClass}
+        trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
       >
-        {saveLabel}
-      </button>
-
+        {saved ? "Event saved" : "Save event"}
+      </Button>
+      {external && (
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={openRegistration}
+          trailingIcon={<ExternalLink />}
+        >
+          Register for Event
+        </Button>
+      )}
       {error && (
-        <p role="alert" className="text-center font-semibold text-pop">
+        <p role="alert" className="basis-full text-center text-lg text-danger-fg">
           {error}
         </p>
       )}
-    </div>
+    </>
   );
-}
-
-function hostnameOf(url?: string | null): string {
-  if (!url) return "";
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
 }

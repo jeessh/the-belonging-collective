@@ -3,8 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventActions } from "@/components/EventActions";
-import { categoryStyle } from "@/lib/categories";
+import { EventDetails } from "@/components/member/EventDetails";
+import { EventTools } from "@/components/member/EventTools";
+import { GoingCount } from "@/components/ui/GoingCount";
 import { fetchEvent, siteUrl } from "@/lib/serverApi";
+import { hostnameOf } from "@/lib/share";
 import type { Event } from "@/lib/api";
 
 // Server-rendered on purpose. This is the page nonprofits paste into a Facebook
@@ -66,8 +69,10 @@ export default async function EventPage({ params }: Params) {
   const event = await fetchEvent(id);
   if (!event) notFound();
 
-  const cat = categoryStyle(event.category);
-  const when = event.starts_at ? new Date(event.starts_at) : null;
+  const external =
+    event.requires_signup &&
+    event.registration_mode === "external" &&
+    !!event.registration_url;
 
   // Search engines get the structured version; people get the page below.
   const jsonLd = {
@@ -90,98 +95,37 @@ export default async function EventPage({ params }: Params) {
   };
 
   return (
-    <main className="min-h-dvh bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff,#EEEBF5_60%,#E6E1F2)] px-6 py-10">
+    <main className="min-h-dvh bg-surface-subtle px-4 py-6 text-fg sm:px-6 sm:py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="mx-auto w-full max-w-2xl">
-        <div
-          className="flex items-center justify-between rounded-t-3xl px-6 py-3 text-white"
-          style={{ background: cat.color }}
-        >
-          <span className="font-semibold">
-            {event.category || "Community program"}
-          </span>
-          <span aria-hidden className="text-2xl">
-            {cat.emoji}
-          </span>
-        </div>
-
-        <div className="rounded-b-3xl bg-card p-6 shadow-card">
-          {event.cover_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={event.cover_image_url}
-              alt=""
-              className="mb-6 h-56 w-full rounded-2xl object-cover"
+      <article className="mx-auto w-full max-w-[960px] rounded-card border border-line bg-surface p-6 sm:p-10">
+        <EventDetails
+          event={event}
+          titleAs="h1"
+          going={
+            <GoingCount
+              count={event.saved_count}
+              signInHref={`/signup?next=${encodeURIComponent(`/events/${event.id}`)}`}
             />
-          )}
+          }
+          tools={<EventTools event={event} />}
+          hint={external ? hostnameOf(event.registration_url) : undefined}
+          actions={
+            // useSearchParams needs a boundary.
+            <Suspense fallback={null}>
+              <EventActions event={event} />
+            </Suspense>
+          }
+        />
 
-          <h1 className="font-display text-4xl font-extrabold leading-tight text-ink">
-            {event.title}
-          </h1>
-
-          <dl className="mt-4 flex flex-col gap-1 text-lg text-ink">
-            {when && (
-              <div className="flex gap-2">
-                <dt className="sr-only">When</dt>
-                <dd>
-                  <time dateTime={event.starts_at ?? undefined}>
-                    {when.toLocaleDateString(undefined, {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                    {", "}
-                    {when.toLocaleTimeString(undefined, {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </dd>
-              </div>
-            )}
-            {event.location && (
-              <div className="flex gap-2">
-                <dt className="sr-only">Where</dt>
-                <dd>{event.location}</dd>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <dt className="sr-only">Cost</dt>
-              <dd>{event.is_free ? "Free" : "Paid"}</dd>
-            </div>
-            {event.host_name && (
-              <div className="flex gap-2">
-                <dt className="sr-only">Who runs it</dt>
-                <dd className="text-muted">{event.host_name}</dd>
-              </div>
-            )}
-          </dl>
-
-          {event.description && (
-            <p className="mt-6 whitespace-pre-line text-lg leading-relaxed text-ink">
-              {event.description}
-            </p>
-          )}
-
-          {/* useSearchParams needs a boundary, and the actions are the only
-              client-side thing on the page. */}
-          <Suspense fallback={null}>
-            <EventActions event={event} />
-          </Suspense>
-
-          <p className="mt-8 text-center">
-            <Link
-              href="/"
-              className="font-semibold text-accent underline underline-offset-2"
-            >
-              See more programs
-            </Link>
-          </p>
-        </div>
+        <p className="mt-8 text-center text-lg">
+          <Link href="/" className="text-fg underline underline-offset-4">
+            See more programs
+          </Link>
+        </p>
       </article>
     </main>
   );

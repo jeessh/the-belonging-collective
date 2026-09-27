@@ -1,73 +1,80 @@
 "use client";
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Event, type Me } from "@/lib/api";
+import {
+  ArrowLeft,
+  BookmarkX,
+  CalendarDays,
+  MoveRight,
+  Printer,
+  Search,
+  Send,
+} from "lucide-react";
+import type { Event, Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
-import { Bookmark } from "lucide-react";
-import { FOCUSABLE } from "@/components/Modal";
-import { CYAN } from "@/components/member/FeedParts";
-import { GridCard, SearchBox } from "@/components/member/GridFeed";
+import { savedCalendarUrl } from "@/lib/calendar";
+import { listShareText } from "@/lib/share";
+import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { EventSummary } from "@/components/ui/EventSummary";
+import { GoingCount } from "@/components/ui/GoingCount";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { ShareModal } from "@/components/member/ShareModal";
+import { PrintPreview } from "@/components/member/PrintPreview";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
 
+type Tab = "upcoming" | "past";
+const TABS = [
+  { value: "upcoming" as const, label: "Upcoming Events" },
+  { value: "past" as const, label: "Past Events" },
+];
+
 type Props = {
   /** Null when signed out — there is no list to show, only a way to get one. */
   me: Me | null;
-  reveal: number;
+  open: boolean;
+  /** Every saved row, as the feed holds it; this sorts and de-duplicates. */
+  events: Event[];
   onClose: () => void;
   onSignIn: () => void;
-  /** Ids currently saved, so a row can be un-saved without leaving the list. */
-  saved: Set<string>;
-  onToggleSave: (event: Event) => void;
+  onUnsave: (event: Event) => void;
   onOpen: (event: Event) => void;
 };
 
+/**
+ * "All Saved Events", over the feed's main column. The list is the feed's own
+ * `savedEvents`, so an un-save here and an Undo on its toast both show at
+ * once, without a fetch of their own.
+ */
 export const SavedEvents = memo(function SavedEvents({
   me,
-  reveal,
+  open,
+  events,
   onClose,
   onSignIn,
-  saved,
-  onToggleSave,
+  onUnsave,
   onOpen,
 }: Props) {
-  const open = reveal > 0;
-  const [events, setEvents] = useState<Event[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<Tab>("upcoming");
+  const [sub, setSub] = useState<"share" | "print" | null>(null);
 
-  const prevOpen = useRef(false);
-  const loadedFor = useRef<string | null>(null);
-  useEffect(() => {
-    const justOpened = open && !prevOpen.current;
-    prevOpen.current = open;
-    if (!open || !me) return;
-    if (!justOpened && loadedFor.current === me.id) return;
-    loadedFor.current = me.id;
-    setLoading(true);
-    setError(false);
-    api<Event[]>("/users/me/events")
-      .then(setEvents)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [open, me]);
-
-  // Dialog focus management. Gated on reveal >= 1 so a drag "peek" doesn't
-  // steal focus mid-gesture. Escape is handled globally by EventsView.
-  const fullyOpen = reveal >= 1;
+  // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!fullyOpen) return;
+    if (!open) return;
     restoreRef.current = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
     (panel?.querySelector<HTMLElement>(FOCUSABLE) ?? panel)?.focus();
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Tab" || !panel) return;
+      // A share sheet or print preview on top owns the keyboard while it's up.
+      if (!isTopmostDialog(panel)) return;
       const items = Array.from(
         panel.querySelectorAll<HTMLElement>(FOCUSABLE),
       ).filter((el) => el.offsetParent !== null || el === document.activeElement);
@@ -92,253 +99,214 @@ export const SavedEvents = memo(function SavedEvents({
       document.removeEventListener("keydown", onKeyDown, true);
       restoreRef.current?.focus?.();
     };
-  }, [fullyOpen]);
+  }, [open]);
 
-  const sections = useMemo(() => {
-    const all = events ?? [];
+  // One entry per program, at its next date — the same thing the feed shows.
+  // Saving a series-priced program writes a row per date; the member's own
+  // list says what they saved, not how many rows that took.
+  const { upcoming, past } = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matching = q
-      ? all.filter((ev) =>
+      ? events.filter((ev) =>
           [ev.title, ev.location, ev.host_name, ev.category]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
             .includes(q),
         )
-      : all;
-
-    // One entry per program, at its next date — the same thing the feed shows.
-    //
-    // Saving a series-priced program enrols the member across the whole run, so
-    // one press of Save writes eight attendance rows. That is correct, and the
-    // counts are what the agencies put in grant applications. But this is the
-    // member's own list, and it read back "Upcoming Events 8" with the same
-    // soccer league eight times over, as though they had signed up eight times.
-    // The rows stay in the database; the list says what they signed up for.
-    //
-    // Collapsed after sorting, and separately per section: oneCardPerProgram
-    // keeps the first occurrence it meets, so on an unsorted list it could keep
-    // a date that has already passed and drop the program out of Upcoming
-    // altogether.
-    const upcoming = oneCardPerProgram(
-      matching.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b)),
-    );
-
-    // Then the same programs again, grouped by topic — the design's second and
-    // third rows. Someone looking for "that cooking thing" gets a shorter list
-    // to scan than the whole of what they've saved.
-    const byCategory = new Map<string, Event[]>();
-    for (const ev of upcoming) {
-      const key = ev.category || "Other";
-      const list = byCategory.get(key);
-      if (list) list.push(ev);
-      else byCategory.set(key, [ev]);
-    }
-
-    const past = oneCardPerProgram(
-      matching.filter((e) => !isUpcoming(e)).sort((a, b) => startMs(b) - startMs(a)),
-    );
-
-    return { upcoming, byCategory: [...byCategory.entries()], past };
+      : events;
+    // Collapsed after sorting, and separately per tab, so a past date never
+    // hides the program's next one.
+    return {
+      upcoming: oneCardPerProgram(
+        matching.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b)),
+      ),
+      past: oneCardPerProgram(
+        matching
+          .filter((e) => !isUpcoming(e))
+          .sort((a, b) => startMs(b) - startMs(a)),
+      ),
+    };
   }, [events, query]);
 
   if (!open) return null;
+
+  const shown = tab === "upcoming" ? upcoming : past;
+  const total = oneCardPerProgram(events).length;
+  const listTitle = me ? `${me.first_name}'s Saved Events` : "Saved Events";
 
   return (
     <div
       ref={panelRef}
       tabIndex={-1}
-      className="absolute inset-0 z-20 overflow-y-auto bg-white outline-none"
-      style={{ opacity: reveal }}
       role="dialog"
       aria-modal="true"
-      aria-label="Saved events"
+      // Not "Saved events": that is the sidebar's name, and two landmarks
+      // called the same thing read as one. The feed's Escape handler finds
+      // the panel by this label.
+      aria-label="All saved events"
+      className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none"
     >
-      <div className="mx-auto w-full max-w-6xl px-8 py-10">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="flex items-center gap-3 font-display text-4xl font-extrabold tracking-tight text-ink">
-            {/* A neutral emblem — never the member's sign-in icon, which is
-                half of their password. */}
-            <Bookmark
-              aria-hidden="true"
-              className="size-9 fill-primary-strong text-primary-strong"
-            />
-            {me ? `${me.first_name}'s Saved Events` : "Saved Events"}
+      <div className="flex flex-col gap-8 p-4 sm:p-9">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Back to events"
+            className="grid size-11 shrink-0 place-items-center rounded-control text-fg hover:bg-surface-subtle"
+          >
+            <ArrowLeft aria-hidden="true" className="size-8" />
+          </button>
+          <h1 className="text-3xl font-medium text-fg">
+            All Saved Events ({me ? total : 0})
           </h1>
-          <div className="flex items-center gap-3">
-            {me && <SearchBox value={query} onChange={setQuery} />}
-            <button
-              onClick={onClose}
-              aria-label="Close saved events"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#C9C7D2] bg-white text-lg text-ink transition hover:scale-105"
-            >
-              ✕
-            </button>
-          </div>
         </div>
 
         {!me ? (
-          <div className="mt-24 grid place-items-center gap-4 text-center">
-            <div className="text-5xl" aria-hidden>
-              🗓️
-            </div>
-            <p className="font-display text-2xl font-bold text-ink">
-              Sign in to keep events
-            </p>
-            <button
-              onClick={onSignIn}
-              className="rounded-xl px-8 py-4 font-display text-xl font-semibold text-ink"
-              style={{ background: CYAN }}
-            >
-              Sign in
-            </button>
-          </div>
+          <Empty onAction={onSignIn} action="Login" />
         ) : (
           <>
-            {loading && events === null && (
-              <p className="mt-16 text-center text-muted">
-                Loading your events…
-              </p>
-            )}
-            {error && events === null && (
-              <p role="alert" className="mt-16 text-center font-semibold text-pop">
-                Couldn&apos;t load your events. Please refresh and try again.
-              </p>
-            )}
-            {events !== null &&
-              !loading &&
-              sections.upcoming.length === 0 &&
-              sections.past.length === 0 && <EmptyAll searching={!!query} />}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <label className="relative block w-full max-w-[640px]">
+                <span className="sr-only">Search for event</span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-fg-icon-muted"
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search for event"
+                  className="min-h-14 w-full rounded-control border border-line bg-surface py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted"
+                />
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={savedCalendarUrl}
+                  className={buttonClass("secondary", "lg")}
+                >
+                  <CalendarDays
+                    aria-hidden="true"
+                    className="size-6 shrink-0 text-primary-border"
+                  />
+                  Google Calendar
+                </a>
+                <Button
+                  size="lg"
+                  onClick={() => setSub("share")}
+                  disabled={upcoming.length === 0}
+                  trailingIcon={<Send />}
+                >
+                  Share list
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => setSub("print")}
+                  disabled={upcoming.length === 0}
+                  trailingIcon={<Printer />}
+                >
+                  Print list
+                </Button>
+              </div>
+            </div>
 
-            {sections.upcoming.length > 0 && (
-              <Row
-                title="Upcoming Events"
-                count={sections.upcoming.length}
-                events={sections.upcoming}
-                saved={saved}
-                onOpen={onOpen}
-                onToggleSave={onToggleSave}
-              />
-            )}
+            <SegmentedToggle
+              label="Which events"
+              segments={TABS}
+              value={tab}
+              onChange={setTab}
+            />
 
-            {sections.byCategory.map(([category, evs]) => (
-              <Row
-                key={category}
-                title={category}
-                count={evs.length}
-                events={evs}
-                saved={saved}
-                onOpen={onOpen}
-                onToggleSave={onToggleSave}
-              />
-            ))}
-
-            {sections.past.length > 0 && (
-              <Row
-                title="Past Events"
-                count={sections.past.length}
-                events={sections.past}
-                saved={saved}
-                onOpen={onOpen}
-                onToggleSave={onToggleSave}
-              />
+            {shown.length === 0 ? (
+              query ? (
+                <p className="py-16 text-center text-2xl text-fg-muted">
+                  Nothing matches that.
+                </p>
+              ) : (
+                <Empty onAction={onClose} action="Browse Events" />
+              )
+            ) : (
+              <ul className="grid gap-6 xl:grid-cols-2">
+                {shown.map((ev) => (
+                  <li
+                    key={ev.id}
+                    className="rounded-card border border-line-card bg-surface p-6"
+                  >
+                    <EventSummary
+                      event={ev}
+                      layout="row"
+                      going={<GoingCount count={ev.saved_count} />}
+                      actions={
+                        <>
+                          <Button
+                            onClick={() => onUnsave(ev)}
+                            aria-label={`Un-save ${ev.title}`}
+                            leadingIcon={<BookmarkX />}
+                          >
+                            Un-save
+                          </Button>
+                          <Button
+                            onClick={() => onOpen(ev)}
+                            trailingIcon={<MoveRight />}
+                          >
+                            More information
+                          </Button>
+                        </>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
             )}
           </>
         )}
       </div>
+
+      {sub === "share" && (
+        <ShareModal
+          title="Share list of events?"
+          subject={listTitle}
+          body={listShareText(upcoming, window.location.origin)}
+          copy={{
+            label: "List",
+            text: listShareText(upcoming, window.location.origin),
+          }}
+          onClose={() => setSub(null)}
+        />
+      )}
+      {sub === "print" && (
+        <PrintPreview
+          title={listTitle}
+          printLabel="Print List"
+          onClose={() => setSub(null)}
+        >
+          <ul className="divide-y divide-line-card">
+            {upcoming.map((ev) => (
+              <li key={ev.id} className="py-6">
+                <EventSummary
+                  event={ev}
+                  layout="row"
+                  going={<GoingCount count={ev.saved_count} />}
+                />
+              </li>
+            ))}
+          </ul>
+        </PrintPreview>
+      )}
     </div>
   );
 });
 
-/**
- * One horizontally scrolling row of programs.
- *
- * The same card as the grid, so a program looks the same wherever it turns up —
- * one thing to learn to recognise rather than three.
- */
-function Row({
-  title,
-  count,
-  events,
-  saved,
-  onOpen,
-  onToggleSave,
-}: {
-  title: string;
-  count: number;
-  events: Event[];
-  saved: Set<string>;
-  onOpen: (event: Event) => void;
-  onToggleSave: (event: Event) => void;
-}) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  function scrollRight() {
-    scrollerRef.current?.scrollBy({ left: 320, behavior: "smooth" });
-  }
-
+function Empty({ action, onAction }: { action: string; onAction: () => void }) {
   return (
-    <section className="mt-10">
-      <h2 className="flex items-center gap-3 font-display text-2xl font-semibold text-ink">
-        {title}
-        <span
-          className="grid h-7 min-w-7 place-items-center rounded-full px-2 text-sm font-bold text-ink"
-          style={{ background: CYAN }}
-        >
-          {count}
-        </span>
-      </h2>
-
-      <div className="relative mt-4">
-        <div
-          ref={scrollerRef}
-          className="flex gap-5 overflow-x-auto pb-2"
-          // Rows are their own scroll region; say so rather than leaving a
-          // keyboard user to discover it.
-          tabIndex={0}
-          role="group"
-          aria-label={`${title}, ${count} programs`}
-        >
-          {events.map((ev) => (
-            <div key={ev.id} className="w-[290px] shrink-0">
-              <GridCard
-                event={ev}
-                saved={saved.has(ev.id)}
-                onOpen={onOpen}
-                onToggleSave={onToggleSave}
-              />
-            </div>
-          ))}
-        </div>
-
-        {events.length > 3 && (
-          <button
-            onClick={scrollRight}
-            aria-label={`Show more ${title}`}
-            className="absolute -right-2 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-2xl text-ink shadow-card transition-transform hover:scale-105"
-          >
-            <span aria-hidden>›</span>
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function EmptyAll({ searching }: { searching: boolean }) {
-  return (
-    <div className="mt-24 grid place-items-center gap-3 text-center">
-      <div className="text-5xl" aria-hidden>
-        🗓️
-      </div>
-      <p className="font-display text-2xl font-bold text-ink">
-        {searching ? "Nothing matches that." : "No saved events yet"}
+    <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 py-24 text-center">
+      <p className="text-3xl font-medium text-fg">
+        You don&apos;t have any saved events yet!
       </p>
-      {!searching && (
-        <p className="max-w-sm text-muted">
-          Programs you save show up here.
-        </p>
-      )}
+      <Button variant="primary" size="lg" className="w-full" onClick={onAction}>
+        {action}
+      </Button>
     </div>
   );
 }

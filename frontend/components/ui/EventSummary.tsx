@@ -17,6 +17,8 @@ export function EventSummary({
   layout = "row",
   going,
   actions,
+  titleAs: Title = "h3",
+  titleId,
   className = "",
 }: {
   event: Event;
@@ -25,6 +27,9 @@ export function EventSummary({
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
   actions?: ReactNode;
+  /** The page's own heading where the summary is the page (or the dialog). */
+  titleAs?: "h1" | "h2" | "h3";
+  titleId?: string;
   className?: string;
 }) {
   const card = layout === "card";
@@ -64,13 +69,14 @@ export function EventSummary({
             ))}
           </div>
 
-          <h3
+          <Title
+            id={titleId}
             className={`font-medium leading-tight text-fg ${
               card ? "text-2xl sm:text-3xl" : "text-xl"
             }`}
           >
             {event.title}
-          </h3>
+          </Title>
 
           <div className={`flex flex-col gap-3 ${meta}`}>
             <div className="flex items-start gap-3">
@@ -79,7 +85,18 @@ export function EventSummary({
                 className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
               />
               <div className="min-w-0">
-                <p className="text-fg">{when.day}</p>
+                {/* Each part stays whole, so a narrow column breaks between
+                    "In 52 weeks" and "· September 24, 2027", never around
+                    the dot. */}
+                <p className="text-fg">
+                  <span className="whitespace-nowrap">{when.rel}</span>
+                  {when.date && (
+                    <>
+                      {" "}
+                      <span className="whitespace-nowrap">· {when.date}</span>
+                    </>
+                  )}
+                </p>
                 {when.time && <p className="text-fg-muted">{when.time}</p>}
               </div>
             </div>
