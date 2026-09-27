@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: str = ""
     SUPABASE_IMAGE_BUCKET: str = "event-images"
 
-    # Outbound mail. Used only by the organizer password reset — members have no
-    # address on their accounts. Unset (the default) means no mail is sent and
-    # the reset link is logged instead, which is right for local development
-    # and must never be the state in production.
+    # Outbound mail. Used only for organizer password resets and invitations —
+    # members are never mailed. Unset (the default) means no mail is sent and
+    # the link is logged instead, which is right for local development and
+    # must never be the state in production.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""

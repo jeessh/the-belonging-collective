@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class UserOut(BaseModel):
@@ -11,6 +11,9 @@ class UserOut(BaseModel):
     first_name: str
     last_name: str
     username: str
+    # Only password accounts have one.
+    email: str | None = None
+    # 'icon' or 'password' — which door the member uses.
     auth_type: str
     icons: list[str]
     accessibility_prefs: list[str]
@@ -19,6 +22,15 @@ class UserOut(BaseModel):
     voice_commands_enabled: bool
     eye_tracking_enabled: bool
     created_at: datetime
+
+    @model_validator(mode="after")
+    def _hide_unused_icons(self):
+        # A password account still holds an allocated icon set (the column and
+        # its unique constraint need one), but it is not a credential anyone
+        # should ever see — not the member, not the console.
+        if self.auth_type != "icon":
+            self.icons = []
+        return self
 
 
 class UserCreate(BaseModel):

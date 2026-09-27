@@ -12,7 +12,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -119,6 +119,11 @@ class Event(Base):
         Text, nullable=False, default=INTERNAL, server_default=text(f"'{INTERNAL}'")
     )
     registration_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Up to three {label, url} pairs shown alongside the program — a flyer, a
+    # map, the agency's page. Not the registration link; that stays above.
+    links: Mapped[list[dict]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
     cover_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -169,10 +174,11 @@ class Event(Base):
 
     @property
     def saved_count(self) -> int:
-        """How many members currently have it saved.
+        """How many members currently have it saved — the "N going" number.
 
         Counted off the eager-loaded relationship rather than a per-row query;
-        `_EVENT_OUT_OPTIONS` loads attendees for exactly this.
+        `_EVENT_OUT_OPTIONS` loads attendees for exactly this. The public
+        routes blank it for signed-out viewers.
         """
         return sum(1 for a in self.attendees if a.status == "saved")
 

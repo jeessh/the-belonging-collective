@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Accessible, needs-first community-programming platform for Kitchener-Waterloo
 nonprofits (hackathon build). Members discover/attend programs via a tactile,
-one-card-at-a-time UI; sign-in is a memorable **2-icon key that IS the password**
-(`ICON_COUNT` in `app/core/icons.py` — it has been 1 and 3 before, so read it
-rather than assuming).
+one-card-at-a-time UI; sign-in is the member's choice of a memorable **2-icon
+key that IS the password** (`ICON_COUNT` in `app/core/icons.py` — it has been
+1 and 3 before, so read it rather than assuming) or an **email + password**
+(`users.auth_type`). Password accounts still hold an allocated icon set for the
+unique constraint, but it is never shown.
 
 ## Layout
 - `backend/` — FastAPI + SQLAlchemy. **Source of truth for the API.**
@@ -55,11 +57,12 @@ uses `settings.ROOT_PATH` (`""` local, `/api` prod).
 Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,
 `NEXT_PUBLIC_API_URL=/api`, `FRONTEND_ORIGIN`, `ROOT_PATH=/api`.
 
-Organizer password reset needs SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-`SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`). **Unset means
-no mail is sent and the reset link is written to the log instead** — right for
-local dev, never acceptable in production. `FRONTEND_ORIGIN` is what the link in
-that mail is built from, so a wrong value produces links nobody can open.
+Organizer password reset and invitations need SMTP: `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`).
+**Unset means no mail is sent and the link is written to the log instead** —
+right for local dev, never acceptable in production. `FRONTEND_ORIGIN` is what
+the links in that mail (and in the `.ics` exports) are built from, so a wrong
+value produces links nobody can open.
 
 ## Frontend architecture
 
@@ -122,6 +125,11 @@ that mail is built from, so a wrong value produces links nobody can open.
   `delete-orphan` cascade. Attendance counts are what nonprofits put in grant
   applications, so they have to outlive the event and the account. Every read
   path filters `deleted_at IS NULL`; add the filter when you add a query.
+- **Saving is a bookmark.** It never registers anyone and never takes a place;
+  `events.capacity` is information only. `EventOut.saved_count` ("N going") is
+  `null` for signed-out viewers — the public event routes withhold it.
+- **Member emails are unique over live rows only** (`uq_users_email_live` on
+  `lower(email)`), the same rule as `uq_hosts_email_live`.
 - **`lib/accessibility.ts` is the same idea for access needs.** The slugs sit on
   both `events.accessibility_tags` and `users.accessibility_prefs`, and matching
   is string equality, so one list drives the host picker and the member picker.
@@ -140,7 +148,9 @@ that mail is built from, so a wrong value produces links nobody can open.
   name is legacy; don't rename it expecting the hook to follow.
 
 ## Roles and admin tiers
-- **members** — icon sign-in, the `/` + `/events` experience.
+- **members** — icon sign-in (`POST /auth/user`) or email + password
+  (`POST /auth/signup/user`, `POST /auth/login/user`), the `/` + `/events`
+  experience.
 - **admins** — hosts with `is_admin = false`. Create and manage only their own
   programs.
 - **superadmins** — hosts with `is_admin = true`. Manage any program, plus member
@@ -154,9 +164,11 @@ invitation (`/invites`), and `/host` is sign-in only. Don't add one back.
 ## Account recovery
 Neither door can be recovered the way a normal login would be, and they work
 differently from each other:
-- **Members** have no email or phone — the icons *are* the password. So recovery
-  is a superadmin re-issuing the key (`POST /users/{id}/reset-key`) and reading
-  it out; the console's members table lists every key. On the member side, the
+- **Members** have no "forgot password" flow — icon accounts have no address,
+  and password accounts don't get one either. Recovery for both is a superadmin
+  re-issuing the key (`POST /users/{id}/reset-key`) and reading it out; a
+  password account is converted to an icon account (its email is released).
+  The console's members table lists every key. On the member side, the
   sign-in conflict offers "I forgot my icons" rather than dead-ending, since the
   alternatives ("try again", "I'm new") both fail the member who genuinely can't
   remember — the second by stranding the account they own.

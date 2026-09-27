@@ -156,17 +156,18 @@ def reset_user_key(
 ):
     """Issue a new icon key for a member who can no longer get in.
 
-    Recovery here can't look like recovery anywhere else: the icons *are* the
-    password, and there is no email or phone on a member account to send
-    anything to. So a reset is exactly what it sounds like — pick a new key and
-    read it back to whoever asked. That is also how these accounts get created
-    (see UserCreate), so it asks nothing new of staff.
+    This is the whole of member recovery, for both kinds of account. An icon
+    account gets a new key. A password account is converted to an icon account:
+    there is no member "forgot password" flow, so staff re-issuing a key and
+    reading it out is the way back in, and it asks nothing new of them — it is
+    how accounts get created too (see UserCreate). The email is released so
+    the member can sign up for a password again under it if they want one.
 
-    The old key stops working the moment this returns — not just for new
-    sign-ins but for sessions already open with it, because member tokens carry
-    a fingerprint of the credential they were issued against (see
+    The old credential stops working the moment this returns — not just for
+    new sign-ins but for sessions already open with it, because member tokens
+    carry a fingerprint of the credential they were issued against (see
     deps._key_still_current). That is the whole point when the reason for the
-    reset is that somebody else learned the key.
+    reset is that somebody else learned it.
     """
     from app.api.routes.auth import _allocate_unique_icons
     from app.core.icons import credential
@@ -175,17 +176,12 @@ def reset_user_key(
     user = db.get(User, user_id)
     if not user or user.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-    # Same guard as the rename path: an account signing in with a password has
-    # no icon key to re-issue, and handing it one would lock out the password.
-    if user.auth_type != "icon":
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "This account signs in with a password, not icons.",
-        )
 
     icons = _allocate_unique_icons(db, user.username, exclude=user.icons)
     user.icons = icons
     user.password_hash = hash_password(credential(user.username, icons))
+    user.auth_type = "icon"
+    user.email = None
     try:
         db.commit()
     except IntegrityError:

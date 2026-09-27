@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.pricing import PricingError
 from app.core.pricing import validate as _validate_pricing
@@ -51,9 +51,32 @@ class EventImageOut(EventImageIn):
     id: uuid.UUID
 
 
+# The standardized pitch every listing has. Anything longer belongs in `notes`.
+DESCRIPTION_MAX = 1000
+# Important links per program. Three is what the form offers.
+LINKS_MAX = 3
+
+
+class EventLink(BaseModel):
+    """One important link — a flyer, a map, the agency's own page."""
+
+    label: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _normalize(self):
+        self.label = self.label.strip()
+        if not self.label:
+            raise ValueError("Each link needs a label.")
+        self.url = normalize_url(self.url) or ""
+        if not self.url.startswith(("http://", "https://", "mailto:", "tel:")):
+            raise ValueError("Each link needs a web address.")
+        return self
+
+
 class EventBase(BaseModel):
     title: str
-    description: str = ""
+    description: str = Field("", max_length=DESCRIPTION_MAX)
     notes: str | None = None
     # The topics it's about. `category` is the first of these and is written
     # from them, so callers set one field and every existing read path — the
@@ -79,6 +102,9 @@ class EventBase(BaseModel):
     requires_signup: bool = False
     registration_mode: str = INTERNAL
     registration_url: str | None = None
+    # Shown alongside the program. Not read by the registration states —
+    # registration_url is the only link those use.
+    links: list[EventLink] = Field([], max_length=LINKS_MAX)
     cover_image_url: str | None = None
 
 
@@ -145,7 +171,7 @@ class EventCreate(EventBase):
 
 class EventUpdate(BaseModel):
     title: str | None = None
-    description: str | None = None
+    description: str | None = Field(None, max_length=DESCRIPTION_MAX)
     notes: str | None = None
     categories: list[str] | None = None
     category: str | None = None
@@ -168,6 +194,7 @@ class EventUpdate(BaseModel):
     requires_signup: bool | None = None
     registration_mode: str | None = None
     registration_url: str | None = None
+    links: list[EventLink] | None = Field(None, max_length=LINKS_MAX)
     cover_image_url: str | None = None
 
     @model_validator(mode="after")
@@ -195,7 +222,7 @@ class EventOut(EventBase):
     series_total: int | None = None
     # Built from the structured fields so every surface says it the same way.
     price_label: str = ""
-    # How many have saved it, so the card can say "full" without a second call.
-    saved_count: int = 0
+    # "N going". Null for signed-out viewers — the public routes blank it.
+    saved_count: int | None = 0
     images: list[EventImageOut] = []
     created_at: datetime

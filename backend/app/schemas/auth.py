@@ -1,16 +1,18 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
+
+from app.core.security import PASSWORD_MIN_LENGTH
 
 
 class UserSignup(BaseModel):
+    """The password door: a member who would rather have an email and a
+    password than an icon key. Login is then email + password."""
+
     first_name: str
     last_name: str
-    # The member's chosen, ordered icon key (ICON_COUNT of them). If omitted,
-    # the server allocates a free set (legacy behaviour).
-    icons: list[str] | None = None
-    # Optional custom password. If omitted, the icon password is used by default.
-    custom_password: str | None = Field(None, min_length=8)
-    # Onboarding prefs (free-form slugs from the FE chip taxonomy). Optional so
-    # the plain signup path keeps working; default to empty, never null.
+    email: EmailStr
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH)
+    # Onboarding prefs (free-form slugs from the FE chip taxonomy). Default to
+    # empty, never null.
     accessibility_prefs: list[str] = []
     interest_categories: list[str] = []
 
@@ -34,8 +36,8 @@ class UserAuth(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
-    # Either the icon password ("tree_cat_apple") or the custom password.
+    # Plain str, as for HostLogin: a lookup key, not something to validate.
+    email: str
     password: str
 
 
@@ -56,4 +58,4 @@ class HostForgot(BaseModel):
 
 class HostReset(BaseModel):
     token: str
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH)

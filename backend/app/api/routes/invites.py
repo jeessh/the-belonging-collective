@@ -9,8 +9,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin, set_auth_cookie
+from app.core.config import settings
+from app.core.mail import send as send_mail
 from app.core.rate_limit import IP_LIMIT, client_key, enforce, record
 from app.core.security import (
+    PASSWORD_MIN_LENGTH,
     create_access_token,
     credential_fingerprint,
     hash_password,
@@ -38,7 +41,7 @@ class InviteCreate(BaseModel):
 
 class InviteAccept(BaseModel):
     token: str
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -47,8 +50,11 @@ def create_invite(
     current: Host = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Issue an invitation. Returns the token once — it isn't stored in the
-    clear and can't be shown again."""
+    """Issue an invitation and mail the accept link to the invitee.
+
+    Returns the token once as well — it isn't stored in the clear and can't
+    be shown again — so the superadmin can pass the link on by hand if the
+    mail doesn't arrive."""
     email = body.email.strip().lower()
     # Live accounts only. An archived one has released its address, which is
     # what lets an agency that was removed be invited back under it.
@@ -72,6 +78,22 @@ def create_invite(
     db.add(invite)
     db.commit()
     db.refresh(invite)
+    send_mail(
+        email,
+        "You're invited to The Belonging Collective",
+        f"""Hello,
+
+{current.name} has invited {invite.organization} to post programs on The
+Belonging Collective.
+
+Open this link to choose a password and get started. It expires in
+{INVITE_DAYS} days:
+
+{settings.FRONTEND_ORIGIN}/host/invite/{token}
+
+If you weren't expecting this, you can ignore it.
+""",
+    )
     return {
         "id": str(invite.id),
         "token": token,

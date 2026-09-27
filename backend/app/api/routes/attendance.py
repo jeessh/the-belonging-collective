@@ -1,11 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user, get_db, get_optional_user
+from app.core import ical
 from app.core.rate_limit import CLICK_LIMIT, client_key, enforce, record
 from app.core.pricing import covers_whole_series
 from app.models.attendance import REMOVED, SAVED, Attendance
@@ -52,6 +52,11 @@ def attend_event(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Save the program — a bookmark, never a registration.
+
+    Capacity is information on the event, not a gate here: saving takes no
+    place, so a full program can still be saved.
+    """
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
@@ -64,29 +69,6 @@ def attend_event(
         existing.status = SAVED
         db.commit()
         return {"ok": True}
-    # Row-lock the event before counting, so two people racing for the last
-    # place can't both read "one left" and both get it.
-    if event.capacity is not None:
-        locked = (
-            db.query(Event)
-            .filter(Event.id == event_id)
-            .with_for_update()
-            .one()
-        )
-        taken = (
-            db.query(func.count(Attendance.user_id))
-            .filter(
-                Attendance.event_id == event_id,
-                Attendance.status == SAVED,
-            )
-            .scalar()
-            or 0
-        )
-        if locked.capacity is not None and taken >= locked.capacity:
-            raise HTTPException(
-                status.HTTP_409_CONFLICT,
-                "This program is full.",
-            )
     # A series price covers the whole run, so saving one date enrols them in
     # all of them. Making somebody who paid for eight weeks save eight dates by
     # hand is busywork that also loses what they actually bought.
@@ -165,10 +147,7 @@ def unattend_event(
     db.commit()
 
 
-@router.get("/users/me/events", response_model=list[EventOut])
-def my_events(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+def _saved_events(db: Session, user: User) -> list[Event]:
     # One query with eager loads; iterating user.attending lazy-loads each
     # event (and then its host/images) row by row.
     return (
@@ -188,4 +167,23 @@ def my_events(
         )
         .order_by(Event.starts_at.asc().nullslast(), Event.id.asc())
         .all()
+    )
+
+
+@router.get("/users/me/events", response_model=list[EventOut])
+def my_events(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    return _saved_events(db, user)
+
+
+@router.get("/users/me/events/calendar.ics")
+def my_events_calendar(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """Every dated program the member has saved, as one calendar file."""
+    return Response(
+        ical.build(_saved_events(db, user)),
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="saved-programs.ics"'},
     )

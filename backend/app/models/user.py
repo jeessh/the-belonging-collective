@@ -1,7 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Index,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,13 +17,27 @@ from app.db.session import Base
 
 
 class User(Base):
-    """A community member. The sign-in key is the full name PLUS the ordered
-    icon set, so uniqueness is on (username, icons): people can share a name,
-    and even the same icons, as long as the two together differ."""
+    """A community member. Signs in one of two ways, chosen at signup:
+
+    * icon — the key is the full name PLUS the ordered icon set, so uniqueness
+      is on (username, icons): people can share a name, and even the same
+      icons, as long as the two together differ.
+    * password — identified by email, with a password of their own choosing.
+      Icons are still allocated (the column and constraint need them) but are
+      never shown.
+    """
 
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("username", "icons", name="uq_users_username_icons"),
+        # Live accounts only, as for uq_hosts_email_live: an archived member
+        # releases the address.
+        Index(
+            "uq_users_email_live",
+            text("lower(email)"),
+            unique=True,
+            postgresql_where=text("email IS NOT NULL AND deleted_at IS NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -24,6 +46,8 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(Text)
     last_name: Mapped[str] = mapped_column(Text)
     username: Mapped[str] = mapped_column(Text, index=True)  # firstname_lastname
+    # Only password accounts have one; always stored lowercase.
+    email: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str] = mapped_column(Text)
     # 'icon' (default) means password is the icon slugs; 'password' means custom.
     auth_type: Mapped[str] = mapped_column(Text, default="icon")

@@ -58,6 +58,9 @@ export async function uploadImage(file: File): Promise<string> {
 
 export type EventImage = { id: string; url: string; caption?: string | null };
 
+/** An important link shown alongside a program — not the registration link. */
+export type EventLink = { label: string; url: string };
+
 export type Event = {
   id: string;
   host_id: string;
@@ -97,7 +100,8 @@ export type Event = {
   price_note?: string | null;
   /** Built server-side from the structured fields, so every surface agrees. */
   price_label?: string;
-  saved_count?: number;
+  /** "N going". Null when the viewer isn't signed in — the API withholds it. */
+  saved_count?: number | null;
   min_age?: number | null;
   max_age?: number | null;
   /** Virtual or in person; youth or everyone. Both filter the admin list. */
@@ -111,6 +115,8 @@ export type Event = {
    */
   registration_mode: "internal" | "external";
   registration_url?: string | null;
+  /** Up to three. */
+  links?: EventLink[];
   cover_image_url?: string | null;
   images: EventImage[];
 };
@@ -120,6 +126,11 @@ export type Me = {
   first_name: string;
   last_name: string;
   username: string;
+  /** Only password accounts have one. */
+  email?: string | null;
+  /** Which door the member uses. */
+  auth_type: "icon" | "password";
+  /** Empty for password accounts — the key is never shown for those. */
   icons: string[];
   accessibility_prefs: string[];
   interest_categories: string[];
@@ -172,6 +183,9 @@ export type Session = {
   role?: "user" | "host";
   is_admin?: boolean;
   id?: string;
+  /** Members only. */
+  email?: string | null;
+  auth_type?: "icon" | "password";
 };
 
 export const getSession = () => api<Session>("/auth/me");
@@ -255,11 +269,11 @@ export const updateMember = (
   });
 
 /**
- * Issue a member a new icon key. The old one stops working immediately.
+ * Issue a member a new icon key. The old credential stops working immediately.
  *
- * This is the whole of member account recovery: the icons are the password and
- * a member account has no email or phone to send anything to, so the only way
- * back in is for staff to re-issue the key and hand it over.
+ * This is the whole of member account recovery: there is no member "forgot
+ * password" flow, so the only way back in is for staff to re-issue the key and
+ * hand it over. A password account becomes an icon account.
  */
 export const resetMemberKey = (id: string) =>
   api<MemberAccount>(`/users/${id}/reset-key`, { method: "POST" });
