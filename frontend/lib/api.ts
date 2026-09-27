@@ -154,6 +154,24 @@ export type MePrefs = Partial<
 export const updateMe = (body: MePrefs) =>
   api<Me>("/users/me", { method: "PATCH", body: JSON.stringify(body) });
 
+/**
+ * The whole feed. Paginated, not a bare call: the API defaults to 100 and
+ * caps at 200, so a single request silently truncates the feed once the
+ * agencies get going — and "personalization sorts, never filters" quietly
+ * stops being true. Signed in, the rows carry `saved_count`; signed out they
+ * carry null, so the feed re-reads this on sign-in.
+ */
+export async function fetchAllEvents(): Promise<Event[]> {
+  const PAGE = 200;
+  const all: Event[] = [];
+  for (let offset = 0; offset < 5000; offset += PAGE) {
+    const page = await api<Event[]>(`/events?limit=${PAGE}&offset=${offset}`);
+    all.push(...page);
+    if (page.length < PAGE) break;
+  }
+  return all;
+}
+
 export const logout = () => api("/auth/logout", { method: "POST" });
 
 /* ---------------- admin console ---------------- */

@@ -7,10 +7,10 @@ import type { CursorState } from "@/lib/useHeadTracking";
 const ACCENT = "#5B5BD6";
 
 const ZONE_LABEL: Record<string, string> = {
-  left: "← Back",
-  right: "Next →",
-  up: "↑ Settings",
-  down: "↓ Save",
+  left: "← Save",
+  right: "Saved list →",
+  up: "↑ Previous",
+  down: "↓ Next",
 };
 
 // Persistent head-pointer cursor: a simple circle that follows the smoothed
