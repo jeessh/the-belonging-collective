@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import (
     APIRouter,
@@ -27,6 +28,9 @@ from app.models.user import User
 from app.schemas.event import EventOut
 
 router = APIRouter(tags=["attendance"])
+
+# How recently a calendar must have fetched the feed to count as subscribed.
+FEED_SUBSCRIBED_FOR = timedelta(days=3)
 
 
 @router.post(
@@ -326,11 +330,21 @@ def calendar_feed(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """The member's private calendar handle — made on first ask, the same one
-    after, so a calendar subscribed once keeps working."""
+    after, so a calendar subscribed once keeps working.
+
+    `subscribed` says a calendar app has fetched the feed lately. The button
+    then opens Google Calendar rather than Google's "Add calendar" page, which
+    would list the same calendar a second time. Google re-fetches a subscribed
+    feed at least daily, so a few quiet days means they removed it.
+    """
     if not user.calendar_token:
         user.calendar_token = secrets.token_urlsafe(24)
         db.commit()
-    return {"token": user.calendar_token}
+    fetched = user.calendar_feed_fetched_at
+    subscribed = bool(
+        fetched and datetime.now(timezone.utc) - fetched < FEED_SUBSCRIBED_FOR
+    )
+    return {"token": user.calendar_token, "subscribed": subscribed}
 
 
 @router.get("/calendar/{token}.ics")
@@ -348,9 +362,19 @@ def calendar_feed_ics(token: str, db: Session = Depends(get_db)):
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such calendar")
+    # Stamped at most hourly: it's what tells the button this feed is already
+    # in their calendar.
+    now = datetime.now(timezone.utc)
+    fetched = user.calendar_feed_fetched_at
+    if not fetched or now - fetched > timedelta(hours=1):
+        user.calendar_feed_fetched_at = now
+        db.commit()
+    # Connected, the app's own calendar carries the list (core/gcal.py). A feed
+    # subscribed before that goes quiet rather than showing every program twice.
+    events = [] if user.google_calendar == "connected" else saved_events(db, user)
     return Response(
         ical.build(
-            saved_events(db, user),
+            events,
             name=f"{user.first_name}'s programs · The Belonging Collective",
         ),
         media_type="text/calendar; charset=utf-8",

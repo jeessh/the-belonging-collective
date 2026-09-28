@@ -221,9 +221,13 @@ def finish_connect(db: Session, user: User, code: str) -> None:
     db.commit()
 
 
-def _forget(db: Session, user: User) -> None:
+def _forget(db: Session, user: User, calendar_gone: bool = False) -> None:
+    """Stop syncing. The calendar id is kept unless the calendar is known to
+    be deleted: the calendar-list scope isn't ours, so that id is the only
+    way a reconnect finds the calendar again instead of making a second one."""
     user.google_refresh_token = None
-    user.google_calendar_id = None
+    if calendar_gone:
+        user.google_calendar_id = None
     user.google_connected_at = None
     db.commit()
 
@@ -234,6 +238,7 @@ def disconnect(db: Session, user: User) -> None:
     Best effort on Google's side — a token they already revoked can't delete
     anything — but ours is cleared regardless, so sync stops either way.
     """
+    gone = not user.google_calendar_id
     if user.google_refresh_token:
         try:
             with _client() as client:
@@ -242,14 +247,17 @@ def disconnect(db: Session, user: User) -> None:
                     "access_token"
                 ]
                 if user.google_calendar_id:
-                    client.delete(
+                    res = client.delete(
                         f"{API}/calendars/{quote(user.google_calendar_id, safe='')}",
                         headers=_auth(access),
                     )
+                    gone = res.status_code in (200, 204, 404, 410)
                 client.post(REVOKE_URL, data={"token": refresh})
         except (httpx.HTTPError, GoogleError):
             log.warning("Google disconnect for %s was partial", user.id, exc_info=True)
-    _forget(db, user)
+    # A calendar that couldn't be deleted is still in their account: keep its
+    # id so connecting again picks it back up.
+    _forget(db, user, calendar_gone=gone)
 
 
 # ---------- sync ----------
@@ -402,7 +410,7 @@ def sync_event_savers(event_ids: list[uuid.UUID]) -> None:
             .filter(
                 Attendance.event_id.in_(event_ids),
                 Attendance.status == SAVED,
-                User.google_calendar_id.isnot(None),
+                User.google_refresh_token.isnot(None),
                 User.deleted_at.is_(None),
             )
             .distinct()
@@ -419,7 +427,7 @@ def sync_everyone(db: Session) -> int:
     ids = [
         row[0]
         for row in db.query(User.id)
-        .filter(User.google_calendar_id.isnot(None), User.deleted_at.is_(None))
+        .filter(User.google_refresh_token.isnot(None), User.deleted_at.is_(None))
         .all()
     ]
     for member_id in ids:
