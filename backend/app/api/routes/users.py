@@ -1,3 +1,4 @@
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -11,7 +12,14 @@ from app.core.categories import require_live_slugs
 from app.models.care import CareLink
 from app.models.host import Host
 from app.models.user import User
-from app.schemas.user import UserCreate, UserOut, UserPrefsUpdate, UserUpdate
+from app.core.security import hash_password
+from app.schemas.user import (
+    UserCreate,
+    UserOut,
+    UserPrefsUpdate,
+    UserSetPassword,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -36,14 +44,13 @@ def update_me(
         user.onboarded_at = func.now()
     if "email" in fields:
         email = fields.pop("email")
-        # A password account's email is how it signs in, so it can move but
-        # not go; an icon account's is only a channel, so it can do both.
-        if email is None and user.auth_type != "icon":
+        # The email is the login, so it can move but not go.
+        if email is None:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 "This account signs in with its email, so it needs one.",
             )
-        user.email = email.strip().lower() if email else None
+        user.email = email.strip().lower()
     if "avatar_emblem" in fields:
         emblem = fields.pop("avatar_emblem")
         if emblem is not None:
@@ -119,27 +126,48 @@ def list_users(
     )
 
 
+def _temporary_password() -> str:
+    """Something staff can read out over a desk: three short lowercase groups
+    (about 47 bits) — the member is expected to change it."""
+    return "-".join(secrets.token_hex(2) for _ in range(3))
+
+
+def _live_user(db: Session, user_id: uuid.UUID) -> User:
+    user = db.get(User, user_id)
+    if not user or user.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    return user
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_user(
     body: UserCreate,
     _: Host = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Create a member account on someone's behalf.
+    """Create a member account on someone's behalf, with a temporary password
+    returned once so it can be read out.
 
     Deliberately does NOT set an auth cookie: the caller is a superadmin doing
     admin work, and signing them in as the new member would end their session.
     """
-    from app.api.routes.auth import new_member
+    from app.api.routes.auth import _live_member_by_email, new_member
 
-    user = new_member(db, body.first_name, body.last_name, icons=body.icons)
-    # Returned so they can be written down and handed over now; staff can also
-    # read them off the members table later, or re-issue them (reset_user_key).
+    email = body.email.strip().lower()
+    if _live_member_by_email(db, email):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "That email already has an account."
+        )
+    password = _temporary_password()
+    user = new_member(
+        db, body.first_name, body.last_name, email=email, password=password
+    )
     return {
         "id": str(user.id),
         "first_name": user.first_name,
         "last_name": user.last_name,
-        "icons": user.icons,
+        "email": user.email,
+        "password": password,
     }
 
 
@@ -150,91 +178,58 @@ def update_user(
     _: Host = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    from app.api.routes.auth import _make_username
-    from app.core.icons import credential
-    from app.core.security import hash_password
+    from app.api.routes.auth import _allocate_unique_icons, _make_username
 
-    user = db.get(User, user_id)
-    if not user or user.deleted_at is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    user = _live_user(db, user_id)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
-
-    # The name is half the credential. Sign-in derives both the lookup key and
-    # the password from it (see auth_user), so changing a name without
-    # recomputing them locks the member out of their own account — they type
-    # the corrected name, it resolves to a username no row has, and they are
-    # treated as a stranger with their saved programs stranded. Fixing a typo
-    # must not cost somebody their account. Rehashing does end the member's
-    # open sessions — their key genuinely changed — so they sign in again with
-    # the corrected name.
+    # The username is internal now, but (username, icons) is still unique, so
+    # a renamed account takes a fresh hidden set under its new name.
     username = _make_username(user.first_name, user.last_name)
     if username != user.username:
-        if user.auth_type != "icon":
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                "This account signs in with a password; renaming it would "
-                "lock it out.",
-            )
         user.username = username
-        user.password_hash = hash_password(credential(username, user.icons))
-
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Another member already uses that name with the same icons.",
-        )
+        user.icons = _allocate_unique_icons(db, username)
+    db.commit()
     db.refresh(user)
     return user
 
 
-@router.post("/{user_id}/reset-key", response_model=UserOut)
-def reset_user_key(
+@router.post("/{user_id}/set-password")
+def set_user_password(
     user_id: uuid.UUID,
+    body: UserSetPassword,
     _: Host = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Issue a new icon key for a member who can no longer get in.
+    """A superadmin gives a member a temporary password, returned once to be
+    read out. This is how a legacy icon account gets back in: it becomes a
+    password account under the email entered here.
 
-    This is the whole of member recovery, for both kinds of account. An icon
-    account gets a new key. A password account is converted to an icon account:
-    there is no member "forgot password" flow, so staff re-issuing a key and
-    reading it out is the way back in, and it asks nothing new of them — it is
-    how accounts get created too (see UserCreate). The email is released so
-    the member can sign up for a password again under it if they want one.
-
-    The old credential stops working the moment this returns — not just for
-    new sign-ins but for sessions already open with it, because member tokens
-    carry a fingerprint of the credential they were issued against (see
-    deps._key_still_current). That is the whole point when the reason for the
-    reset is that somebody else learned it.
+    The old credential stops working the moment this returns — for sessions
+    already open too, because member tokens carry a fingerprint of the
+    credential they were issued against (see deps._key_still_current).
     """
-    from app.api.routes.auth import _allocate_unique_icons
-    from app.core.icons import credential
-    from app.core.security import hash_password
+    from app.api.routes.auth import _live_member_by_email
 
-    user = db.get(User, user_id)
-    if not user or user.deleted_at is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-
-    icons = _allocate_unique_icons(db, user.username, exclude=user.icons)
-    user.icons = icons
-    user.password_hash = hash_password(credential(user.username, icons))
-    user.auth_type = "icon"
-    user.email = None
+    user = _live_user(db, user_id)
+    email = body.email.strip().lower()
+    other = _live_member_by_email(db, email)
+    if other and other.id != user.id:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Another member already uses that email."
+        )
+    password = _temporary_password()
+    user.email = email
+    user.password_hash = hash_password(password)
+    user.auth_type = "password"
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Another member already uses that name with the same icons.",
+            status.HTTP_409_CONFLICT, "Another member already uses that email."
         )
-    db.refresh(user)
-    return user
+    return {"id": str(user.id), "email": email, "password": password}
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -245,14 +240,11 @@ def delete_user(
 ):
     """Archive the member. They can no longer sign in, but their attendance
     rows stay, so the programs they attended keep the numbers they already
-    reported. The (username, icons) key stays claimed too — nobody should be
-    able to sign in and land in an archived member's history.
+    reported.
 
     There is deliberately no un-archive route yet; if one is needed, it belongs
     with the rest of member management rather than bolted onto DELETE.
     """
-    user = db.get(User, user_id)
-    if not user or user.deleted_at is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    user = _live_user(db, user_id)
     user.deleted_at = func.now()
     db.commit()

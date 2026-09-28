@@ -45,16 +45,15 @@ def payload_cv(payload: dict) -> str | None:
 
 
 def _key_still_current(payload: dict, user: User) -> bool:
-    """Whether this token was issued against the member's current icon key.
+    """Whether this token was issued against the member's current password.
 
     Member sessions carry `cv`, a fingerprint of the credential in force when
-    they signed in (see security.credential_fingerprint). Re-issuing a key
-    changes the hash, so tokens opened with the old icons stop working here
-    rather than a week later when they expire.
+    they signed in (see security.credential_fingerprint). A reset changes the
+    hash, so tokens opened with the old password stop working here rather
+    than a week later when they expire.
 
     A token with no `cv` predates this check and is refused: the alternative is
-    honouring exactly the sessions a reset is supposed to close. The cost is
-    one extra sign-in, which for a member is tapping their icons.
+    honouring exactly the sessions a reset is supposed to close.
     """
     return payload.get("cv") == credential_fingerprint(user.password_hash)
 
