@@ -6,7 +6,8 @@ import { ApiError, api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 /**
- * Accepting an invitation to join as an organization.
+ * Accepting an invitation — to join as an organization, or as one person on
+ * an organization's team (`staff`).
  *
  * The password is set here, by the person who will use it. That's the whole
  * point of inviting rather than creating an account and reading a password out:
@@ -16,7 +17,9 @@ export default function AcceptInvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [invite, setInvite] = useState<
-    { organization: string; email: string } | null | undefined
+    | { organization: string; email: string; name?: string | null; staff: boolean }
+    | null
+    | undefined
   >(undefined);
   const [problem, setProblem] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -25,7 +28,12 @@ export default function AcceptInvitePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<{ organization: string; email: string }>(`/invites/${token}`)
+    api<{
+      organization: string;
+      email: string;
+      name?: string | null;
+      staff: boolean;
+    }>(`/invites/${token}`)
       .then(setInvite)
       .catch((e) => {
         setInvite(null);
@@ -77,12 +85,14 @@ export default function AcceptInvitePage() {
         ) : (
           <>
             <h1 className="font-display text-4xl font-extrabold text-ink">
-              Welcome, {invite.organization}
+              Welcome, {invite.staff ? invite.name || invite.email : invite.organization}
             </h1>
             {/* Showing who they are and who invited them is what separates this
                 from a phishing link that just asks for a password. */}
             <p className="mt-3 text-lg text-ink">
-              You&apos;ve been invited to post events on The Belonging Collective.
+              {invite.staff
+                ? `You've been invited to join ${invite.organization}'s team on The Belonging Collective.`
+                : "You've been invited to post events on The Belonging Collective."}{" "}
               Choose a password and you&apos;re in.
             </p>
             <p className="mt-1 text-base text-muted">

@@ -24,21 +24,53 @@ class HostOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    # The organization's name — or, on a staff login, the person's.
     name: str
     email: str
     is_admin: bool
     logo_url: str | None = None
+    # Set on a staff login: the organization it belongs to.
+    org_id: uuid.UUID | None = None
     created_at: datetime
 
 
-class HostWithCountsOut(HostOut):
-    """HostOut plus how many programs the account owns.
+class HostMeOut(HostOut):
+    """The signed-in login and the organization it acts for.
 
-    The admins list needs this to warn, before anyone confirms a removal, how
-    many programs are about to change hands.
+    `org` is the login's own row for an organization's shared login, and the
+    parent row for a staff login; `is_admin` here is the level in force
+    (the organization's), not the column on the staff row.
+    """
+
+    is_staff: bool = False
+    org: HostOut
+
+
+class HostWithCountsOut(HostOut):
+    """HostOut plus how many programs the account owns and who its staff are.
+
+    The admins list needs the count to warn, before anyone confirms a removal,
+    how many programs are about to be retired with the account.
     """
 
     event_count: int = 0
+    staff: list[HostOut] = []
+
+
+class TeamOut(BaseModel):
+    """An organization's logins: the shared one, its staff, and who is invited."""
+
+    org: HostOut
+    staff: list[HostOut]
+    invites: list["StaffInviteOut"]
+
+
+class StaffInviteOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    email: str
+    expires_at: datetime
+    expired: bool
 
 
 class HostCreate(BaseModel):

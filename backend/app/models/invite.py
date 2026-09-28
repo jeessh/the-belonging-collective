@@ -9,7 +9,8 @@ from app.db.session import Base
 
 
 class HostInvite(Base):
-    """A pending invitation for an organization to join.
+    """A pending invitation: for an organization to join, or — with `org_id`
+    set — for one person to join an existing organization as a staff login.
 
     Only the hash of the token is kept. The link is shown to the superadmin
     once, the same way a member's icon key is — if it's lost, issue another.
@@ -24,6 +25,13 @@ class HostInvite(Base):
     organization: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Staff invitation: the organization the new login will belong to, and the
+    # person's name. `organization` then carries the organization's name for
+    # the accept page. Both null for an invitation to found an organization.
+    org_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("hosts.id", ondelete="RESTRICT"), nullable=True
+    )
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)
     invited_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("hosts.id"), nullable=True
     )

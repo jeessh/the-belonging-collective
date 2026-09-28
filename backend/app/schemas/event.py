@@ -245,5 +245,10 @@ class EventOut(EventBase):
     price_label: str = ""
     # "N going". Null for signed-out viewers — the public routes blank it.
     saved_count: int | None = 0
+    # Registration-link clicks. Filled only for a signed-in organizer, by the
+    # route; null for everyone else.
+    click_count: int | None = None
+    # The login that posted it (attribution; host_id is the owner).
+    created_by_host_id: uuid.UUID | None = None
     images: list[EventImageOut] = []
     created_at: datetime

@@ -147,14 +147,30 @@ value produces links nobody can open.
   decision not yet made, not an omission.
 
 ### Admin console (`/host/*`)
-- `components/AdminShell.tsx` is the chrome: resolves the session and the
-  organizer's own account, then renders `components/host/ConsoleHeader.tsx` —
-  a header bar (logo, a Special access entry with a pending-request badge,
-  org name, sign out, and for superadmins a segmented Event Management /
-  Account Management switch) — over the page. **No sidebar any more.** The
-  badge count lives on `ConsoleContext` (`pendingAccess`,
-  `refreshPendingAccess`) so a page that decides a request can move it
-  without a reload.
+- `components/AdminShell.tsx` is the chrome: resolves the session and
+  `GET /hosts/me`, then renders `components/host/ConsoleHeader.tsx` — a
+  header bar (logo; Analytics, Team and Special access entries, the last
+  with a pending-request badge; the person's name over the org's when a
+  staff login is signed in; sign out; and for superadmins a segmented Event
+  Management / Account Management switch) — over the page. **No sidebar any
+  more.** `ConsoleContext` carries `me` (the login) and `org` (the
+  organization it acts for): **ownership comparisons read `ctx.org.id`,
+  never `session.id`**, which is the person's own login when they're staff.
+  The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
+  so a page that decides a request can move it without a reload.
+- `/host/team` is the organization's logins: the shared one, each staff
+  login, and staff invitations waiting (name + email → `POST /invites` with
+  `org_id`; the accept page at `/host/invite/[token]` reads `staff` from the
+  preview and creates the login under that org). A superadmin can pick any
+  organization. `/host/analytics` is the grant-application numbers: KPI
+  tiles, `components/host/WeeklyChart.tsx` (inline SVG, three validated
+  categorical hues, crosshair tooltip, a table twin under a `<details>`),
+  the per-program table (sortable), a date range (presets + custom; default
+  the last 90 days), a superadmin org filter and Download CSV — a plain
+  link to `/analytics.csv`, so the browser downloads it with the cookie.
+  Console cards and the details page show "N going · M clicks" through
+  `components/host/ConsoleCounts.tsx` (`EventOut.click_count`, filled only
+  for a signed-in organizer).
 - `/host/access` is special access: the org's groups (every org's, for a
   superadmin) beside the chosen group's members on Requests / Approved /
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
@@ -266,11 +282,51 @@ value produces links nobody can open.
   programs.
 - **superadmins** — hosts with `is_admin = true`. Manage any program, plus member
   accounts and other admin accounts. `require_admin` in `app/api/deps.py` gates
-  these, and it reads `is_admin` from the DB, not the token.
+  these, and it reads the tier from the DB, not the token.
+
+**Organizations and staff logins share the `hosts` table.** An agency's own
+row (`org_id` null) is its shared login and the owner of everything —
+`events.host_id`, `access_groups.host_id`, invitations. A **staff login**
+(`org_id` set) is one person at that agency with their own name, email and
+password; the agency can keep the shared login, add staff logins, or both.
+Everything a staff login does is done *as the organization*:
+- `org_id_of(host)` in `app/models/host.py` (`host.org_id or host.id`) is
+  what **every ownership check** compares against — events create / edit /
+  archive / restore, `core/access.py` scoping, access groups, invites,
+  analytics. Programs keep `host_id` = the organization;
+  `events.created_by_host_id` records which login posted it (attribution,
+  not ownership).
+- A staff login's tier is its organization's: `Host.is_superadmin` reads
+  `org.is_admin` through the relationship, and `deps.load_live_host` loads the
+  org alongside the login (and treats a login whose org is archived as
+  archived). Use `is_superadmin`, not the `is_admin` column, when deciding
+  what a caller may do — the column is meaningless on staff rows.
+- Staff join by **invitation**: `POST /invites` with `org_id` + `name` (any
+  login of that org may send one, a superadmin for any org; the mail and the
+  accept flow are the same as an organization invite), `GET /hosts/team`
+  lists the org's logins and pending staff invites, `DELETE /hosts/team/{id}`
+  archives one staff login. `GET /hosts` (superadmin) nests `staff` under
+  each organization. Staff reset passwords by email like any organizer.
 
 **There is no host signup route.** It existed and was open to the internet;
 superadmins now create organizer accounts via `POST /hosts` or by issuing an
 invitation (`/invites`), and `/host` is sign-in only. Don't add one back.
+
+## Analytics
+`GET /analytics?from=&to=&host_id=` (and `/analytics.csv`, same params) are
+the adoption numbers agencies put in grant applications: totals (saves,
+unique members who saved, registration-link clicks, programs posted), a
+weekly series of the same, and a per-program table (title, first date, org,
+saves, currently going, clicks). A plain organizer gets their own org
+whatever `host_id` says; a superadmin passes `host_id` or omits it for all.
+Weeks are Monday-start in America/Toronto; the default range is the last 90
+days. Two counting rules, both deliberate: **saves count every attendance
+row created in the range, `removed` ones included** — a save that happened
+still happened, and un-saving only flips the status; and **nothing filters
+on `deleted_at`** — a program un-published since still counts for what
+happened while it was up, and the table marks it `archived`. A repeating
+program is one posting (`coalesce(series_id, id)`). Everything is
+aggregated in SQL in `app/api/routes/analytics.py`; keep it that way.
 
 ## Account recovery
 Neither door can be recovered the way a normal login would be, and they work
@@ -290,17 +346,23 @@ differently from each other:
   This exists because the sole superadmin previously had no way back in at all.
 
 Two invariants worth knowing before touching `app/api/routes/hosts.py`:
-- **Removing an admin archives the account and its programs.** `Host.events`
-  cascades `delete-orphan`, so a plain `db.delete(host)` would destroy programs
-  members have already saved. It used to reassign them to the acting superadmin
-  instead, which kept them visible but filed one agency's work under another's
-  name — so both now get `deleted_at` and the programs stay attributed to the
-  organization that ran them. `hosts.email` is unique over live rows only
-  (`uq_hosts_email_live`), so an archived account releases its address and an
-  agency that left can be invited back under it.
-- **A superadmin can't demote or delete themselves.** That refusal is what keeps
-  at least one superadmin in the system — you can only remove someone else's
-  rights, so your own survive.
+- **Removing an admin archives the account, its programs and its staff
+  logins.** `Host.events` cascades `delete-orphan`, so a plain
+  `db.delete(host)` would destroy programs members have already saved. It
+  used to reassign them to the acting superadmin instead, which kept them
+  visible but filed one agency's work under another's name — so both now get
+  `deleted_at` and the programs stay attributed to the organization that ran
+  them; the org's staff logins are archived in the same statement, since a
+  person can't act for an agency that has left. Removing a staff login
+  (`DELETE /hosts/team/{id}`) archives just that row. `hosts.email` is unique
+  over live rows only (`uq_hosts_email_live`), so an archived account
+  releases its address and an agency that left can be invited back under it.
+- **A superadmin can't demote or delete themselves — or their own
+  organization.** The guards compare the target against both `current.id` and
+  `org_id_of(current)`, so a staff login of a superadmin org can't archive or
+  demote the org it signs in through. That refusal is what keeps at least one
+  superadmin in the system — you can only remove someone else's rights, so
+  your own survive. `_superadmin_count` counts organizations only.
 
 ## Status
 **https://the-belonging-collective.vercel.app is live and public.** Both of the blockers this

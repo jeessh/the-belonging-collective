@@ -17,7 +17,7 @@ import { repeatLabel } from "@/lib/recurrence";
 import { isDerivedTag, tagLabel } from "@/lib/accessibility";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { GoingCount } from "@/components/ui/GoingCount";
+import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { Tag, eventTags } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
@@ -62,7 +62,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
   if (!event) return <p className="text-lg text-fg-muted">Loading…</p>;
 
-  const canManage = ctx.isSuper || event.host_id === ctx.session.id;
+  const canManage = ctx.isSuper || event.host_id === ctx.org.id;
   const facts: [string, ReactNode][] = [
     ["Organization", event.host_name],
     ["Cost", event.price_label || (event.is_free ? "Free" : "Paid")],
@@ -179,7 +179,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 (event.is_virtual ? "Online" : "Location to be announced")}
             </Line>
           </Fact>
-          <GoingCount count={event.saved_count} className="text-xl" />
+          <ConsoleCounts event={event} className="text-xl" />
         </div>
 
         <div className="flex flex-col gap-6">

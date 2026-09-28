@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.models.access import APPROVED, AccessGroup, AccessMembership
 from app.models.event import Event
-from app.models.host import Host
+from app.models.host import Host, org_id_of
 from app.models.user import User
 
 # What EventOut.access_status says when there is no membership row.
@@ -44,10 +44,10 @@ def scope_to_viewer(query, viewer: User | None, organizer: Host | None):
     a superadmin sees everything, since they manage every program.
     """
     if organizer is not None:
-        if organizer.is_admin:
+        if organizer.is_superadmin:
             return query
         return query.filter(
-            or_(Event.access_group_id.is_(None), Event.host_id == organizer.id)
+            or_(Event.access_group_id.is_(None), Event.host_id == org_id_of(organizer))
         )
     if viewer is not None:
         return query.filter(visible_to_member(viewer.id))
