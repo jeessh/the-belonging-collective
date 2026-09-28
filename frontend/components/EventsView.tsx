@@ -335,6 +335,22 @@ export function EventsView({
   signedInRef.current = signedIn;
   const flyingRef = useRef(flying);
   flyingRef.current = flying;
+  const currentIdRef = useRef<string | undefined>(current?.id);
+  currentIdRef.current = current?.id;
+
+  // After a save from the card, the saved card stays up for half a second,
+  // then the next one comes in — unless the member has already moved on.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(advanceTimer.current), []);
+  const advanceAfterSave = useCallback(
+    (ev: Event) => {
+      clearTimeout(advanceTimer.current);
+      advanceTimer.current = setTimeout(() => {
+        if (currentIdRef.current === ev.id) next();
+      }, 500);
+    },
+    [next],
+  );
 
   // Sign in over the feed rather than navigating away: the program stays on
   // screen behind the overlay.
@@ -399,7 +415,7 @@ export function EventsView({
   }, []);
 
   const attend = useCallback(
-    async (ev: Event) => {
+    async (ev: Event, advance = false) => {
       if (savedRef.current.has(ev.id)) return;
       if (!signedInRef.current) {
         toSignIn({ kind: "save", event: ev });
@@ -451,6 +467,7 @@ export function EventsView({
               : undefined,
         });
         void syncSaved();
+        if (advance) advanceAfterSave(ev);
       } catch (e) {
         // Roll back on any failure, including an expired session. Leaving it
         // would tell someone a program is saved when the server has no record.
@@ -471,7 +488,7 @@ export function EventsView({
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
-    [toSignIn, syncSaved, toast, openRegistration, patchEvent],
+    [toSignIn, syncSaved, toast, openRegistration, patchEvent, advanceAfterSave],
   );
 
   /**
@@ -591,7 +608,7 @@ export function EventsView({
         x.set(0);
         setLift(null);
         setDragActive(false);
-        await attend(ev);
+        await attend(ev, true);
         return;
       }
 
@@ -616,8 +633,7 @@ export function EventsView({
         animate(cardOpacity, 0, { duration: 0.46, ease: "easeIn" }),
       ]);
 
-      await attend(ev);
-      next();
+      await attend(ev, true);
       flyX.set(0);
       flyY.set(0);
       cardScale.set(1);
@@ -631,7 +647,6 @@ export function EventsView({
       i,
       reduceMotion,
       attend,
-      next,
       liftCard,
       x,
       flyX,
