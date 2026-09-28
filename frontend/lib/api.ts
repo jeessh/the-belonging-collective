@@ -202,7 +202,20 @@ export type Me = {
   /** Members this account is linked to (saves for), and who saves for it. */
   care: CarePerson[];
   caregivers: CarePerson[];
+  /** What the calendar buttons offer — see lib/calendar.googleCalendarButton. */
+  google_calendar?: GoogleCalendarState;
 };
+
+/**
+ * `connected`: the saved list is synced into a calendar in their Google
+ * account. `available`: Google sign-in is set up, not yet used. `off`: it
+ * isn't set up, and the buttons subscribe to the feed instead.
+ */
+export type GoogleCalendarState = "connected" | "available" | "off";
+
+/** Stop syncing; the app's calendar leaves their Google account. */
+export const disconnectGoogleCalendar = () =>
+  api<null>("/users/me/google-calendar", { method: "DELETE" });
 
 /** Fields a member can update on themselves via PATCH /users/me. */
 export type MePrefs = Partial<

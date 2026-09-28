@@ -7,8 +7,8 @@ import {
   ChevronsRight,
   CirclePlus,
 } from "lucide-react";
-import { apiMessage, type Event } from "@/lib/api";
-import { subscribeInGoogleCalendar } from "@/lib/calendar";
+import { apiMessage, type Event, type GoogleCalendarState } from "@/lib/api";
+import { googleCalendarButton } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
 import { TIME_ZONE, longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -35,6 +35,8 @@ type Props = {
   owner?: string | null;
   /** The `.ics` for whichever list is showing. */
   calendarUrl: string;
+  /** The signed-in member's `Me.google_calendar`. */
+  googleCalendar?: GoogleCalendarState;
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
   onSignIn: () => void;
@@ -59,6 +61,7 @@ export const SavedSidebar = memo(
       signedIn,
       owner = null,
       calendarUrl,
+      googleCalendar,
       onOpenSaved,
       onOpenEvent,
       onSignIn,
@@ -73,7 +76,7 @@ export const SavedSidebar = memo(
 
     async function subscribe() {
       try {
-        await subscribeInGoogleCalendar();
+        await googleCalendarButton(googleCalendar);
       } catch (err) {
         show({
           title: apiMessage(err, "Couldn't open Google Calendar."),
@@ -125,14 +128,21 @@ export const SavedSidebar = memo(
       );
     }
 
-    // Signed in, it subscribes Google Calendar to the member's saved list, so
-    // every save follows on its own. The feed is the signed-in account's, so
-    // a caregiver looking at someone else's list gets their `.ics` instead.
-    // Signed out there is no list yet, so it opens sign-in.
+    // Signed in, it puts the member's saved list in Google Calendar and keeps
+    // it there (lib/calendar.googleCalendarButton); once connected it opens
+    // it. That is the signed-in account's own calendar, so a caregiver
+    // looking at someone else's list gets their `.ics` instead. Signed out
+    // there is no list yet, so it opens sign-in.
     const calendarInner = (
       <>
         <GoogleCalendarIcon />
-        {!open ? "Calendar" : owner ? "Download calendar" : "Google Calendar"}
+        {!open
+          ? "Calendar"
+          : owner
+            ? "Download calendar"
+            : googleCalendar === "connected"
+              ? "Open Google Calendar"
+              : "Google Calendar"}
       </>
     );
     const calendar =

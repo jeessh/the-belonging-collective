@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     # /internal/reminders. Unset means the endpoint refuses to run at all.
     CRON_SECRET: str = ""
 
+    # "Connect Google Calendar" (core/gcal.py): an OAuth web client from the
+    # Google Cloud console. Both unset (the default) turns the feature off and
+    # the calendar buttons fall back to the subscription feed. The redirect
+    # URI defaults to FRONTEND_ORIGIN + ROOT_PATH + /google-calendar/callback
+    # and must match the one registered with Google exactly.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+
     # Path prefix the backend is served under. Empty in local dev (the frontend
     # calls http://localhost:8000 directly); "/api" on Vercel, where the service
     # rewrite forwards the /api-prefixed path and backend/index.py strips it
