@@ -51,6 +51,8 @@ class UserOut(BaseModel):
     dismissed_program_ids: list[str] = []
     # Null until the first-run tour has been seen.
     onboarded_at: datetime | None = None
+    # connected | available | off — models/user.User.google_calendar.
+    google_calendar: str = "off"
     created_at: datetime
 
 

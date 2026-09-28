@@ -16,6 +16,7 @@ import {
   api,
   apiMessage,
   createShareLink,
+  disconnectGoogleCalendar,
   removeCaregiver,
   sharedListUrl,
   shortName,
@@ -25,9 +26,11 @@ import {
   type CarePerson,
   type Me,
 } from "@/lib/api";
+import { googleCalendarButton } from "@/lib/calendar";
 import { EMBLEMS } from "@/lib/emblems";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
@@ -46,7 +49,7 @@ export default function ProfilePage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [busy, setBusy] = useState<
-    "email" | "picture" | "link" | "care" | null
+    "email" | "picture" | "link" | "care" | "calendar" | null
   >(null);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   // The caregiver's add / link sheet, and the key it hands back.
@@ -134,6 +137,19 @@ export default function ProfilePage() {
       }
     } catch (err) {
       show({ title: apiMessage(err, "Couldn't make the link."), tone: "alert" });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function disconnectCalendar() {
+    setBusy("calendar");
+    try {
+      await disconnectGoogleCalendar();
+      setMe((m) => (m ? { ...m, google_calendar: "available" } : m));
+      show({ title: "Google Calendar disconnected", tone: "info" });
+    } catch (err) {
+      show({ title: apiMessage(err, "Couldn't disconnect."), tone: "alert" });
     } finally {
       setBusy(null);
     }
@@ -326,6 +342,49 @@ export default function ProfilePage() {
             </Button>
           </div>
         </Card>
+
+        {/* Connected Google Calendar (core/gcal.py). Hidden when Google
+            sign-in isn't set up — the feed's buttons subscribe instead. */}
+        {me.google_calendar && me.google_calendar !== "off" && (
+          <Card
+            title="Google Calendar"
+            subtitle={
+              me.google_calendar === "connected"
+                ? "Your saved events are in a “The Belonging Collective” calendar in your Google account, and stay up to date."
+                : "Put your saved events in your Google Calendar. They stay up to date when you save or un-save."
+            }
+          >
+            <div className="flex flex-wrap gap-4">
+              {me.google_calendar === "connected" ? (
+                <>
+                  <Button
+                    size="lg"
+                    leadingIcon={<GoogleCalendarIcon />}
+                    onClick={() => void googleCalendarButton("connected")}
+                  >
+                    Open Google Calendar
+                  </Button>
+                  <Button
+                    size="lg"
+                    disabled={busy === "calendar"}
+                    onClick={() => void disconnectCalendar()}
+                  >
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  leadingIcon={<GoogleCalendarIcon />}
+                  onClick={() => void googleCalendarButton("available")}
+                >
+                  Connect Google Calendar
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* Care links, for an account that signed up as a caregiver — the
             profile no longer turns it on. Support, not proxy: the people

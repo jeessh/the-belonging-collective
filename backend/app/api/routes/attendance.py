@@ -1,14 +1,22 @@
 import secrets
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import BaseModel
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user, get_db, get_optional_user
-from app.core import holds, ical
+from app.core import gcal, holds, ical
 from app.core.access import is_approved, visible_to_member
 from app.core.rate_limit import CLICK_LIMIT, client_key, enforce, record
 from app.core.pricing import covers_whole_series
@@ -146,10 +154,13 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
 @router.post("/events/{event_id}/attend", status_code=status.HTTP_201_CREATED)
 def attend_event(
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return save_event(db, user, event_id)
+    result = save_event(db, user, event_id)
+    gcal.after_save(background, user)
+    return result
 
 
 def unsave_event(db: Session, user: User, event_id: uuid.UUID) -> None:
@@ -183,10 +194,12 @@ def unsave_event(db: Session, user: User, event_id: uuid.UUID) -> None:
 )
 def unattend_event(
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     unsave_event(db, user, event_id)
+    gcal.after_save(background, user)
 
 
 def saved_events(db: Session, user: User) -> list[Event]:
