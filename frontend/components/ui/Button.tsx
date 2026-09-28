@@ -5,14 +5,14 @@ export type ButtonSize = "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary:
-    "border-2 border-primary-border bg-primary hover:bg-primary-active disabled:border-line disabled:bg-surface-subtle disabled:text-fg-muted",
+    "border-2 border-primary-border bg-primary hover:bg-primary-active disabled:border-transparent disabled:bg-surface-subtle disabled:text-fg-muted",
   secondary:
-    "border border-line bg-surface hover:bg-surface-subtle disabled:bg-surface-subtle disabled:text-fg-muted",
+    "border border-line bg-surface hover:bg-surface-subtle disabled:border-transparent disabled:bg-surface-subtle disabled:text-fg-muted",
   ghost:
     "border border-transparent bg-transparent hover:bg-surface-subtle disabled:text-fg-muted",
   // The design's "Un-publish" / "Yes, delete": pink fill, red edge.
   danger:
-    "border border-danger-border bg-danger hover:bg-[#FFBFC6] disabled:border-line disabled:bg-surface-subtle disabled:text-fg-muted",
+    "border border-danger-border bg-danger hover:bg-[#FFBFC6] disabled:border-transparent disabled:bg-surface-subtle disabled:text-fg-muted",
 };
 
 // Both clear 44px; `lg` is the design's 20px-text control for member CTAs,

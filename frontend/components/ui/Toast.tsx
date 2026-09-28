@@ -22,6 +22,11 @@ export type ToastOptions = {
   tone?: ToastTone;
   /** e.g. Undo. Pressing it dismisses the toast. */
   action?: { label: string; onClick: () => void };
+  /**
+   * A second, quieter choice (the guest toast's "Later"). With it, the two
+   * buttons sit in a row under the text and `action` becomes the primary one.
+   */
+  cancel?: { label: string; onClick?: () => void };
 };
 
 type ToastItem = ToastOptions & { id: number };
@@ -123,8 +128,31 @@ function ToastCard({
         {toast.description && (
           <p className="text-base text-fg-muted">{toast.description}</p>
         )}
+        {toast.cancel && (
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Button
+              onClick={() => {
+                toast.cancel?.onClick?.();
+                onDismiss();
+              }}
+            >
+              {toast.cancel.label}
+            </Button>
+            {toast.action && (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  toast.action?.onClick();
+                  onDismiss();
+                }}
+              >
+                {toast.action.label}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
-      {toast.action && (
+      {toast.action && !toast.cancel && (
         <Button
           variant="secondary"
           onClick={() => {

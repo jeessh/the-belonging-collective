@@ -11,8 +11,6 @@ import {
 import {
   ArrowLeft,
   BookmarkX,
-  CalendarDays,
-  CalendarPlus,
   GalleryVerticalEnd,
   LayoutGrid,
   MoveLeft,
@@ -35,6 +33,7 @@ import { GoingCount } from "@/components/ui/GoingCount";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
+import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
@@ -264,11 +263,8 @@ export const SavedEvents = memo(function SavedEvents({
                   href={calendarUrl}
                   className={buttonClass("secondary", "lg", ACTION)}
                 >
-                  <CalendarDays
-                    aria-hidden="true"
-                    className="size-6 shrink-0 text-primary-border"
-                  />
-                  Download calendar
+                  <GoogleCalendarIcon />
+                  Google Calendar
                 </a>
                 <Button
                   size="lg"
@@ -477,7 +473,7 @@ function SavedCard({
                   openGoogleCalendar(event);
                 }}
                 aria-label={`Add to calendar: ${event.title}`}
-                leadingIcon={<CalendarPlus />}
+                leadingIcon={<GoogleCalendarIcon />}
               >
                 Add to calendar
               </Button>

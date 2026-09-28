@@ -11,15 +11,29 @@ export function GoingCount({
   count,
   onSignIn,
   signInHref,
+  variant = "line",
   className = "",
 }: {
   count: number | null | undefined;
   onSignIn?: () => void;
   /** Where to sign in when there is no overlay to open. */
   signInHref?: string;
+  /** `line` (default): icon + "N going". `tag`: the sheet's small grey "26 GOING" chip. */
+  variant?: "line" | "tag";
   className?: string;
 }) {
   if (count === 0 || count === undefined) return null;
+  if (variant === "tag") {
+    // Compact places have no room for the sign-in nudge; say nothing instead.
+    if (count === null) return null;
+    return (
+      <span
+        className={`inline-flex items-center rounded-control bg-surface-subtle px-3 py-1 text-sm uppercase tracking-wide text-fg-muted ${className}`}
+      >
+        {count} going
+      </span>
+    );
+  }
   if (count === null) {
     const look = `inline-flex min-h-11 items-center gap-3 text-fg underline decoration-line underline-offset-4 hover:decoration-fg ${className}`;
     return signInHref ? (
