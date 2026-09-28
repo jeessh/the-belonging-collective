@@ -3,11 +3,13 @@
 import {
   memo,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   BookX,
@@ -64,8 +66,12 @@ const VIEWS = [
   { value: "grid" as const, label: "Grid View", icon: <LayoutGrid /> },
 ];
 
-// Card View shows one row of three, as drawn; Grid View three rows of two.
-const PAGE_SIZE: Record<SavedView, number> = { card: 3, grid: 6 };
+// Grid View pages through three rows of two. Card View is one row of three
+// (fewer where the panel is narrow) that Back / Next slide along one card at
+// a time, through the whole list.
+const GRID_PAGE_SIZE = 6;
+/** Card View's gap between cards, in px — `gap-6`. */
+const CARD_GAP = 24;
 
 type Props = {
   /** Null when signed out — there is no list to show, only a way to get one. */
@@ -102,6 +108,12 @@ export const SavedEvents = memo(function SavedEvents({
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("upcoming");
   const [page, setPage] = useState(1);
+  // Card View: the first card in view, and how many fit across.
+  const [start, setStart] = useState(0);
+  const [perView, setPerView] = useState(3);
+  const [step, setStep] = useState(0);
+  const trackRef = useRef<HTMLUListElement>(null);
+  const reduceMotion = useReducedMotion();
   const [sub, setSub] = useState<"share" | "print" | null>(null);
   // Follows the feed's own view until the member picks one here; the pick
   // is this page's alone and is not written back to the profile.
@@ -192,16 +204,46 @@ export const SavedEvents = memo(function SavedEvents({
     };
   }, [events, query, topicLabel]);
 
+  const shown = tab === "upcoming" ? upcoming : past;
+
+  // How far one card is from the next, and so how many fit across. Measured,
+  // because the width is the panel's (container queries), not the window's.
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!open || view !== "card" || !track) return;
+    const measure = () => {
+      const cards = track.children as HTMLCollectionOf<HTMLElement>;
+      if (cards.length === 0) return;
+      const one =
+        cards.length > 1
+          ? cards[1].offsetLeft - cards[0].offsetLeft
+          : cards[0].offsetWidth + CARD_GAP;
+      setStep(one);
+      setPerView(Math.max(1, Math.round((track.clientWidth + CARD_GAP) / one)));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, [open, view, shown.length]);
+
   if (!open) return null;
 
-  const shown = tab === "upcoming" ? upcoming : past;
   const total = oneCardPerProgram(events).length;
   // Clamped on read rather than in an effect, so an un-save that empties the
   // last page shows the one before it in the same render.
-  const pageSize = PAGE_SIZE[view];
-  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(shown.length / GRID_PAGE_SIZE));
   const current = Math.min(page, pageCount);
-  const onPage = shown.slice((current - 1) * pageSize, current * pageSize);
+  const onPage = shown.slice(
+    (current - 1) * GRID_PAGE_SIZE,
+    current * GRID_PAGE_SIZE,
+  );
+  // Card View, clamped the same way: an un-save near the end pulls the row
+  // back rather than leaving an empty slot.
+  const lastStart = Math.max(0, shown.length - perView);
+  const first = Math.min(start, lastStart);
+  const inView = Math.min(perView, shown.length);
   const tabLabel = TABS.find((t) => t.value === tab)!.label;
 
   function goTo(next: number) {
@@ -253,6 +295,7 @@ export const SavedEvents = memo(function SavedEvents({
               onChange={(next) => {
                 setViewChoice(next);
                 setPage(1);
+                setStart(0);
               }}
             />
           )}
@@ -275,6 +318,7 @@ export const SavedEvents = memo(function SavedEvents({
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setPage(1);
+                    setStart(0);
                   }}
                   placeholder="Search for event"
                   className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
@@ -334,6 +378,7 @@ export const SavedEvents = memo(function SavedEvents({
               onChange={(next) => {
                 setTab(next);
                 setPage(1);
+                setStart(0);
               }}
             />
 
@@ -361,51 +406,108 @@ export const SavedEvents = memo(function SavedEvents({
                 >
                   {tabLabel}
                 </h2>
-                <ul
-                  className={`grid gap-6 ${
-                    view === "card"
-                      ? "cq-md:grid-cols-2 cq-xl:grid-cols-3"
-                      : "cq-xl:grid-cols-2"
-                  }`}
-                >
-                  {onPage.map((ev) => (
-                    <SavedCard
-                      key={ev.id}
-                      event={ev}
-                      view={view}
-                      calendar={tab === "upcoming"}
-                      onUnsave={onUnsave}
-                      onOpen={onOpen}
-                    />
-                  ))}
-                </ul>
-                {pageCount > 1 && (
+                {view === "card" ? (
+                  // One row that slides: the window clips it, the track
+                  // moves one card per Back / Next.
+                  <div className="overflow-hidden">
+                    <ul
+                      ref={trackRef}
+                      className="flex gap-6"
+                      style={{
+                        transform: `translateX(${-first * step}px)`,
+                        transition: reduceMotion
+                          ? "none"
+                          : "transform 300ms ease-out",
+                      }}
+                    >
+                      {shown.map((ev, i) => (
+                        <SavedCard
+                          key={ev.id}
+                          event={ev}
+                          view={view}
+                          calendar={tab === "upcoming"}
+                          onUnsave={onUnsave}
+                          onOpen={onOpen}
+                          offscreen={i < first || i >= first + inView}
+                          className="w-full shrink-0 cq-md:w-[calc((100%-1.5rem)/2)] cq-xl:w-[calc((100%-3rem)/3)]"
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <ul className="grid gap-6 cq-xl:grid-cols-2">
+                    {onPage.map((ev) => (
+                      <SavedCard
+                        key={ev.id}
+                        event={ev}
+                        view={view}
+                        calendar={tab === "upcoming"}
+                        onUnsave={onUnsave}
+                        onOpen={onOpen}
+                      />
+                    ))}
+                  </ul>
+                )}
+                {/* Pinned to the foot of the panel, so Back / Next are on
+                    screen however tall the cards are. */}
+                {(view === "card" ? shown.length > inView : pageCount > 1) && (
                   <nav
                     aria-label="Saved events pages"
-                    className="grid grid-cols-2 gap-4 sm:gap-6"
+                    className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-4 border-t border-line bg-surface px-4 py-4 sm:-mx-6 sm:-mb-6 sm:gap-6 sm:px-6 lg:-mx-9 lg:-mb-9 lg:px-9 lg:py-6"
                   >
-                    <Button
-                      size="lg"
-                      className={ACTION}
-                      disabled={current === 1}
-                      onClick={() => goTo(current - 1)}
-                      leadingIcon={<MoveLeft />}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className={ACTION}
-                      disabled={current === pageCount}
-                      onClick={() => goTo(current + 1)}
-                      trailingIcon={<MoveRight />}
-                    >
-                      Next
-                    </Button>
-                    <p role="status" aria-live="polite" className="sr-only">
-                      Page {current} of {pageCount}
-                    </p>
+                    {view === "card" ? (
+                      <>
+                        <Button
+                          size="lg"
+                          className={ACTION}
+                          disabled={first === 0}
+                          onClick={() => setStart(first - 1)}
+                          leadingIcon={<MoveLeft />}
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          className={ACTION}
+                          disabled={first >= lastStart}
+                          onClick={() => setStart(first + 1)}
+                          trailingIcon={<MoveRight />}
+                        >
+                          Next
+                        </Button>
+                        <p role="status" aria-live="polite" className="sr-only">
+                          Showing {first + 1}
+                          {inView > 1 ? `–${first + inView}` : ""} of{" "}
+                          {shown.length}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="lg"
+                          className={ACTION}
+                          disabled={current === 1}
+                          onClick={() => goTo(current - 1)}
+                          leadingIcon={<MoveLeft />}
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          className={ACTION}
+                          disabled={current === pageCount}
+                          onClick={() => goTo(current + 1)}
+                          trailingIcon={<MoveRight />}
+                        >
+                          Next
+                        </Button>
+                        <p role="status" aria-live="polite" className="sr-only">
+                          Page {current} of {pageCount}
+                        </p>
+                      </>
+                    )}
                   </nav>
                 )}
               </>
@@ -472,6 +574,8 @@ function SavedCard({
   calendar,
   onUnsave,
   onOpen,
+  offscreen = false,
+  className = "",
 }: {
   event: Event;
   view: SavedView;
@@ -479,14 +583,24 @@ function SavedCard({
   calendar: boolean;
   onUnsave: (event: Event) => void;
   onOpen: (event: Event) => void;
+  /** Slid out of Card View's window: kept out of Tab and screen readers. */
+  offscreen?: boolean;
+  className?: string;
 }) {
   const stack = view === "card";
+  // `inert` (no Tab, no clicks) set on the element: React 18 has no prop.
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.inert = offscreen;
+  }, [offscreen]);
   return (
     <li
       onClick={() => onOpen(event)}
+      ref={ref}
+      aria-hidden={offscreen || undefined}
       className={`cursor-pointer overflow-hidden rounded-card border border-line-card bg-surface transition-colors hover:border-primary-border focus-within:border-primary-border ${
         stack ? "" : "p-6"
-      }`}
+      } ${className}`}
     >
       <EventSummary
         event={event}
