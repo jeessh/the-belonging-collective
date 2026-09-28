@@ -149,9 +149,25 @@ value produces links nobody can open.
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session and the
   organizer's own account, then renders `components/host/ConsoleHeader.tsx` —
-  a header bar (logo, org name, sign out, and for superadmins a segmented
-  Event Management / Account Management switch) — over the page. **No
-  sidebar any more.**
+  a header bar (logo, a Special access entry with a pending-request badge,
+  org name, sign out, and for superadmins a segmented Event Management /
+  Account Management switch) — over the page. **No sidebar any more.** The
+  badge count lives on `ConsoleContext` (`pendingAccess`,
+  `refreshPendingAccess`) so a page that decides a request can move it
+  without a reload.
+- `/host/access` is special access: the org's groups (every org's, for a
+  superadmin) beside the chosen group's members on Requests / Approved /
+  Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
+  surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
+  the form's "Who can see this" — Everyone or a group of the *program's*
+  organization (`hostId`), with inline group creation — and
+  `components/host/PosterField.tsx` / `PosterSection.tsx` are the printable
+  poster (`uploadPoster`, PDF or image) and the details page's QR code. The
+  QR encodes the program's public page, never the poster file, and is drawn
+  client-side with the `qrcode` package (SVG in the page, PNG on download).
+  `Tag kind="access" detail={group}` is the "Special access" pill;
+  `EventSummary` draws it in the shared tag row, so console cards and member
+  surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/PostedEvents.tsx`'s
   `PostedEventCard` (the shared `EventSummary` + "N going" + copy-link) beside
   an accordion `FilterPanel`, with a Your Events / All Events toggle.

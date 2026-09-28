@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ApiError,
   api,
+  fetchAccessGroups,
   getSession,
   type AdminAccount,
   type Session,
@@ -25,6 +26,10 @@ export type ConsoleContext = {
   /** The signed-in organization (`/hosts/me`). */
   org: AdminAccount;
   isSuper: boolean;
+  /** Special-access requests waiting on this organizer — the header badge. */
+  pendingAccess: number;
+  /** Re-count after a decision, so the badge doesn't wait for a reload. */
+  refreshPendingAccess: () => void;
 };
 
 export function AdminShell({
@@ -36,9 +41,23 @@ export function AdminShell({
   children: (ctx: ConsoleContext) => ReactNode;
 }) {
   const router = useRouter();
-  const [ctx, setCtx] = useState<ConsoleContext | null>(null);
+  const pathname = usePathname();
+  const [ctx, setCtx] = useState<Omit<
+    ConsoleContext,
+    "pendingAccess" | "refreshPendingAccess"
+  > | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [pendingAccess, setPendingAccess] = useState(0);
+
+  // A missing count is not worth blocking the console for.
+  const refreshPendingAccess = useCallback(() => {
+    fetchAccessGroups()
+      .then((groups) =>
+        setPendingAccess(groups.reduce((n, g) => n + g.pending_count, 0)),
+      )
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +83,12 @@ export function AdminShell({
     };
   }, [router, attempt]);
 
+  // Re-counted on every page change: a request that arrived while staff
+  // were elsewhere in the console shows up on the next click.
+  useEffect(() => {
+    if (ctx) refreshPendingAccess();
+  }, [ctx, pathname, refreshPendingAccess]);
+
   if (failed) {
     return (
       <Centered>
@@ -83,11 +108,14 @@ export function AdminShell({
     );
   }
 
+  const full: ConsoleContext = { ...ctx, pendingAccess, refreshPendingAccess };
+
   return (
     <div className="min-h-dvh bg-surface text-fg">
       <ConsoleHeader
         org={ctx.org}
         isSuper={ctx.isSuper}
+        pendingAccess={pendingAccess}
         onLogoChanged={(logo_url) =>
           setCtx({ ...ctx, org: { ...ctx.org, logo_url } })
         }
@@ -102,7 +130,7 @@ export function AdminShell({
             </p>
           </div>
         ) : (
-          children(ctx)
+          children(full)
         )}
       </main>
     </div>

@@ -94,6 +94,7 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
       <EventForm
         id={FORM_ID}
         mode="create"
+        hostId={ctx.session.id ?? ""}
         values={values}
         onChange={setValues}
         submitting={busy}
