@@ -64,9 +64,8 @@ const VIEWS = [
   { value: "grid" as const, label: "Grid View", icon: <LayoutGrid /> },
 ];
 
-// Two rows of three, three rows of two, or six down a phone: every view
-// fills its rows.
-const PAGE_SIZE = 6;
+// Card View shows one row of three, as drawn; Grid View three rows of two.
+const PAGE_SIZE: Record<SavedView, number> = { card: 3, grid: 6 };
 
 type Props = {
   /** Null when signed out — there is no list to show, only a way to get one. */
@@ -206,9 +205,10 @@ export const SavedEvents = memo(function SavedEvents({
   const total = oneCardPerProgram(events).length;
   // Clamped on read rather than in an effect, so an un-save that empties the
   // last page shows the one before it in the same render.
-  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const pageSize = PAGE_SIZE[view];
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
   const current = Math.min(page, pageCount);
-  const onPage = shown.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  const onPage = shown.slice((current - 1) * pageSize, current * pageSize);
   const tabLabel = TABS.find((t) => t.value === tab)!.label;
 
   function goTo(next: number) {
@@ -257,7 +257,10 @@ export const SavedEvents = memo(function SavedEvents({
               className="shrink-0"
               segments={VIEWS.map((v) => ({ ...v, iconOnly: phone }))}
               value={view}
-              onChange={setViewChoice}
+              onChange={(next) => {
+                setViewChoice(next);
+                setPage(1);
+              }}
             />
           )}
         </div>
