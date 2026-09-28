@@ -75,6 +75,26 @@ function torontoDay(at: Date): number {
   return Date.UTC(get("year"), get("month") - 1, get("day"));
 }
 
+/** Toronto calendar days from `now` to `at`: 0 today, 1 tomorrow, -1 yesterday. */
+function dayOffset(at: Date, now: Date): number {
+  return Math.round((torontoDay(at) - torontoDay(now)) / 86_400_000);
+}
+
+/**
+ * Starts today or within the following seven Toronto calendar days. Undated
+ * programs don't: "date to be announced" isn't this week.
+ */
+export function isThisWeek(
+  ev: { starts_at?: string | null },
+  now = new Date(),
+): boolean {
+  if (!ev.starts_at) return false;
+  const at = new Date(ev.starts_at);
+  if (Number.isNaN(at.getTime())) return false;
+  const days = dayOffset(at, now);
+  return days >= 0 && days <= 7;
+}
+
 /**
  * "Today", "Tomorrow", "In 7 days", "In 3 weeks"; "Yesterday", "5 days ago".
  * Counted in Toronto calendar days, so a 1 AM program is "Tomorrow" all
@@ -84,7 +104,7 @@ export function relativeDay(iso?: string | null, now = new Date()): string {
   if (!iso) return "Date to be announced";
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return "Date to be announced";
-  const days = Math.round((torontoDay(at) - torontoDay(now)) / 86_400_000);
+  const days = dayOffset(at, now);
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
   if (days === -1) return "Yesterday";
