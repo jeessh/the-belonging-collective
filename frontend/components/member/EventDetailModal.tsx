@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Bookmark, ExternalLink, MapPin, SquareX } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf, mapsUrl } from "@/lib/share";
@@ -36,7 +36,7 @@ export function EventDetailModal({
   /** Only used when registration lives on the organizer's own site. */
   onOpenRegistration: (event: Event) => void;
   /** A restricted program the member is not yet approved for. */
-  onRequestAccess: (event: Event) => void;
+  onRequestAccess: (event: Event) => Promise<void>;
   /** For "See who else is going" when nobody is signed in. */
   onSignIn: () => void;
 }) {
@@ -54,6 +54,7 @@ export function EventDetailModal({
   // Save is for approved members only; everyone else gets the access control.
   const access = accessStateOf(event);
   const canSave = access === null || access === "approved";
+  const [requesting, setRequesting] = useState(false);
 
   return (
     // Lifts the fixed Modal above the feed chrome, which sits at z-50.
@@ -87,7 +88,11 @@ export function EventDetailModal({
               {!canSave ? (
                 <AccessAction
                   state={access}
-                  onRequest={() => onRequestAccess(event)}
+                  busy={requesting}
+                  onRequest={() => {
+                    setRequesting(true);
+                    void onRequestAccess(event).finally(() => setRequesting(false));
+                  }}
                 />
               ) : saved ? (
                 <Button

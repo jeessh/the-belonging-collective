@@ -1211,7 +1211,7 @@ export function EventsView({
           onSave={(ev) => void attend(ev)}
           onUnsave={(ev) => void unsave(ev)}
           onOpenRegistration={openRegistration}
-          onRequestAccess={(ev) => void requestAccessFor(ev)}
+          onRequestAccess={requestAccessFor}
           onSignIn={() => toSignIn()}
         />
       )}

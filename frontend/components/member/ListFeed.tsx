@@ -44,6 +44,7 @@ export const ListFeed = memo(function ListFeed({
         >
           <h2
             id="for-you-heading"
+            data-tour="foryou"
             className="flex items-center gap-3 text-2xl font-medium text-fg"
           >
             <Sparkles aria-hidden="true" className="size-7 text-primary-border" />
