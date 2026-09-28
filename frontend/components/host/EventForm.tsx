@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { CalendarDays, Clock, MapPin } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
+import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
@@ -263,43 +267,6 @@ export function missingRequired(v: EventFormValues): string[] {
 
 /* ---------------- pieces ---------------- */
 
-// The same box TextField draws, for the controls it doesn't wrap.
-const controlClass =
-  "min-h-12 w-full rounded-field border border-line bg-surface px-4 py-3 text-lg text-fg placeholder:text-fg-muted";
-
-function Labelled({
-  label,
-  required,
-  aside,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  /** Sits at the right of the label line — the character counter. */
-  aside?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="flex items-end justify-between gap-3 text-lg font-medium text-fg">
-        <span>
-          {label}
-          {required && (
-            <>
-              <span aria-hidden="true" className="ml-1 text-danger-fg">
-                *
-              </span>
-              <span className="sr-only"> (required)</span>
-            </>
-          )}
-        </span>
-        {aside}
-      </span>
-      {children}
-    </label>
-  );
-}
-
 function Section({
   title,
   lead,
@@ -315,44 +282,11 @@ function Section({
     <fieldset className="flex flex-col gap-3">
       <legend className="text-lg font-medium text-fg">
         {title}
-        {required && (
-          <>
-            <span aria-hidden="true" className="ml-1 text-danger-fg">
-              *
-            </span>
-            <span className="sr-only"> (required)</span>
-          </>
-        )}
+        {required && <RequiredMark />}
       </legend>
       {lead && <p className="text-base text-fg-muted">{lead}</p>}
       {children}
     </fieldset>
-  );
-}
-
-/** A multi-select chip. Leaving one unticked means "not saying", never "no". */
-function Chip({
-  on,
-  onClick,
-  children,
-}: {
-  on: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-4 py-2 text-lg text-fg transition-colors ${
-        on
-          ? "border-primary-border bg-primary-soft"
-          : "border-line bg-surface hover:bg-surface-subtle"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -456,6 +390,7 @@ export function EventForm({
             placeholder="DD/MM/YYYY"
             required
             type="date"
+            icon={<CalendarDays />}
             value={values.date}
             // Chrome's date field takes a six-digit year; min/max bound the
             // spinner and the clamp catches typing.
@@ -468,12 +403,10 @@ export function EventForm({
             }}
           />
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <p className="text-lg font-medium text-fg">
               Time
-              <span aria-hidden="true" className="ml-1 text-danger-fg">
-                *
-              </span>
+              <RequiredMark />
             </p>
             <div className="flex items-center gap-2">
               <TextField
@@ -481,6 +414,7 @@ export function EventForm({
                 placeholder="9:00 AM"
                 className="flex-1 [&>label]:sr-only"
                 type="time"
+                icon={<Clock />}
                 required
                 value={values.time}
                 onChange={(e) => set("time", e.target.value)}
@@ -491,6 +425,7 @@ export function EventForm({
                 placeholder="11:00 AM"
                 className="flex-1 [&>label]:sr-only"
                 type="time"
+                icon={<Clock />}
                 value={values.endTime}
                 onChange={(e) => set("endTime", e.target.value)}
               />
@@ -500,14 +435,15 @@ export function EventForm({
           <TextField
             label="Location"
             required
+            icon={<MapPin />}
             value={values.location}
             onChange={(e) => set("location", e.target.value)}
-            placeholder="Enter location here"
+            placeholder="Enter Location Here"
           />
         </div>
 
         <div className="flex flex-col gap-6">
-          <Labelled
+          <Field
             label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
             required
             aside={
@@ -523,15 +459,14 @@ export function EventForm({
               </span>
             }
           >
-            <textarea
+            <TextArea
               rows={6}
               maxLength={DESCRIPTION_MAX}
               value={values.description}
               onChange={(e) => set("description", e.target.value)}
-              className={`${controlClass} resize-y`}
               placeholder="Type out your description here…"
             />
-          </Labelled>
+          </Field>
 
           <Section
             title="Important Links"
@@ -548,7 +483,7 @@ export function EventForm({
                     className="[&>label]:sr-only"
                     value={link.label}
                     onChange={(e) => setLink(i, { label: e.target.value })}
-                    placeholder={`Link ${i + 1} label`}
+                    placeholder={`Link ${i + 1}`}
                   />
                   <TextField
                     label={`Link ${i + 1} address`}
@@ -559,7 +494,7 @@ export function EventForm({
                     inputMode="url"
                     value={link.url}
                     onChange={(e) => setLink(i, { url: e.target.value })}
-                    placeholder={`Link ${i + 1} address`}
+                    placeholder="yourorg.ca/page"
                     error={
                       checkPostingLink(link.url)?.tone === "error"
                         ? "That doesn't look like a web address."
@@ -741,9 +676,9 @@ export function EventForm({
             {categories.map((c) => {
               const on = values.categories.includes(c.slug);
               return (
-                <Chip
+                <FilterChip
                   key={c.slug}
-                  on={on}
+                  selected={on}
                   onClick={() =>
                     set(
                       "categories",
@@ -753,9 +688,9 @@ export function EventForm({
                     )
                   }
                 >
-                  <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>{" "}
-                  {c.label}
-                </Chip>
+                  <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
+                  &nbsp;{c.label}
+                </FilterChip>
               );
             })}
           </div>
@@ -764,19 +699,18 @@ export function EventForm({
         {mode === "create" && (
           <Section title="Does it repeat?">
             <div className="flex flex-wrap items-end gap-4">
-              <Labelled label="How often">
-                <select
+              <Field label="How often" className="min-w-[200px]">
+                <Select
                   value={values.frequency}
                   onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  className={`${controlClass} min-w-[200px]`}
                 >
                   {FREQUENCIES.map((f) => (
                     <option key={f.value} value={f.value}>
                       {f.label}
                     </option>
                   ))}
-                </select>
-              </Labelled>
+                </Select>
+              </Field>
               {values.frequency !== "once" && !values.repeatForever && (
                 <TextField
                   label="How many times"
@@ -793,15 +727,12 @@ export function EventForm({
               {values.frequency !== "once" && (
                 // A drop-in that has run every Friday for nine years has no
                 // session count to give.
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 text-lg text-fg">
-                  <input
-                    type="checkbox"
-                    checked={values.repeatForever}
-                    onChange={(e) => set("repeatForever", e.target.checked)}
-                    className="size-5 accent-primary-border"
-                  />
-                  It keeps going
-                </label>
+                <Checkbox
+                  label="It keeps going"
+                  className="min-h-12"
+                  checked={values.repeatForever}
+                  onChange={(e) => set("repeatForever", e.target.checked)}
+                />
               )}
             </div>
             {values.frequency !== "once" && (
@@ -845,15 +776,14 @@ export function EventForm({
           />
         </div>
 
-        <Labelled label="Extra details">
-          <textarea
+        <Field label="Extra details">
+          <TextArea
             rows={3}
             value={values.notes}
             onChange={(e) => set("notes", e.target.value)}
-            className={`${controlClass} resize-y`}
             placeholder="What to bring, who to ask for, anything that varies week to week."
           />
-        </Labelled>
+        </Field>
 
         <Section title="Who is it for?">
           <SegmentedToggle<"youth" | "everyone">
@@ -900,9 +830,9 @@ export function EventForm({
             {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
               const on = values.accessibilityTags.includes(slug);
               return (
-                <Chip
+                <FilterChip
                   key={slug}
-                  on={on}
+                  selected={on}
                   onClick={() =>
                     set(
                       "accessibilityTags",
@@ -912,8 +842,9 @@ export function EventForm({
                     )
                   }
                 >
-                  <span aria-hidden="true">{emoji}</span> {label}
-                </Chip>
+                  <span aria-hidden="true">{emoji}</span>
+                  &nbsp;{label}
+                </FilterChip>
               );
             })}
           </div>

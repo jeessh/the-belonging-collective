@@ -19,7 +19,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import { EmptyRow, Field, Pill, Select, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 
 /**
@@ -84,24 +84,22 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
           </p>
         </div>
         {ctx.isSuper && orgs.length > 0 && (
-          <label className="flex flex-col gap-1 text-lg font-medium text-fg">
-            Organization
-            <select
+          <Field label="Organization" className="w-full sm:w-80">
+            <Select
               value={orgId ?? ctx.org.id}
               onChange={(e) =>
                 setOrgId(
                   e.target.value === ctx.org.id ? undefined : e.target.value,
                 )
               }
-              className="min-h-12 rounded-field border border-line bg-surface px-4 py-2 text-lg text-fg"
             >
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
         )}
       </div>
 

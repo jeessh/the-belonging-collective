@@ -26,7 +26,7 @@ import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PosterSection } from "@/components/host/PosterSection";
 import { PosterSheet, printSheet } from "@/components/host/PrintSheets";
-import { UnpublishModal, restoreEvent } from "@/components/host/UnpublishModal";
+import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
 
 /**
  * The read-only view of one program. Its own organization (or a superadmin)
@@ -257,24 +257,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           onClose={() => setUnpublishing(false)}
           onDone={() => {
             setUnpublishing(false);
-            show({
-              title: `'${event.title}' was un-published.`,
-              tone: "alert",
-              action: {
-                label: "Undo",
-                onClick: () => {
-                  void restoreEvent(event.id)
-                    .then(() => router.push(`/host/events/${event.id}`))
-                    .catch(() =>
-                      show({
-                        title: "Couldn't put that back.",
-                        description: "Please refresh and try again.",
-                        tone: "alert",
-                      }),
-                    );
-                },
-              },
-            });
+            unpublishedToast(show, event, () =>
+              router.push(`/host/events/${event.id}`),
+            );
             router.push("/host/events");
           }}
         />

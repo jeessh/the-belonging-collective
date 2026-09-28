@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -17,7 +17,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import { EmptyRow, Pill, SearchField, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 import { AccountsNav } from "@/components/host/AccountsNav";
 
@@ -103,20 +103,13 @@ function Members() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <label className="relative block w-full max-w-[428px]">
-          <span className="sr-only">Search members</span>
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-6 top-1/2 size-6 -translate-y-1/2 text-fg-icon"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email"
-            className="min-h-14 w-full rounded-control border border-line bg-surface-subtle py-3 pl-16 pr-6 text-xl text-fg placeholder:text-fg-muted"
-          />
-        </label>
+        <SearchField
+          label="Search members"
+          placeholder="Search by name or email"
+          value={search}
+          onChange={setSearch}
+          className="w-full max-w-[428px]"
+        />
         <Button
           variant="primary"
           trailingIcon={<Plus />}
@@ -165,7 +158,7 @@ function Members() {
                 <td className="px-3 py-3">
                   <span className="inline-flex flex-wrap items-center gap-3">
                     {m.email ? (
-                      <span className="break-all">{m.email}</span>
+                      <span className="whitespace-nowrap">{m.email}</span>
                     ) : (
                       <span className="text-fg-muted">No email</span>
                     )}

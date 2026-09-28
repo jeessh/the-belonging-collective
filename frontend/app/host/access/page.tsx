@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import { EmptyRow, Field, Pill, Select, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 
 /**
@@ -552,20 +552,15 @@ function GroupModal({
           autoFocus
         />
         {isSuper && !group && (
-          <label className="flex flex-col gap-1">
-            <span className="text-lg font-medium text-fg">Organization</span>
-            <select
-              value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
-              className="min-h-12 w-full rounded-field border border-line bg-surface px-4 py-3 text-lg text-fg"
-            >
+          <Field label="Organization">
+            <Select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
               {(orgs ?? []).map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
         )}
         {error && (
           <p role="alert" className="text-base text-danger-fg">

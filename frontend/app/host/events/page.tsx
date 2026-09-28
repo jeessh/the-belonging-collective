@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Printer, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Printer, SlidersHorizontal } from "lucide-react";
 import { ApiError, api, type Event } from "@/lib/api";
 import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
@@ -11,13 +11,16 @@ import { isUpcoming } from "@/lib/time";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Modal } from "@/components/Modal";
+import { SearchField } from "@/components/AdminTable";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { WeeklySheet, printSheet } from "@/components/host/PrintSheets";
+import { useToast } from "@/components/ui/Toast";
+import { PosterSheet, WeeklySheet, printSheet } from "@/components/host/PrintSheets";
+import { AdminEventCard } from "@/components/host/AdminEventCard";
+import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
 import {
   FilterPanel,
   NO_HOST_FILTERS,
-  PostedEventCard,
   applyHostFilters,
   type HostFilters,
 } from "@/components/host/PostedEvents";
@@ -30,6 +33,7 @@ type Scope = "mine" | "all";
 
 function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
+  const { show } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -40,38 +44,42 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Rotating a tablet past `lg` shows the panel, so the sheet must not linger.
   const wide = useMediaQuery("(min-width: 1024px)");
+  const [unpublishing, setUnpublishing] = useState<Event | null>(null);
+  // The one program whose poster sheet is mounted, just long enough to print.
+  const [printing, setPrinting] = useState<Event | null>(null);
   const chosen = DIMENSIONS.reduce(
     (n, d) => n + (filters[d.key]?.length ?? 0),
     0,
   );
 
+  async function load() {
+    const PAGE = 200;
+    const all: Event[] = [];
+    for (let offset = 0; ; offset += PAGE) {
+      const page = await api<Event[]>(`/events?limit=${PAGE}&offset=${offset}`);
+      all.push(...page);
+      if (page.length < PAGE) break;
+    }
+    return all;
+  }
+
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const PAGE = 200;
-        const all: Event[] = [];
-        for (let offset = 0; ; offset += PAGE) {
-          const page = await api<Event[]>(
-            `/events?limit=${PAGE}&offset=${offset}`,
-          );
-          all.push(...page);
-          if (page.length < PAGE) break;
-        }
+    load()
+      .then((all) => {
         if (!alive) return;
         setEvents(all);
         setLoadError(false);
-      } catch (e) {
+      })
+      .catch((e) => {
         if (!alive) return;
         if (e instanceof ApiError && e.status === 401) {
           router.replace("/host");
           return;
         }
         setLoadError(true);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
+      })
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
@@ -126,6 +134,19 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     return { from, to, rows, orgName };
   }, [inScope, filters.org, scope, ctx.org.name]);
 
+  // Un-publishing retires every date of the program; Undo puts them back.
+  // The list is patched in place either way — the whole calendar is a slow
+  // fetch, and the card should leave the moment the dialog closes.
+  function retired(program: Event) {
+    const gone = (ev: Event) =>
+      ev.id === program.id || (!!program.series_id && ev.series_id === program.series_id);
+    const removed = events.filter(gone);
+    setEvents((all) => all.filter((ev) => !gone(ev)));
+    unpublishedToast(show, program, () =>
+      setEvents((all) => [...all, ...removed.filter((r) => !all.some((a) => a.id === r.id))]),
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -155,21 +176,14 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
 
         <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <label className="relative block w-full sm:max-w-[428px]">
-              <span className="sr-only">Search for event</span>
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-6 top-1/2 size-6 -translate-y-1/2 text-fg-icon"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for event"
-                className="min-h-14 w-full rounded-control border border-line bg-surface-subtle py-3 pl-16 pr-6 text-xl text-fg placeholder:text-fg-muted"
-              />
-            </label>
-            <div className="flex gap-3 max-sm:[&>*]:flex-1">
+            <SearchField
+              label="Search for event"
+              placeholder="Search for event"
+              value={query}
+              onChange={setQuery}
+              className="w-full sm:max-w-[428px]"
+            />
+            <div className="flex flex-wrap gap-3 max-sm:[&>*]:flex-1">
               <Button
                 className="lg:hidden"
                 leadingIcon={<SlidersHorizontal />}
@@ -205,7 +219,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           ) : loading ? (
             <p className="text-lg text-fg-muted">Loading…</p>
           ) : nothingPosted ? (
-            <div className="flex min-h-[600px] flex-col items-center justify-center gap-3 rounded-control border border-line bg-surface p-8 text-center">
+            <div className="flex min-h-[600px] flex-col items-center justify-center gap-3 rounded-card border border-line bg-surface p-8 text-center">
               <p className="text-3xl font-medium text-fg">
                 You haven&apos;t posted any events yet!
               </p>
@@ -227,7 +241,13 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           ) : (
             <div className="flex flex-col gap-6">
               {shown.map((ev) => (
-                <PostedEventCard key={ev.id} event={ev} />
+                <AdminEventCard
+                  key={ev.id}
+                  event={ev}
+                  canManage={ctx.isSuper || ev.host_id === ctx.org.id}
+                  onUnpublish={setUnpublishing}
+                  onPrint={setPrinting}
+                />
               ))}
             </div>
           )}
@@ -244,6 +264,16 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         from={week.from}
         to={week.to}
       />
+      {printing && (
+        <PosterSheet
+          id="card-poster"
+          event={printing}
+          onReady={() => {
+            printSheet(document.getElementById("card-poster"));
+            setPrinting(null);
+          }}
+        />
+      )}
 
       {filtersOpen && !wide && (
         <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
@@ -263,6 +293,18 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
             Show {shown.length} {shown.length === 1 ? "program" : "programs"}
           </Button>
         </Modal>
+      )}
+
+      {unpublishing && (
+        <UnpublishModal
+          event={unpublishing}
+          onClose={() => setUnpublishing(null)}
+          onDone={() => {
+            const program = unpublishing;
+            setUnpublishing(null);
+            retired(program);
+          }}
+        />
       )}
     </div>
   );

@@ -198,14 +198,26 @@ can open.
   `Tag kind="access" detail={group}` is the "Special access" pill;
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
-- Programs are cards, not table rows: `components/host/PostedEvents.tsx`'s
-  `PostedEventCard` (the shared `EventSummary` + "N going" + copy-link) beside
-  an accordion `FilterPanel`, with a Your Events / All Events toggle.
+- Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
+  the component sheet's "Admin – Listed Event" (square image, the round
+  edit / share / print / un-publish tools under it, facts beside, a chevron
+  to the details page) beside `components/host/PostedEvents.tsx`'s accordion
+  `FilterPanel` (`ui/Checkbox` rows), with a Your Events / All Events toggle.
+  Edit and un-publish show only for the owning organization or a superadmin;
+  share and print for everyone. Un-publishing from the list or the details
+  page goes through `components/host/UnpublishModal.tsx` — the pink-edged
+  confirm plus `unpublishedToast` (title, "was successfully un-published",
+  Undo → `restoreEvent`); the list patches its rows in place rather than
+  refetching the calendar. Print on a card mounts a `PosterSheet` just long
+  enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
   link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
-  Accounts stay table-first — `components/AdminTable.tsx` still backs
+  Accounts stay table-first — `components/AdminTable.tsx` backs
   `/host/admins` (Organizations) and `/host/users` (Community Members),
-  switched by `components/host/AccountsNav.tsx`.
+  switched by `components/host/AccountsNav.tsx`. `AdminTable` also holds the
+  console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
+  `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
+  same box as `ui/TextField`; don't restyle a control inline.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;
   don't "harmonize" the two surfaces just because the sidebar went.
