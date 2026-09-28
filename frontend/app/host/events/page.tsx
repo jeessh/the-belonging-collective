@@ -8,6 +8,7 @@ import { ApiError, api, type Event } from "@/lib/api";
 import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Modal } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -36,6 +37,8 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   // Below `lg` the filter panel lives in a sheet behind a Filters button.
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Rotating a tablet past `lg` shows the panel, so the sheet must not linger.
+  const wide = useMediaQuery("(min-width: 1024px)");
   const chosen = DIMENSIONS.reduce(
     (n, d) => n + (filters[d.key]?.length ?? 0),
     0,
@@ -199,7 +202,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         </div>
       </div>
 
-      {filtersOpen && (
+      {filtersOpen && !wide && (
         <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
           <div className="mt-4">
             <FilterPanel
