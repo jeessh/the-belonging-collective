@@ -246,6 +246,10 @@ export async function uploadAvatar(file: File): Promise<Me> {
 export const createShareLink = () =>
   api<{ token: string }>("/users/me/share-link", { method: "POST" });
 
+/** The member's private calendar-feed handle; the same token every time. */
+export const createCalendarFeed = () =>
+  api<{ token: string }>("/users/me/calendar-feed", { method: "POST" });
+
 export const sharedListUrl = (token: string, origin?: string) =>
   `${origin ?? window.location.origin}/shared/${token}`;
 

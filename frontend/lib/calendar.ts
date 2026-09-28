@@ -1,4 +1,4 @@
-import { API, type Event } from "@/lib/api";
+import { API, createCalendarFeed, type Event } from "@/lib/api";
 
 /** "20260828T170000Z" — the compact UTC form Google's template URL wants. */
 function stamp(at: Date): string {
@@ -42,17 +42,36 @@ export function openGoogleCalendar(event: Event): void {
 }
 
 /**
- * Google Calendar's "subscribe by URL" page for a member's shared list, so
- * the whole list lands in their calendar and follows later saves. Google
- * fetches the feed from its own servers, hence the share token rather than
- * the cookie; it re-reads it every few hours, on its own schedule.
+ * Google Calendar's "subscribe by URL" page for the member's private feed.
+ * Google fetches the feed from its own servers, hence a token rather than
+ * the cookie, and re-reads it every few hours on its own schedule.
  */
-export function googleSubscribeUrl(shareToken: string): string {
+function googleSubscribeUrl(feedToken: string): string {
   const feed = new URL(
-    `${API}/shared/${shareToken}/calendar.ics`,
+    `${API}/calendar/${feedToken}.ics`,
     window.location.origin,
   ).href.replace(/^https?:/, "webcal:");
   return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feed)}`;
+}
+
+/**
+ * Subscribes the signed-in member's Google Calendar to their saved list: one
+ * "Add" in Google and every save lands in their calendar, and an un-save
+ * leaves it, with nothing more to click. Call it from a click — the tab opens
+ * before the token arrives, because one opened after an await is a popup the
+ * browser blocks. Throws, with the tab closed, when there is no token.
+ */
+export async function subscribeInGoogleCalendar(): Promise<void> {
+  const tab = window.open("", "_blank");
+  if (tab) tab.opener = null;
+  try {
+    const url = googleSubscribeUrl((await createCalendarFeed()).token);
+    if (tab) tab.location.href = url;
+    else window.location.href = url;
+  } catch (err) {
+    tab?.close();
+    throw err;
+  }
 }
 
 /** Every saved program as one `.ics`; the API needs the auth cookie. */

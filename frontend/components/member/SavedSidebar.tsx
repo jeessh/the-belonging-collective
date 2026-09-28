@@ -7,12 +7,14 @@ import {
   ChevronsRight,
   CirclePlus,
 } from "lucide-react";
-import type { Event } from "@/lib/api";
+import { apiMessage, type Event } from "@/lib/api";
+import { subscribeInGoogleCalendar } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
 import { TIME_ZONE, longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
+import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
@@ -66,6 +68,18 @@ export const SavedSidebar = memo(
     const count = events.length;
     const countLabel = `${count} Saved ${count === 1 ? "Event" : "Events"}`;
     const title = owner ? `${owner}'s Saved Events` : "Saved Events";
+    const { show } = useToast();
+
+    async function subscribe() {
+      try {
+        await subscribeInGoogleCalendar();
+      } catch (err) {
+        show({
+          title: apiMessage(err, "Couldn't open Google Calendar."),
+          tone: "alert",
+        });
+      }
+    }
 
     if (layout === "bar") {
       return (
@@ -110,31 +124,34 @@ export const SavedSidebar = memo(
       );
     }
 
-    // Signed in it is a plain link to the `.ics` (the cookie goes with it);
-    // signed out there is no list to export, so it opens sign-in instead.
+    // Signed in, it subscribes Google Calendar to the member's saved list, so
+    // every save follows on its own. The feed is the signed-in account's, so
+    // a caregiver looking at someone else's list gets their `.ics` instead.
+    // Signed out there is no list yet, so it opens sign-in.
     const calendarInner = (
       <>
         <GoogleCalendarIcon />
-        {open ? "Google Calendar" : "Calendar"}
+        {!open ? "Calendar" : owner ? "Download calendar" : "Google Calendar"}
       </>
     );
-    const calendar = signedIn ? (
-      <a
-        href={calendarUrl}
-        className={buttonClass("secondary", open ? "lg" : "md", open ? "w-full" : RAIL)}
-      >
-        {calendarInner}
-      </a>
-    ) : (
-      <Button
-        variant="secondary"
-        size={open ? "lg" : "md"}
-        onClick={onSignIn}
-        className={open ? "w-full" : RAIL}
-      >
-        {calendarInner}
-      </Button>
-    );
+    const calendar =
+      signedIn && owner ? (
+        <a
+          href={calendarUrl}
+          className={buttonClass("secondary", open ? "lg" : "md", open ? "w-full" : RAIL)}
+        >
+          {calendarInner}
+        </a>
+      ) : (
+        <Button
+          variant="secondary"
+          size={open ? "lg" : "md"}
+          onClick={signedIn ? () => void subscribe() : onSignIn}
+          className={open ? "w-full" : RAIL}
+        >
+          {calendarInner}
+        </Button>
+      );
 
     if (!open) {
       return (
