@@ -394,6 +394,44 @@ export const requestAccess = (groupId: string, eventId?: string) =>
     body: JSON.stringify({ event_id: eventId ?? null }),
   });
 
+/* Topics (superadmin CRUD; the public read lives in lib/categories). */
+export type CategoryRow = {
+  slug: string;
+  label: string;
+  sort_order: number;
+  /** Live programs filed under it. */
+  event_count: number;
+};
+
+export const createCategory = (label: string) =>
+  api<CategoryRow>("/categories", {
+    method: "POST",
+    body: JSON.stringify({ label }),
+  });
+
+export const updateCategory = (
+  slug: string,
+  patch: { label?: string; sort_order?: number },
+) =>
+  api<CategoryRow>(`/categories/${slug}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+
+export type CategoryArchived = {
+  slug: string;
+  reassigned_to: string | null;
+  affected_events: number;
+  affected_members: number;
+};
+
+/** Archives. 409 while live programs use the topic and no `reassignTo` is given. */
+export const archiveCategory = (slug: string, reassignTo?: string) =>
+  api<CategoryArchived>(
+    `/categories/${slug}${reassignTo ? `?reassign_to=${encodeURIComponent(reassignTo)}` : ""}`,
+    { method: "DELETE" },
+  );
+
 /* Organizer side: own groups only, every group for a superadmin. */
 export const fetchAccessGroups = () => api<AccessGroup[]>("/access-groups");
 

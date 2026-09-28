@@ -21,6 +21,7 @@ from app.api.deps import (
     get_optional_user,
 )
 from app.core import holds, ical, member_mail
+from app.core.categories import require_live_slugs
 from app.core.storage import StorageError, upload_image
 from app.models.attendance import Attendance
 from app.core.access import (
@@ -314,6 +315,7 @@ def create_event(
     # Every occurrence of the series is restricted the same way — `data` is
     # copied into each row below.
     resolve_group_for_host(db, body.access_group_id, org_id)
+    require_live_slugs(db, body.categories)
     starts_at = data.get("starts_at")
 
     if body.frequency and body.frequency != "once":
@@ -394,6 +396,8 @@ def update_event(
     # superadmin editing another agency's program may only use that agency's
     # groups. Queried here, before the row is touched (see the note below).
     resolve_group_for_host(db, fields.get("access_group_id"), event.host_id)
+    if fields.get("categories"):
+        require_live_slugs(db, fields["categories"])
     for field, value in fields.items():
         # Every field on EventUpdate is Optional so it can be omitted, but an
         # explicit null is a different thing from an omission — exclude_unset

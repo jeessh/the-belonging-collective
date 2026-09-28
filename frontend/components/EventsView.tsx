@@ -36,6 +36,7 @@ import {
   type PreferredView,
 } from "@/lib/api";
 import { isUpcoming, whenLine } from "@/lib/time";
+import { useCategories } from "@/lib/useCategories";
 import { googleCalendarUrl, savedCalendarUrl } from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
@@ -123,6 +124,7 @@ export function EventsView({
   const [me, setMe] = useState<Me | null>(initialMe);
   const [events, setEvents] = useState<Event[]>([]);
   const [i, setI] = useState(0);
+  const { label: topicLabel } = useCategories();
   // What the server says is saved (every occurrence row), plus this session's
   // optimistic saves. The card asks "is this id saved?"; the sidebar shows one
   // entry per program.
@@ -659,20 +661,20 @@ export function EventsView({
   // Re-scoring reorders the feed under the cursor, so `i` goes to the top:
   // they just said what they want to see first, so show them that.
   const toggleInterest = useCallback(
-    (label: string) => {
+    (slug: string) => {
       const chosen = meRef.current?.interest_categories ?? [];
-      const adding = !chosen.includes(label);
+      const adding = !chosen.includes(slug);
       void setPref({
         interest_categories: adding
-          ? [...chosen, label]
-          : chosen.filter((c) => c !== label),
+          ? [...chosen, slug]
+          : chosen.filter((c) => c !== slug),
       });
       setI(0);
       setSrMessage(
-        `${adding ? "Added" : "Removed"} ${label}. Showing your best matches from the start.`,
+        `${adding ? "Added" : "Removed"} ${topicLabel(slug)}. Showing your best matches from the start.`,
       );
     },
-    [setPref],
+    [setPref, topicLabel],
   );
   const toggleAccessPref = useCallback(
     (slug: string, label: string) => {

@@ -1,5 +1,9 @@
 import type { Event } from "@/lib/api";
-import { FALLBACK_CATEGORY, categoryStyle } from "@/lib/categories";
+import {
+  FALLBACK_CATEGORY,
+  categoryLabel,
+  categoryStyle,
+} from "@/lib/categories";
 
 /**
  * How the feed is grouped — the "See events by" choice.
@@ -133,11 +137,19 @@ export const DIMENSIONS: Dimension[] = [
     // what members pick as interests, so the feed groups on the same field the
     // matching runs on.
     bucket: (e) => {
-      const label = e.category || FALLBACK_CATEGORY;
-      const style = categoryStyle(label);
+      // The bucket is the slug; the label is looked up, so a renamed topic
+      // regroups nothing. Callers hold `useCategories()` so this re-runs
+      // once the list has loaded.
+      const slug = e.category || "";
+      const style = categoryStyle(slug);
       // The same emoji the topic chips use, so a topic looks the same wherever
       // it turns up — on the signup chips, the host form, and here.
-      return { id: label, label, color: style.color, icon: style.emoji };
+      return {
+        id: slug || FALLBACK_CATEGORY,
+        label: slug ? categoryLabel(slug) : FALLBACK_CATEGORY,
+        color: style.color,
+        icon: style.emoji,
+      };
     },
   },
 ];

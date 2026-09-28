@@ -42,10 +42,17 @@ body {
    the console around it — filters, nav, buttons — and the thing somebody
    actually wanted on paper competed with the furniture. */
 @media print {
+  /* Letter: the console's generated posters and weekly lists are laid out
+     for it (components/host/PrintSheets.tsx). */
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
   /* A dialog locks body scrolling while it is open; on paper that clipped the
      preview to one page. */
   body {
     overflow: visible !important;
+    background: #fff !important;
   }
   body * {
     visibility: hidden;
@@ -53,6 +60,14 @@ body {
   .print-target,
   .print-target * {
     visibility: visible;
+  }
+  /* Hidden is not gone: the page around the target still took up its full
+     height, so a long console list printed as one sheet followed by a dozen
+     blank ones. Drop everything that is neither the target's subtree nor on
+     the way down to it. */
+  body:has(.print-target)
+    *:not(.print-target):not(.print-target *):not(:has(.print-target)) {
+    display: none !important;
   }
   .print-target {
     position: absolute;

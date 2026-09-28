@@ -3,7 +3,8 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiMessage, updateMe } from "@/lib/api";
-import { CATEGORIES } from "@/lib/categories";
+import { categoryStyle } from "@/lib/categories";
+import { useCategories } from "@/lib/useCategories";
 import { Button } from "@/components/ui/Button";
 import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
 
@@ -65,9 +66,11 @@ function SignupFlow() {
     router.replace(safeNext(params.get("next"), { dropPending }));
   }
 
-  function toggleInterest(label: string) {
+  const { categories, label: topicLabel } = useCategories();
+
+  function toggleInterest(slug: string) {
     setInterests((prev) =>
-      prev.includes(label) ? prev.filter((c) => c !== label) : [...prev, label],
+      prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug],
     );
   }
 
@@ -124,13 +127,14 @@ function SignupFlow() {
               aria-label="Topics you are interested in"
               className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3"
             >
-              {CATEGORIES.map(({ label, emoji }) => {
-                const chosen = interests.includes(label);
+              {categories.map(({ slug, label }) => {
+                const chosen = interests.includes(slug);
+                const { emoji } = categoryStyle(slug);
                 return (
                   <button
-                    key={label}
+                    key={slug}
                     type="button"
-                    onClick={() => toggleInterest(label)}
+                    onClick={() => toggleInterest(slug)}
                     aria-pressed={chosen}
                     className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-control border-2 p-3 text-center transition-colors ${
                       chosen
@@ -152,7 +156,7 @@ function SignupFlow() {
             <p className="sr-only" role="status" aria-live="polite">
               {interests.length === 0
                 ? "Nothing chosen yet"
-                : `${interests.length} chosen: ${interests.join(", ")}`}
+                : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
             </p>
 
             {error && (

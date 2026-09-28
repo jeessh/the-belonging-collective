@@ -14,10 +14,12 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from app.core.categories import slugify
 from app.core.pricing import describe as describe_price
 from app.core.recurrence import describe as describe_recurrence
 from app.core.recurrence import occurrences
 from app.db.session import SessionLocal
+from app.models.category import Category
 from app.models.event import Event
 from app.models.host import Host
 
@@ -93,6 +95,13 @@ def run(path: str) -> None:
             (t.strip().lower(), s.date() if s else None)
             for t, s in db.query(Event.title, Event.starts_at).all()
         }
+        # The sheet says "Arts & Crafts"; the row stores the slug.
+        slug_of = {
+            label.lower(): slug
+            for slug, label in db.query(Category.slug, Category.label)
+            .filter(Category.deleted_at.is_(None))
+            .all()
+        }
         made = created_series = skipped = 0
         missing_orgs: set[str] = set()
 
@@ -143,6 +152,8 @@ def run(path: str) -> None:
             span = (end - start) if end else None
             # Keep the agency's own phrasing where they gave one.
             label = raw_freq if freq != "once" else None
+            raw_topic = str(rec["Activity Category"] or "").strip()
+            topic = slug_of.get(raw_topic.lower(), slugify(raw_topic)) if raw_topic else None
 
             for i, when in enumerate(dates, start=1):
                 db.add(
@@ -151,7 +162,8 @@ def run(path: str) -> None:
                         title=str(rec["Event Title"]).strip(),
                         description=str(rec["Card Description (short)"] or "").strip(),
                         notes=str(rec["Extended Notes (detail view)"] or "").strip() or None,
-                        category=str(rec["Activity Category"] or "").strip() or None,
+                        category=topic,
+                        categories=[topic] if topic else [],
                         location=str(rec["Location"] or "").strip() or None,
                         starts_at=when,
                         ends_at=when + span if span else None,

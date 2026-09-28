@@ -15,6 +15,7 @@ several organizations so the org stepper isn't a single dot.
 
 from datetime import datetime, timedelta, timezone
 
+from app.core.categories import slugify
 from app.db.session import SessionLocal
 from app.models.event import Event
 from app.models.host import Host
@@ -305,7 +306,8 @@ def run() -> None:
                     title=title,
                     description=description,
                     notes=notes,
-                    category=category,
+                    category=slugify(category),
+                    categories=[slugify(category)],
                     activity_type=activity,
                     location=LOCATIONS[i % len(LOCATIONS)],
                     starts_at=starts,
