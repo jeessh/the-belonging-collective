@@ -106,6 +106,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <EventForm
         id={FORM_ID}
         mode="edit"
+        hostId={event.host_id}
         values={values}
         onChange={setValues}
         submitting={busy}

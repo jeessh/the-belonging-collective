@@ -22,6 +22,7 @@ import { Tag, eventTags } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PageHeader } from "@/components/host/PageHeader";
+import { PosterSection } from "@/components/host/PosterSection";
 import { UnpublishModal, restoreEvent } from "@/components/host/UnpublishModal";
 
 /**
@@ -75,6 +76,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         : null,
     ],
     ["Who it's for", event.is_youth ? "Youth" : null],
+    [
+      "Who can see it",
+      event.access_group
+        ? `Special access — ${event.access_group.name}`
+        : "Everyone",
+    ],
     // Free and drop-in are already on the tag pills.
     [
       "Offers",
@@ -209,6 +216,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {eventTags(event).map((kind) => (
                 <Tag key={kind} kind={kind} />
               ))}
+              {event.access_group && (
+                <Tag kind="access" detail={event.access_group.name} />
+              )}
             </div>
           </Fact>
           <dl className="grid gap-x-6 gap-y-2 border-t border-line pt-6 text-lg sm:grid-cols-[max-content_minmax(0,1fr)]">
@@ -223,6 +233,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </dl>
         </div>
       </article>
+
+      {event.poster_url && <PosterSection event={event} />}
 
       {unpublishing && (
         <UnpublishModal

@@ -5,6 +5,8 @@ import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
 import { TextField } from "@/components/ui/TextField";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
+import { PosterField } from "@/components/host/PosterField";
 import { checkPostingLink } from "@/lib/postingLink";
 import { CATEGORIES } from "@/lib/categories";
 import { SELECTABLE_TAGS, isDerivedTag } from "@/lib/accessibility";
@@ -55,6 +57,15 @@ export type EventFormValues = {
    * `no_registration` are written from the cost and drop-in answers instead.
    */
   accessibilityTags: string[];
+  /** The agency's own flyer (PDF or image URL), "" for none. */
+  posterUrl: string;
+  /**
+   * Who can see it. `group` needs `accessGroupId`; the two are separate so
+   * switching to special access before picking a group is a visible,
+   * unsaveable state rather than a silent "everyone".
+   */
+  accessMode: AccessMode;
+  accessGroupId: string | null;
 };
 
 const EMPTY_LINKS = (): EventLink[] =>
@@ -88,6 +99,9 @@ export const EMPTY_FORM: EventFormValues = {
   isVirtual: false,
   isYouth: false,
   accessibilityTags: [],
+  posterUrl: "",
+  accessMode: "everyone",
+  accessGroupId: null,
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -139,6 +153,9 @@ export function valuesFromEvent(event: Event): EventFormValues {
     accessibilityTags: (event.accessibility_tags ?? []).filter(
       (t) => !isDerivedTag(t),
     ),
+    posterUrl: event.poster_url ?? "",
+    accessMode: event.access_group_id ? "group" : "everyone",
+    accessGroupId: event.access_group_id ?? null,
   };
 }
 
@@ -205,6 +222,10 @@ export function payloadFrom(v: EventFormValues) {
     capacity: v.capacity.trim() ? Number(v.capacity) : null,
     min_age: v.minAge.trim() ? Number(v.minAge) : null,
     max_age: v.maxAge.trim() ? Number(v.maxAge) : null,
+    poster_url: v.posterUrl || null,
+    // Explicit null makes it public again; the PATCH treats "unset" as
+    // "leave alone".
+    access_group_id: v.accessMode === "group" ? v.accessGroupId : null,
   };
 }
 
@@ -234,6 +255,8 @@ export function missingRequired(v: EventFormValues): string[] {
     missing.push("cost description");
   if (v.frequency !== "once" && !v.repeatForever && !v.occurrenceCount.trim())
     missing.push("how many times it repeats");
+  if (v.accessMode === "group" && !v.accessGroupId)
+    missing.push("which group can see it");
   return missing;
 }
 
@@ -337,6 +360,7 @@ function Chip({
 export function EventForm({
   id,
   mode,
+  hostId,
   values,
   onChange,
   submitting,
@@ -347,6 +371,8 @@ export function EventForm({
   id: string;
   /** Repeats are chosen when a program is created; editing touches one date. */
   mode: "create" | "edit";
+  /** The organization the program belongs to — whose access groups apply. */
+  hostId: string;
   values: EventFormValues;
   onChange: (next: EventFormValues) => void;
   submitting: boolean;
@@ -833,6 +859,30 @@ export function EventForm({
               { value: "everyone", label: "Everyone" },
               { value: "youth", label: "Youth" },
             ]}
+          />
+        </Section>
+
+        <Section
+          title="Who can see this"
+          lead="Everyone, or only people your organization has approved into a special-access group."
+        >
+          <AccessPicker
+            hostId={hostId}
+            mode={values.accessMode}
+            groupId={values.accessGroupId}
+            onChange={(accessMode, accessGroupId) =>
+              onChange({ ...values, accessMode, accessGroupId })
+            }
+          />
+        </Section>
+
+        <Section
+          title="Printable poster"
+          lead="Your own flyer — a PDF, PNG or JPEG up to 4 MB. Members open it from the program's page, and the details page gives you a QR code that points there."
+        >
+          <PosterField
+            value={values.posterUrl}
+            onChange={(v) => set("posterUrl", v)}
           />
         </Section>
 

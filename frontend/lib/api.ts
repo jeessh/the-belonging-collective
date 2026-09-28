@@ -56,6 +56,20 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
+/** A printable poster — PDF, PNG or JPEG, at most 4 MB — for `poster_url`. */
+export async function uploadPoster(file: File): Promise<string> {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch(`${API}/events/posters`, {
+    method: "POST",
+    credentials: "include",
+    body,
+  });
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
 export type EventImage = { id: string; url: string; caption?: string | null };
 
 /** An important link shown alongside a program — not the registration link. */
