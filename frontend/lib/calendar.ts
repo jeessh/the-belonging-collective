@@ -41,5 +41,19 @@ export function openGoogleCalendar(event: Event): void {
   if (url) window.open(url, "_blank", "noopener");
 }
 
+/**
+ * Google Calendar's "subscribe by URL" page for a member's shared list, so
+ * the whole list lands in their calendar and follows later saves. Google
+ * fetches the feed from its own servers, hence the share token rather than
+ * the cookie; it re-reads it every few hours, on its own schedule.
+ */
+export function googleSubscribeUrl(shareToken: string): string {
+  const feed = new URL(
+    `${API}/shared/${shareToken}/calendar.ics`,
+    window.location.origin,
+  ).href.replace(/^https?:/, "webcal:");
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feed)}`;
+}
+
 /** Every saved program as one `.ics`; the API needs the auth cookie. */
 export const savedCalendarUrl = `${API}/users/me/events/calendar.ics`;

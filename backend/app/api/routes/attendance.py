@@ -245,14 +245,7 @@ class SharedListOut(BaseModel):
     events: list[EventOut]
 
 
-@router.get("/shared/{token}", response_model=SharedListOut)
-def shared_list(token: str, db: Session = Depends(get_db)):
-    """A member's upcoming saved programs, for anyone with the link.
-
-    The list has no gate — it is only a list — but special-access programs
-    do, so those are left out whoever is looking. "N going" is withheld the
-    same way the public event routes withhold it from anonymous viewers.
-    """
+def _shared_owner(db: Session, token: str) -> User:
     user = (
         db.query(User)
         .filter(User.share_token == token, User.deleted_at.is_(None))
@@ -260,8 +253,13 @@ def shared_list(token: str, db: Session = Depends(get_db)):
     )
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such list")
-    now = holds.now_utc()
-    rows = (
+    return user
+
+
+def _shared_events(db: Session, user: User):
+    """The saved programs a share link shows: live and public only. Special
+    access has its own gate, so those are left out whoever is looking."""
+    return (
         db.query(Event)
         .join(Attendance, Attendance.event_id == Event.id)
         .filter(
@@ -269,6 +267,22 @@ def shared_list(token: str, db: Session = Depends(get_db)):
             Attendance.status == SAVED,
             Event.deleted_at.is_(None),
             Event.access_group_id.is_(None),
+        )
+    )
+
+
+@router.get("/shared/{token}", response_model=SharedListOut)
+def shared_list(token: str, db: Session = Depends(get_db)):
+    """A member's upcoming saved programs, for anyone with the link.
+
+    The list has no gate — it is only a list. "N going" is withheld the same
+    way the public event routes withhold it from anonymous viewers.
+    """
+    user = _shared_owner(db, token)
+    now = holds.now_utc()
+    rows = (
+        _shared_events(db, user)
+        .filter(
             # Upcoming, measured from the end as lib/time.isUpcoming does;
             # undated programs haven't happened yet either.
             or_(
@@ -289,6 +303,19 @@ def shared_list(token: str, db: Session = Depends(get_db)):
     for item in out:
         item.saved_count = None
     return SharedListOut(first_name=user.first_name, events=out)
+
+
+@router.get("/shared/{token}/calendar.ics")
+def shared_calendar(token: str, db: Session = Depends(get_db)):
+    """The same list as a calendar feed, for Google Calendar's "subscribe by
+    URL" — Google fetches it from its own servers, without the member's
+    cookie. Past dates stay in, so subscribing never empties last week."""
+    user = _shared_owner(db, token)
+    rows = _shared_events(db, user).order_by(Event.starts_at.asc(), Event.id.asc()).all()
+    return Response(
+        ical.build(rows, name=f"{user.first_name}'s programs · The Belonging Collective"),
+        media_type="text/calendar; charset=utf-8",
+    )
 
 
 @router.get("/users/me/events/calendar.ics")
