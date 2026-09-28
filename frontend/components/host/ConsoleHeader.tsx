@@ -10,6 +10,7 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
+import { Brand } from "@/components/Brand";
 
 /**
  * The bar every console page shares: who you are, the way out, and — for
@@ -62,11 +63,7 @@ export function ConsoleHeader({
           href="/host/events"
           className="inline-flex items-center gap-3 rounded-control py-1 text-fg"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="size-11 rounded-control" />
-          <span className="text-xl font-medium leading-tight sm:text-2xl">
-            The Belonging Collective
-          </span>
+          <Brand />
         </Link>
 
         {/* Below `lg` the switch takes its own row under the name and the
