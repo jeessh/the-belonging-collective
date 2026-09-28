@@ -62,8 +62,13 @@ def _vevent(event: Event, now: datetime) -> list[str]:
     return lines
 
 
-def build(events: list[Event]) -> str:
-    """A VCALENDAR of every dated event given; undated ones are skipped."""
+def build(events: list[Event], name: str | None = None) -> str:
+    """A VCALENDAR of every dated event given; undated ones are skipped.
+
+    `name` is for a subscribed feed: the calendar's title in the member's
+    app, plus a hint to re-fetch every few hours (Google ignores it and
+    refreshes on its own schedule; Apple and Outlook honour it).
+    """
     now = datetime.now(timezone.utc)
     lines = [
         "BEGIN:VCALENDAR",
@@ -72,6 +77,12 @@ def build(events: list[Event]) -> str:
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
     ]
+    if name:
+        lines += [
+            f"X-WR-CALNAME:{_escape(name)}",
+            "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
+            "X-PUBLISHED-TTL:PT6H",
+        ]
     for event in events:
         if event.starts_at:
             lines.extend(_vevent(event, now))
