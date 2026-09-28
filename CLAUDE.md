@@ -6,11 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Accessible, needs-first community-programming platform for Kitchener-Waterloo
 nonprofits (hackathon build). Members discover/attend programs via a tactile,
-one-card-at-a-time UI; sign-in is the member's choice of a memorable **2-icon
-key that IS the password** (`ICON_COUNT` in `app/core/icons.py` — it has been
-1 and 3 before, so read it rather than assuming) or an **email + password**
-(`users.auth_type`). Password accounts still hold an allocated icon set for the
-unique constraint, but it is never shown.
+one-card-at-a-time UI; members and organizers both sign in with an
+**email + password**. (Icon keys — a 2-icon key that was the password — were
+retired 2026-09-28; see Gotchas.)
 
 ## Layout
 - `backend/` — FastAPI + SQLAlchemy. **Source of truth for the API.**
@@ -60,8 +58,8 @@ Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,
 scheduled in the root `vercel.json`; unset, the endpoint refuses to run rather
 than running open).
 
-All outgoing mail — organizer password resets and invitations, member reminders
-and change notices — needs SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+All outgoing mail — password resets (member and organizer), invitations,
+member reminders and change notices — needs SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
 `SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`). Every message
 goes through `core/mail.send` as plain text plus a branded HTML alternative
 (wordmark, one message block, one button), from "The Belonging Collective"
@@ -220,19 +218,21 @@ can open.
 ## Gotchas / conventions
 - **Passwords use `bcrypt` directly — do NOT reintroduce `passlib`** (crashes on
   bcrypt ≥4.1). Hashes are standard `$2b$`.
-- **The icon set is the credential** → generate with `secrets` (see
-  `app/core/icons.py`), never `random`. Two ordered icons from twelve is 132
-  combinations *per name*, which is why the Postgres-backed rate limiting in
-  `app/core/rate_limit.py` is load-bearing rather than a nicety.
-- **Icon allocation is scoped to the username**, matching the
-  `uq_users_username_icons` constraint and the way sign-in resolves a member —
-  name first, then credential. Searching globally would run 132 pairs out at 132
-  members across all agencies and start refusing accounts for no reason.
+- **Icon keys were retired 2026-09-28.** Members sign in with email +
+  password only (`POST /auth/signup/user`, `POST /auth/login/user`); the old
+  `POST /auth/user` door is gone. The `users.icons` column remains because it
+  is NOT NULL and half of `uq_users_username_icons`: `auth.new_member` still
+  allocates a hidden set per username (`core/icons.random_icon_set`), and a
+  rename re-allocates one. It is never returned by the API. Rows with
+  `auth_type = 'icon'` predate the change and can't sign in until a superadmin
+  sets them a password (or they reset one by email, if they had added one).
+  The Postgres-backed rate limiting in `app/core/rate_limit.py` still guards
+  every sign-in, sign-up, forgot, reset and care-link route.
 - **Sessions are bound to the credential that opened them.** Tokens carry `cv`,
   a fingerprint of the password hash (`security.credential_fingerprint`), and
-  `deps` re-checks it on every request. So re-issuing a member's icons or
-  resetting an organizer's password ends the sessions opened with the old one
-  instead of leaving them live for the week a token lasts. Every place that
+  `deps` re-checks it on every request. So a password reset, or a superadmin
+  setting a member a temporary password, ends the sessions opened with the old
+  one instead of leaving them live for the week a token lasts. Every place that
   mints a token must pass `cred_hash`, and `/auth/me` must apply the same check
   as the API — otherwise the UI shows a signed-in app where nothing works.
 - `JWT_SECRET` has no default — the app fails fast if it's unset.
@@ -312,15 +312,14 @@ can open.
   last spot. `EventOut.spots_left` = capacity − active holds (null without a
   capacity) and `held_until` is the viewer's own hold; both come from
   `holds.annotate` over the eager-loaded attendees, never off the row.
-- **Members may add an optional email** (`PATCH /users/me {email}`). An icon
-  account can set, change or clear it; a password account can change but not
-  clear it, since it is their login. Unique over live rows, lowercased. It is
-  a channel only: the day-before reminder (`GET /internal/reminders`, cron,
+- **A member's email is their login** (`PATCH /users/me {email}` can change
+  but not clear it). Unique over live rows, lowercased. It is also the channel
+  for the day-before reminder (`GET /internal/reminders`, cron,
   `reminded_at` makes it once) and the change notice `update_event` sends when
   `starts_at`/`ends_at`/`location` move (`core/member_mail.py`, background).
 - **Profile pictures** are a photo (`POST /users/me/avatar`, ≤ 2 MB, sniffed,
-  same bucket as event images) or an emblem from `core/avatars.EMBLEMS` —
-  deliberately not sign-in icons, which are the password. One clears the other.
+  same bucket as event images) or an emblem from `core/avatars.EMBLEMS`. One
+  clears the other.
 - **Shareable saved list**: `POST /users/me/share-link` mints `users.share_token`
   once; `GET /shared/{token}` is public and lists the member's upcoming saved
   *public* programs — special-access ones are excluded whoever holds the link.
@@ -336,13 +335,12 @@ can open.
   `DELETE /users/me/caregivers/{caregiver_id}`); re-linking clears it. Never
   delete the row.
 - **Linking is the member's consent.** `POST /users/me/care/links` takes the
-  member's *own* credential (name + icons, or email + password —
-  `auth.member_by_credential`), and `POST /users/me/care/members` creates the
-  member's account on the spot through the same `auth.new_member` every door
-  uses, returning the icon key once so it can be handed over. Both are
-  rate-limited like sign-in, on the same identity keys
-  (`auth.credential_identity`), so guessing a member's icons here costs what
-  guessing them at the door does.
+  member's *own* email + password (`auth.member_by_credential`), and
+  `POST /users/me/care/members` creates the member's account on the spot
+  (name, email, password) through the same `auth.new_member` every door uses.
+  Both are rate-limited like sign-in, on the same identity keys
+  (`auth.credential_identity`), so guessing a member's password here costs
+  what guessing it at the door does.
 - **Saving for a member is the member's row.** `routes/care.py` calls the
   same `attendance.save_event` / `unsave_event` the member's own routes use,
   with the member as the user — so the hold is the member's spot and special
@@ -368,15 +366,17 @@ can open.
   is selected. The sidebar, "All Saved Events" and the `.ics` show that
   member's list (`owner` / `calendarUrl` props); "Link to my list" is hidden
   there because the share link is the signed-in account's own. Default is
-  "Me", reset on sign-in/out. `member/CareLinkForm` (create or link, with the
-  same Icons | Password switch as sign-up) is shared by the sign-up flow's
-  "I'm a caregiver" path and `/profile` ("People I support" / "People who
-  support me"); the shared icon-key pieces live in `member/IconKey.tsx`.
+  "Me", reset on sign-in/out. `member/CareLinkForm` (create: name + email +
+  password; link: email + password) is shared by the sign-up flow's "I'm a
+  caregiver" path and `/profile` ("People I support" / "People who support
+  me").
 
 ## Roles and admin tiers
-- **members** — icon sign-in (`POST /auth/user`) or email + password
-  (`POST /auth/signup/user`, `POST /auth/login/user`), the `/` + `/events`
-  experience. A member may also be a caregiver — see above.
+- **members** — email + password (`POST /auth/signup/user`,
+  `POST /auth/login/user`; `components/member/MemberAuthFlow.tsx` is the
+  chooser → sign-up / log-in flow, wrapped by `LoginOverlay` in the feed and by
+  `/signup`), the `/` + `/events` experience. A member may also be a caregiver
+  — see above.
 - **admins** — hosts with `is_admin = false`. Create and manage only their own
   programs.
 - **superadmins** — hosts with `is_admin = true`. Manage any program, plus member
@@ -428,21 +428,21 @@ program is one posting (`coalesce(series_id, id)`). Everything is
 aggregated in SQL in `app/api/routes/analytics.py`; keep it that way.
 
 ## Account recovery
-Neither door can be recovered the way a normal login would be, and they work
-differently from each other:
-- **Members** have no "forgot password" flow — icon accounts have no address,
-  and password accounts don't get one either. Recovery for both is a superadmin
-  re-issuing the key (`POST /users/{id}/reset-key`) and reading it out; a
-  password account is converted to an icon account (its email is released).
-  The console's members table lists every key. On the member side, the
-  sign-in conflict offers "I forgot my icons" rather than dead-ending, since the
-  alternatives ("try again", "I'm new") both fail the member who genuinely can't
-  remember — the second by stranding the account they own.
-- **Organizers** reset by email (`/auth/host/forgot` → `/auth/host/reset`),
-  single-use and expiring in an hour. `forgot` answers identically whether or
-  not the address has an account, so it can't be used to enumerate which
-  agencies are on the platform — keep it that way, including on the error paths.
-  This exists because the sole superadmin previously had no way back in at all.
+Both doors reset by email, the same way: a single-use token stored as a
+SHA-256 hash, expiring in an hour, issued (row + mail) on a background task so
+the response time doesn't say whether the address exists. `forgot` answers
+identically whether or not the address has an account — keep it that way,
+including on the error paths. Rate-limited per address (5) and per IP (20).
+- **Members**: `/auth/forgot` → `/auth/reset` (`member_password_resets`,
+  migration `0023`), pages `/forgot` and `/reset/[token]`, linked from the
+  log-in step as "Forgot your password?". The other way in is a superadmin on
+  `/host/users` using **Set password** (`POST /users/{id}/set-password` with
+  the email): a temporary password is generated and shown once to read out,
+  the old credential and its sessions end. That is also how a legacy
+  `auth_type = 'icon'` account (flagged "No password yet") gets in. Adding a
+  member from the console (`POST /users`, name + email) works the same way.
+- **Organizers**: `/auth/host/forgot` → `/auth/host/reset`. This exists
+  because the sole superadmin previously had no way back in at all.
 
 Two invariants worth knowing before touching `app/api/routes/hosts.py`:
 - **Removing an admin archives the account, its programs and its staff

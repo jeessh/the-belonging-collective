@@ -1,8 +1,7 @@
 /**
  * Profile-picture emblems — mirrors EMBLEMS in core/avatars.py.
  *
- * None of these is a sign-in icon (lib/icons.ts). The icons are the password,
- * so a picture shown beside a member's name must never be a hint to it.
+ * Purely decorative — nothing about sign-in.
  */
 export const EMBLEMS = [
   { slug: "rainbow", emoji: "🌈", label: "Rainbow" },

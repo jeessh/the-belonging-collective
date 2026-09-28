@@ -6,8 +6,8 @@ two lets the caregiver see the member's saved list and save into it. Every
 save made here is the member's row, under the member's rules — special access
 is the member's approval, the hold is the member's spot.
 
-Linking takes the member's own credential, or the caregiver creates the
-member's account on the spot. Both are rate-limited like sign-in: a link
+Linking takes the member's own email and password, or the caregiver creates
+the member's account on the spot. Both are rate-limited like sign-in: a link
 attempt with a wrong credential is exactly what a brute-force sweep looks
 like, and it counts against the same keys the sign-in door uses.
 """
@@ -85,9 +85,8 @@ def create_care_member(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Make the member's account and link it. The account is theirs: an icon
-    key they will tap, or an email and password of their own. The icons come
-    back once so the caregiver can hand them over."""
+    """Make the member's account and link it. The account is theirs, with an
+    email and password of their own."""
     _require_caregiver(user)
     ip_key = client_key(request)
     id_key = f"care-create:{user.id}"
@@ -96,24 +95,20 @@ def create_care_member(
     # account creation, and a run of successes is the thing worth capping.
     record(db, id_key, ip_key)
 
-    if body.email is not None:
-        email = body.email.strip().lower()
-        if _live_member_by_email(db, email):
-            raise HTTPException(
-                status.HTTP_409_CONFLICT, "That email already has an account."
-            )
-        member = new_member(
-            db, body.first_name, body.last_name, email=email, password=body.password
+    email = body.email.strip().lower()
+    if _live_member_by_email(db, email):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "That email already has an account."
         )
-    else:
-        member = new_member(db, body.first_name, body.last_name, icons=body.icons)
+    member = new_member(
+        db, body.first_name, body.last_name, email=email, password=body.password
+    )
     _link(db, user, member)
     return {
         "id": str(member.id),
         "first_name": member.first_name,
         "last_name": member.last_name,
-        "auth_type": member.auth_type,
-        "icons": member.icons if member.auth_type == "icon" else [],
+        "email": member.email,
     }
 
 
@@ -125,27 +120,15 @@ def link_member(
     db: Session = Depends(get_db),
 ):
     """Link an existing member by proving their credential — the consent is
-    the member typing (or tapping) what they would use to sign in."""
+    the member typing what they would use to sign in."""
     _require_caregiver(user)
     ip_key = client_key(request)
-    id_key = credential_identity(body.first_name, body.last_name, body.email)
+    id_key = credential_identity(body.email)
     enforce(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
-    member = member_by_credential(
-        db,
-        first_name=body.first_name,
-        last_name=body.last_name,
-        icons=body.icons,
-        email=body.email,
-        password=body.password,
-    )
+    member = member_by_credential(db, body.email, body.password)
     if member is None:
         record(db, id_key, ip_key)
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            "Wrong email or password."
-            if body.method == "password"
-            else "Those icons don't match that name.",
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password.")
     if member.id == user.id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That is your own account.")
     clear(db, id_key)

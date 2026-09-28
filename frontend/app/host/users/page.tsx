@@ -9,11 +9,10 @@ import {
   createMember,
   deleteMember,
   listMembers,
-  resetMemberKey,
+  setMemberPassword,
   updateMember,
   type MemberAccount,
 } from "@/lib/api";
-import { emojiFor } from "@/lib/icons";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
@@ -23,13 +22,17 @@ import { Modal } from "@/components/Modal";
 import { AccountsNav } from "@/components/host/AccountsNav";
 
 /**
- * Community member accounts. This page is the whole of member account
- * recovery: there is no "forgot password" for members, so the only way back
- * in is a superadmin re-issuing the key here and reading it out.
+ * Community member accounts. Members reset their own password by email;
+ * this page is the other way back in — a superadmin sets a temporary
+ * password and reads it out. That is also how accounts from before email
+ * sign-in (no password yet) get in.
  */
 export default function UsersPage() {
   return <AdminShell requireSuperadmin>{() => <Members />}</AdminShell>;
 }
+
+/** A temporary password, shown once. */
+type Issued = { name: string; email: string; password: string };
 
 function Members() {
   const router = useRouter();
@@ -42,9 +45,7 @@ function Members() {
   const [editing, setEditing] = useState<MemberAccount | null>(null);
   const [removing, setRemoving] = useState<MemberAccount | null>(null);
   const [resetting, setResetting] = useState<MemberAccount | null>(null);
-  const [newKey, setNewKey] = useState<{ name: string; icons: string[] } | null>(
-    null,
-  );
+  const [issued, setIssued] = useState<Issued | null>(null);
 
   async function load() {
     try {
@@ -87,24 +88,6 @@ function Members() {
     }
   }
 
-  async function resetKey() {
-    const m = resetting;
-    if (!m) return;
-    setResetting(null);
-    try {
-      const updated = await resetMemberKey(m.id);
-      // Straight into the same "write this down" modal the add flow ends on —
-      // a new key is a new key, however it came about.
-      setNewKey({
-        name: `${updated.first_name} ${updated.last_name}`,
-        icons: updated.icons,
-      });
-      await load();
-    } catch (e) {
-      show({ title: apiMessage(e, "Couldn't reset that key."), tone: "alert" });
-    }
-  }
-
   return (
     <div className="flex flex-col gap-8">
       <AccountsNav />
@@ -114,8 +97,8 @@ function Members() {
           Community Members
         </h1>
         <p className="text-xl text-fg">
-          Everyone with a member account and how they sign in. Reset key issues
-          a new icon key when someone can&apos;t remember theirs.
+          Everyone with a member account. Set password gives someone a
+          temporary password to read out when they can&apos;t get in.
         </p>
       </div>
 
@@ -155,8 +138,8 @@ function Members() {
         </p>
       ) : (
         <TableCard
-          caption="Community member accounts and how they sign in."
-          head={["Name", "Sign-in", "Joined", ""]}
+          caption="Community member accounts and the email they sign in with."
+          head={["Name", "Email", "Joined", ""]}
         >
           {loading ? (
             <EmptyRow colSpan={4} text="Loading…" />
@@ -180,21 +163,16 @@ function Members() {
                   </span>
                 </th>
                 <td className="px-3 py-3">
-                  {m.auth_type === "password" ? (
-                    <span className="inline-flex flex-wrap items-center gap-3">
-                      <Pill>Password</Pill>
+                  <span className="inline-flex flex-wrap items-center gap-3">
+                    {m.email ? (
                       <span className="break-all">{m.email}</span>
-                    </span>
-                  ) : (
-                    <>
-                      <span aria-hidden="true" className="text-3xl">
-                        {m.icons.map((i) => emojiFor(i)).join(" ")}
-                      </span>
-                      <span className="sr-only">
-                        Icons: {m.icons.join(", ")}
-                      </span>
-                    </>
-                  )}
+                    ) : (
+                      <span className="text-fg-muted">No email</span>
+                    )}
+                    {/* An account from before email sign-in: it can't get in
+                        until Set password gives it one. */}
+                    {m.auth_type !== "password" && <Pill>No password yet</Pill>}
+                  </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 text-fg-muted">
                   {m.created_at ? new Date(m.created_at).toLocaleDateString() : "—"}
@@ -213,7 +191,7 @@ function Members() {
                       onClick={() => setResetting(m)}
                       leadingIcon={<KeyRound />}
                     >
-                      Reset key
+                      Set password
                       <span className="sr-only"> for {m.first_name}</span>
                     </Button>
                     <Button
@@ -233,17 +211,23 @@ function Members() {
       )}
 
       {adding && (
-        <NameModal
+        <MemberModal
           title="Add a member"
-          lead="For setting someone up in person. Their icon key is generated and shown once."
+          lead="For setting someone up in person. A temporary password is generated and shown once."
           submitLabel="Create"
+          withEmail
           onClose={() => setAdding(false)}
-          onSubmit={async (first, last) => {
-            const created = await createMember({ first_name: first, last_name: last });
+          onSubmit={async ({ first, last, email }) => {
+            const created = await createMember({
+              first_name: first,
+              last_name: last,
+              email,
+            });
             setAdding(false);
-            setNewKey({
+            setIssued({
               name: `${created.first_name} ${created.last_name}`,
-              icons: created.icons,
+              email: created.email,
+              password: created.password,
             });
             void load();
           }}
@@ -251,13 +235,13 @@ function Members() {
       )}
 
       {editing && (
-        <NameModal
+        <MemberModal
           title="Edit member"
-          lead="To change the sign-in icons, use Reset key instead — a set typed in here could collide with another account under the same name."
+          lead="Their name only. To change the email they sign in with, use Set password."
           submitLabel="Save"
           initial={editing}
           onClose={() => setEditing(null)}
-          onSubmit={async (first, last) => {
+          onSubmit={async ({ first, last }) => {
             await updateMember(editing.id, { first_name: first, last_name: last });
             setEditing(null);
             show({ title: `Updated ${first} ${last}.` });
@@ -266,49 +250,43 @@ function Members() {
         />
       )}
 
-      {newKey && (
-        <Modal title="Write this down" onClose={() => setNewKey(null)}>
-          <p className="mt-2 text-lg text-fg">
-            {newKey.name} signs in with their name and{" "}
-            {newKey.icons.length === 1 ? "this icon" : "these icons"}
-            {newKey.icons.length > 1 ? ", in this order" : ""}.
-          </p>
-          <p className="mt-4 text-center text-5xl" aria-hidden="true">
-            {newKey.icons.map((i) => emojiFor(i)).join(" ")}
-          </p>
-          <p className="sr-only">{newKey.icons.join(", ")}</p>
-          <p className="mt-4 text-base text-fg-muted">
-            Written down is best, but nothing is lost if it isn&apos;t — the key
-            is listed in the table, and Reset key issues a new one.
-          </p>
-          <div className="mt-6 flex justify-end">
-            <Button variant="primary" onClick={() => setNewKey(null)}>
-              Done
-            </Button>
-          </div>
-        </Modal>
+      {resetting && (
+        <MemberModal
+          title={`Set a password for ${resetting.first_name}?`}
+          lead="Confirm the email they will sign in with. A temporary password is generated; what they have now stops working, so only do this if they can be told."
+          submitLabel="Set password"
+          emailOnly
+          initial={resetting}
+          onClose={() => setResetting(null)}
+          onSubmit={async ({ email }) => {
+            const out = await setMemberPassword(resetting.id, email);
+            setResetting(null);
+            setIssued({
+              name: `${resetting.first_name} ${resetting.last_name}`,
+              email: out.email,
+              password: out.password,
+            });
+            void load();
+          }}
+        />
       )}
 
-      {resetting && (
-        <Modal
-          title={`Reset ${resetting.first_name}'s key?`}
-          onClose={() => setResetting(null)}
-        >
+      {issued && (
+        <Modal title="Read this out" onClose={() => setIssued(null)}>
           <p className="mt-2 text-lg text-fg">
-            They get new icons to sign in with. What they have now stops
-            working
-            {resetting.auth_type === "password"
-              ? ", including their password — the account becomes an icon account"
-              : ""}
-            , so only do this if they can be told.
+            {issued.name} logs in with <strong>{issued.email}</strong> and this
+            temporary password:
           </p>
-          <p className="mt-3 text-base text-fg-muted">
-            Nothing else changes — their saved programs and topics stay.
+          <p className="mt-4 text-center font-mono text-3xl tracking-wide text-fg sm:text-4xl">
+            {issued.password}
           </p>
-          <div className="mt-6 flex flex-wrap justify-end gap-3">
-            <Button onClick={() => setResetting(null)}>Cancel</Button>
-            <Button variant="primary" onClick={() => void resetKey()}>
-              Reset key
+          <p className="mt-4 text-base text-fg-muted">
+            It is shown once. They can change it from &quot;Forgot your
+            password?&quot; at login, or you can set another one here.
+          </p>
+          <div className="mt-6 flex justify-end">
+            <Button variant="primary" onClick={() => setIssued(null)}>
+              Done
             </Button>
           </div>
         </Modal>
@@ -335,34 +313,56 @@ function Members() {
   );
 }
 
-/** First + last name, for adding a member and for renaming one. */
-function NameModal({
+/**
+ * Name and/or email: adding a member (both), renaming one (name only) and
+ * setting a password (email only).
+ */
+function MemberModal({
   title,
   lead,
   submitLabel,
   initial,
+  withEmail = false,
+  emailOnly = false,
   onClose,
   onSubmit,
 }: {
   title: string;
   lead: string;
   submitLabel: string;
-  initial?: { first_name: string; last_name: string };
+  initial?: { first_name: string; last_name: string; email?: string | null };
+  withEmail?: boolean;
+  emailOnly?: boolean;
   onClose: () => void;
-  onSubmit: (first: string, last: string) => Promise<void>;
+  onSubmit: (values: { first: string; last: string; email: string }) => Promise<void>;
 }) {
   const [first, setFirst] = useState(initial?.first_name ?? "");
   const [last, setLast] = useState(initial?.last_name ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const askName = !emailOnly;
+  const askEmail = withEmail || emailOnly;
+  const ready =
+    (!askName || (first.trim() !== "" && last.trim() !== "")) &&
+    (!askEmail || email.trim() !== "");
 
   async function submit() {
     setBusy(true);
     setError(null);
     try {
-      await onSubmit(first.trim(), last.trim());
+      await onSubmit({
+        first: first.trim(),
+        last: last.trim(),
+        email: email.trim().toLowerCase(),
+      });
     } catch (e) {
-      setError(apiMessage(e, "Couldn't save that. Please try again."));
+      setError(
+        e instanceof ApiError && e.status === 422
+          ? "Enter a valid email address."
+          : apiMessage(e, "Couldn't save that. Please try again."),
+      );
       setBusy(false);
     }
   }
@@ -372,22 +372,37 @@ function NameModal({
       <p className="mt-2 text-lg text-fg-muted">{lead}</p>
       <form
         className="mt-4 flex flex-col gap-4"
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          if (!busy && first.trim() && last.trim()) void submit();
+          if (!busy && ready) void submit();
         }}
       >
-        <TextField
-          label="First name"
-          autoFocus
-          value={first}
-          onChange={(e) => setFirst(e.target.value)}
-        />
-        <TextField
-          label="Last name"
-          value={last}
-          onChange={(e) => setLast(e.target.value)}
-        />
+        {askName && (
+          <>
+            <TextField
+              label="First name"
+              autoFocus
+              value={first}
+              onChange={(e) => setFirst(e.target.value)}
+            />
+            <TextField
+              label="Last name"
+              value={last}
+              onChange={(e) => setLast(e.target.value)}
+            />
+          </>
+        )}
+        {askEmail && (
+          <TextField
+            label="Email"
+            type="email"
+            autoFocus={emailOnly}
+            autoComplete="off"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        )}
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
@@ -395,11 +410,7 @@ function NameModal({
         )}
         <div className="flex flex-wrap justify-end gap-3">
           <Button onClick={onClose}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={busy || !first.trim() || !last.trim()}
-          >
+          <Button type="submit" variant="primary" disabled={busy || !ready}>
             {busy ? "Saving…" : submitLabel}
           </Button>
         </div>

@@ -5,7 +5,7 @@ from app.models.event_image import EventImage
 from app.models.attendance import Attendance
 from app.models.click import RegistrationClick
 from app.models.invite import HostInvite
-from app.models.password_reset import HostPasswordReset
+from app.models.password_reset import HostPasswordReset, MemberPasswordReset
 from app.models.rate_limit import AuthRateLimit
 from app.models.access import AccessGroup, AccessMembership
 from app.models.care import CareLink
@@ -25,4 +25,5 @@ __all__ = [
     "RegistrationClick",
     "HostInvite",
     "HostPasswordReset",
+    "MemberPasswordReset",
 ]

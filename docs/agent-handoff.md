@@ -7,8 +7,8 @@ Self-contained briefing for spinning up additional agents. Read this + root
 
 Accessible, needs-first community-programming platform for KW nonprofits
 (hackathon build). Members discover/attend programs via a tactile,
-one-card-at-a-time UI; sign-in is a memorable **2-icon key that IS the
-password** (`ICON_COUNT`; it has been 1 and 3 before, so read it).
+one-card-at-a-time UI; sign-in is email + password (icon keys were retired
+2026-09-28 — `users.icons` is a hidden allocation for the unique constraint).
 
 - `backend/` — FastAPI + SQLAlchemy. **Source of truth for the API.**
 - `frontend/` — Next.js (App Router) + Tailwind + Framer Motion.

@@ -21,11 +21,7 @@ from app.api.deps import (
     load_live_host,
     set_auth_cookie,
 )
-from app.core.icons import (
-    credential,
-    random_icon_set,
-    validate_icon_selection,
-)
+from app.core.icons import random_icon_set
 from app.core.rate_limit import (
     IDENTITY_LIMIT,
     IP_LIMIT,
@@ -46,14 +42,15 @@ from app.core.security import decode_token
 from app.core.mail import send as send_mail
 from app.db.session import SessionLocal
 from app.models.host import Host, org_id_of
-from app.models.password_reset import HostPasswordReset
+from app.models.password_reset import HostPasswordReset, MemberPasswordReset
 from app.models.user import User
 from app.schemas.auth import (
     HostForgot,
     HostLogin,
     HostReset,
-    UserAuth,
+    UserForgot,
     UserLogin,
+    UserReset,
     UserSignup,
 )
 from app.schemas.user import CarePerson
@@ -62,13 +59,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _sign_in_member(response: Response, user: User) -> None:
-    """Open a member session, bound to the key it was opened with.
+    """Open a member session, bound to the credential it was opened with.
 
-    The token carries a fingerprint of the credential in force right now, and
-    every request re-checks it — so re-issuing a member's icons ends the
-    sessions the old icons opened, rather than leaving them live for the week a
-    token lasts. That matters precisely when the reset was prompted by somebody
-    else knowing the key.
+    The token carries a fingerprint of the password hash in force right now,
+    and every request re-checks it — so a reset ends the sessions the old
+    password opened, rather than leaving them live for the week a token lasts.
     """
     set_auth_cookie(
         response,
@@ -82,26 +77,12 @@ def _make_username(first: str, last: str) -> str:
     return f"{first.strip().lower()}_{last.strip().lower()}".replace(" ", "")
 
 
-def _allocate_unique_icons(
-    db: Session, username: str, *, exclude: list[str] | None = None
-) -> list[str]:
-    """Pick an icon key free for this name.
-
-    Scoped to `username` because that is what the database actually enforces
-    (uq_users_username_icons) and what sign-in actually checks — auth_user
-    resolves the name first, then verifies the credential against the accounts
-    carrying it. Searching globally instead would run the 132 ordered pairs out
-    at 132 members across every agency, and start refusing to open accounts it
-    had no reason to refuse.
-
-    `exclude` keeps a re-issued key from coming back as the one the member
-    already could not use.
-    """
-    excluded = [list(exclude)] if exclude else []
+def _allocate_unique_icons(db: Session, username: str) -> list[str]:
+    """A hidden icon set free for this name — uq_users_username_icons still
+    needs one per row. Scoped to the username so the 132 pairs never run out
+    across the whole membership."""
     for _ in range(50):
         icons = random_icon_set()
-        if icons in excluded:
-            continue
         taken = (
             db.query(User)
             .filter(User.username == username, User.icons == icons)
@@ -115,48 +96,36 @@ def _allocate_unique_icons(
     )
 
 
+def _live_member_by_email(db: Session, email: str) -> User | None:
+    return (
+        db.query(User)
+        .filter(User.email == email, User.deleted_at.is_(None))
+        .first()
+    )
+
+
 def new_member(
     db: Session,
     first_name: str,
     last_name: str,
     *,
-    icons: list[str] | None = None,
-    email: str | None = None,
-    password: str | None = None,
+    email: str,
+    password: str,
     accessibility_prefs: list[str] | None = None,
     interest_categories: list[str] | None = None,
     is_caregiver: bool = False,
 ) -> User:
-    """Create and commit a member account through either door.
-
-    `password` set means the password door (with `email` as the login);
-    otherwise the icon door, with `icons` as chosen or a free set allocated
-    when none are given. Every place that makes a member — self sign-up, the
-    console, a caregiver — comes through here so the two doors are built the
-    same way everywhere.
-    """
+    """Create and commit a member account. Every place that makes a member —
+    self sign-up, the console, a caregiver — comes through here."""
     username = _make_username(first_name, last_name)
-    if password is not None:
-        icons = _allocate_unique_icons(db, username)
-        secret, auth_type = password, "password"
-    else:
-        if icons is not None:
-            try:
-                icons = validate_icon_selection(icons)
-            except ValueError as exc:
-                raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
-        else:
-            icons = _allocate_unique_icons(db, username)
-        secret, auth_type = credential(username, icons), "icon"
-
     user = User(
         first_name=first_name.strip(),
         last_name=last_name.strip(),
         username=username,
-        email=email.strip().lower() if email else None,
-        password_hash=hash_password(secret),
-        auth_type=auth_type,
-        icons=icons,
+        email=email.strip().lower(),
+        password_hash=hash_password(password),
+        auth_type="password",
+        icons=_allocate_unique_icons(db, username),
         accessibility_prefs=accessibility_prefs or [],
         interest_categories=interest_categories or [],
         is_caregiver=is_caregiver,
@@ -165,10 +134,8 @@ def new_member(
     try:
         db.commit()
     except IntegrityError as exc:
-        # Both pre-checks callers make are check-then-insert, so either
-        # constraint can lose a race: the email index to a concurrent signup
-        # with the same address, or the icon pair to a same-named member
-        # signing up at the same moment.
+        # Callers pre-check the email, but check-then-insert can lose a race
+        # to a concurrent signup with the same address.
         db.rollback()
         constraint = getattr(exc.orig.diag, "constraint_name", None)
         if constraint == "uq_users_email_live":
@@ -176,67 +143,31 @@ def new_member(
                 status.HTTP_409_CONFLICT, "That email already has an account."
             )
         raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "That name and icon combination is already taken — pick a different "
-            "set of icons.",
+            status.HTTP_409_CONFLICT, "Could not create the account — try again."
         )
     db.refresh(user)
     return user
 
 
-def credential_identity(
-    first_name: str | None, last_name: str | None, email: str | None
-) -> str:
+def credential_identity(email: str) -> str:
     """The rate-limit key a credential counts against — the same one the
     sign-in door uses for it, so guessing here costs what guessing there does."""
-    if email is not None:
-        return f"user:{email.strip().lower()}"
-    return f"user:{_make_username(first_name or '', last_name or '')}"
+    return f"user:{email.strip().lower()}"
 
 
-def member_by_credential(
-    db: Session,
-    *,
-    first_name: str | None = None,
-    last_name: str | None = None,
-    icons: list[str] | None = None,
-    email: str | None = None,
-    password: str | None = None,
-) -> User | None:
-    """The live member this credential opens, or None. Either door: email and
-    password, or name and icon key (checked against every same-named icon
-    account, as sign-in does)."""
-    if email is not None:
-        user = _live_member_by_email(db, email.strip().lower())
-        if user and password and verify_password(password, user.password_hash):
-            return user
-        return None
-    try:
-        icons = validate_icon_selection(icons or [])
-    except ValueError:
-        return None
-    username = _make_username(first_name or "", last_name or "")
-    secret = credential(username, icons)
-    same_name = db.query(User).filter(
-        User.username == username,
-        User.auth_type == "icon",
-        User.deleted_at.is_(None),
-    )
-    for user in same_name:
-        if verify_password(secret, user.password_hash):
-            return user
+def member_by_credential(db: Session, email: str, password: str) -> User | None:
+    """The live member this email and password opens, or None."""
+    user = _live_member_by_email(db, email.strip().lower())
+    if (
+        user
+        and user.auth_type == "password"
+        and verify_password(password, user.password_hash)
+    ):
+        return user
     return None
 
 
 # ---------- Community members (email + password) ----------
-
-
-def _live_member_by_email(db: Session, email: str) -> User | None:
-    return (
-        db.query(User)
-        .filter(User.email == email, User.deleted_at.is_(None))
-        .first()
-    )
 
 
 @router.post("/signup/user", status_code=status.HTTP_201_CREATED)
@@ -246,11 +177,6 @@ def signup_user(
     response: Response,
     db: Session = Depends(get_db),
 ):
-    """Create a password account. The icon door is POST /auth/user.
-
-    Icons are still allocated because the column and uq_users_username_icons
-    need them; they are never returned for this kind of account.
-    """
     username = _make_username(body.first_name, body.last_name)
     email = body.email.strip().lower()
     require_live_slugs(db, body.interest_categories)
@@ -282,7 +208,6 @@ def signup_user(
     return {
         "id": str(user.id),
         "email": user.email,
-        "auth_type": user.auth_type,
         "is_caregiver": user.is_caregiver,
     }
 
@@ -299,96 +224,13 @@ def login_user(
     id_key = f"user:{email}"
     enforce_rate_limit(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
 
-    user = _live_member_by_email(db, email)
-    if not user or not verify_password(body.password, user.password_hash):
+    user = member_by_credential(db, email, body.password)
+    if not user:
         record(db, id_key, ip_key)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
     clear_rate_limit(db, id_key)
     _sign_in_member(response, user)
     return {"id": str(user.id), "email": user.email, "role": "user"}
-
-
-# ---------- Community members (icon key) ----------
-
-
-@router.post("/user")
-def auth_user(
-    body: UserAuth,
-    request: Request,
-    response: Response,
-    db: Session = Depends(get_db),
-):
-    """Unified member entry. If the name + icon key matches an existing account,
-    log in; otherwise create a new account. Returns `mode` — "login", "signup",
-    or "conflict" (the name exists but the icons don't match) — so the UI can
-    show the right text."""
-    try:
-        icons = validate_icon_selection(body.icons)
-    except ValueError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
-
-    username = _make_username(body.first_name, body.last_name)
-    password = credential(username, icons)
-
-    ip_key = client_key(request)
-    id_key = f"user:{username}"
-    enforce_rate_limit(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
-
-    # 1) Existing record? The key is name + icons, so verify the credential
-    #    against each same-named icon account (usernames alone aren't unique).
-    # Archived members stay in `same_name` — they still hold their
-    # (username, icons) slot, so the conflict check below has to see them — but
-    # they can't sign in. Password accounts are left out entirely: their
-    # icons aren't a key anyone tapped, so they can't be what was mistapped.
-    same_name = (
-        db.query(User)
-        .filter(User.username == username, User.auth_type == "icon")
-        .all()
-    )
-    for user in same_name:
-        if user.deleted_at is not None:
-            continue
-        if verify_password(password, user.password_hash):
-            clear_rate_limit(db, id_key)
-            _sign_in_member(response, user)
-            return {
-                "mode": "login",
-                "id": str(user.id),
-                "username": user.username,
-                "icons": user.icons,
-            }
-
-    # 2) No credential match, but somebody already signs in under this name. The
-    #    overwhelmingly likely explanation is a mistapped icon, not a second
-    #    person who happens to share the name — and creating an account here
-    #    silently strands the member's saved programs in the account they
-    #    actually own, while the UI congratulates them. Memory is a stated top
-    #    barrier for these members, so mistaps are expected, not exceptional.
-    #    Hand the decision back to the UI; `create_new` is the confirmed override.
-    if same_name and not body.create_new:
-        # A wrong icon key against a name that exists is exactly the signal a
-        # brute-force sweep produces, so it counts against the budget.
-        record(db, id_key, ip_key)
-        return {"mode": "conflict"}
-
-    # 3) Fresh (name + icons) → create the account. Different people may share
-    #    the same icons as long as their names differ; a clash needs both.
-    require_live_slugs(db, body.interest_categories)
-    user = new_member(
-        db,
-        body.first_name,
-        body.last_name,
-        icons=icons,
-        accessibility_prefs=body.accessibility_prefs,
-        interest_categories=body.interest_categories,
-    )
-    _sign_in_member(response, user)
-    return {
-        "mode": "signup",
-        "id": str(user.id),
-        "username": user.username,
-        "icons": user.icons,
-    }
 
 
 # ---------- Hosts / admins (email + password) ----------
@@ -447,8 +289,8 @@ RESET_TTL_MINUTES = 60
 # necessarily ask for it, and five is already more than a real person needs.
 FORGOT_LIMIT = 5
 # Per address, across all addresses. Deliberately NOT the shared IP_LIMIT of
-# 200 — that number is sized to tolerate a room full of members mistapping
-# icons, and reused here it would authorise 200 emails per address per window.
+# 200 — that number is sized to tolerate a room full of members mistyping
+# passwords, and reused here it would authorise 200 emails per address per window.
 FORGOT_IP_LIMIT = 20
 
 
@@ -495,38 +337,48 @@ def forgot_host_password(
         # only the mail left the INSERT as the tell — measured against the
         # pooler it was worth most of a second, which is plenty to read an
         # answer out of.
+        token = secrets.token_urlsafe(32)
         background.add_task(
-            _issue_reset, host.id, host.email, host.name, secrets.token_urlsafe(32)
+            _issue_reset,
+            HostPasswordReset(token_hash=_reset_hash(token), host_id=host.id),
+            token,
+            host.email,
+            host.name,
+            "/host/reset",
+            "this organizer account",
         )
     return {"sent": True}
 
 
-def _issue_reset(host_id: uuid.UUID, email: str, name: str, token: str) -> None:
+def _issue_reset(
+    reset: HostPasswordReset | MemberPasswordReset,
+    token: str,
+    email: str,
+    name: str,
+    path: str,
+    what: str,
+) -> None:
     """Record the reset and mail the link. Runs after the response has gone.
 
     Opens its own session: the request's is closed by the time this runs.
     """
+    reset.expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=RESET_TTL_MINUTES
+    )
     db = SessionLocal()
     try:
-        db.add(
-            HostPasswordReset(
-                token_hash=_reset_hash(token),
-                host_id=host_id,
-                expires_at=datetime.now(timezone.utc)
-                + timedelta(minutes=RESET_TTL_MINUTES),
-            )
-        )
+        db.add(reset)
         db.commit()
     finally:
         db.close()
 
-    link = f"{settings.FRONTEND_ORIGIN}/host/reset/{token}"
+    link = f"{settings.FRONTEND_ORIGIN}{path}/{token}"
     send_mail(
         email,
         "Reset your Belonging Collective password",
         f"""Hello {name},
 
-Someone asked to reset the password for this organizer account.
+Someone asked to reset the password for {what}.
 
 Open this link to choose a new one. It works once, and expires in one hour:
 
@@ -539,11 +391,9 @@ as it is.
     )
 
 
-def _usable_reset(db: Session, token: str) -> HostPasswordReset:
+def _usable_reset(db: Session, token: str, model=HostPasswordReset):
     reset = (
-        db.query(HostPasswordReset)
-        .filter(HostPasswordReset.token_hash == _reset_hash(token))
-        .first()
+        db.query(model).filter(model.token_hash == _reset_hash(token)).first()
     )
     if not reset or reset.used_at is not None:
         raise HTTPException(
@@ -621,6 +471,93 @@ def reset_host_password(
     return {"id": str(host.id), "email": host.email, "is_admin": host.is_superadmin}
 
 
+# ---------- Member password reset ----------
+#
+# The same flow as the organizer one above. Since icon keys were retired
+# this is the only recovery a member can do alone; the other is a superadmin
+# setting a temporary password from the console.
+
+
+@router.post("/forgot")
+def forgot_user_password(
+    body: UserForgot,
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Answers identically whether or not the address has an account — see
+    forgot_host_password."""
+    email = body.email.strip().lower()
+    ip_key = f"{client_key(request)}:forgot"
+    id_key = f"forgot-user:{email}"
+    enforce_rate_limit(db, {id_key: FORGOT_LIMIT, ip_key: FORGOT_IP_LIMIT})
+    record(db, id_key, ip_key)
+
+    user = _live_member_by_email(db, email)
+    if user:
+        token = secrets.token_urlsafe(32)
+        background.add_task(
+            _issue_reset,
+            MemberPasswordReset(token_hash=_reset_hash(token), user_id=user.id),
+            token,
+            user.email,
+            user.first_name,
+            "/reset",
+            "your Belonging Collective account",
+        )
+    return {"sent": True}
+
+
+def _member_for_reset(db: Session, reset: MemberPasswordReset) -> User:
+    user = db.get(User, reset.user_id)
+    if not user or user.deleted_at is not None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "That reset link is no longer valid."
+        )
+    return user
+
+
+@router.get("/reset/{token}")
+def preview_user_reset(token: str, db: Session = Depends(get_db)):
+    user = _member_for_reset(db, _usable_reset(db, token, MemberPasswordReset))
+    return {"email": user.email, "first_name": user.first_name}
+
+
+@router.post("/reset")
+def reset_user_password(
+    body: UserReset,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Set the new password and sign them straight in, spending every other
+    outstanding reset for the account. A legacy icon account that had added
+    an email becomes a password account here."""
+    ip_key = f"{client_key(request)}:reset"
+    enforce_rate_limit(db, {ip_key: IP_LIMIT})
+    try:
+        reset = _usable_reset(db, body.token, MemberPasswordReset)
+    except HTTPException:
+        record(db, ip_key)
+        raise
+    user = _member_for_reset(db, reset)
+
+    user.password_hash = hash_password(body.password)
+    user.auth_type = "password"
+    db.query(MemberPasswordReset).filter(
+        MemberPasswordReset.user_id == user.id,
+        MemberPasswordReset.used_at.is_(None),
+    ).update(
+        {MemberPasswordReset.used_at: datetime.now(timezone.utc)},
+        synchronize_session=False,
+    )
+    db.commit()
+    db.refresh(user)
+    # Old sessions end here — the token's fingerprint no longer matches.
+    _sign_in_member(response, user)
+    return {"id": str(user.id), "email": user.email, "role": "user"}
+
+
 # ---------- Session ----------
 
 
@@ -682,8 +619,6 @@ def me(request: Request, db: Session = Depends(get_db)):
         # as its own.
         out["org_id"] = str(org_id_of(host))
     if member:
-        # Which door they came through, so the UI knows what to show (and
-        # never shows an icon key to a password account).
         out["email"] = member.email
         out["auth_type"] = member.auth_type
         out["avatar_url"] = member.avatar_url

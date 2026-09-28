@@ -176,15 +176,13 @@ export type Me = {
   first_name: string;
   last_name: string;
   username: string;
-  /** The login for a password account; optional for an icon account. */
+  /** The login. Null only on a legacy icon account, which can't sign in. */
   email?: string | null;
   /** Profile picture: a photo or an emblem slug (lib/emblems), never both. */
   avatar_url?: string | null;
   avatar_emblem?: string | null;
-  /** Which door the member uses. */
+  /** "password", or "icon" for a legacy account that needs one set. */
   auth_type: "icon" | "password";
-  /** Empty for password accounts — the key is never shown for those. */
-  icons: string[];
   accessibility_prefs: string[];
   interest_categories: string[];
   tts_enabled: boolean;
@@ -292,28 +290,17 @@ export type CarePerson = {
 export const shortName = (p: { first_name: string; last_name: string }) =>
   `${p.first_name} ${p.last_name.charAt(0)}.`.trim();
 
-/** What a member types to sign in: name + icons, or email + password. */
-export type MemberCredential =
-  | { first_name: string; last_name: string; icons: string[] }
-  | { email: string; password: string };
+/** What a member types to sign in. */
+export type MemberCredential = { email: string; password: string };
 
-/**
- * A caregiver creating the member's account. Icons come back once when the
- * account is an icon account, so they can be handed over.
- */
+/** A caregiver creating the member's account. */
 export const createCareMember = (
-  body: { first_name: string; last_name: string } & (
-    | { icons: string[] }
-    | { email: string; password: string }
-  ),
+  body: MemberCredential & { first_name: string; last_name: string },
 ) =>
-  api<{
-    id: string;
-    first_name: string;
-    last_name: string;
-    auth_type: "icon" | "password";
-    icons: string[];
-  }>("/users/me/care/members", { method: "POST", body: JSON.stringify(body) });
+  api<{ id: string; first_name: string; last_name: string; email: string }>(
+    "/users/me/care/members",
+    { method: "POST", body: JSON.stringify(body) },
+  );
 
 /** Link an existing member by proving their credential. 401 when it's wrong. */
 export const linkCareMember = (body: MemberCredential) =>
@@ -672,12 +659,19 @@ export const deleteAdmin = (id: string) =>
 
 export const listMembers = () => api<MemberAccount[]>("/users");
 
-/** Icons come back so they can be written down and handed over. */
-export const createMember = (body: { first_name: string; last_name: string }) =>
-  api<{ id: string; first_name: string; last_name: string; icons: string[] }>(
-    "/users",
-    { method: "POST", body: JSON.stringify(body) },
-  );
+/** A temporary password comes back once, to be read out. */
+export const createMember = (body: {
+  first_name: string;
+  last_name: string;
+  email: string;
+}) =>
+  api<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+  }>("/users", { method: "POST", body: JSON.stringify(body) });
 
 export const updateMember = (
   id: string,
@@ -689,14 +683,15 @@ export const updateMember = (
   });
 
 /**
- * Issue a member a new icon key. The old credential stops working immediately.
- *
- * This is the whole of member account recovery: there is no member "forgot
- * password" flow, so the only way back in is for staff to re-issue the key and
- * hand it over. A password account becomes an icon account.
+ * Give a member a temporary password under this email. The old credential
+ * and its sessions stop working immediately; a legacy icon account becomes
+ * a password account.
  */
-export const resetMemberKey = (id: string) =>
-  api<MemberAccount>(`/users/${id}/reset-key`, { method: "POST" });
+export const setMemberPassword = (id: string, email: string) =>
+  api<{ id: string; email: string; password: string }>(
+    `/users/${id}/set-password`,
+    { method: "POST", body: JSON.stringify({ email }) },
+  );
 
 export const deleteMember = (id: string) =>
   api(`/users/${id}`, { method: "DELETE" });

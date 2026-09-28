@@ -17,14 +17,14 @@ from app.db.session import Base
 
 
 class User(Base):
-    """A community member. Signs in one of two ways, chosen at signup:
+    """A community member. Signs in with an email and a password.
 
-    * icon — the key is the full name PLUS the ordered icon set, so uniqueness
-      is on (username, icons): people can share a name, and even the same
-      icons, as long as the two together differ.
-    * password — identified by email, with a password of their own choosing.
-      Icons are still allocated (the column and constraint need them) but are
-      never shown.
+    Icon keys were retired 2026-09-28. `icons` is still allocated per
+    account because the column is NOT NULL and half of
+    uq_users_username_icons; it is never shown and never a credential. Rows
+    with auth_type 'icon' predate the change and can't sign in until a
+    superadmin sets them a password (POST /users/{id}/set-password) or they
+    reset one by email.
     """
 
     __tablename__ = "users"
@@ -47,8 +47,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(Text)
     last_name: Mapped[str] = mapped_column(Text)
     username: Mapped[str] = mapped_column(Text, index=True)  # firstname_lastname
-    # The sign-in name for a password account; optional for an icon account,
-    # where it is only a channel for reminders and change notices. Lowercase.
+    # The sign-in name. Nullable only for legacy icon accounts. Lowercase.
     email: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Profile picture: an uploaded photo or one of core/avatars.EMBLEMS, never
     # both. Emblems are deliberately not sign-in icons — those are the password.
@@ -57,12 +56,12 @@ class User(Base):
     # Public handle for the member's saved list (GET /shared/{token}).
     share_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str] = mapped_column(Text)
-    # 'icon' (default) means password is the icon slugs; 'password' means custom.
-    auth_type: Mapped[str] = mapped_column(Text, default="icon")
+    # 'password' for every account that can sign in; 'icon' is legacy.
+    auth_type: Mapped[str] = mapped_column(Text, default="password")
     # ARRAY(Text) not ARRAY(String): the DB columns are text[], and equality
     # filters (see _allocate_unique_icons) bind the literal with the column's
     # type — String binds varchar[], which has no `text[] = varchar[]` operator.
-    icons: Mapped[list[str]] = mapped_column(ARRAY(Text))  # unique identifier
+    icons: Mapped[list[str]] = mapped_column(ARRAY(Text))  # hidden allocation
     # Personalization prefs set during onboarding. Free-form slugs (the FE chip
     # taxonomy constrains input); used to SORT the feed, never to filter it.
     accessibility_prefs: Mapped[list[str]] = mapped_column(
@@ -105,8 +104,7 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     # Archived, not destroyed — see Event.deleted_at. An archived member can't
-    # sign in, and still holds their (username, icons) slot, so nobody
-    # accidentally inherits their key.
+    # sign in; their email is released (uq_users_email_live).
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

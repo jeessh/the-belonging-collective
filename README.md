@@ -54,7 +54,7 @@ Production env vars:
 | backend  | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `MAIL_FROM` | organizer password-reset mail. **Unset = nothing is sent and the reset link is logged instead** |
 
 ## Roles
-- **Members** — discover + attend programs (simple icon sign-in)
+- **Members** — discover + attend programs (email + password sign-in)
 - **Admins** — nonprofit organizers who add and edit their own programs
 - **Superadmins** — admins who can also edit any program and manage member and
   admin accounts
