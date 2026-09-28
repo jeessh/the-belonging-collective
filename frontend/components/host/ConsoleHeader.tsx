@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { Lock, LogOut } from "lucide-react";
 import { apiMessage, logout, updateMyOrg, type AdminAccount } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
@@ -26,10 +26,13 @@ const AREA_HOME: Record<Area, string> = {
 export function ConsoleHeader({
   org,
   isSuper,
+  pendingAccess = 0,
   onLogoChanged,
 }: {
   org: AdminAccount;
   isSuper: boolean;
+  /** Special-access requests waiting — the badge on that entry. */
+  pendingAccess?: number;
   onLogoChanged: (url: string | null) => void;
 }) {
   const pathname = usePathname();
@@ -40,6 +43,7 @@ export function ConsoleHeader({
     pathname.startsWith("/host/admins") || pathname.startsWith("/host/users")
       ? "accounts"
       : "events";
+  const onAccess = pathname.startsWith("/host/access");
 
   return (
     <header className="no-print border-b border-line bg-surface">
@@ -73,7 +77,35 @@ export function ConsoleHeader({
           />
         )}
 
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          {/* Every organizer has this: it is where requests to join their
+              special-access groups wait. The badge is the count waiting. */}
+          <Link
+            href="/host/access"
+            title="Special access"
+            aria-current={onAccess ? "page" : undefined}
+            className={buttonClass(
+              "ghost",
+              "md",
+              onAccess ? "bg-surface-subtle" : "",
+            )}
+          >
+            <Lock aria-hidden="true" className="size-6 shrink-0" />
+            {/* The superadmin header also carries the area switch, so its
+                label only fits on a wide desktop; the lock and badge stay. */}
+            <span className={isSuper ? "max-2xl:sr-only" : "max-sm:sr-only"}>
+              Special access
+            </span>
+            {pendingAccess > 0 && (
+              <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-base font-medium text-fg">
+                {pendingAccess}
+                <span className="sr-only">
+                  {" "}
+                  {pendingAccess === 1 ? "request" : "requests"} waiting
+                </span>
+              </span>
+            )}
+          </Link>
           {/* The logo is the organization's own to set — members recognise
               them by it in the feed. */}
           <button
