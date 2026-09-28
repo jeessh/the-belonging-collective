@@ -59,15 +59,21 @@ export function EventDetailModal({
   return (
     // Lifts the fixed Modal above the feed chrome, which sits at z-50.
     <div className="relative z-[60]">
-      <Modal title={null} labelId={TITLE_ID} size="lg" onClose={close}>
+      <Modal
+        title={null}
+        labelId={TITLE_ID}
+        size="lg"
+        closeOutside
+        onClose={close}
+      >
         <EventDetails
           event={event}
           titleAs="h2"
           titleId={TITLE_ID}
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
-          // Room for the dialog's own close button.
+          // Room for the dialog's own close button while it sits inside.
           tools={
-            <div className="pr-12">
+            <div className="pr-12 xl:pr-0">
               <EventTools event={event} />
             </div>
           }

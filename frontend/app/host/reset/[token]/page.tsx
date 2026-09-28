@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/TextField";
+import { AuthPage } from "@/components/host/AuthPage";
 
 /**
  * Choosing a new password from a reset link.
@@ -56,93 +58,87 @@ export default function ResetPasswordPage() {
     }
   }
 
+  if (target === undefined) {
+    return (
+      <AuthPage title="Checking your link…">
+        <p className="sr-only" role="status">
+          Loading
+        </p>
+      </AuthPage>
+    );
+  }
+
+  if (target === null) {
+    return (
+      <AuthPage title="This link has expired">
+        <p className="text-lg text-fg-muted">{problem}</p>
+        <Link
+          href="/host/forgot"
+          className="w-fit text-lg text-fg underline underline-offset-4"
+        >
+          Ask for a new one
+        </Link>
+      </AuthPage>
+    );
+  }
+
   return (
-    <main className="grid min-h-dvh place-items-center bg-white px-6 py-10">
-      <section className="w-full max-w-[520px]">
-        {target === undefined ? (
-          <p className="text-center text-lg text-muted">Checking your link…</p>
-        ) : target === null ? (
-          <>
-            <h1 className="font-display text-4xl font-extrabold text-ink">
-              This link has expired
-            </h1>
-            <p className="mt-3 text-lg text-muted">{problem}</p>
-            <Link
-              href="/host/forgot"
-              className="mt-4 inline-block text-lg font-semibold text-accent underline underline-offset-2"
-            >
-              Ask for a new one
-            </Link>
-          </>
-        ) : (
-          <>
-            <h1 className="font-display text-4xl font-extrabold text-ink">
-              Choose a new password
-            </h1>
-            <p className="mt-3 text-lg text-ink">
-              For {target.organization}.
-            </p>
-            <p className="mt-1 text-base text-muted">
-              You&apos;ll sign in with {target.email}.
-            </p>
+    <AuthPage title="Choose a new password">
+      <div className="flex flex-col gap-1">
+        <p className="text-lg text-fg">For {target.organization}.</p>
+        <p className="text-base text-fg-muted">
+          You&apos;ll sign in with {target.email}.
+        </p>
+      </div>
 
-            <form
-              className="mt-7 flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!busy) void submit();
-              }}
-            >
-              <label className="flex flex-col gap-1.5">
-                <span className="text-base font-medium text-ink">
-                  New password
-                </span>
-                <input
-                  autoFocus
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl border-2 border-[#B9B7C4] px-4 py-3 text-lg outline-none focus:border-accent"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-base font-medium text-ink">
-                  Password again
-                </span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="rounded-xl border-2 border-[#B9B7C4] px-4 py-3 text-lg outline-none focus:border-accent"
-                />
-              </label>
+      <form
+        className="flex flex-col gap-4 border-t border-line-active pt-9"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy) void submit();
+        }}
+      >
+        <TextField
+          label="New password"
+          required
+          autoFocus
+          type="password"
+          autoComplete="new-password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <TextField
+          label="Confirm password"
+          required
+          type="password"
+          autoComplete="new-password"
+          placeholder="Re-enter password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
 
-              <p className="text-base text-muted">
-                At least 8 characters. Anyone still signed in to this account
-                elsewhere will be signed out.
-              </p>
+        <p className="text-base text-fg-muted">
+          At least 8 characters. Anyone still signed in to this account
+          elsewhere will be signed out.
+        </p>
 
-              {error && (
-                <p role="alert" className="font-semibold text-red-600">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="mt-2"
-                disabled={busy || password.length < 8 || !confirm}
-                >
-                  {busy ? "Saving…" : "Save new password"}
-                </Button>
-            </form>
-          </>
+        {error && (
+          <p role="alert" className="text-base text-danger-fg">
+            {error}
+          </p>
         )}
-      </section>
-    </main>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="mt-2"
+          disabled={busy || password.length < 8 || !confirm}
+        >
+          {busy ? "Saving…" : "Save new password"}
+        </Button>
+      </form>
+    </AuthPage>
   );
 }

@@ -17,16 +17,17 @@ import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
  * hash of a URL that stayed on our origin survive.
  *
  * `save=1` / `access=1` is the pending save or access request from the
- * program page; a guest has no account to complete it with, so it is dropped
- * rather than resumed into a 401.
+ * program page. It is dropped rather than resumed for a guest, who has no
+ * account to complete it with, and for "Go back", which returns to the page
+ * without acting on it.
  */
-function safeNext(raw: string | null, { asGuest = false } = {}): string {
+function safeNext(raw: string | null, { dropPending = false } = {}): string {
   if (!raw) return "/";
   try {
     const here = new URL(window.location.href);
     const target = new URL(raw, here.origin);
     if (target.origin !== here.origin) return "/";
-    if (asGuest) {
+    if (dropPending) {
       target.searchParams.delete("save");
       target.searchParams.delete("access");
     }
@@ -60,8 +61,8 @@ function SignupFlow() {
 
   // Resolved at the moment of leaving rather than at render: safeNext reads
   // window.location, which doesn't exist during the server pass.
-  function leave(asGuest = false) {
-    router.replace(safeNext(params.get("next"), { asGuest }));
+  function leave(dropPending = false) {
+    router.replace(safeNext(params.get("next"), { dropPending }));
   }
 
   function toggleInterest(label: string) {
@@ -93,6 +94,8 @@ function SignupFlow() {
               mode === "signup" && !caregiver ? setPhase("topics") : leave()
             }
             onGuest={() => leave(true)}
+            // Back to the page they came from, skipping the topics step.
+            onBack={() => leave(true)}
           >
             {(view) => (
               <>

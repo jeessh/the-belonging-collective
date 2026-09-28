@@ -81,12 +81,15 @@ function firstStep(door: AuthDoor, method: AuthMethod): Step {
  *
  * `onSignedIn` fires once the cookie is set: straight away for a log-in, and
  * from "Continue to events" after an account is created, so a new member
- * sees their icons before the modal goes.
+ * sees their icons before the modal goes. `onBack` is the success screen's
+ * other way out: the account exists and the cookie is set, but the member
+ * goes back to what they were looking at instead of on to the feed.
  */
 export function MemberAuthFlow({
   initial = "chooser",
   onSignedIn,
   onGuest,
+  onBack,
   children,
 }: {
   initial?: AuthEntry;
@@ -94,6 +97,8 @@ export function MemberAuthFlow({
   onSignedIn: (result: { mode: "login" | "signup"; caregiver?: boolean }) => void;
   /** "Continue as guest". Browsing is already open; this just closes the door. */
   onGuest: () => void;
+  /** "Go back" on the success screen; left out, the screen has only "Continue". */
+  onBack?: () => void;
   children: (view: AuthView) => ReactNode;
 }) {
   const toast = useToast();
@@ -851,13 +856,25 @@ export function MemberAuthFlow({
         body: (
           <div className="flex flex-col gap-6">
             {passwordDoor === "icons" && <IconKeyShown icons={picked} />}
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => onSignedIn({ mode: "signup", caregiver })}
-            >
-              Continue to events
-            </Button>
+            <div className="flex gap-4">
+              {onBack && (
+                <Button
+                  size="lg"
+                  className="flex-1 max-sm:px-4 max-sm:text-lg"
+                  onClick={onBack}
+                >
+                  Go back
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="lg"
+                className="flex-1 max-sm:px-4 max-sm:text-lg"
+                onClick={() => onSignedIn({ mode: "signup", caregiver })}
+              >
+                Continue to events
+              </Button>
+            </div>
           </div>
         ),
       };

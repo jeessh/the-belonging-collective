@@ -531,8 +531,9 @@ export function EventsView({
   );
 
   // Re-read the profile so the feed, the sidebar and the chrome all agree that
-  // somebody is here now, then finish the save they came for.
-  const handleSignedIn = useCallback(async () => {
+  // somebody is here now, then finish the save they came for — unless they
+  // chose "Go back", which returns them to the card without acting on it.
+  const handleSignedIn = useCallback(async (resume = true) => {
     setAuthOpen(false);
     const pending = authFor;
     setAuthFor(null);
@@ -556,6 +557,7 @@ export function EventsView({
     } catch {
       /* the cookie is set; the next read will pick the profile up */
     }
+    if (!resume) return;
     if (pending?.kind === "save") void attend(pending.event);
     if (pending?.kind === "access") void requestAccessFor(pending.event);
   }, [authFor, attend, requestAccessFor]);
@@ -1328,6 +1330,7 @@ export function EventsView({
             setAuthFor(null);
           }}
           onSignedIn={() => void handleSignedIn()}
+          onBack={() => void handleSignedIn(false)}
         />
       )}
     </motion.main>

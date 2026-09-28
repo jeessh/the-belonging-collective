@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
+import { AuthPage } from "@/components/host/AuthPage";
 
 /**
  * Ask for a reset link.
@@ -35,75 +36,66 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  return (
-    <main className="grid min-h-dvh place-items-center bg-surface px-6 py-12">
-      <div className="w-full max-w-[520px]">
-        <p className="text-base uppercase tracking-wide text-fg-muted">
-          Admin console
-        </p>
-        <h1 className="mt-1 text-4xl font-medium text-fg">
-          Reset your password
-        </h1>
+  const backToSignIn = (
+    <Link href="/host" className="w-fit text-lg text-fg underline underline-offset-4">
+      Back to sign in
+    </Link>
+  );
 
-        {sent ? (
-          <>
-            <p className="mt-4 text-lg text-fg">
+  return (
+    <AuthPage title="Reset your password">
+      {sent ? (
+        <>
+          <div className="flex flex-col gap-3">
+            <p className="text-lg text-fg">
               If <strong>{email.trim().toLowerCase()}</strong> has an account,
               a reset link is on its way. It works once and expires in an hour.
             </p>
-            <p className="mt-3 text-lg text-fg-muted">
+            <p className="text-lg text-fg-muted">
               Nothing arrived? Check the spam folder, then try again — the
               address has to match the one the account was set up with.
             </p>
-            <Link
-              href="/host"
-              className="mt-5 inline-block text-lg text-fg underline underline-offset-4"
+          </div>
+          {backToSignIn}
+        </>
+      ) : (
+        <>
+          <p className="text-lg text-fg-muted">
+            We&apos;ll email you a link to choose a new one.
+          </p>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!busy && email.trim()) void submit();
+            }}
+          >
+            <TextField
+              label="Email"
+              type="email"
+              autoFocus
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            {error && (
+              <p role="alert" className="text-base text-danger-fg">
+                {error}
+              </p>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="mt-2"
+              disabled={busy || !email.trim()}
             >
-              Back to sign in
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="mt-2 text-lg text-fg-muted">
-              We&apos;ll email you a link to choose a new one.
-            </p>
-            <form
-              className="mt-5 flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!busy && email.trim()) void submit();
-              }}
-            >
-              <TextField
-                label="Email"
-                type="email"
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              {error && (
-                <p role="alert" className="text-base text-danger-fg">
-                  {error}
-                </p>
-              )}
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                disabled={busy || !email.trim()}
-              >
-                {busy ? "Sending…" : "Send reset link"}
-              </Button>
-            </form>
-            <Link
-              href="/host"
-              className="mt-5 inline-block text-lg text-fg underline underline-offset-4"
-            >
-              Back to sign in
-            </Link>
-          </>
-        )}
-      </div>
-    </main>
+              {busy ? "Sending…" : "Send reset link"}
+            </Button>
+          </form>
+          {backToSignIn}
+        </>
+      )}
+    </AuthPage>
   );
 }
