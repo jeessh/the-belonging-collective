@@ -42,7 +42,8 @@ type Props = {
  * Where saved programs land and where they are kept: the left column beside
  * the feed, or the bar under it on a phone.
  *
- * The forwarded ref is the drop target — the dashed zone when open, the
+ * The forwarded ref is the drop target — the dashed zone when open (outlined
+ * only while empty or while a card is dragged toward it), the
  * thumbnail column when collapsed to the rail, the thumbnail strip on the
  * bar — so the fly-to-save animation always has somewhere to aim.
  */
@@ -215,7 +216,12 @@ export const SavedSidebar = memo(
             className={`flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
               active
                 ? "border-primary-border bg-primary-soft"
-                : "border-fg-muted bg-surface"
+                : events.length === 0
+                  ? "border-fg-muted bg-surface"
+                  : // The dashed outline only marks the empty drop zone; once
+                    // there are saved events the list stands on its own. The
+                    // border stays (transparent) so nothing shifts on drag.
+                    "border-transparent bg-surface"
             }`}
           >
             {events.length === 0 || active ? (
