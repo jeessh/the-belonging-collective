@@ -110,8 +110,9 @@ value produces links nobody can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` (FREE + `CATEGORIES`), which are the member's own explicit
-  choice; "For you" (match score) vs "Soonest" (server order) is the only sort.
+  `FeedFilters` (FREE + THIS WEEK + `CATEGORIES`), which are the member's own
+  explicit choice; "For you" (match score) vs "Soonest" (server order) is the
+  only sort.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
 - **"For you this week"** (`recommendedThisWeek` in `lib/feed.ts`): up to six

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lexend_Deca } from "next/font/google";
 import { siteUrl } from "@/lib/serverApi";
+import { MotionRoot } from "@/components/MotionRoot";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={lexend.variable}>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <MotionRoot>
+          <ToastProvider>{children}</ToastProvider>
+        </MotionRoot>
       </body>
     </html>
   );
