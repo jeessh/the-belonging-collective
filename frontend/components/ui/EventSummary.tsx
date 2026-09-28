@@ -19,6 +19,7 @@ export function EventSummary({
   actions,
   titleAs: Title = "h3",
   titleId,
+  recommended = false,
   className = "",
 }: {
   event: Event;
@@ -30,6 +31,8 @@ export function EventSummary({
   /** The page's own heading where the summary is the page (or the dialog). */
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
+  /** In this week's picks — adds the "For you" pill. */
+  recommended?: boolean;
   className?: string;
 }) {
   const card = layout === "card";
@@ -65,9 +68,13 @@ export function EventSummary({
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div className="flex flex-wrap gap-3">
+            {recommended && <Tag kind="foryou" />}
             {eventTags(event).map((kind) => (
               <Tag key={kind} kind={kind} />
             ))}
+            {event.access_group && (
+              <Tag kind="access" detail={event.access_group.name} />
+            )}
           </div>
 
           <Title

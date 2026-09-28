@@ -18,12 +18,15 @@ import { ArrowDown, ArrowUp, GalleryVerticalEnd, List } from "lucide-react";
 import {
   ApiError,
   api,
+  apiMessage,
   fetchAllEvents,
   logout,
+  requestAccess,
   updateMe,
   type Event,
   type Me,
   type MePrefs,
+  type PreferredView,
 } from "@/lib/api";
 import { isUpcoming, whenLine } from "@/lib/time";
 import { googleCalendarUrl } from "@/lib/calendar";
@@ -36,7 +39,12 @@ import { CalibrationOverlay } from "@/components/CalibrationOverlay";
 import { eventToSpeech } from "@/lib/eventSpeech";
 import { SavedEvents } from "@/components/SavedEvents";
 import { isTopmostDialog } from "@/components/Modal";
-import { oneCardPerProgram, personalizedFeed } from "@/lib/feed";
+import {
+  oneCardPerProgram,
+  personalizedFeed,
+  programKey,
+  recommendedThisWeek,
+} from "@/lib/feed";
 import { useToast } from "@/components/ui/Toast";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
@@ -45,29 +53,53 @@ import { EventDetailModal } from "@/components/member/EventDetailModal";
 import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
 import { SavedSidebar } from "@/components/member/SavedSidebar";
 import {
+  FOR_YOU_CHIP,
   FeedFilters,
   passesFilters,
   type FeedSort,
 } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
+import { Tour } from "@/components/member/Tour";
 
 const DROP_THRESHOLD = 150; // drag-left px to save
 const SWIPE_THRESHOLD = 90; // drag up/down px to page
 const HOLD_MS = 1000; // ← held this long saves
 const HOLD_TRAVEL = 140; // how far the card slides toward the sidebar while held
 
-type ViewMode = "card" | "list";
+type ViewMode = PreferredView;
 
 const VIEWS = [
   { value: "card" as const, label: "Card View", icon: <GalleryVerticalEnd /> },
   { value: "list" as const, label: "List View", icon: <List /> },
 ];
 
+// What a signed-out visitor's browser remembers in place of a profile.
+const VIEW_KEY = "tbc.preferred_view";
+const TOURED_KEY = "tbc.toured";
+
+// Storage can be missing or refuse (private windows, blocked site data);
+// none of that is worth failing over.
+function readLocal(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeLocal(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* nothing to do */
+  }
+}
+
+/** What the member was in the middle of when sign-in was asked for. */
+type Pending = { kind: "save" | "access"; event: Event };
+
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
-// A one-off is its own program, keyed by id.
-const programKey = (ev: Event) => ev.series_id ?? ev.id;
 
 export function EventsView({
   initialMe,
@@ -111,8 +143,15 @@ export function EventsView({
   const signedIn = me !== null;
 
   const [a11yOpen, setA11yOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("card");
+  // The view they last chose: on the profile, or in this browser when there
+  // is no profile. This component only mounts on the client, after the
+  // session check, so reading storage in the initializer is safe.
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (initialMe) return initialMe.preferred_view;
+    return readLocal(VIEW_KEY) === "list" ? "list" : "card";
+  });
   const [chips, setChips] = useState<Set<string>>(new Set());
+  const [tourOpen, setTourOpen] = useState(false);
   const [sort, setSort] = useState<FeedSort>("foryou");
   // Open on a desktop, the rail below `lg` — the design is desktop-first.
   // Starts open on both server and client, then corrects after mount, so the
@@ -124,9 +163,9 @@ export function EventsView({
   // Below `sm` the saved column becomes a bar under the feed, and the card
   // drags on one axis so a finger can still scroll the page.
   const phone = useMediaQuery("(max-width: 639px)");
-  // The program someone was looking at when they were asked to sign in; the
-  // save completes once they have.
-  const [authFor, setAuthFor] = useState<Event | null>(null);
+  // What someone was doing when they were asked to sign in — a save or an
+  // access request — which completes once they have.
+  const [authFor, setAuthFor] = useState<Pending | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [detailFor, setDetailFor] = useState<Event | null>(null);
 
@@ -203,22 +242,48 @@ export function EventsView({
   // every preference write, and toggling text-to-speech must not re-sort.
   const interests = me?.interest_categories;
   const accessPrefs = me?.accessibility_prefs;
+  const dismissed = me?.dismissed_program_ids;
+  const taste = useMemo(
+    () => ({ interests: interests ?? [], accessPrefs: accessPrefs ?? [] }),
+    [interests, accessPrefs],
+  );
+
+  // This week's picks. A section over the list and an opt-in chip over the
+  // cards; never a change to the feed itself.
+  const recommended = useMemo(
+    () => (signedIn ? recommendedThisWeek(events, taste, dismissed ?? []) : []),
+    [events, taste, dismissed, signedIn],
+  );
+  const recommendedKeys = useMemo(
+    () => new Set(recommended.map(programKey)),
+    [recommended],
+  );
+  const forYouOn =
+    viewMode === "card" && recommended.length > 0 && chips.has(FOR_YOU_CHIP);
+
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
     const upcoming = events.filter(
-      (ev) => isUpcoming(ev) && passesFilters(ev, chips),
+      (ev) =>
+        isUpcoming(ev) &&
+        passesFilters(ev, chips) &&
+        (!forYouOn || recommendedKeys.has(programKey(ev))),
     );
     // The server already orders by starts_at, so "Soonest" is its order.
     const ordered =
-      sort === "foryou"
-        ? personalizedFeed(upcoming, {
-            interests: interests ?? [],
-            accessPrefs: accessPrefs ?? [],
-          })
-        : upcoming;
+      sort === "foryou" ? personalizedFeed(upcoming, taste) : upcoming;
     return oneCardPerProgram(ordered);
-  }, [events, chips, sort, interests, accessPrefs]);
+  }, [events, chips, sort, taste, forYouOn, recommendedKeys]);
+
+  // The list's section keeps to the member's own filters, like the rows.
+  const recommendedShown = useMemo(
+    () =>
+      viewMode === "list"
+        ? recommended.filter((ev) => passesFilters(ev, chips))
+        : [],
+    [viewMode, recommended, chips],
+  );
 
   // A filter change can shorten the feed out from under the cursor.
   useEffect(() => {
@@ -254,9 +319,18 @@ export function EventsView({
 
   // Sign in over the feed rather than navigating away: the program stays on
   // screen behind the overlay.
-  const toSignIn = useCallback((ev: Event | null = null) => {
-    setAuthFor(ev);
+  const toSignIn = useCallback((pending: Pending | null = null) => {
+    setAuthFor(pending);
     setAuthOpen(true);
+  }, []);
+
+  // One program changed under us (an access request landed): every copy of
+  // it on screen follows.
+  const patchEvent = useCallback((id: string, patch: Partial<Event>) => {
+    const apply = (ev: Event) => (ev.id === id ? { ...ev, ...patch } : ev);
+    setEvents((evs) => evs.map(apply));
+    setSavedEvents((evs) => evs.map(apply));
+    setDetailFor((ev) => (ev ? apply(ev) : ev));
   }, []);
 
   /**
@@ -287,7 +361,7 @@ export function EventsView({
     async (ev: Event) => {
       if (savedRef.current.has(ev.id)) return;
       if (!signedInRef.current) {
-        toSignIn(ev);
+        toSignIn({ kind: "save", event: ev });
         return;
       }
       setSrMessage(`Saved ${ev.title}`);
@@ -320,13 +394,57 @@ export function EventsView({
         // would tell someone a program is saved when the server has no record.
         setSavedEvents((prev) => prev.filter((s) => s.id !== ev.id));
         if (e instanceof ApiError && e.status === 401) {
-          toSignIn(ev);
+          toSignIn({ kind: "save", event: ev });
+          return;
+        }
+        // 403: a restricted program whose approval has gone. The server's
+        // sentence says what to do about it.
+        if (e instanceof ApiError && e.status === 403) {
+          toast.show({
+            title: apiMessage(e, `Could not save ${ev.title}.`),
+            tone: "alert",
+          });
           return;
         }
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
     [toSignIn, syncSaved, toast, openRegistration],
+  );
+
+  /**
+   * Ask into a restricted program's group. Signed out, sign-in comes first
+   * and the request completes after it, the same way a save does.
+   */
+  const requestAccessFor = useCallback(
+    async (ev: Event) => {
+      const group = ev.access_group;
+      if (!group) return;
+      if (!signedInRef.current) {
+        toSignIn({ kind: "access", event: ev });
+        return;
+      }
+      try {
+        const membership = await requestAccess(group.id, ev.id);
+        patchEvent(ev.id, { access_status: membership.status });
+        setSrMessage(`Request sent for ${ev.title}.`);
+        toast.show({ title: "Request sent", tone: "info" });
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+          toSignIn({ kind: "access", event: ev });
+          return;
+        }
+        // 409: the organization already decided.
+        if (e instanceof ApiError && e.status === 409) {
+          patchEvent(ev.id, { access_status: "declined" });
+        }
+        toast.show({
+          title: apiMessage(e, "Could not send the request."),
+          tone: "alert",
+        });
+      }
+    },
+    [toSignIn, patchEvent, toast],
   );
 
   const unsave = useCallback(
@@ -376,8 +494,9 @@ export function EventsView({
     } catch {
       /* the cookie is set; the next read will pick the profile up */
     }
-    if (pending) void attend(pending);
-  }, [authFor, attend]);
+    if (pending?.kind === "save") void attend(pending.event);
+    if (pending?.kind === "access") void requestAccessFor(pending.event);
+  }, [authFor, attend, requestAccessFor]);
 
   /**
    * Save the current card, flying it into the sidebar on the way. Every save
@@ -520,6 +639,42 @@ export function EventsView({
     setI(0);
   }, []);
 
+  // The view sticks: on the profile, or in this browser without one.
+  const changeView = useCallback(
+    (mode: ViewMode) => {
+      setViewMode(mode);
+      if (signedInRef.current) void setPref({ preferred_view: mode });
+      else writeLocal(VIEW_KEY, mode);
+    },
+    [setPref],
+  );
+
+  // "Not for me" takes a pick out of the section, and only the section. The
+  // list is the member's, so the whole of it goes up each time.
+  const dismissRecommendation = useCallback(
+    (ev: Event) => {
+      const key = programKey(ev);
+      const before = meRef.current?.dismissed_program_ids ?? [];
+      if (before.includes(key)) return;
+      void setPref({ dismissed_program_ids: [...before, key] });
+      setSrMessage(`${ev.title} removed from For you.`);
+      toast.show({
+        title: `${ev.title} removed from For you`,
+        tone: "info",
+        action: {
+          label: "Undo",
+          onClick: () =>
+            void setPref({
+              dismissed_program_ids: (
+                meRef.current?.dismissed_program_ids ?? []
+              ).filter((id) => id !== key),
+            }),
+        },
+      });
+    },
+    [setPref, toast],
+  );
+
   const doLogout = useCallback(async () => {
     try {
       await logout();
@@ -537,7 +692,7 @@ export function EventsView({
 
   // The four actions voice and head tracking share. In the list there is no
   // focused card, so only opening the saved list still makes sense there.
-  const cardActionsLive = view === "events" && viewMode === "card";
+  const cardActionsLive = view === "events" && viewMode === "card" && !tourOpen;
   const actionHandlers = useMemo(
     () => ({
       onNext: () => {
@@ -574,8 +729,38 @@ export function EventsView({
     headEnabled,
     actionHandlers,
     // Freeze dwell while a panel is open so looking around doesn't fire actions.
-    view === "saved" || a11yOpen,
+    view === "saved" || a11yOpen || tourOpen,
   );
+
+  // ---- first-run tour ----
+  // Once the feed is up and nothing else is asking for attention. Checked
+  // once per visit: a signed-in member's profile says whether they have seen
+  // it; a visitor's browser does.
+  const tourCheckedRef = useRef(false);
+  useEffect(() => {
+    if (tourCheckedRef.current || status !== "ready") return;
+    if (authOpen || calibrating) return;
+    tourCheckedRef.current = true;
+    const seen = me ? me.onboarded_at !== null : readLocal(TOURED_KEY) === "1";
+    if (!seen) setTourOpen(true);
+  }, [status, authOpen, calibrating, me]);
+
+  const closeTour = useCallback(() => {
+    setTourOpen(false);
+    cancelSpeech();
+    if (meRef.current) {
+      if (meRef.current.onboarded_at !== null) return;
+      setMe((m) => (m ? { ...m, onboarded_at: new Date().toISOString() } : m));
+      updateMe({ onboarded: true }).catch(() => {});
+    } else {
+      writeLocal(TOURED_KEY, "1");
+    }
+  }, [cancelSpeech]);
+
+  const showTour = useCallback(() => {
+    setA11yOpen(false);
+    if (!authOpen && !calibrating) setTourOpen(true);
+  }, [authOpen, calibrating]);
 
   // Say which program is in focus: the card is a div, not a live region.
   useEffect(() => {
@@ -588,6 +773,16 @@ export function EventsView({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id, view, viewMode]);
+
+  // The section is a heading, not a live region.
+  const picks = recommendedShown.length;
+  useEffect(() => {
+    if (picks > 0) {
+      setSrMessage(
+        `For you this week, ${picks} ${picks === 1 ? "program" : "programs"}.`,
+      );
+    }
+  }, [picks]);
 
   // ---- text-to-speech: read the current event when it changes ----
   useEffect(() => {
@@ -630,7 +825,7 @@ export function EventsView({
         return;
       }
       if (viewMode !== "card") return;
-      if (authOpen || detailFor || a11yOpen || flying) return;
+      if (authOpen || detailFor || a11yOpen || flying || tourOpen) return;
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
@@ -674,6 +869,7 @@ export function EventsView({
     detailFor,
     a11yOpen,
     flying,
+    tourOpen,
     next,
     prev,
     closeSaved,
@@ -786,6 +982,7 @@ export function EventsView({
           accessPrefs={me?.accessibility_prefs ?? []}
           onToggleAccessPref={toggleAccessPref}
           signedIn={signedIn}
+          onShowTour={showTour}
           onSignIn={() => {
             // The sign-in overlay covers this menu; leaving it open left a
             // hidden dialog still listening for Escape.
@@ -833,12 +1030,14 @@ export function EventsView({
           >
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
               <h1 className="text-3xl font-medium text-fg">{heading}</h1>
-              <SegmentedToggle
-                label="View"
-                segments={VIEWS}
-                value={viewMode}
-                onChange={setViewMode}
-              />
+              <div data-tour="view">
+                <SegmentedToggle
+                  label="View"
+                  segments={VIEWS}
+                  value={viewMode}
+                  onChange={changeView}
+                />
+              </div>
             </div>
 
             <FeedFilters
@@ -846,6 +1045,7 @@ export function EventsView({
               onToggleChip={toggleChip}
               sort={sort}
               onSort={setSort}
+              forYou={viewMode === "card" && recommended.length > 0}
             />
 
             {status === "empty" ? (
@@ -855,6 +1055,8 @@ export function EventsView({
             ) : viewMode === "list" ? (
               <ListFeed
                 events={feed}
+                recommended={recommendedShown}
+                onDismiss={dismissRecommendation}
                 onOpen={setDetailFor}
                 onSignIn={() => toSignIn()}
               />
@@ -948,6 +1150,7 @@ export function EventsView({
                         <FeedCard
                           event={current}
                           saved={saved.has(current.id)}
+                          recommended={recommendedKeys.has(programKey(current))}
                           onMoreInfo={setDetailFor}
                           onSave={saveFromButton}
                           onSignIn={() => toSignIn()}
@@ -957,7 +1160,10 @@ export function EventsView({
                   </motion.div>
                 </div>
 
-                <div className="flex shrink-0 gap-6 sm:flex-col sm:pt-24">
+                <div
+                  className="flex shrink-0 gap-6 sm:flex-col sm:pt-24"
+                  data-tour="arrows"
+                >
                   <button
                     type="button"
                     aria-label="Previous event"
@@ -1005,7 +1211,19 @@ export function EventsView({
           onSave={(ev) => void attend(ev)}
           onUnsave={(ev) => void unsave(ev)}
           onOpenRegistration={openRegistration}
+          onRequestAccess={(ev) => void requestAccessFor(ev)}
           onSignIn={() => toSignIn()}
+        />
+      )}
+
+      {/* Never over sign-in or calibration: the opener waits for both, and
+          this keeps it out of the way should either come up meanwhile. */}
+      {tourOpen && !authOpen && !calibrating && (
+        <Tour
+          signedIn={signedIn}
+          phone={phone}
+          speak={ttsEnabled && ttsSupported ? speak : undefined}
+          onClose={closeTour}
         />
       )}
 

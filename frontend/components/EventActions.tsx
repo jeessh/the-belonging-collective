@@ -3,14 +3,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bookmark, BookmarkCheck, ExternalLink, MapPin } from "lucide-react";
-import { ApiError, api, type Event } from "@/lib/api";
+import {
+  ApiError,
+  api,
+  apiMessage,
+  requestAccess,
+  type Event,
+} from "@/lib/api";
 import { mapsUrl } from "@/lib/share";
 import { Button, buttonClass } from "@/components/ui/Button";
+import {
+  AccessAction,
+  accessStateOf,
+  type AccessState,
+} from "@/components/member/AccessAction";
 
 /**
  * The public page's bottom row: the map, Save, and — when registration lives
  * on the organizer's own site — Register, which counts the click. Saving needs
  * an account; following a link never does.
+ *
+ * A restricted program shows Request access instead of Save until the member
+ * is approved. The page is rendered without the viewer's cookie, so their
+ * standing is read here, in the browser, before that control settles.
  */
 export function EventActions({ event }: { event: Event }) {
   const router = useRouter();
@@ -18,12 +33,44 @@ export function EventActions({ event }: { event: Event }) {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Null for a public program; "none" until the viewer's own read says
+  // otherwise, which is also the right answer for a signed-out visitor.
+  const [access, setAccess] = useState<AccessState | null>(() =>
+    accessStateOf(event),
+  );
+  const [accessKnown, setAccessKnown] = useState(!event.access_group);
+
+  useEffect(() => {
+    if (!event.access_group) return;
+    let alive = true;
+    api<Event>(`/events/${event.id}`)
+      .then((fresh) => {
+        if (alive) setAccess(accessStateOf(fresh));
+      })
+      .catch(() => {})
+      .finally(() => alive && setAccessKnown(true));
+    return () => {
+      alive = false;
+    };
+  }, [event.id, event.access_group]);
 
   const external =
     event.requires_signup &&
     event.registration_mode === "external" &&
     !!event.registration_url;
   const maps = mapsUrl(event.location);
+
+  // Not signed in: keep where they were and what they wanted, so coming back
+  // doesn't mean finding the program again and pressing twice. While resuming
+  // they have just signed in, so a 401 means the cookie didn't take — say so
+  // rather than bouncing them round the loop again.
+  const toSignIn = useCallback(
+    (intent: "save" | "access") => {
+      const next = encodeURIComponent(`/events/${event.id}?${intent}=1`);
+      router.push(`/signup?next=${next}`);
+    },
+    [event.id, router],
+  );
 
   const save = useCallback(
     async (resuming = false) => {
@@ -33,32 +80,57 @@ export function EventActions({ event }: { event: Event }) {
         await api(`/events/${event.id}/attend`, { method: "POST" });
         setSaved(true);
       } catch (e) {
-        // Not signed in: keep where they were and what they wanted, so coming
-        // back doesn't mean finding the program again and pressing twice.
-        // While resuming they have just signed in, so a 401 means the cookie
-        // didn't take — say so rather than bouncing them round the loop again.
         if (e instanceof ApiError && e.status === 401 && !resuming) {
-          const next = encodeURIComponent(`/events/${event.id}?save=1`);
-          router.push(`/signup?next=${next}`);
+          toSignIn("save");
           return;
         }
-        setError("That didn't save. Please try again.");
+        setError(apiMessage(e, "That didn't save. Please try again."));
       } finally {
         setBusy(false);
       }
     },
-    [event.id, router],
+    [event.id, toSignIn],
   );
 
-  // Returning from sign-in with the save still pending. Runs once; a signed-out
-  // visitor who lands here with the flag simply gets nothing.
+  const ask = useCallback(
+    async (resuming = false) => {
+      const group = event.access_group;
+      if (!group) return;
+      setBusy(true);
+      setError(null);
+      try {
+        const membership = await requestAccess(group.id, event.id);
+        setAccess(membership.status);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401 && !resuming) {
+          toSignIn("access");
+          return;
+        }
+        // 409: the organization already decided. The message says so.
+        if (e instanceof ApiError && e.status === 409) setAccess("declined");
+        setError(apiMessage(e, "That didn't send. Please try again."));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [event.id, event.access_group, toSignIn],
+  );
+
+  // Returning from sign-in with the save or request still pending. Runs once;
+  // a signed-out visitor who lands here with the flag simply gets nothing.
   const resumed = useRef(false);
   useEffect(() => {
-    if (resumed.current || params.get("save") !== "1") return;
+    const pending =
+      params.get("save") === "1"
+        ? "save"
+        : params.get("access") === "1"
+          ? "access"
+          : null;
+    if (resumed.current || !pending) return;
     resumed.current = true;
-    void save(true);
+    void (pending === "save" ? save(true) : ask(true));
     router.replace(`/events/${event.id}`);
-  }, [params, save, router, event.id]);
+  }, [params, save, ask, router, event.id]);
 
   function openRegistration() {
     // Open synchronously, inside the click. Awaiting the tracking call first
@@ -70,6 +142,8 @@ export function EventActions({ event }: { event: Event }) {
       method: "POST",
     }).catch(() => {});
   }
+
+  const canSave = access === null || access === "approved";
 
   return (
     <>
@@ -84,15 +158,23 @@ export function EventActions({ event }: { event: Event }) {
           <MapPin aria-hidden="true" className="size-6 shrink-0" />
         </a>
       )}
-      <Button
-        variant={external || saved ? "secondary" : "primary"}
-        size="lg"
-        onClick={() => void save()}
-        disabled={busy || saved}
-        trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
-      >
-        {saved ? "Event saved" : "Save event"}
-      </Button>
+      {canSave ? (
+        <Button
+          variant={external || saved ? "secondary" : "primary"}
+          size="lg"
+          onClick={() => void save()}
+          disabled={busy || saved}
+          trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
+        >
+          {saved ? "Event saved" : "Save event"}
+        </Button>
+      ) : (
+        <AccessAction
+          state={access}
+          busy={busy || !accessKnown}
+          onRequest={() => void ask()}
+        />
+      )}
       {external && (
         <Button
           variant="primary"

@@ -9,6 +9,7 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
 import { EventTools } from "@/components/member/EventTools";
+import { AccessAction, accessStateOf } from "@/components/member/AccessAction";
 
 const TITLE_ID = "event-detail-title";
 
@@ -24,6 +25,7 @@ export function EventDetailModal({
   onSave,
   onUnsave,
   onOpenRegistration,
+  onRequestAccess,
   onSignIn,
 }: {
   event: Event;
@@ -33,6 +35,8 @@ export function EventDetailModal({
   onUnsave: (event: Event) => void;
   /** Only used when registration lives on the organizer's own site. */
   onOpenRegistration: (event: Event) => void;
+  /** A restricted program the member is not yet approved for. */
+  onRequestAccess: (event: Event) => void;
   /** For "See who else is going" when nobody is signed in. */
   onSignIn: () => void;
 }) {
@@ -47,6 +51,9 @@ export function EventDetailModal({
     event.registration_mode === "external" &&
     !!event.registration_url;
   const maps = mapsUrl(event.location);
+  // Save is for approved members only; everyone else gets the access control.
+  const access = accessStateOf(event);
+  const canSave = access === null || access === "approved";
 
   return (
     // Lifts the fixed Modal above the feed chrome, which sits at z-50.
@@ -77,7 +84,12 @@ export function EventDetailModal({
                   <MapPin aria-hidden="true" className="size-6 shrink-0" />
                 </a>
               )}
-              {saved ? (
+              {!canSave ? (
+                <AccessAction
+                  state={access}
+                  onRequest={() => onRequestAccess(event)}
+                />
+              ) : saved ? (
                 <Button
                   variant="danger"
                   size="lg"
