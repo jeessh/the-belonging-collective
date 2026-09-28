@@ -260,8 +260,11 @@ export const createShareLink = () =>
   api<{ token: string }>("/users/me/share-link", { method: "POST" });
 
 /** The member's private calendar-feed handle; the same token every time. */
+/** The feed's token, and whether a calendar has fetched it lately. */
 export const createCalendarFeed = () =>
-  api<{ token: string }>("/users/me/calendar-feed", { method: "POST" });
+  api<{ token: string; subscribed: boolean }>("/users/me/calendar-feed", {
+    method: "POST",
+  });
 
 export const sharedListUrl = (token: string, origin?: string) =>
   `${origin ?? window.location.origin}/shared/${token}`;

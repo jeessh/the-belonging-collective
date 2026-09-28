@@ -114,7 +114,7 @@ export const SavedEvents = memo(function SavedEvents({
 
   async function googleCalendar() {
     try {
-      await googleCalendarButton(me?.google_calendar);
+      await googleCalendarButton(me?.google_calendar, show);
     } catch (err) {
       show({
         title: apiMessage(err, "Couldn't open Google Calendar."),

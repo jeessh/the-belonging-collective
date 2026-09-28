@@ -76,7 +76,7 @@ export const SavedSidebar = memo(
 
     async function subscribe() {
       try {
-        await googleCalendarButton(googleCalendar);
+        await googleCalendarButton(googleCalendar, show);
       } catch (err) {
         show({
           title: apiMessage(err, "Couldn't open Google Calendar."),
