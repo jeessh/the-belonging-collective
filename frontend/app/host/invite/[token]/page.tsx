@@ -6,6 +6,7 @@ import { ApiError, api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AuthPage } from "@/components/host/AuthPage";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
  * Accepting an invitation — to join as an organization, or as one person on
@@ -62,7 +63,7 @@ export default function AcceptInvitePage() {
     } catch (e) {
       setError(
         e instanceof ApiError && e.status === 422
-          ? "Use at least 8 characters."
+          ? `Use at least ${PASSWORD_MIN_LENGTH} characters.`
           : apiMessage(e, "Couldn't set that up. Please try again."),
       );
       setBusy(false);

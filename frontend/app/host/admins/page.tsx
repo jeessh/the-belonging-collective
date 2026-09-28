@@ -25,6 +25,7 @@ import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
 import { AccountsNav } from "@/components/host/AccountsNav";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
  * Account Management: every organization with access, and the way to add one.
@@ -506,7 +507,7 @@ function AddAdminModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const valid = name.trim() && email.trim() && password.length >= 8;
+  const valid = name.trim() && email.trim() && password.length >= PASSWORD_MIN_LENGTH;
 
   async function submit() {
     setBusy(true);
@@ -523,7 +524,9 @@ function AddAdminModal({
       if (e instanceof ApiError && e.status === 409) {
         setError("That email already has an account.");
       } else if (e instanceof ApiError && e.status === 422) {
-        setError("Check the email address and use at least 8 characters.");
+        setError(
+          `Check the email address and use at least ${PASSWORD_MIN_LENGTH} characters.`,
+        );
       } else {
         setError("Couldn't create that account. Please try again.");
       }
@@ -558,7 +561,7 @@ function AddAdminModal({
           onChange={(e) => setEmail(e.target.value)}
         />
         <TextField
-          label="Temporary password (at least 8 characters)"
+          label={`Temporary password (at least ${PASSWORD_MIN_LENGTH} characters)`}
           type="text"
           autoComplete="off"
           value={password}

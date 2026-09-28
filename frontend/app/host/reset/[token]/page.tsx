@@ -7,6 +7,7 @@ import { api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AuthPage } from "@/components/host/AuthPage";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
  * Choosing a new password from a reset link.
@@ -119,7 +120,7 @@ export default function ResetPasswordPage() {
         />
 
         <p className="text-base text-fg-muted">
-          At least 8 characters. Anyone still signed in to this account
+          At least {PASSWORD_MIN_LENGTH} characters. Anyone still signed in to this account
           elsewhere will be signed out.
         </p>
 
