@@ -38,6 +38,7 @@ import { SavedEvents } from "@/components/SavedEvents";
 import { isTopmostDialog } from "@/components/Modal";
 import { oneCardPerProgram, personalizedFeed } from "@/lib/feed";
 import { useToast } from "@/components/ui/Toast";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
@@ -120,15 +121,9 @@ export function EventsView({
   useEffect(() => {
     if (window.innerWidth < 1024) setSidebarOpen(false);
   }, []);
-  // Below `sm` the view toggle is icons only, or it is wider than the column.
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const sync = () => setNarrow(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
+  // Below `sm` the saved column becomes a bar under the feed, and the card
+  // drags on one axis so a finger can still scroll the page.
+  const phone = useMediaQuery("(max-width: 639px)");
   // The program someone was looking at when they were asked to sign in; the
   // save completes once they have.
   const [authFor, setAuthFor] = useState<Event | null>(null);
@@ -800,20 +795,24 @@ export function EventsView({
         />
       </FeedHeader>
 
-      <div className="relative flex min-h-0 flex-1">
-        <SavedSidebar
-          ref={dropRef}
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen((o) => !o)}
-          events={savedList}
-          active={dragActive}
-          signedIn={signedIn}
-          onOpenSaved={openSaved}
-          onOpenEvent={setDetailFor}
-          onSignIn={() => toSignIn()}
-        />
+      {/* The saved column sits beside the feed from `sm`; on a phone it is a
+          bar under it, so it comes after the feed in the DOM as well. */}
+      <div className="relative flex min-h-0 flex-1 max-sm:flex-col">
+        {!phone && (
+          <SavedSidebar
+            ref={dropRef}
+            layout={sidebarOpen ? "panel" : "rail"}
+            onToggle={() => setSidebarOpen((o) => !o)}
+            events={savedList}
+            active={dragActive}
+            signedIn={signedIn}
+            onOpenSaved={openSaved}
+            onOpenEvent={setDetailFor}
+            onSignIn={() => toSignIn()}
+          />
+        )}
 
-        <section className="relative flex min-w-0 flex-1 flex-col">
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {/* The saved list opens over the main column; the sidebar stays. */}
           <SavedEvents
             me={me}
@@ -829,14 +828,14 @@ export function EventsView({
           />
 
           <div
-            className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:p-9"
+            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 sm:gap-8 sm:p-6 lg:p-9"
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
               <h1 className="text-3xl font-medium text-fg">{heading}</h1>
               <SegmentedToggle
                 label="View"
-                segments={narrow ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS}
+                segments={VIEWS}
                 value={viewMode}
                 onChange={setViewMode}
               />
@@ -866,7 +865,7 @@ export function EventsView({
             ) : (
               /* card view: one card on a stacked deck, ↑ / ↓ beside it */
               <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
-                <div className="relative w-full max-w-[880px]">
+                <div className="relative w-full min-w-0 max-w-[880px]">
                   {/* the deck beneath — purely decorative */}
                   <div
                     aria-hidden
@@ -899,10 +898,18 @@ export function EventsView({
                       transition={{ type: "spring", stiffness: 320, damping: 34 }}
                     >
                       <motion.div
-                        drag={!flying}
+                        // On a phone the card drags left only — a finger
+                        // moving up or down is scrolling the page, and the
+                        // ↑ / ↓ buttons under the card do the paging.
+                        drag={flying ? false : phone ? "x" : true}
                         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
                         dragElastic={0.65}
-                        style={{ x, y, rotate: reduceMotion ? 0 : rotate }}
+                        style={{
+                          x,
+                          y,
+                          rotate: reduceMotion ? 0 : rotate,
+                          touchAction: phone ? "pan-y" : "none",
+                        }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
                         onDrag={(_, info) => {
                           // Leftward travel is a save in progress; anything
@@ -916,8 +923,15 @@ export function EventsView({
                           setDragTint(false);
                           const { x: dx, y: dy } = info.offset;
                           if (Math.abs(dx) > Math.abs(dy)) {
+                            // Let go over the zone counts too. The zone is the
+                            // whole left column beside the feed, or the bar
+                            // under it on a phone — so both edges are checked.
                             const zone = dropRef.current?.getBoundingClientRect();
-                            const over = zone ? info.point.x <= zone.right : false;
+                            const over = zone
+                              ? info.point.x <= zone.right &&
+                                info.point.y >= zone.top &&
+                                info.point.y <= zone.bottom
+                              : false;
                             if (dx < -DROP_THRESHOLD || over) {
                               void flyToDrop(x.get());
                             }
@@ -967,6 +981,20 @@ export function EventsView({
             )}
           </div>
         </section>
+
+        {phone && (
+          <SavedSidebar
+            ref={dropRef}
+            layout="bar"
+            onToggle={() => setSidebarOpen((o) => !o)}
+            events={savedList}
+            active={dragActive}
+            signedIn={signedIn}
+            onOpenSaved={openSaved}
+            onOpenEvent={setDetailFor}
+            onSignIn={() => toSignIn()}
+          />
+        )}
       </div>
 
       {detailFor && (

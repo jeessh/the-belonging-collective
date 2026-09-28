@@ -25,7 +25,7 @@ export const FeedHeader = memo(function FeedHeader({
   children: ReactNode;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 py-3 sm:px-9 sm:py-5">
+    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 py-3 sm:px-6 sm:py-5 lg:px-9">
       <AccountButton name={name} onSignIn={onSignIn} onSignOut={onSignOut} />
       {children}
     </header>
@@ -66,16 +66,16 @@ function AccountButton({
   }, [open]);
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => (signedIn ? setOpen((v) => !v) : onSignIn())}
         aria-haspopup={signedIn ? "menu" : undefined}
         aria-expanded={signedIn ? open : undefined}
-        className="inline-flex min-h-11 items-center gap-4 rounded-control py-1 pl-1 pr-3 text-xl transition-colors hover:bg-surface-subtle"
+        className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control py-1 pl-1 pr-3 text-xl transition-colors hover:bg-surface-subtle sm:gap-4"
       >
         <Avatar name={name} size={36} />
-        <span className={signedIn ? "text-fg" : "text-fg-muted"}>
+        <span className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"}`}>
           {name ?? "Not Logged In"}
         </span>
         {signedIn && (

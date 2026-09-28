@@ -90,6 +90,25 @@ body {
   opacity: 1;
 }
 
+/* A row that scrolls sideways, fading out at its end so it reads as
+   continuing rather than cut off. No scrollbar: the fade is the affordance,
+   and every chip in it is still a tab stop. In the utilities layer so it
+   takes responsive variants (`max-sm:scroll-fade-x`). */
+@layer utilities {
+  .scroll-fade-x {
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black calc(100% - 40px),
+      transparent
+    );
+    mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+  }
+  .scroll-fade-x::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* A glyph centred in a ring.
 
    The rings centre their contents with grid placement, which centres a child's

@@ -17,7 +17,10 @@ export function TableCard({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-x-auto">
+    // Scrolls sideways on a narrow screen rather than breaking the page.
+    // `relative` so the cells' sr-only spans (absolutely positioned) are
+    // contained and clipped with the table instead of widening the page.
+    <div className="relative overflow-x-auto">
       <table className="w-full border-collapse text-left text-xl text-fg">
         <caption className="sr-only">{caption}</caption>
         <thead>

@@ -55,10 +55,13 @@ export function ConsoleHeader({
           </span>
         </Link>
 
+        {/* Below `lg` the switch takes its own row under the name and the
+            way out, which fit together on one; the design's single row needs
+            the desktop width. */}
         {isSuper && (
           <SegmentedToggle<Area>
             label="Console area"
-            className="order-last w-full justify-center sm:order-none sm:w-auto"
+            className="order-last w-full justify-center sm:w-auto lg:order-none"
             value={area}
             onChange={(next) => {
               if (next !== area) router.push(AREA_HOME[next]);
@@ -70,14 +73,14 @@ export function ConsoleHeader({
           />
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           {/* The logo is the organization's own to set — members recognise
               them by it in the feed. */}
           <button
             type="button"
             onClick={() => setEditingLogo(true)}
             title="Change your organization's logo"
-            className="inline-flex min-h-11 items-center gap-3 rounded-control px-1 text-left hover:bg-surface-subtle"
+            className="inline-flex min-h-11 min-w-0 items-center gap-3 rounded-control px-1 text-left hover:bg-surface-subtle"
           >
             {org.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -89,9 +92,10 @@ export function ConsoleHeader({
             ) : (
               <Avatar name={org.name} size={36} />
             )}
-            <span className="flex flex-col leading-tight text-fg-muted">
-              <span className="text-lg font-bold">{org.name}</span>
-              <span className="text-base">
+            <span className="flex min-w-0 flex-col leading-tight text-fg-muted">
+              <span className="truncate text-lg font-bold">{org.name}</span>
+              {/* The role line goes on a phone; the name is what matters. */}
+              <span className="hidden text-base sm:block">
                 {isSuper ? "Super admin" : "Admin"}
               </span>
             </span>

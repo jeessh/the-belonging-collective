@@ -17,7 +17,11 @@ import { Button, buttonClass } from "@/components/ui/Button";
 const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
 
 type Props = {
-  open: boolean;
+  /**
+   * `panel` is the open column, `rail` the collapsed one, `bar` the strip
+   * under the feed on a phone (count, thumbnails, the way to the list).
+   */
+  layout: "panel" | "rail" | "bar";
   onToggle: () => void;
   /** Saved programs, soonest first, one per program. */
   events: Event[];
@@ -30,16 +34,17 @@ type Props = {
 };
 
 /**
- * The left column: where saved programs land and where they are kept.
+ * Where saved programs land and where they are kept: the left column beside
+ * the feed, or the bar under it on a phone.
  *
  * The forwarded ref is the drop target — the dashed zone when open, the
- * thumbnail column when collapsed to the rail — so the fly-to-save animation
- * always has somewhere to aim.
+ * thumbnail column when collapsed to the rail, the thumbnail strip on the
+ * bar — so the fly-to-save animation always has somewhere to aim.
  */
 export const SavedSidebar = memo(
   forwardRef<HTMLDivElement, Props>(function SavedSidebar(
     {
-      open,
+      layout,
       onToggle,
       events,
       active,
@@ -50,8 +55,54 @@ export const SavedSidebar = memo(
     },
     dropRef,
   ) {
+    const open = layout === "panel";
     const count = events.length;
     const countLabel = `${count} Saved ${count === 1 ? "Event" : "Events"}`;
+
+    if (layout === "bar") {
+      return (
+        <aside
+          aria-label="Saved events"
+          className="flex shrink-0 items-center gap-3 border-t border-line bg-surface px-4 py-2"
+        >
+          <div
+            ref={dropRef}
+            className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed px-2 transition-colors ${
+              active
+                ? "border-primary-border bg-primary-soft"
+                : "border-transparent"
+            }`}
+          >
+            <span className="shrink-0 whitespace-nowrap text-base text-fg">
+              {count} Saved
+              <span className="sr-only">
+                {" "}
+                {count === 1 ? "Event" : "Events"}
+              </span>
+            </span>
+            {/* The calendar export lives on the saved list here; the bar
+                keeps to what a thumb can reach. */}
+            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
+              {events.map((ev) => (
+                <div key={ev.id} className="w-11 shrink-0">
+                  <Thumb event={ev} onOpen={onOpenEvent} compact />
+                </div>
+              ))}
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={onOpenSaved}
+            leadingIcon={
+              <Bookmark className="fill-primary-strong text-primary-strong" />
+            }
+            className="shrink-0"
+          >
+            Saved
+          </Button>
+        </aside>
+      );
+    }
 
     // Signed in it is a plain link to the `.ics` (the cookie goes with it);
     // signed out there is no list to export, so it opens sign-in instead.

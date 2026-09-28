@@ -186,7 +186,7 @@ export const PostedEventCard = memo(function PostedEventCard({
     <article
       id={`event-${event.id}`}
       aria-label={event.title}
-      className="rounded-control border border-line bg-surface p-6"
+      className="rounded-control border border-line bg-surface p-4 sm:p-6"
     >
       <EventSummary
         event={event}

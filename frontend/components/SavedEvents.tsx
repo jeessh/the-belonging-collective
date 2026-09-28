@@ -26,6 +26,8 @@ import { PrintPreview } from "@/components/member/PrintPreview";
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
 
+const ACTION = "max-sm:min-h-11 max-sm:px-4 max-sm:text-base";
+
 type Tab = "upcoming" | "past";
 const TABS = [
   { value: "upcoming" as const, label: "Upcoming Events" },
@@ -147,7 +149,7 @@ export const SavedEvents = memo(function SavedEvents({
       aria-label="All saved events"
       className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none"
     >
-      <div className="flex flex-col gap-8 p-4 sm:p-9">
+      <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-9">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -181,10 +183,12 @@ export const SavedEvents = memo(function SavedEvents({
                   className="min-h-14 w-full rounded-control border border-line bg-surface py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted"
                 />
               </label>
+              {/* Three of the design's large buttons are five rows on a phone;
+                  the medium size there fits two to a row. */}
               <div className="flex flex-wrap gap-3">
                 <a
                   href={savedCalendarUrl}
-                  className={buttonClass("secondary", "lg")}
+                  className={buttonClass("secondary", "lg", ACTION)}
                 >
                   <CalendarDays
                     aria-hidden="true"
@@ -194,6 +198,7 @@ export const SavedEvents = memo(function SavedEvents({
                 </a>
                 <Button
                   size="lg"
+                  className={ACTION}
                   onClick={() => setSub("share")}
                   disabled={upcoming.length === 0}
                   trailingIcon={<Send />}
@@ -202,6 +207,7 @@ export const SavedEvents = memo(function SavedEvents({
                 </Button>
                 <Button
                   size="lg"
+                  className={ACTION}
                   onClick={() => setSub("print")}
                   disabled={upcoming.length === 0}
                   trailingIcon={<Printer />}
