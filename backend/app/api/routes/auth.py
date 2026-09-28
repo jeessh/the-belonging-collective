@@ -92,7 +92,7 @@ def _allocate_unique_icons(db: Session, username: str) -> list[str]:
             return icons
     raise HTTPException(
         status.HTTP_503_SERVICE_UNAVAILABLE,
-        "Could not allocate a unique icon set — expand the icon pool.",
+        "Something went wrong. Please try again.",
     )
 
 
@@ -380,12 +380,11 @@ def _issue_reset(
 
 Someone asked to reset the password for {what}.
 
-Open this link to choose a new one. It works once, and expires in one hour:
+Open this link to choose a new password. You can use it once, and it stops working after one hour:
 
 {link}
 
-If it wasn't you, nothing has changed — ignore this and your password stays
-as it is.
+If you didn't ask for this, you can ignore this email. Your password will not change.
 """,
         button=("Choose a new password", link),
     )

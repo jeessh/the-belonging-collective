@@ -78,9 +78,9 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         <div className="flex max-w-[840px] flex-col gap-3">
           <h1 className="text-4xl font-medium text-fg sm:text-5xl">Team</h1>
           <p className="text-xl text-fg">
-            Everyone who can sign in for {org.name}. Keep using the shared
-            login, give each person their own, or both — every login here can
-            post and manage the organization&apos;s programs.
+            Everyone who can sign in for {org.name}. Use the shared login, give
+            each person their own, or both. Every login can post and manage
+            your programs.
           </p>
         </div>
         {ctx.isSuper && orgs.length > 0 && (
@@ -404,9 +404,8 @@ function RemoveStaffModal({
       }
     >
       <p className="mt-3 text-lg text-fg-muted">
-        They won&apos;t be able to sign in. {orgName}&apos;s programs, groups
-        and other logins are untouched — programs they posted stay filed under
-        the organization.
+        They won&apos;t be able to sign in. Everything else at {orgName} stays,
+        including the programs they posted.
       </p>
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">

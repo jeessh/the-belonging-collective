@@ -49,8 +49,8 @@ export default function ForgotPasswordPage() {
         subtitle={`If ${email.trim().toLowerCase()} has an account, a reset link is on its way. It works once and expires in an hour.`}
       >
         <p className="text-lg text-fg-muted">
-          Nothing arrived? Check the spam folder, then try again — the address
-          has to match the one the account was set up with.
+          Nothing arrived? Check your spam folder. Make sure it&apos;s the
+          email your account uses, then try again.
         </p>
         {backToSignIn}
       </AuthPage>
