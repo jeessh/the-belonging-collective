@@ -42,13 +42,15 @@ export const FeedFilters = memo(function FeedFilters({
       >
         Event filters
       </p>
-      {/* One scrolling row on a phone (the edge fades where it continues);
-          from `sm` the chips wrap. The negative margin lets the row run to the
-          screen edge while the chips still start at the gutter. */}
+      {/* One row at every width, as drawn: the topics outnumber the frame's
+          seven, so the row scrolls sideways (the edge fades where it
+          continues) rather than wrapping into the card's space. The negative
+          margin lets it run to the screen edge on a phone while the chips
+          still start at the gutter. */}
       <div
         role="group"
         aria-labelledby="feed-filters-label"
-        className="flex gap-3 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:scroll-px-4 max-sm:py-1 max-sm:pl-4 max-sm:pr-12 max-sm:scroll-fade-x sm:flex-wrap"
+        className="-my-1.5 flex gap-3 overflow-x-auto scroll-fade-x py-1.5 pr-12 max-sm:-mx-4 max-sm:scroll-px-4 max-sm:pl-4 lg:gap-[19px]"
       >
         {all.map(({ key, label }) => {
           const on = chips.has(key);

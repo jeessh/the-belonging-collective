@@ -1133,34 +1133,38 @@ export function EventsView({
           />
 
           <div
-            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 sm:gap-8 sm:p-6 lg:p-9"
+            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 sm:gap-8 sm:p-6 lg:gap-12 lg:p-9 short:!gap-6 short:!p-6"
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-              {/* In the card view the page heading stays "Programs" for a
-                  screen reader — the live region already reads "n of m" per
-                  card, and a heading that changes on every arrow is noise. */}
-              <h1 className="text-3xl font-medium text-fg">
-                {viewMode === "card" ? (
-                  <>
-                    <span className="sr-only">Programs</span>
-                    <span aria-hidden="true">{heading}</span>
-                  </>
-                ) : (
-                  heading
-                )}
-              </h1>
-              <div data-tour="view">
-                <SegmentedToggle
-                  label="View"
-                  segments={VIEWS}
-                  value={viewMode}
-                  onChange={changeView}
-                />
+            {/* The frame's filter header: heading and view toggle over the
+                filters, 16px apart; the feed sits 48px below it. */}
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+                {/* In the card view the page heading stays "Programs" for a
+                    screen reader — the live region already reads "n of m" per
+                    card, and a heading that changes on every arrow is noise. */}
+                <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                  {viewMode === "card" ? (
+                    <>
+                      <span className="sr-only">Programs</span>
+                      <span aria-hidden="true">{heading}</span>
+                    </>
+                  ) : (
+                    heading
+                  )}
+                </h1>
+                <div data-tour="view">
+                  <SegmentedToggle
+                    label="View"
+                    segments={VIEWS}
+                    value={viewMode}
+                    onChange={changeView}
+                  />
+                </div>
               </div>
-            </div>
 
-            <FeedFilters chips={chips} onToggleChip={toggleChip} />
+              <FeedFilters chips={chips} onToggleChip={toggleChip} />
+            </div>
 
             {status === "empty" ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
@@ -1180,20 +1184,20 @@ export function EventsView({
               </p>
             ) : (
               /* card view: one card on a stacked deck, ↑ / ↓ beside it */
-              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9">
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
                 >
-                  {/* the deck beneath — purely decorative */}
+                  {/* The deck beneath, as drawn: the next card, greyed and
+                      narrower, peeking below with its blurred Save button.
+                      Purely decorative. */}
                   <div
                     aria-hidden
-                    className="absolute inset-x-12 -bottom-6 top-12 rounded-card border border-line-card bg-surface-subtle/70"
-                  />
-                  <div
-                    aria-hidden
-                    className="absolute inset-x-6 -bottom-3 top-6 rounded-card border border-line-card bg-surface-subtle"
-                  />
+                    className="absolute inset-x-8 -bottom-6 top-16 overflow-hidden rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
+                  >
+                    <div className="absolute bottom-4 left-10 h-3 w-2/5 rounded-md bg-primary-strong/60 blur-[5px] short:!bottom-2" />
+                  </div>
                   <motion.div
                     ref={cardWrapRef}
                     style={{
@@ -1290,7 +1294,7 @@ export function EventsView({
 
                 {/* The top padding lines the arrows up with the card; the tour
                     target sits inside it so its highlight hugs the buttons. */}
-                <div className="flex shrink-0 sm:pt-24">
+                <div className="flex shrink-0 sm:pt-[102px] short:!pt-16">
                   <div className="flex gap-6 sm:flex-col" data-tour="arrows">
                     <button
                       type="button"

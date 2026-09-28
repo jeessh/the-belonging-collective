@@ -117,6 +117,16 @@ const config: Config = {
       addVariant("cq-lg", "@container (min-width: 40rem)");
       addVariant("cq-xl", "@container (min-width: 52rem)");
     }),
+    // `short:` — a desktop window too short for the design's 1440x982 frame
+    // (a laptop at 100% zoom shows ~760-800px). The card view tightens here so
+    // it still fits one screen; taller windows get the frame's exact sizes.
+    // Tailwind sorts screen variants (`lg:`) after custom ones, so every
+    // `short:` class that overrides an `lg:` one carries `!`. (Not a raw
+    // screen: that would switch off every `max-sm:` class.)
+    plugin(({ addVariant }) => {
+      addVariant("short", "@media (min-width: 1024px) and (max-height: 900px)");
+    }),
+
   ],
 };
 

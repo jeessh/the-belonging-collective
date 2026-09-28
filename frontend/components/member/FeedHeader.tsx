@@ -53,7 +53,7 @@ export const FeedHeader = memo(function FeedHeader({
   children: ReactNode;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 sm:py-5 lg:px-9">
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 sm:py-5 lg:px-9 short:!py-3">
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}

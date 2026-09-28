@@ -30,9 +30,9 @@ export const FeedCard = memo(function FeedCard({
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
   // A phone-width column is narrower than the design's 20px labels.
-  const size = "max-sm:px-4 max-sm:text-base";
+  const size = "max-sm:px-4 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    <div className="relative rounded-card border-2 border-line-card bg-surface p-5 sm:p-6 lg:p-8">
+    <div className="relative rounded-card border-2 border-line-card bg-surface p-5 sm:p-6 lg:p-8 short:!p-6">
       {event.capacity != null && (
         <HoldInfo className="absolute right-2 top-2 sm:right-3 sm:top-3" />
       )}
