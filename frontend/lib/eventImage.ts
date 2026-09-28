@@ -3,11 +3,16 @@ import type { Event } from "@/lib/api";
 const PLACEHOLDERS = "/placeholders";
 
 /** Shown where nothing more specific fits. */
-export const EVENT_PLACEHOLDER = `${PLACEHOLDERS}/community.jpg`;
+export const EVENT_PLACEHOLDER = `${PLACEHOLDERS}/other.jpg`;
 
 // Checked before the topic: a coffee morning looks like coffee whatever it's
 // filed under.
-const BY_TITLE: [RegExp, string][] = [[/\bcoffee\b/i, "coffee.jpg"]];
+const BY_TITLE: [RegExp, string][] = [
+  [/\bcoffee\b/i, "coffee.jpg"],
+  [/\bkaraoke\b/i, "music.jpg"],
+  [/\bgolf\b/i, "sports.jpg"],
+  [/\b(farm|garden|hik(e|ing))\b/i, "outdoors.jpg"],
+];
 
 // Keyed by topic slug, like the emoji and colours in lib/categories.ts, so a
 // rename keeps its picture. A topic missing here gets EVENT_PLACEHOLDER.
@@ -15,10 +20,14 @@ const BY_TOPIC: Record<string, string> = {
   "arts-crafts": "art.jpg",
   cooking: "cooking.jpg",
   education: "info-session.jpg",
-  fitness: "sports.jpg",
+  fitness: "yoga.jpg",
+  games: "games.jpg",
+  music: "music.jpg",
   social: "together.jpg",
   sports: "sports.jpg",
   "support-group": "together.jpg",
+  wellness: "yoga.jpg",
+  "youth-programs": "story-time.jpg",
 };
 
 /**
