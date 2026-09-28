@@ -339,11 +339,19 @@ can open.
 - **Shareable saved list**: `POST /users/me/share-link` mints `users.share_token`
   once; `GET /shared/{token}` is public and lists the member's upcoming saved
   *public* programs — special-access ones are excluded whoever holds the link.
-  `GET /shared/{token}/calendar.ics` is the same programs (past dates kept) as
-  a calendar feed: the saved list's "Google Calendar" button mints the token
-  and opens Google's subscribe-by-URL page (`lib/calendar.googleSubscribeUrl`,
-  `webcal://`), since Google fetches the feed without the member's cookie.
-  Single programs use Google's prefilled "add event" link instead.
+- **Calendar sync is a subscription, not an export.** Both "Google Calendar"
+  buttons (sidebar and All Saved Events) call
+  `lib/calendar.subscribeInGoogleCalendar`: `POST /users/me/calendar-feed`
+  mints `users.calendar_token` once (migration `0024_calendar_feed`), and the
+  tab goes to Google's subscribe-by-URL page for
+  `webcal://…/calendar/{token}.ics`. That feed is `saved_events()` — the
+  member's whole list, special access included, past dates kept — so saves
+  and un-saves follow on Google's own refresh (hours, not instant). It is
+  deliberately not the share token, which is public. A caregiver viewing
+  someone else's list gets that member's `.ics` download instead. Instant,
+  primary-calendar sync would need Google OAuth and Google's review of the
+  calendar scope; not built. Single programs use Google's prefilled "add
+  event" link.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
