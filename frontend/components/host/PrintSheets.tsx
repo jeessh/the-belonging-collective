@@ -72,10 +72,23 @@ function Footer() {
  * code to the program's public page. Offered whether or not the agency
  * attached a flyer of their own.
  */
-export function PosterSheet({ id, event }: { id: string; event: Event }) {
+export function PosterSheet({
+  id,
+  event,
+  onReady,
+}: {
+  id: string;
+  event: Event;
+  /** Called once the QR code is drawn — the list mounts a sheet only to print it. */
+  onReady?: () => void;
+}) {
   const [url, setUrl] = useState("");
   useEffect(() => setUrl(eventUrl(event.id)), [event.id]);
   const svg = useQrSvg(url);
+  useEffect(() => {
+    if (svg) onReady?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [svg]);
   const when = [longDate(event.starts_at), timeRange(event.starts_at, event.ends_at)]
     .filter(Boolean)
     .join(" · ");

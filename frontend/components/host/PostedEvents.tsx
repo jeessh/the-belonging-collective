@@ -1,12 +1,9 @@
 "use client";
 
 import { memo, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import {
-  ArrowRight,
   Building2,
   ChevronDown,
-  Circle,
   CircleDollarSign,
   Clipboard,
   Contact,
@@ -15,10 +12,7 @@ import {
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
 import { DIMENSIONS, bucketsFor, type DimensionKey } from "@/lib/dimensions";
-import { buttonClass } from "@/components/ui/Button";
-import { EventSummary } from "@/components/ui/EventSummary";
-import { ConsoleCounts } from "@/components/host/ConsoleCounts";
-import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 /* ---------------- filters ---------------- */
 
@@ -59,10 +53,10 @@ const GROUP: Record<DimensionKey, { label: string; icon: ReactNode }> = {
 };
 
 /**
- * The accordion beside the list. Groups are the feed's dimensions, so a
- * console filter and a member's "See events by" can never disagree about
- * which bucket a program is in. Options are whatever the loaded programs
- * actually fall into — a group with nothing to choose says so.
+ * The component sheet's filter accordion. Groups are the feed's dimensions,
+ * so a console filter and a member's "See events by" can never disagree
+ * about which bucket a program is in. Options are whatever the loaded
+ * programs actually fall into — a group with nothing to choose says so.
  */
 export const FilterPanel = memo(function FilterPanel({
   events,
@@ -102,7 +96,7 @@ export const FilterPanel = memo(function FilterPanel({
   return (
     <aside
       aria-label="Filter events"
-      className="w-full rounded-control border border-line bg-surface px-2.5 py-3.5 lg:w-[431px] lg:shrink-0"
+      className="w-full rounded-card border border-line bg-surface px-2.5 py-2 lg:w-[431px] lg:shrink-0"
     >
       {DIMENSIONS.map((d) => {
         const isOpen = open[d.key] ?? false;
@@ -115,7 +109,7 @@ export const FilterPanel = memo(function FilterPanel({
               type="button"
               onClick={() => setOpen((o) => ({ ...o, [d.key]: !isOpen }))}
               aria-expanded={isOpen}
-              className="flex min-h-11 w-full items-center gap-6 px-3 py-2 text-left text-2xl text-fg"
+              className="flex min-h-14 w-full items-center gap-6 px-3 py-2 text-left text-xl text-fg"
             >
               <span aria-hidden="true" className="w-6 shrink-0 text-fg-icon [&>svg]:size-6">
                 {group.icon}
@@ -135,23 +129,20 @@ export const FilterPanel = memo(function FilterPanel({
               />
             </button>
             {isOpen && (
-              <div className="flex flex-col gap-2 px-3 pb-3 pl-[60px]">
+              <div className="flex flex-col px-3 pb-3 pl-[60px]">
                 {choices.length === 0 && (
-                  <p className="text-lg text-fg-muted">Nothing to filter by yet.</p>
+                  <p className="min-h-11 text-lg text-fg-muted">
+                    Nothing to filter by yet.
+                  </p>
                 )}
                 {choices.map((o) => (
-                  <label
+                  <Checkbox
                     key={o.id}
-                    className="flex min-h-11 items-center gap-3 text-xl text-fg"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={chosen.includes(o.id)}
-                      onChange={() => toggle(d.key, o.id)}
-                      className="size-5 shrink-0 accent-primary-border"
-                    />
-                    {o.label}
-                  </label>
+                    label={o.label}
+                    className="text-fg-muted"
+                    checked={chosen.includes(o.id)}
+                    onChange={() => toggle(d.key, o.id)}
+                  />
                 ))}
               </div>
             )}
@@ -159,56 +150,26 @@ export const FilterPanel = memo(function FilterPanel({
         );
       })}
 
+      {/* The sheet's radio row: on when no box above is ticked. */}
       <button
         type="button"
+        role="radio"
+        aria-checked={!anyChosen}
         onClick={() => onChange(NO_HOST_FILTERS)}
-        aria-pressed={!anyChosen}
-        className="flex min-h-11 w-full items-center gap-6 px-3 py-2 text-left text-2xl text-fg"
+        className="flex min-h-14 w-full items-center gap-6 px-3 py-2 text-left text-xl text-fg"
       >
-        <span aria-hidden="true" className="grid w-6 shrink-0 place-items-center text-fg-icon">
-          <Circle className={`size-3 ${anyChosen ? "" : "fill-current"}`} />
+        <span
+          aria-hidden="true"
+          className="grid w-6 shrink-0 place-items-center text-fg-icon"
+        >
+          <span
+            className={`size-3 rounded-full border-2 border-current ${
+              anyChosen ? "" : "bg-current"
+            }`}
+          />
         </span>
         All Events
       </button>
     </aside>
-  );
-});
-
-/* ---------------- event card ---------------- */
-
-/**
- * One program in the list: the shared summary in a bordered card, with "N
- * going", a copy-link button (every row needs one — that is how organizers
- * advertise) and the way to the details page.
- */
-export const PostedEventCard = memo(function PostedEventCard({
-  event,
-}: {
-  event: Event;
-}) {
-  return (
-    <article
-      id={`event-${event.id}`}
-      aria-label={event.title}
-      className="rounded-control border border-line bg-surface p-4 sm:p-6"
-    >
-      <EventSummary
-        event={event}
-        going={<ConsoleCounts event={event} />}
-        actions={
-          <>
-            <CopyLinkButton eventId={event.id} title={event.title} iconOnly />
-            <Link
-              href={`/host/events/${event.id}`}
-              className={buttonClass("secondary")}
-            >
-              View Details
-              <span className="sr-only"> for {event.title}</span>
-              <ArrowRight aria-hidden="true" className="size-6" />
-            </Link>
-          </>
-        }
-      />
-    </article>
   );
 });

@@ -19,6 +19,7 @@ import {
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
@@ -199,7 +200,9 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                       ) : (
                         <Avatar name={a.name} />
                       )}
-                      <span className="break-all">{a.email}</span>
+                      {/* The table scrolls sideways; a wrapped address is
+                          unreadable. */}
+                      <span className="whitespace-nowrap">{a.email}</span>
                     </span>
                   </td>
                   <td className="px-3 py-3">
@@ -414,15 +417,11 @@ function InviteForm({
           </Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex min-h-11 items-center gap-3 text-lg text-fg">
-            <input
-              type="checkbox"
-              checked={isSuper}
-              onChange={(e) => setIsSuper(e.target.checked)}
-              className="size-5 shrink-0 accent-primary-border"
-            />
-            Can manage other organizations (KW Habilitation staff only)
-          </label>
+          <Checkbox
+            label="Can manage other organizations (KW Habilitation staff only)"
+            checked={isSuper}
+            onChange={(e) => setIsSuper(e.target.checked)}
+          />
           <Button variant="ghost" onClick={onAddDirectly}>
             Create an account directly instead
           </Button>
@@ -570,15 +569,11 @@ function AddAdminModal({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <label className="flex min-h-11 items-center gap-3 text-lg text-fg">
-          <input
-            type="checkbox"
-            checked={isSuper}
-            onChange={(e) => setIsSuper(e.target.checked)}
-            className="size-5 shrink-0 accent-primary-border"
-          />
-          Can manage other organizations
-        </label>
+        <Checkbox
+          label="Can manage other organizations"
+          checked={isSuper}
+          onChange={(e) => setIsSuper(e.target.checked)}
+        />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
