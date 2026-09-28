@@ -3,7 +3,6 @@
 import { forwardRef, memo } from "react";
 import {
   Bookmark,
-  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   CirclePlus,
@@ -12,6 +11,7 @@ import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
@@ -117,10 +117,7 @@ export const SavedSidebar = memo(
     // signed out there is no list to export, so it opens sign-in instead.
     const calendarInner = (
       <>
-        <CalendarDays
-          aria-hidden="true"
-          className="size-6 shrink-0 text-primary-border"
-        />
+        <GoogleCalendarIcon />
         {open ? "Google Calendar" : "Calendar"}
       </>
     );

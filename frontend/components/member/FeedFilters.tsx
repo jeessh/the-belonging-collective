@@ -3,6 +3,7 @@
 import { memo } from "react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
+import { FilterChip } from "@/components/ui/FilterChip";
 
 /** "free", or a topic slug from `GET /categories`. */
 export const FREE_CHIP = "free";
@@ -52,19 +53,13 @@ export const FeedFilters = memo(function FeedFilters({
         {all.map(({ key, label }) => {
           const on = chips.has(key);
           return (
-            <button
+            <FilterChip
               key={key}
-              type="button"
-              aria-pressed={on}
+              selected={on}
               onClick={() => onToggleChip(key)}
-              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control border px-4 py-1 text-base uppercase tracking-wide transition-colors sm:text-lg ${
-                on
-                  ? "border-primary-border bg-primary-soft text-fg"
-                  : "border-primary-strong bg-surface text-fg-muted hover:bg-primary-soft"
-              }`}
             >
               {label}
-            </button>
+            </FilterChip>
           );
         })}
       </div>

@@ -239,6 +239,7 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <TextField
               label="Sign-in email"
+              placeholder="Enter your email"
               type="email"
               autoComplete="email"
               required

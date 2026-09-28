@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_LABEL,
-  IMAGE_SIZING,
   ImageRejected,
   prepareImage,
   type SizingKey,
@@ -31,7 +30,6 @@ export function ImageDrop({
   /** What the image is for — decides the size asked for. Covers by default. */
   sizing?: SizingKey;
 }) {
-  const { minEdge, idealEdge } = IMAGE_SIZING[sizing];
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -76,7 +74,7 @@ export function ImageDrop({
             src={value}
             alt=""
             className={`rounded-control object-cover ${
-              logo ? "size-40" : "aspect-square w-full max-w-sm"
+              logo ? "size-40" : "aspect-[598/278] w-full"
             }`}
           />
           <div className="flex flex-wrap gap-3">
@@ -113,13 +111,12 @@ export function ImageDrop({
             dragOver
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
-          } ${logo ? "" : "aspect-square w-full max-w-sm"}`}
+          } ${logo ? "" : "min-h-[278px]"}`}
         >
           <ArrowUpFromLine aria-hidden="true" className="size-12 text-fg" />
           <p className="text-xl text-fg">Drag an image here</p>
           <p className="text-base text-fg">
-            Supported file types: {ACCEPTED_LABEL} · {idealEdge}×{idealEdge}{" "}
-            works best, at least {minEdge}×{minEdge}
+            Supported file types: {ACCEPTED_LABEL}
           </p>
           <div className="flex w-full max-w-sm items-center gap-6 text-xl text-fg">
             <span aria-hidden="true" className="h-px flex-1 bg-fg-icon-muted" />

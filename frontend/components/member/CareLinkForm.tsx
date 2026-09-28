@@ -91,12 +91,14 @@ export function CareLinkForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             label="Their first name"
+            placeholder="Enter their first name"
             autoComplete="off"
             value={first}
             onChange={(e) => setFirst(e.target.value)}
           />
           <TextField
             label="Their last name"
+            placeholder="Enter their last name"
             autoComplete="off"
             value={last}
             onChange={(e) => setLast(e.target.value)}
@@ -105,6 +107,7 @@ export function CareLinkForm({
       )}
       <TextField
         label="Their email"
+        placeholder="Enter their email"
         type="email"
         autoComplete="off"
         value={email}
@@ -112,6 +115,7 @@ export function CareLinkForm({
       />
       <TextField
         label="Their password"
+        placeholder="Enter their password"
         type="password"
         autoComplete={create ? "new-password" : "off"}
         value={password}
@@ -120,6 +124,7 @@ export function CareLinkForm({
       {create && (
         <TextField
           label="Confirm password"
+          placeholder="Re-enter their password"
           type="password"
           autoComplete="new-password"
           value={confirm}
