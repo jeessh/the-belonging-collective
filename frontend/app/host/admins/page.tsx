@@ -29,10 +29,10 @@ import { AccountsNav } from "@/components/host/AccountsNav";
 /**
  * Account Management: every organization with access, and the way to add one.
  *
- * The organization is the account — one login per agency — so the table has
- * no per-person name column. Removing one archives the account and every
- * program it posted, which is why the trash icon leads to a confirmation that
- * says how many.
+ * The organization is the account; its staff logins, if it has added any,
+ * are listed under it. Removing an organization archives the account, its
+ * staff logins and every program it posted, which is why the trash icon
+ * leads to a confirmation that says how many.
  */
 export default function AdminsPage() {
   return (
@@ -152,7 +152,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </p>
       ) : (
         <TableCard
-          caption="Organizer accounts, their access level, and how many programs each owns."
+          caption="Organizations, their staff logins, their access level, and how many programs each owns."
           head={["Name", "Email", "Access", "Programs", ""]}
         >
           {loading ? (
@@ -161,7 +161,10 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             <EmptyRow colSpan={5} text="No accounts yet." />
           ) : (
             admins.map((a) => {
-              const isMe = a.id === ctx.session.id;
+              // "You" is your organization — the login you hold may be
+              // one of its staff logins, and removing the organization
+              // removes those too.
+              const isMe = a.id === ctx.org.id;
               const busy = busyId === a.id;
               return (
                 <tr key={a.id} className="align-middle">
@@ -171,6 +174,16 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                       <span className="ml-3">
                         <Pill tone="good">You</Pill>
                       </span>
+                    )}
+                    {!!a.staff?.length && (
+                      <ul className="mt-2 flex flex-col gap-1 text-base text-fg-muted">
+                        {a.staff.map((s) => (
+                          <li key={s.id} className="flex flex-wrap gap-x-3">
+                            <span>{s.name}</span>
+                            <span className="break-all">{s.email}</span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </th>
                   <td className="px-3 py-3">

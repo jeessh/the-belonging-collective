@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import Depends, HTTPException, Request, Response, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
 from app.core.security import credential_fingerprint, decode_token
@@ -89,6 +89,26 @@ def get_optional_user(
     return user if _key_still_current(p, user) else None
 
 
+def load_live_host(db: Session, host_id: uuid.UUID) -> Host | None:
+    """A live organizer login with its organization loaded.
+
+    A staff login's access level is its organization's, so the org comes
+    along in the same query — and a staff login whose organization has been
+    archived is treated as archived itself, whatever its own row says.
+    """
+    host = (
+        db.query(Host)
+        .options(joinedload(Host.org))
+        .filter(Host.id == host_id, Host.deleted_at.is_(None))
+        .first()
+    )
+    if host is None:
+        return None
+    if host.org_id is not None and (host.org is None or host.org.deleted_at is not None):
+        return None
+    return host
+
+
 def get_optional_host(
     request: Request, db: Session = Depends(get_db)
 ) -> Host | None:
@@ -96,8 +116,8 @@ def get_optional_host(
     p = _payload(request)
     if not p or p.get("role") != "host":
         return None
-    host = db.get(Host, uuid.UUID(p["sub"]))
-    if not host or host.deleted_at is not None:
+    host = load_live_host(db, uuid.UUID(p["sub"]))
+    if not host:
         return None
     return (
         host
@@ -110,10 +130,10 @@ def get_current_host(request: Request, db: Session = Depends(get_db)) -> Host:
     p = _payload(request)
     if not p or p.get("role") != "host":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in as a host")
-    host = db.get(Host, uuid.UUID(p["sub"]))
     # Same reason as get_current_user: tokens last a week, so an archived
     # organizer would otherwise keep publishing until theirs expired.
-    if not host or host.deleted_at is not None:
+    host = load_live_host(db, uuid.UUID(p["sub"]))
+    if not host:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account not found")
     # As for members: the token carries a fingerprint of the password it was
     # issued against, so resetting a password ends the sessions opened with the
@@ -124,6 +144,8 @@ def get_current_host(request: Request, db: Session = Depends(get_db)) -> Host:
 
 
 def require_admin(host: Host = Depends(get_current_host)) -> Host:
-    if not host.is_admin:
+    """Superadmins only. Read from the row (through the organization, for a
+    staff login), never from the token's `is_admin` claim."""
+    if not host.is_superadmin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
     return host

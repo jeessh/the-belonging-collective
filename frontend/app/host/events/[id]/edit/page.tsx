@@ -41,7 +41,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // Admins manage their own programming; superadmins manage anyone's.
         // The API enforces it — this keeps a read-only viewer off a form
         // whose save would be refused.
-        if (!ctx.isSuper && ev.host_id !== ctx.session.id) {
+        if (!ctx.isSuper && ev.host_id !== ctx.org.id) {
           router.replace(`/host/events/${id}`);
           return;
         }

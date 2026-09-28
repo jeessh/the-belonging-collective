@@ -31,6 +31,11 @@ class Event(Base):
     host_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("hosts.id", ondelete="CASCADE")
     )
+    # The login that posted it — the organization's own or one of its staff.
+    # host_id stays the organization; this is attribution, not ownership.
+    created_by_host_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("hosts.id", ondelete="RESTRICT"), nullable=True
+    )
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text, default="")
     # Extra details shown under the description in the detail popup. Kept apart
@@ -163,7 +168,8 @@ class Event(Base):
         ),
     )
 
-    host = relationship("Host", back_populates="events")
+    host = relationship("Host", back_populates="events", foreign_keys=[host_id])
+    created_by = relationship("Host", foreign_keys=[created_by_host_id])
     access_group = relationship("AccessGroup")
 
     @property

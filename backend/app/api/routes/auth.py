@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import (
     clear_auth_cookie,
     get_db,
+    load_live_host,
     set_auth_cookie,
 )
 from app.core.icons import (
@@ -43,7 +44,7 @@ from app.core.config import settings
 from app.core.security import decode_token
 from app.core.mail import send as send_mail
 from app.db.session import SessionLocal
-from app.models.host import Host
+from app.models.host import Host, org_id_of
 from app.models.password_reset import HostPasswordReset
 from app.models.user import User
 from app.schemas.auth import (
@@ -332,16 +333,21 @@ def login_host(
     if not host or not verify_password(body.password, host.password_hash):
         record(db, id_key, ip_key)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+    # A staff login is only as live as its organization: load_live_host applies
+    # that rule, so a login whose agency was removed can't get back in here.
+    if load_live_host(db, host.id) is None:
+        record(db, id_key, ip_key)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
     clear_rate_limit(db, id_key)
     set_auth_cookie(
         response, create_access_token(
             host.id,
             "host",
-            is_admin=host.is_admin,
+            is_admin=host.is_superadmin,
             cred_hash=credential_fingerprint(host.password_hash),
         )
     )
-    return {"id": str(host.id), "email": host.email, "is_admin": host.is_admin}
+    return {"id": str(host.id), "email": host.email, "is_admin": host.is_superadmin}
 
 
 # ---------- Organizer password reset ----------
@@ -474,7 +480,8 @@ def preview_host_reset(token: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "That reset link is no longer valid."
         )
-    return {"email": host.email, "organization": host.name}
+    org = host.org if host.org_id else host
+    return {"email": host.email, "organization": org.name}
 
 
 @router.post("/host/reset")
@@ -520,11 +527,11 @@ def reset_host_password(
         create_access_token(
             host.id,
             "host",
-            is_admin=host.is_admin,
+            is_admin=host.is_superadmin,
             cred_hash=credential_fingerprint(host.password_hash),
         ),
     )
-    return {"id": str(host.id), "email": host.email, "is_admin": host.is_admin}
+    return {"id": str(host.id), "email": host.email, "is_admin": host.is_superadmin}
 
 
 # ---------- Session ----------
@@ -564,23 +571,29 @@ def me(request: Request, db: Session = Depends(get_db)):
         # demoted superadmin would keep seeing superadmin UI until it expired.
         # The DB is the authority (require_admin already reads it) — read it here
         # too so the UI matches what the API will actually allow.
-        host = db.get(Host, uuid.UUID(payload["sub"]))
-        # Archived too: get_current_host now refuses these, so reporting the
-        # session as live here would hand a removed organizer a console in
-        # which every request fails.
-        if not host or host.deleted_at is not None:
+        # Archived too (the organization as well, for a staff login):
+        # get_current_host refuses these, so reporting the session as live
+        # here would hand a removed organizer a console in which every
+        # request fails.
+        host = load_live_host(db, uuid.UUID(payload["sub"]))
+        if not host:
             return {"authenticated": False}
         # And the same fingerprint check the API applies, so a reset organizer
         # isn't shown a console in which nothing works.
         if payload.get("cv") != credential_fingerprint(host.password_hash):
             return {"authenticated": False}
-        is_admin = host.is_admin
+        is_admin = host.is_superadmin
     out = {
         "authenticated": True,
         "role": role,
         "is_admin": is_admin,
         "id": payload.get("sub"),
     }
+    if role == "host":
+        # The organization the login acts for — the console's ownership
+        # comparisons read this, so a staff login sees its agency's programs
+        # as its own.
+        out["org_id"] = str(org_id_of(host))
     if member:
         # Which door they came through, so the UI knows what to show (and
         # never shows an icon key to a password account).
