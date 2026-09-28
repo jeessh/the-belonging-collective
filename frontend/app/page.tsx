@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EventsView } from "@/components/EventsView";
+import { FeedLoading } from "@/components/member/FeedLoading";
 import { ApiError, api, fetchAllEvents, type Event, type Me } from "@/lib/api";
 
 /**
@@ -74,13 +75,7 @@ export default function HomePage() {
     );
   }
 
-  if (me === undefined) {
-    return (
-      <main className="grid h-dvh place-items-center bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff,#EEEBF5_60%,#E6E1F2)] text-muted">
-        <p className="font-display text-2xl">Loading programs…</p>
-      </main>
-    );
-  }
+  if (me === undefined) return <FeedLoading />;
 
   return (
     <EventsView
