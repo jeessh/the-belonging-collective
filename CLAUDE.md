@@ -80,9 +80,16 @@ can open.
 - `components/EventsView.tsx` (~900 lines) is the member feed and orchestrates
   every accessibility mode below. Its parts live in `components/member/`:
   `FeedHeader` (account + the Accessibility Tools menu), `SavedSidebar` (the
-  saved column — open panel from `lg`, collapsed rail on a tablet, a bar
-  under the feed on a phone; its forwarded ref is the drop target every save
-  animates into, whichever of the three is showing), `FeedFilters` (FREE +
+  saved column — on a desktop the open panel while nothing is saved and the
+  rail once anything is, so a first save folds it; the rail on a tablet; a
+  bar under the feed on a phone. Open / Close is the member's choice until
+  reload (`sidebarChoice` in EventsView), and the feed waits for the saved
+  list before first paint so it never opens-then-folds. Rail and panel are
+  one `motion.aside` whose width animates; saved items grow in and fold out
+  (`Arrivals`), and the panel keeps its list mounted under the drag message
+  so an arrival animates. Its forwarded ref is the drop target every save
+  animates into, whichever layout is showing — attached by a callback that
+  never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list

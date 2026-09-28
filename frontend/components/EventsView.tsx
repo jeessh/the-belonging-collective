@@ -177,12 +177,17 @@ export function EventsView({
   });
   const [chips, setChips] = useState<Set<string>>(new Set());
   const [tourOpen, setTourOpen] = useState(false);
-  // Open on a desktop, the rail below `lg` — the design is desktop-first.
-  // Starts open on both server and client, then corrects after mount, so the
-  // first client render matches the server's.
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // The saved column: open on a desktop while nothing is saved — the empty
+  // drop zone shows where saves go — and folded to the rail once anything is,
+  // so a first save folds it (SavedSidebar animates the width). Always the
+  // rail below `lg`. A tap on Open / Close is the member's own choice and
+  // holds until the page reloads; `sidebarOpen` is derived below, where
+  // savedList exists. `wide` starts true on server and client alike, then
+  // corrects after mount, so the first client render matches the server's.
+  const [sidebarChoice, setSidebarChoice] = useState<boolean | null>(null);
+  const [wide, setWide] = useState(true);
   useEffect(() => {
-    if (window.innerWidth < 1024) setSidebarOpen(false);
+    if (window.innerWidth < 1024) setWide(false);
   }, []);
   // Below `sm` the saved column becomes a bar under the feed, and the card
   // drags on one axis so a finger can still scroll the page.
@@ -237,37 +242,27 @@ export function EventsView({
     cancel: cancelSpeech,
   } = useTextToSpeech();
 
-  // Consume the route's parallel prefetch; if it failed (e.g. a blip during the
-  // auth check), fetch fresh now that we've mounted past the gate.
+  // Consume the route's parallel prefetches; if the programs failed (e.g. a
+  // blip during the auth check), fetch fresh now that we've mounted past the
+  // gate. The saved list is waited for too: whether the sidebar starts open
+  // depends on it, and deciding before it arrived drew it open and then
+  // folded it on every load. Both were requested together, so this costs
+  // only the difference. Signed out, the saved list resolves to [].
   useEffect(() => {
     let alive = true;
-    eventsPromise
-      .catch(() => fetchAllEvents())
-      .then((evRes) => {
-        if (!alive) return;
-        setEvents(evRes);
-        setStatus(evRes.length ? "ready" : "empty");
-      })
-      .catch(() => {
-        if (alive) setStatus("empty");
-      });
+    Promise.all([
+      eventsPromise.catch(() => fetchAllEvents()).catch(() => [] as Event[]),
+      attendedPromise.catch(() => [] as Event[]),
+    ]).then(([evRes, attended]) => {
+      if (!alive) return;
+      setEvents(evRes);
+      setSavedEvents(attended);
+      setStatus(evRes.length ? "ready" : "empty");
+    });
     return () => {
       alive = false;
     };
-  }, [eventsPromise]);
-
-  // Signed-out resolves to [] rather than rejecting, so no fallback here.
-  useEffect(() => {
-    let alive = true;
-    attendedPromise
-      .then((attended) => {
-        if (alive) setSavedEvents(attended);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [attendedPromise]);
+  }, [eventsPromise, attendedPromise]);
 
   const saved = useMemo(
     () => new Set(savedEvents.map((ev) => ev.id)),
@@ -281,6 +276,7 @@ export function EventsView({
       ),
     [savedEvents],
   );
+  const sidebarOpen = sidebarChoice ?? (wide && savedList.length === 0);
 
   // The feed the member browses: their explicit filters applied, then ordered
   // by how well each program matches them. Nothing is hidden by
@@ -1117,7 +1113,7 @@ export function EventsView({
           <SavedSidebar
             ref={dropRef}
             layout={sidebarOpen ? "panel" : "rail"}
-            onToggle={() => setSidebarOpen((o) => !o)}
+            onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
             active={dragActive}
             signedIn={signedIn}
@@ -1338,7 +1334,7 @@ export function EventsView({
           <SavedSidebar
             ref={dropRef}
             layout="bar"
-            onToggle={() => setSidebarOpen((o) => !o)}
+            onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
             active={dragActive}
             signedIn={signedIn}
