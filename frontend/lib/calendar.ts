@@ -110,7 +110,7 @@ export async function googleCalendarButton(
   } else if ((await subscribeInGoogleCalendar()) === "already") {
     show?.({
       title: "Already in your Google Calendar",
-      description: "It updates by itself when you save or un-save.",
+      description: "New saves can take a few hours to show up there.",
       tone: "info",
       action: {
         label: "Add it again",

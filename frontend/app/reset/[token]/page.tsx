@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
   return (
     <MemberAuthPage
       title={`Hi ${target.first_name}, choose a new password`}
-      subtitle={`You'll log in with ${target.email}. Please include a minimum of ${PASSWORD_MIN_LENGTH} characters.`}
+      subtitle={`You'll log in with ${target.email}. Use at least ${PASSWORD_MIN_LENGTH} characters.`}
     >
       <form
         className="flex flex-col gap-6"
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
           onChange={(e) => setConfirm(e.target.value)}
         />
         <p className="text-base text-fg-muted">
-          Anywhere else you are logged in will be logged out.
+          This logs you out on your other devices.
         </p>
         {error && (
           <p role="alert" className="text-lg text-danger-fg">

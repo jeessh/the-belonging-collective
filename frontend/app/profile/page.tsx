@@ -349,7 +349,7 @@ export default function ProfilePage() {
             title="Google Calendar"
             subtitle={
               me.google_calendar === "connected"
-                ? "Your saved events are in a “The Belonging Collective” calendar in your Google account, and stay up to date."
+                ? "Your saved events are in a Google calendar called “The Belonging Collective”. It stays up to date."
                 : "Put your saved events in your Google Calendar. They stay up to date when you save or un-save."
             }
           >
@@ -455,7 +455,7 @@ export default function ProfilePage() {
           title={careForm === "create" ? "Their account" : "Link their account"}
           subtitle={
             careForm === "create"
-              ? "Their name, email and a password. It is theirs to sign in with."
+              ? "Their name, email and a password. They use these to sign in."
               : "Enter what they use to sign in."
           }
           onClose={() => setCareForm(null)}

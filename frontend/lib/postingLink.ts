@@ -47,8 +47,8 @@ export function checkPostingLink(raw: string): LinkHint {
   return {
     tone: "warn",
     message:
-      `This points at your whole site, so people land on ${url.hostname} and ` +
-      `have to find this program themselves. Link straight to its page — ` +
-      `something like ${url.hostname}/events/summer-baking.`,
+      `This goes to your home page, so people have to find the program ` +
+      `themselves. Link to its own page instead, like ` +
+      `${url.hostname}/events/summer-baking.`,
   };
 }

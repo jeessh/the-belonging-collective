@@ -108,8 +108,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           All Administrative Members
         </h1>
         <p className="text-xl text-fg">
-          Organizations with administrative access to the events on The
-          Belonging Collective, and the staff logins under each.
+          Every organization that can post events, and its staff logins.
         </p>
       </div>
 
@@ -350,8 +349,8 @@ function InviteForm({
       <div>
         <h2 className="text-xl font-medium text-fg">Invite New Members</h2>
         <p className="text-xl text-fg">
-          Send a unique invite link to a new organization by email. They
-          choose their own password when they open it.
+          Email a new organization an invite link. They choose their own
+          password when they open it.
         </p>
       </div>
 
@@ -536,8 +535,8 @@ function AddAdminModal({
   return (
     <Modal title="Create an account" onClose={onClose}>
       <p className="mt-2 text-lg text-fg-muted">
-        For setting an organization up in person. Share the temporary password
-        with them directly and ask them to change it.
+        For setting up an organization in person. Give them the temporary
+        password and ask them to change it.
       </p>
       <form
         className="mt-5 flex flex-col gap-4"
@@ -628,16 +627,16 @@ function RemoveAdminModal({
       }
     >
       <p className="mt-3 text-lg text-fg-muted">
-        They won&apos;t be able to sign in.{" "}
+        They won&apos;t be able to sign in
+        {admin.staff?.length ? ", and neither will their staff logins" : ""}.{" "}
         {admin.event_count > 0 ? (
           <>
             Their{" "}
             <strong className="text-fg">
               {admin.event_count} {admin.event_count === 1 ? "program" : "programs"}
             </strong>{" "}
-            will leave the member feed. Nothing is deleted — the programs stay
-            filed under {admin.name}, and attendance already recorded still
-            counts.
+            will leave the member feed. Nothing is deleted, and past attendance
+            still counts.
           </>
         ) : (
           "They don't own any programs."

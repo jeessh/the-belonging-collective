@@ -189,8 +189,7 @@ def _ensure_calendar(client: httpx.Client, access: str, calendar_id: str | None)
         json={
             "summary": CALENDAR_NAME,
             "description": "Programs you saved on The Belonging Collective. "
-            "Kept up to date for you — save or un-save a program there and it "
-            "changes here.",
+            "When you save or un-save a program, it changes here too.",
             "timeZone": TIME_ZONE,
         },
     )
