@@ -1,18 +1,25 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, StringConstraints
+
+# Stripped before the length check, so "   " is refused rather than stored as "".
+GroupName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)
+]
 
 
 class AccessGroupIn(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
+    name: GroupName
     # Superadmins may set up a group for another organization; anyone else
     # gets their own regardless.
     host_id: uuid.UUID | None = None
 
 
 class AccessGroupRename(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
+    name: GroupName
 
 
 class AccessGroupOut(BaseModel):
