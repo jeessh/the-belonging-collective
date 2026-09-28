@@ -37,7 +37,11 @@ import {
 } from "@/lib/api";
 import { isUpcoming, whenLine } from "@/lib/time";
 import { useCategories } from "@/lib/useCategories";
-import { googleCalendarUrl, savedCalendarUrl } from "@/lib/calendar";
+import {
+  googleCalendarUrl,
+  openGoogleCalendar,
+  savedCalendarUrl,
+} from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
 import { useHeadTracking } from "@/lib/useHeadTracking";
@@ -462,7 +466,7 @@ export function EventsView({
             : calendar
               ? {
                   label: "Add to calendar",
-                  onClick: () => window.open(calendar, "_blank", "noopener"),
+                  onClick: () => openGoogleCalendar(ev),
                 }
               : undefined,
         });
