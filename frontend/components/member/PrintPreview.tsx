@@ -23,37 +23,41 @@ export function PrintPreview({
   children: ReactNode;
   onClose: () => void;
 }) {
+  // z-[70]: over the event dialog it opens from (EventDetailModal's
+  // z-[60]); at Modal's own z-30 it opened behind it.
   return createPortal(
-    <Modal
-      size="lg"
-      onClose={onClose}
-      title={
-        <>
-          <p className="-mx-6 -mt-6 mb-6 flex items-center gap-3 rounded-t-card bg-primary-soft px-6 py-4 text-lg text-fg sm:-mx-10 sm:-mt-10 sm:px-10">
-            <Eye aria-hidden="true" className="size-6" />
-            Printing Preview
-          </p>
-          <h2 className="text-2xl font-medium text-fg sm:text-3xl">{title}</h2>
-        </>
-      }
-    >
-      <div className="print-target mt-6 max-h-[55vh] overflow-y-auto">
-        {children}
-      </div>
-      <div className="mt-8 flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
-        <Button size="lg" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => window.print()}
-          trailingIcon={<Printer />}
-        >
-          {printLabel}
-        </Button>
-      </div>
-    </Modal>,
+    <div className="relative z-[70]">
+      <Modal
+        size="lg"
+        onClose={onClose}
+        title={
+          <>
+            <p className="-mx-6 -mt-6 mb-6 flex items-center gap-3 rounded-t-card bg-primary-soft px-6 py-4 text-lg text-fg sm:-mx-10 sm:-mt-10 sm:px-10">
+              <Eye aria-hidden="true" className="size-6" />
+              Printing Preview
+            </p>
+            <h2 className="text-2xl font-medium text-fg sm:text-3xl">{title}</h2>
+          </>
+        }
+      >
+        <div className="print-target mt-6 max-h-[55vh] overflow-y-auto">
+          {children}
+        </div>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
+          <Button size="lg" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => window.print()}
+            trailingIcon={<Printer />}
+          >
+            {printLabel}
+          </Button>
+        </div>
+      </Modal>
+    </div>,
     document.body,
   );
 }
