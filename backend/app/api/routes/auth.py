@@ -586,4 +586,9 @@ def me(request: Request, db: Session = Depends(get_db)):
         # never shows an icon key to a password account).
         out["email"] = member.email
         out["auth_type"] = member.auth_type
+        # What the feed needs before its first paint: which layout to draw,
+        # which recommendations to skip, and whether to run the tour.
+        out["preferred_view"] = member.preferred_view
+        out["dismissed_program_ids"] = member.dismissed_program_ids
+        out["onboarded_at"] = member.onboarded_at
     return out
