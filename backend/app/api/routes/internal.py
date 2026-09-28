@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.core import member_mail
+from app.core import gcal, member_mail
 from app.core.config import settings
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -30,5 +30,12 @@ def require_cron(authorization: str | None = Header(None)) -> None:
 
 @router.get("/reminders", dependencies=[Depends(require_cron)])
 def run_reminders(db: Session = Depends(get_db)):
-    """Mail tomorrow's reminders. Idempotent: rows already reminded are skipped."""
-    return member_mail.send_reminders(db)
+    """Mail tomorrow's reminders. Idempotent: rows already reminded are skipped.
+
+    Also the daily backstop for connected Google Calendars (core/gcal.py),
+    riding on this cron rather than a second one: every save and edit already
+    syncs, so this catches only what changed some other way.
+    """
+    result = member_mail.send_reminders(db)
+    result["google_calendars_synced"] = gcal.sync_everyone(db)
+    return result

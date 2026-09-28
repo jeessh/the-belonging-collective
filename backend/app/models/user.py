@@ -13,6 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.config import settings
 from app.db.session import Base
 
 
@@ -59,6 +60,14 @@ class User(Base):
     # Private handle for the member's calendar feed (GET /calendar/{token}.ics):
     # the whole saved list, special access included, unlike the share link.
     calendar_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Connected Google Calendar (core/gcal.py): the refresh token, encrypted,
+    # and the calendar the app made in their account. Both null when not
+    # connected; cleared together on disconnect or when Google revokes it.
+    google_refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    google_calendar_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    google_connected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     password_hash: Mapped[str] = mapped_column(Text)
     # 'password' for every account that can sign in; 'icon' is legacy.
     auth_type: Mapped[str] = mapped_column(Text, default="password")
@@ -125,6 +134,16 @@ class User(Base):
     caregiver_links = relationship(
         "CareLink", foreign_keys="CareLink.member_id", back_populates="member"
     )
+
+    @property
+    def google_calendar(self) -> str:
+        """'connected', 'available' (Google sign-in is configured, not yet
+        used) or 'off' — what the calendar buttons offer this member."""
+        if self.google_calendar_id and self.google_refresh_token:
+            return "connected"
+        if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
+            return "available"
+        return "off"
 
     @property
     def care(self) -> list["User"]:

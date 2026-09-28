@@ -58,6 +58,11 @@ Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,
 scheduled in the root `vercel.json`; unset, the endpoint refuses to run rather
 than running open).
 
+Optional: `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (an OAuth web client
+whose redirect URI is `https://<site>/api/google-calendar/callback`, or set
+`GOOGLE_REDIRECT_URI`) turn on "Connect Google Calendar"; unset, the calendar
+buttons subscribe to a feed instead. See "Google Calendar" below.
+
 All outgoing mail — password resets (member and organizer), invitations,
 member reminders and change notices — needs SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
 `SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`). Every message
@@ -339,19 +344,37 @@ can open.
 - **Shareable saved list**: `POST /users/me/share-link` mints `users.share_token`
   once; `GET /shared/{token}` is public and lists the member's upcoming saved
   *public* programs — special-access ones are excluded whoever holds the link.
-- **Calendar sync is a subscription, not an export.** Both "Google Calendar"
-  buttons (sidebar and All Saved Events) call
-  `lib/calendar.subscribeInGoogleCalendar`: `POST /users/me/calendar-feed`
-  mints `users.calendar_token` once (migration `0024_calendar_feed`), and the
-  tab goes to Google's subscribe-by-URL page for
-  `webcal://…/calendar/{token}.ics`. That feed is `saved_events()` — the
-  member's whole list, special access included, past dates kept — so saves
-  and un-saves follow on Google's own refresh (hours, not instant). It is
-  deliberately not the share token, which is public. A caregiver viewing
-  someone else's list gets that member's `.ics` download instead. Instant,
-  primary-calendar sync would need Google OAuth and Google's review of the
-  calendar scope; not built. Single programs use Google's prefilled "add
-  event" link.
+- **Google Calendar: connected when configured, subscribed otherwise.** Both
+  "Google Calendar" buttons (sidebar and All Saved Events) and the profile's
+  card go through `lib/calendar.googleCalendarButton(Me.google_calendar)`:
+  - `available` / `connected` (GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET set):
+    `GET /google-calendar/connect` → Google consent (scope
+    `calendar.app.created` only — the app's own calendars, nothing else in the
+    account) → `/google-calendar/callback`, which checks the signed `state`
+    against the signed-in member, stores the refresh token Fernet-encrypted
+    (key derived from JWT_SECRET) with the calendar it created ("The
+    Belonging Collective"; migration `0025_google_calendar`) and lands on
+    `/?calendar=connected|cancelled|failed` for the toast. `core/gcal.sync_member`
+    then makes that calendar match `saved_events()` — insert / update /
+    delete, only events carrying our `tbcEventId` mark — after every save and
+    un-save (`gcal.after_save`, caregiver routes included: the row is the
+    member's), after an organizer's edit / archive / restore
+    (`sync_event_savers`), and daily from the reminders cron
+    (`sync_everyone`). Event ids are `tbc` + the UUID hex, so a re-save
+    restores the same event (Google's 409 on a cancelled id → PUT confirmed).
+    Google failures are logged, never fail a save; a revoked grant
+    disconnects quietly. `DELETE /users/me/google-calendar` deletes the
+    calendar and revokes. Calendar scopes are sensitive: until Google verifies
+    the app it runs in Testing mode — listed test users only, and their
+    grants lapse after 7 days (sync then disconnects and the button offers
+    Connect again).
+  - `off` (unconfigured): subscribe-by-URL. `POST /users/me/calendar-feed`
+    mints `users.calendar_token` once (migration `0024_calendar_feed`) and the
+    tab goes to Google's subscribe page for `webcal://…/calendar/{token}.ics`
+    — the same `saved_events()` list, followed on Google's own refresh
+    (hours). Deliberately not the share token, which is public.
+  A caregiver viewing someone else's list gets that member's `.ics` download
+  either way. Single programs use Google's prefilled "add event" link.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`

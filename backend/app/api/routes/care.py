@@ -14,7 +14,15 @@ like, and it counts against the same keys the sign-in door uses.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -26,7 +34,7 @@ from app.api.routes.auth import (
     member_by_credential,
     new_member,
 )
-from app.core import holds, ical
+from app.core import gcal, holds, ical
 from app.core.rate_limit import (
     IDENTITY_LIMIT,
     IP_LIMIT,
@@ -201,12 +209,16 @@ def care_events_calendar(
 def care_attend(
     member_id: uuid.UUID,
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Save for the member. Their row, their hold, their special access."""
+    """Save for the member. Their row, their hold, their special access — and
+    their Google Calendar, if they connected one."""
     member = _member_for(db, user, member_id)
-    return save_event(db, member, event_id)
+    result = save_event(db, member, event_id)
+    gcal.after_save(background, member)
+    return result
 
 
 @router.delete(
@@ -216,8 +228,10 @@ def care_attend(
 def care_unattend(
     member_id: uuid.UUID,
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     member = _member_for(db, user, member_id)
     unsave_event(db, member, event_id)
+    gcal.after_save(background, member)

@@ -29,7 +29,7 @@ import {
 import {
   googleCalendarUrl,
   openGoogleCalendar,
-  subscribeInGoogleCalendar,
+  googleCalendarButton,
 } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
@@ -112,9 +112,9 @@ export const SavedEvents = memo(function SavedEvents({
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const { show } = useToast();
 
-  async function subscribeInGoogle() {
+  async function googleCalendar() {
     try {
-      await subscribeInGoogleCalendar();
+      await googleCalendarButton(me?.google_calendar);
     } catch (err) {
       show({
         title: apiMessage(err, "Couldn't open Google Calendar."),
@@ -298,10 +298,12 @@ export const SavedEvents = memo(function SavedEvents({
                   <Button
                     size="lg"
                     className={ACTION}
-                    onClick={() => void subscribeInGoogle()}
+                    onClick={() => void googleCalendar()}
                     leadingIcon={<GoogleCalendarIcon />}
                   >
-                    Google Calendar
+                    {me?.google_calendar === "connected"
+                      ? "Open Google Calendar"
+                      : "Google Calendar"}
                   </Button>
                 )}
                 <Button

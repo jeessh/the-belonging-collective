@@ -16,6 +16,7 @@ from app.api.routes import (
     care,
     categories,
     events,
+    google_calendar,
     hosts,
     internal,
     invites,
@@ -63,6 +64,7 @@ app.include_router(hosts.router)
 app.include_router(events.router)
 app.include_router(categories.router)
 app.include_router(attendance.router)
+app.include_router(google_calendar.router)
 app.include_router(care.router)
 app.include_router(invites.router)
 app.include_router(access.router)

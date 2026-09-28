@@ -20,7 +20,7 @@ from app.api.deps import (
     get_optional_host,
     get_optional_user,
 )
-from app.core import holds, ical, member_mail
+from app.core import gcal, holds, ical, member_mail
 from app.core.categories import require_live_slugs
 from app.core.storage import StorageError, upload_image
 from app.core.access import (
@@ -154,6 +154,9 @@ _REQUIRED_FIELDS = frozenset(
         "links",
     }
 )
+
+# What a program's entry in a member's Google Calendar is made of (core/gcal).
+_CALENDAR_FIELDS = ("title", "description", "location", "is_virtual", "starts_at", "ends_at")
 
 
 # Eager loads for EventOut serialization (host_name + images); without these
@@ -391,6 +394,8 @@ def update_event(
     # Compared after the commit: a moved time or place is mailed to everyone
     # who saved the program (member_mail.send_change_notice).
     before = {f: getattr(event, f) for f in member_mail.NOTICE_FIELDS}
+    # And anything a connected Google Calendar shows is re-synced (core/gcal).
+    shown_before = {f: getattr(event, f) for f in _CALENDAR_FIELDS}
     # Checked against the event's own organization, not the caller's — a
     # superadmin editing another agency's program may only use that agency's
     # groups. Queried here, before the row is touched (see the note below).
@@ -432,7 +437,10 @@ def update_event(
         # After the response: an SMTP round trip per member is not something
         # the organizer's save should wait on.
         background.add_task(member_mail.send_change_notice, event.id, changed)
+    if any(getattr(event, f) != shown_before[f] for f in _CALENDAR_FIELDS):
+        background.add_task(gcal.sync_event_savers, [event.id])
     return event
+
 
 
 def _series_targets(
@@ -457,6 +465,7 @@ def _series_targets(
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_event(
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     series: bool = False,
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
@@ -493,11 +502,14 @@ def delete_event(
     for target in targets:
         target.deleted_at = func.now()
     db.commit()
+    # Out of connected members' Google Calendars too.
+    background.add_task(gcal.sync_event_savers, [t.id for t in targets])
 
 
 @router.post("/{event_id}/restore", response_model=EventOut)
 def restore_event(
     event_id: uuid.UUID,
+    background: BackgroundTasks,
     series: bool = False,
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
@@ -531,4 +543,5 @@ def restore_event(
         target.deleted_at = None
     db.commit()
     db.refresh(event)
+    background.add_task(gcal.sync_event_savers, [t.id for t in targets])
     return event

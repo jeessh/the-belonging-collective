@@ -628,6 +628,8 @@ def me(request: Request, db: Session = Depends(get_db)):
         out["preferred_view"] = member.preferred_view
         out["dismissed_program_ids"] = member.dismissed_program_ids
         out["onboarded_at"] = member.onboarded_at
+        # What the calendar buttons offer: connected, available or off.
+        out["google_calendar"] = member.google_calendar
         # Care links, both ways: who this account saves for, and who may
         # save for it (first name and initial only).
         out["is_caregiver"] = member.is_caregiver

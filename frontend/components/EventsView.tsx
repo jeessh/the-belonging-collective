@@ -118,6 +118,25 @@ export function EventsView({
   const reduceMotion = useReducedMotion();
   const toast = useToast();
   const [me, setMe] = useState<Me | null>(initialMe);
+
+  // Back from Google's consent page (routes/google_calendar.py) with
+  // `?calendar=connected | cancelled | failed`: say how it went, then drop
+  // the parameter so a reload doesn't say it again.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get("calendar");
+    if (!outcome) return;
+    params.delete("calendar");
+    const rest = params.toString();
+    window.history.replaceState(null, "", location.pathname + (rest ? `?${rest}` : ""));
+    toast.show(
+      outcome === "connected"
+        ? { title: "Google Calendar connected. Your saved events are in it now." }
+        : outcome === "cancelled"
+          ? { title: "Google Calendar wasn't connected.", tone: "info" }
+          : { title: "Couldn't connect Google Calendar. Please try again.", tone: "alert" },
+    );
+  }, [toast]);
   const [events, setEvents] = useState<Event[]>([]);
   const [i, setI] = useState(0);
   const { label: topicLabel } = useCategories();
@@ -1109,6 +1128,7 @@ export function EventsView({
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}
+            googleCalendar={me?.google_calendar}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
             onSignIn={() => toSignIn()}
@@ -1331,6 +1351,7 @@ export function EventsView({
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}
+            googleCalendar={me?.google_calendar}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
             onSignIn={() => toSignIn()}

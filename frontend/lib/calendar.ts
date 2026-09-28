@@ -1,4 +1,9 @@
-import { API, createCalendarFeed, type Event } from "@/lib/api";
+import {
+  API,
+  createCalendarFeed,
+  type Event,
+  type GoogleCalendarState,
+} from "@/lib/api";
 
 /** "20260828T170000Z" — the compact UTC form Google's template URL wants. */
 function stamp(at: Date): string {
@@ -61,7 +66,7 @@ function googleSubscribeUrl(feedToken: string): string {
  * before the token arrives, because one opened after an await is a popup the
  * browser blocks. Throws, with the tab closed, when there is no token.
  */
-export async function subscribeInGoogleCalendar(): Promise<void> {
+async function subscribeInGoogleCalendar(): Promise<void> {
   const tab = window.open("", "_blank");
   if (tab) tab.opener = null;
   try {
@@ -71,6 +76,24 @@ export async function subscribeInGoogleCalendar(): Promise<void> {
   } catch (err) {
     tab?.close();
     throw err;
+  }
+}
+
+/**
+ * What the "Google Calendar" buttons do, by `Me.google_calendar`:
+ * `connected` opens Google Calendar, where the saved list already is;
+ * `available` connects (Google's consent page, then back to the feed with
+ * `?calendar=…`); `off` — Google sign-in not set up — subscribes instead.
+ */
+export async function googleCalendarButton(
+  state: GoogleCalendarState | undefined,
+): Promise<void> {
+  if (state === "connected") {
+    window.open("https://calendar.google.com/calendar/r", "_blank", "noopener");
+  } else if (state === "available") {
+    window.location.href = `${API}/google-calendar/connect`;
+  } else {
+    await subscribeInGoogleCalendar();
   }
 }
 
