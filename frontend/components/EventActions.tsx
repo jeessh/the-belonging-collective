@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bookmark, BookmarkCheck, ExternalLink, MapPin } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 import {
   ApiError,
   api,
@@ -17,6 +17,7 @@ import {
   accessStateOf,
   type AccessState,
 } from "@/components/member/AccessAction";
+import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 
 /**
  * The public page's bottom row: the map, Save, and — when registration lives
@@ -155,7 +156,7 @@ export function EventActions({ event }: { event: Event }) {
           className={buttonClass("secondary", "lg")}
         >
           See on Map
-          <MapPin aria-hidden="true" className="size-6 shrink-0" />
+          <GoogleMapsIcon />
         </a>
       )}
       {canSave ? (
