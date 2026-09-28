@@ -16,6 +16,7 @@ import { useCategories } from "@/lib/useCategories";
 import { longDate, timeRange } from "@/lib/time";
 import { repeatLabel } from "@/lib/recurrence";
 import { isDerivedTag, tagLabel } from "@/lib/accessibility";
+import { eventImage } from "@/lib/eventImage";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
@@ -166,14 +167,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       >
         <div className="flex flex-col gap-6">
           <div className="aspect-[598/278] w-full overflow-hidden rounded-control bg-surface-subtle">
-            {event.cover_image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={event.cover_image_url}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={eventImage(event)}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           </div>
           <Fact label="Name of Event">
             <h2 className="text-xl text-fg">{event.title}</h2>

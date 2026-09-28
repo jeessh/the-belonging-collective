@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Cake, CalendarDays, MapPin, Ticket } from "lucide-react";
 import type { Event } from "@/lib/api";
+import { eventImage } from "@/lib/eventImage";
 import { clockTime, whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
 
@@ -57,7 +58,7 @@ export function EventSummary({
   const when = whenLine(event);
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
-  const image = event.cover_image_url ?? event.images[0]?.url ?? null;
+  const image = eventImage(event);
   const ages = ageLabel(event);
   // The member's own hold, while it is still running.
   const held =
@@ -79,15 +80,13 @@ export function EventSummary({
               : "h-40 w-full sm:size-40"
           }`}
         >
-          {image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={image}
-              alt=""
-              draggable={false}
-              className="h-full w-full object-cover"
-            />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image}
+            alt=""
+            draggable={false}
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
