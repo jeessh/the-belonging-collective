@@ -81,9 +81,9 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const inScope = useMemo(
     () =>
       scope === "mine"
-        ? events.filter((ev) => ev.host_id === ctx.session.id)
+        ? events.filter((ev) => ev.host_id === ctx.org.id)
         : events,
-    [events, scope, ctx.session.id],
+    [events, scope, ctx.org.id],
   );
 
   // One row per program, not one per date, shown at its next date. Upcoming

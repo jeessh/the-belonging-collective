@@ -26,7 +26,7 @@ from app.models.access import (
     AccessMembership,
 )
 from app.models.event import Event
-from app.models.host import Host
+from app.models.host import Host, org_id_of
 from app.models.user import User
 from app.schemas.access import (
     AccessGroupIn,
@@ -60,7 +60,7 @@ def _managed_group(db: Session, group_id: uuid.UUID, host: Host) -> AccessGroup:
     superadmin. Other agencies' groups are a 403, not a 404 — they exist,
     they're just not yours."""
     group = _live_group(db, group_id)
-    if not host.is_admin and group.host_id != host.id:
+    if not host.is_superadmin and group.host_id != org_id_of(host):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your access group")
     return group
 
@@ -153,8 +153,8 @@ def list_groups(host: Host = Depends(get_current_host), db: Session = Depends(ge
         .filter(AccessGroup.deleted_at.is_(None))
         .order_by(AccessGroup.name.asc())
     )
-    if not host.is_admin:
-        q = q.filter(AccessGroup.host_id == host.id)
+    if not host.is_superadmin:
+        q = q.filter(AccessGroup.host_id == org_id_of(host))
     return [
         AccessGroupOut(
             id=group.id,
@@ -175,14 +175,14 @@ def create_group(
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
 ):
-    owner_id = host.id
-    if body.host_id is not None and body.host_id != host.id:
-        if not host.is_admin:
+    owner_id = org_id_of(host)
+    if body.host_id is not None and body.host_id != owner_id:
+        if not host.is_superadmin:
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN, "You can only create groups for your own organization."
             )
         owner = db.get(Host, body.host_id)
-        if not owner or owner.deleted_at is not None:
+        if not owner or owner.deleted_at is not None or owner.org_id is not None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
         owner_id = owner.id
     group = AccessGroup(host_id=owner_id, name=body.name.strip())

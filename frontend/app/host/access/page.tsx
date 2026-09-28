@@ -197,7 +197,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
       {creating && (
         <GroupModal
           isSuper={ctx.isSuper}
-          ownOrgId={ctx.session.id ?? ""}
+          ownOrgId={ctx.org.id}
           onClose={() => setCreating(false)}
           onSaved={(g) => {
             setCreating(false);
@@ -210,7 +210,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
       {renaming && (
         <GroupModal
           isSuper={ctx.isSuper}
-          ownOrgId={ctx.session.id ?? ""}
+          ownOrgId={ctx.org.id}
           group={renaming}
           onClose={() => setRenaming(null)}
           onSaved={(g) => {

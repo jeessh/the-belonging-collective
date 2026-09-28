@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Lock, LogOut } from "lucide-react";
-import { apiMessage, logout, updateMyOrg, type AdminAccount } from "@/lib/api";
+import { BarChart3, Lock, LogOut, Users } from "lucide-react";
+import { apiMessage, logout, updateMyOrg, type HostMe } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
@@ -24,12 +24,12 @@ const AREA_HOME: Record<Area, string> = {
 };
 
 export function ConsoleHeader({
-  org,
+  me,
   isSuper,
   pendingAccess = 0,
   onLogoChanged,
 }: {
-  org: AdminAccount;
+  me: HostMe;
   isSuper: boolean;
   /** Special-access requests waiting — the badge on that entry. */
   pendingAccess?: number;
@@ -38,16 +38,24 @@ export function ConsoleHeader({
   const pathname = usePathname();
   const router = useRouter();
   const [editingLogo, setEditingLogo] = useState(false);
+  const org = me.org;
 
   const area: Area =
     pathname.startsWith("/host/admins") || pathname.startsWith("/host/users")
       ? "accounts"
       : "events";
   const onAccess = pathname.startsWith("/host/access");
+  const onTeam = pathname.startsWith("/host/team");
+  const onAnalytics = pathname.startsWith("/host/analytics");
+  // The three per-organization pages share one look; the label goes when
+  // there's no room for it, the icon and any badge stay.
+  const navClass = (on: boolean) =>
+    buttonClass("ghost", "md", on ? "bg-surface-subtle" : "");
+  const labelClass = isSuper ? "max-2xl:sr-only" : "max-md:sr-only";
 
   return (
     <header className="no-print border-b border-line bg-surface">
-      <div className="mx-auto flex min-h-[92px] w-full max-w-[1440px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 sm:px-9">
+      <div className="mx-auto flex min-h-[92px] w-full max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-9">
         <Link
           href="/host/events"
           className="inline-flex items-center gap-3 rounded-control py-1 text-fg"
@@ -77,25 +85,35 @@ export function ConsoleHeader({
           />
         )}
 
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+          <Link
+            href="/host/analytics"
+            title="Analytics"
+            aria-current={onAnalytics ? "page" : undefined}
+            className={navClass(onAnalytics)}
+          >
+            <BarChart3 aria-hidden="true" className="size-6 shrink-0" />
+            <span className={labelClass}>Analytics</span>
+          </Link>
+          <Link
+            href="/host/team"
+            title="Team"
+            aria-current={onTeam ? "page" : undefined}
+            className={navClass(onTeam)}
+          >
+            <Users aria-hidden="true" className="size-6 shrink-0" />
+            <span className={labelClass}>Team</span>
+          </Link>
           {/* Every organizer has this: it is where requests to join their
               special-access groups wait. The badge is the count waiting. */}
           <Link
             href="/host/access"
             title="Special access"
             aria-current={onAccess ? "page" : undefined}
-            className={buttonClass(
-              "ghost",
-              "md",
-              onAccess ? "bg-surface-subtle" : "",
-            )}
+            className={navClass(onAccess)}
           >
             <Lock aria-hidden="true" className="size-6 shrink-0" />
-            {/* The superadmin header also carries the area switch, so its
-                label only fits on a wide desktop; the lock and badge stay. */}
-            <span className={isSuper ? "max-2xl:sr-only" : "max-sm:sr-only"}>
-              Special access
-            </span>
+            <span className={labelClass}>Special access</span>
             {pendingAccess > 0 && (
               <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-base font-medium text-fg">
                 {pendingAccess}
@@ -125,10 +143,16 @@ export function ConsoleHeader({
               <Avatar name={org.name} size={36} />
             )}
             <span className="flex min-w-0 flex-col leading-tight text-fg-muted">
-              <span className="truncate text-lg font-bold">{org.name}</span>
-              {/* The role line goes on a phone; the name is what matters. */}
-              <span className="hidden text-base sm:block">
-                {isSuper ? "Super admin" : "Admin"}
+              {/* A staff login is a person at the organization: their name
+                  first, the organization under it. The shared login is the
+                  organization itself. */}
+              <span className="truncate text-lg font-bold">{me.name}</span>
+              <span className="hidden truncate text-base sm:block">
+                {me.is_staff
+                  ? `${org.name}${isSuper ? " · Super admin" : ""}`
+                  : isSuper
+                    ? "Super admin"
+                    : "Admin"}
               </span>
             </span>
           </button>

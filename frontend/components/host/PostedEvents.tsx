@@ -16,7 +16,7 @@ import type { Event } from "@/lib/api";
 import { DIMENSIONS, bucketsFor, type DimensionKey } from "@/lib/dimensions";
 import { buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
-import { GoingCount } from "@/components/ui/GoingCount";
+import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 
 /* ---------------- filters ---------------- */
@@ -190,7 +190,7 @@ export const PostedEventCard = memo(function PostedEventCard({
     >
       <EventSummary
         event={event}
-        going={<GoingCount count={event.saved_count} />}
+        going={<ConsoleCounts event={event} />}
         actions={
           <>
             <CopyLinkButton eventId={event.id} title={event.title} iconOnly />

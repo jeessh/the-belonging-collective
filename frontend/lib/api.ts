@@ -116,6 +116,10 @@ export type Event = {
   price_label?: string;
   /** "N going". Null when the viewer isn't signed in — the API withholds it. */
   saved_count?: number | null;
+  /** Registration-link clicks. Only filled for a signed-in organizer. */
+  click_count?: number | null;
+  /** The login that posted it; `host_id` is the owning organization. */
+  created_by_host_id?: string | null;
   min_age?: number | null;
   max_age?: number | null;
   /** Virtual or in person; youth or everyone. Both filter the admin list. */
@@ -306,9 +310,11 @@ export const decideAccess = (
 export type MemberAccount = Me & { created_at?: string };
 
 /**
- * An organizer account. Two tiers, both on this record:
+ * An organizer login. Two tiers, both on the organization's record:
  *   • admin      (is_admin false) — manages only its own programs
  *   • superadmin (is_admin true)  — manages any program, members, and admins
+ * A staff login (`org_id` set) is one person at an organization; it acts as
+ * the organization and takes its tier. `name` is then the person's.
  */
 export type AdminAccount = {
   id: string;
@@ -317,9 +323,20 @@ export type AdminAccount = {
   is_admin: boolean;
   /** Organization logo, shown in the member feed's organization stepper. */
   logo_url?: string | null;
+  /** Set on a staff login: the organization it belongs to. */
+  org_id?: string | null;
   created_at: string;
-  /** Programs this account owns — shown before a removal reassigns them. */
+  /** Programs this account owns — shown before a removal retires them. */
   event_count: number;
+  /** The organization's staff logins (superadmin list only). */
+  staff?: AdminAccount[];
+};
+
+/** `GET /hosts/me`: the signed-in person and the organization they act for. */
+export type HostMe = Omit<AdminAccount, "event_count" | "staff"> & {
+  is_staff: boolean;
+  /** The organization — the login itself, for a shared login. */
+  org: Omit<AdminAccount, "event_count" | "staff">;
 };
 
 export type Session = {
@@ -327,12 +344,105 @@ export type Session = {
   role?: "user" | "host";
   is_admin?: boolean;
   id?: string;
+  /** Hosts only: the organization the login acts for. */
+  org_id?: string;
   /** Members only. */
   email?: string | null;
   auth_type?: "icon" | "password";
 };
 
 export const getSession = () => api<Session>("/auth/me");
+
+export const getHostMe = () => api<HostMe>("/hosts/me");
+
+/* ---------------- team: an organization's own logins ---------------- */
+
+export type StaffInvite = {
+  id: string;
+  name: string;
+  email: string;
+  expires_at: string;
+  expired: boolean;
+};
+
+export type Team = {
+  org: HostMe["org"];
+  staff: HostMe["org"][];
+  invites: StaffInvite[];
+};
+
+/** Your own organization's team; a superadmin may ask for another's. */
+export const fetchTeam = (orgId?: string) =>
+  api<Team>(`/hosts/team${orgId ? `?org_id=${orgId}` : ""}`);
+
+/** Invite a person to join an organization as a staff login. */
+export const inviteStaff = (body: { org_id: string; name: string; email: string }) =>
+  api<{ id: string; token: string; name: string; email: string }>("/invites", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+/** Archives one staff login; the organization and its programs stay. */
+export const removeStaff = (staffId: string) =>
+  api(`/hosts/team/${staffId}`, { method: "DELETE" });
+
+/* ---------------- analytics ---------------- */
+
+export type AnalyticsWeek = {
+  /** Monday, YYYY-MM-DD. */
+  week: string;
+  saves: number;
+  clicks: number;
+  postings: number;
+};
+
+export type AnalyticsProgram = {
+  program_id: string;
+  event_id: string;
+  title: string;
+  starts_at: string | null;
+  host_id: string;
+  host_name: string;
+  saves: number;
+  going: number;
+  clicks: number;
+  archived: boolean;
+};
+
+export type Analytics = {
+  from: string;
+  to: string;
+  host_id: string | null;
+  host_name: string | null;
+  totals: {
+    /** Saves in the range, including ones later undone — they still happened. */
+    saves: number;
+    unique_savers: number;
+    clicks: number;
+    /** Distinct programs posted (a repeating program counts once). */
+    postings: number;
+  };
+  weekly: AnalyticsWeek[];
+  programs: AnalyticsProgram[];
+};
+
+export type AnalyticsParams = { from?: string; to?: string; host_id?: string };
+
+function analyticsQuery(params: AnalyticsParams): string {
+  const q = new URLSearchParams();
+  if (params.from) q.set("from", params.from);
+  if (params.to) q.set("to", params.to);
+  if (params.host_id) q.set("host_id", params.host_id);
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export const fetchAnalytics = (params: AnalyticsParams) =>
+  api<Analytics>(`/analytics${analyticsQuery(params)}`);
+
+/** The same numbers as a spreadsheet — a plain link, so the browser downloads it. */
+export const analyticsCsvUrl = (params: AnalyticsParams) =>
+  `${API}/analytics.csv${analyticsQuery(params)}`;
 
 export const listAdmins = () => api<AdminAccount[]>("/hosts");
 
@@ -346,7 +456,7 @@ export const createAdmin = (body: {
 
 /** An organization changing its own logo — every account may do this. */
 export const updateMyOrg = (patch: { logo_url: string | null }) =>
-  api<AdminAccount>("/hosts/me", {
+  api<HostMe>("/hosts/me", {
     method: "PATCH",
     body: JSON.stringify(patch),
   });

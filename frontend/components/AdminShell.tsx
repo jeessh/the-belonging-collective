@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   ApiError,
-  api,
   fetchAccessGroups,
+  getHostMe,
   getSession,
-  type AdminAccount,
+  type HostMe,
   type Session,
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
@@ -23,8 +23,14 @@ import { ConsoleHeader } from "@/components/host/ConsoleHeader";
 
 export type ConsoleContext = {
   session: Session;
-  /** The signed-in organization (`/hosts/me`). */
-  org: AdminAccount;
+  /** The signed-in login: the organization's own, or one of its staff. */
+  me: HostMe;
+  /**
+   * The organization the login acts for. Programs and groups are owned by
+   * this id, so ownership comparisons read it — never `session.id`, which is
+   * the person's login when they're staff.
+   */
+  org: HostMe["org"];
   isSuper: boolean;
   /** Special-access requests waiting on this organizer — the header badge. */
   pendingAccess: number;
@@ -61,14 +67,14 @@ export function AdminShell({
   useEffect(() => {
     let alive = true;
     setFailed(false);
-    Promise.all([getSession(), api<AdminAccount>("/hosts/me")])
-      .then(([session, org]) => {
+    Promise.all([getSession(), getHostMe()])
+      .then(([session, me]) => {
         if (!alive) return;
         if (!session.authenticated || session.role !== "host") {
           router.replace("/host");
           return;
         }
-        setCtx({ session, org, isSuper: !!session.is_admin });
+        setCtx({ session, me, org: me.org, isSuper: me.is_admin });
       })
       .catch((e) => {
         if (!alive) return;
@@ -111,11 +117,15 @@ export function AdminShell({
   return (
     <div className="min-h-dvh bg-surface text-fg">
       <ConsoleHeader
-        org={ctx.org}
+        me={ctx.me}
         isSuper={ctx.isSuper}
         pendingAccess={pendingAccess}
         onLogoChanged={(logo_url) =>
-          setCtx({ ...ctx, org: { ...ctx.org, logo_url } })
+          setCtx({
+            ...ctx,
+            org: { ...ctx.org, logo_url },
+            me: { ...ctx.me, org: { ...ctx.me.org, logo_url } },
+          })
         }
       />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-9">

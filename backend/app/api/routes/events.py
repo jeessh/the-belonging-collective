@@ -30,7 +30,8 @@ from app.core.access import (
 )
 from app.models.event import Event
 from app.models.event_image import EventImage
-from app.models.host import Host
+from app.models.click import RegistrationClick
+from app.models.host import Host, org_id_of
 from app.models.user import User
 from app.core.recurrence import RecurrenceError, describe as describe_recurrence
 from app.core.recurrence import occurrences
@@ -135,7 +136,7 @@ async def upload_event_poster(
 
 
 def _owns_or_admin(host: Host, event: Event) -> bool:
-    return host.is_admin or event.host_id == host.id
+    return host.is_superadmin or event.host_id == org_id_of(host)
 
 
 # NOT NULL on the events table, so a PATCH may omit them but never null them.
@@ -179,6 +180,17 @@ def _public_view(
     if not (viewer or organizer):
         for item in out:
             item.saved_count = None
+    if organizer and rows:
+        # Registration-link clicks, for the console's "N going · M clicks".
+        # One grouped query for the page; members never see this number.
+        clicks = dict(
+            db.query(RegistrationClick.event_id, func.count(RegistrationClick.id))
+            .filter(RegistrationClick.event_id.in_([row.id for row in rows]))
+            .group_by(RegistrationClick.event_id)
+            .all()
+        )
+        for row, item in zip(rows, out):
+            item.click_count = clicks.get(row.id, 0)
     if viewer:
         statuses = membership_statuses(
             db, viewer.id, {row.access_group_id for row in rows if row.access_group_id}
@@ -294,9 +306,12 @@ def create_event(
             "repeat_forever",
         }
     )
+    # Programs belong to the organization, whichever of its logins posts them;
+    # `created_by_host_id` records which one did.
+    org_id = org_id_of(host)
     # Every occurrence of the series is restricted the same way — `data` is
     # copied into each row below.
-    resolve_group_for_host(db, body.access_group_id, host.id)
+    resolve_group_for_host(db, body.access_group_id, org_id)
     starts_at = data.get("starts_at")
 
     if body.frequency and body.frequency != "once":
@@ -337,7 +352,8 @@ def create_event(
                 "starts_at": when,
                 "ends_at": when + span if span and when else data.get("ends_at"),
             },
-            host_id=host.id,
+            host_id=org_id,
+            created_by_host_id=host.id,
             series_id=series_id,
             recurrence=label,
             series_index=index,
@@ -463,8 +479,8 @@ def delete_event(
     # agency that posted it, and it's also somebody's grant evidence. That's
     # what makes "undo" work on a program posted seconds ago while still
     # keeping removal a KW Hab decision once it matters.
-    if not host.is_admin:
-        if any(e.host_id != host.id for e in targets):
+    if not host.is_superadmin:
+        if any(e.host_id != org_id_of(host) for e in targets):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
         # Across the whole run, not just the date on the card: one saved date
         # is enough to make removing the program somebody else's business.
@@ -504,7 +520,7 @@ def restore_event(
     if not event:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
     targets = _series_targets(db, event, series, include_archived=True)
-    if not host.is_admin and any(e.host_id != host.id for e in targets):
+    if not host.is_superadmin and any(e.host_id != org_id_of(host) for e in targets):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
     # Removing an organizer archives their programming with them. Restoring one
     # of those would put it back in the member feed under an account nobody can
