@@ -169,7 +169,15 @@ function Members() {
             shown.map((m) => (
               <tr key={m.id} className="align-middle">
                 <th scope="row" className="px-3 py-3 font-normal">
-                  {m.first_name} {m.last_name}
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    {m.first_name} {m.last_name}
+                    {m.is_caregiver && (
+                      <Pill tone="good">
+                        Caregiver
+                        {m.care.length > 0 ? ` · ${m.care.length} linked` : ""}
+                      </Pill>
+                    )}
+                  </span>
                 </th>
                 <td className="px-3 py-3">
                   {m.auth_type === "password" ? (

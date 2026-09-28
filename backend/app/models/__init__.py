@@ -8,10 +8,12 @@ from app.models.invite import HostInvite
 from app.models.password_reset import HostPasswordReset
 from app.models.rate_limit import AuthRateLimit
 from app.models.access import AccessGroup, AccessMembership
+from app.models.care import CareLink
 
 __all__ = [
     "AccessGroup",
     "AccessMembership",
+    "CareLink",
     "User",
     "Host",
     "Event",

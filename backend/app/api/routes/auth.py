@@ -55,6 +55,7 @@ from app.schemas.auth import (
     UserLogin,
     UserSignup,
 )
+from app.schemas.user import CarePerson
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -113,6 +114,119 @@ def _allocate_unique_icons(
     )
 
 
+def new_member(
+    db: Session,
+    first_name: str,
+    last_name: str,
+    *,
+    icons: list[str] | None = None,
+    email: str | None = None,
+    password: str | None = None,
+    accessibility_prefs: list[str] | None = None,
+    interest_categories: list[str] | None = None,
+    is_caregiver: bool = False,
+) -> User:
+    """Create and commit a member account through either door.
+
+    `password` set means the password door (with `email` as the login);
+    otherwise the icon door, with `icons` as chosen or a free set allocated
+    when none are given. Every place that makes a member — self sign-up, the
+    console, a caregiver — comes through here so the two doors are built the
+    same way everywhere.
+    """
+    username = _make_username(first_name, last_name)
+    if password is not None:
+        icons = _allocate_unique_icons(db, username)
+        secret, auth_type = password, "password"
+    else:
+        if icons is not None:
+            try:
+                icons = validate_icon_selection(icons)
+            except ValueError as exc:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+        else:
+            icons = _allocate_unique_icons(db, username)
+        secret, auth_type = credential(username, icons), "icon"
+
+    user = User(
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        username=username,
+        email=email.strip().lower() if email else None,
+        password_hash=hash_password(secret),
+        auth_type=auth_type,
+        icons=icons,
+        accessibility_prefs=accessibility_prefs or [],
+        interest_categories=interest_categories or [],
+        is_caregiver=is_caregiver,
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        # Both pre-checks callers make are check-then-insert, so either
+        # constraint can lose a race: the email index to a concurrent signup
+        # with the same address, or the icon pair to a same-named member
+        # signing up at the same moment.
+        db.rollback()
+        constraint = getattr(exc.orig.diag, "constraint_name", None)
+        if constraint == "uq_users_email_live":
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "That email already has an account."
+            )
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "That name and icon combination is already taken — pick a different "
+            "set of icons.",
+        )
+    db.refresh(user)
+    return user
+
+
+def credential_identity(
+    first_name: str | None, last_name: str | None, email: str | None
+) -> str:
+    """The rate-limit key a credential counts against — the same one the
+    sign-in door uses for it, so guessing here costs what guessing there does."""
+    if email is not None:
+        return f"user:{email.strip().lower()}"
+    return f"user:{_make_username(first_name or '', last_name or '')}"
+
+
+def member_by_credential(
+    db: Session,
+    *,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    icons: list[str] | None = None,
+    email: str | None = None,
+    password: str | None = None,
+) -> User | None:
+    """The live member this credential opens, or None. Either door: email and
+    password, or name and icon key (checked against every same-named icon
+    account, as sign-in does)."""
+    if email is not None:
+        user = _live_member_by_email(db, email.strip().lower())
+        if user and password and verify_password(password, user.password_hash):
+            return user
+        return None
+    try:
+        icons = validate_icon_selection(icons or [])
+    except ValueError:
+        return None
+    username = _make_username(first_name or "", last_name or "")
+    secret = credential(username, icons)
+    same_name = db.query(User).filter(
+        User.username == username,
+        User.auth_type == "icon",
+        User.deleted_at.is_(None),
+    )
+    for user in same_name:
+        if verify_password(secret, user.password_hash):
+            return user
+    return None
+
+
 # ---------- Community members (email + password) ----------
 
 
@@ -150,35 +264,16 @@ def signup_user(
             status.HTTP_409_CONFLICT, "That email already has an account."
         )
 
-    user = User(
-        first_name=body.first_name.strip(),
-        last_name=body.last_name.strip(),
-        username=username,
+    user = new_member(
+        db,
+        body.first_name,
+        body.last_name,
         email=email,
-        password_hash=hash_password(body.password),
-        auth_type="password",
-        icons=_allocate_unique_icons(db, username),
+        password=body.password,
         accessibility_prefs=body.accessibility_prefs,
         interest_categories=body.interest_categories,
+        is_caregiver=body.is_caregiver,
     )
-    db.add(user)
-    try:
-        db.commit()
-    except IntegrityError as exc:
-        # Both pre-checks are check-then-insert, so either constraint can
-        # lose a race: the email index to a concurrent signup with the same
-        # address, or the icon pair to a same-named member signing up at the
-        # same moment.
-        db.rollback()
-        if getattr(exc.orig.diag, "constraint_name", None) == "uq_users_email_live":
-            record(db, id_key, ip_key)
-            raise HTTPException(
-                status.HTTP_409_CONFLICT, "That email already has an account."
-            )
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Something collided — please try again."
-        )
-    db.refresh(user)
 
     _sign_in_member(response, user)
     # Prefs are intentionally omitted here — the wizard re-reads GET /users/me.
@@ -186,6 +281,7 @@ def signup_user(
         "id": str(user.id),
         "email": user.email,
         "auth_type": user.auth_type,
+        "is_caregiver": user.is_caregiver,
     }
 
 
@@ -275,27 +371,14 @@ def auth_user(
 
     # 3) Fresh (name + icons) → create the account. Different people may share
     #    the same icons as long as their names differ; a clash needs both.
-    user = User(
-        first_name=body.first_name.strip(),
-        last_name=body.last_name.strip(),
-        username=username,
-        password_hash=hash_password(password),
-        auth_type="icon",
+    user = new_member(
+        db,
+        body.first_name,
+        body.last_name,
         icons=icons,
         accessibility_prefs=body.accessibility_prefs,
         interest_categories=body.interest_categories,
     )
-    db.add(user)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "That name and icon combination is already taken — pick a different "
-            "set of icons.",
-        )
-    db.refresh(user)
     _sign_in_member(response, user)
     return {
         "mode": "signup",
@@ -607,4 +690,14 @@ def me(request: Request, db: Session = Depends(get_db)):
         out["preferred_view"] = member.preferred_view
         out["dismissed_program_ids"] = member.dismissed_program_ids
         out["onboarded_at"] = member.onboarded_at
+        # Care links, both ways: who this account saves for, and who may
+        # save for it (first name and initial only).
+        out["is_caregiver"] = member.is_caregiver
+        out["care"] = [
+            CarePerson.model_validate(u).model_dump(mode="json") for u in member.care
+        ]
+        out["caregivers"] = [
+            CarePerson.model_validate(c).model_dump(mode="json")
+            for c in member.caregivers
+        ]
     return out

@@ -96,6 +96,11 @@ class User(Base):
     onboarded_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Somebody who supports a member (models/care.py). Opens the caregiver
+    # tools; says nothing about how this account signs in.
+    is_caregiver: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -109,3 +114,38 @@ class User(Base):
     # No delete-orphan — see Event.attendees. Archiving a member must not erase
     # them from the counts their programs already reported.
     attending = relationship("Attendance", back_populates="user")
+
+    # Both directions of care_links. No cascade: a link outlives an archived
+    # account the same way attendance does.
+    care_links = relationship(
+        "CareLink", foreign_keys="CareLink.caregiver_id", back_populates="caregiver"
+    )
+    caregiver_links = relationship(
+        "CareLink", foreign_keys="CareLink.member_id", back_populates="member"
+    )
+
+    @property
+    def care(self) -> list["User"]:
+        """The live members this account currently supports."""
+        return [
+            link.member
+            for link in self.care_links
+            if link.active and link.member.deleted_at is None
+        ]
+
+    @property
+    def caregivers(self) -> list[dict]:
+        """Who currently supports this member — first name and last initial.
+        The member sees who can save for them; the caregiver's full name and
+        email are theirs."""
+        return [
+            {
+                "id": link.caregiver.id,
+                "first_name": link.caregiver.first_name,
+                "last_name": link.caregiver.last_name[:1],
+                "avatar_url": link.caregiver.avatar_url,
+                "avatar_emblem": link.caregiver.avatar_emblem,
+            }
+            for link in self.caregiver_links
+            if link.active and link.caregiver.deleted_at is None
+        ]

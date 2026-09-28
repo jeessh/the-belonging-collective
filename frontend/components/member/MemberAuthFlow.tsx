@@ -8,36 +8,54 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { CircleCheck, KeyRound, Mic, Smile } from "lucide-react";
-import { ApiError, api, apiMessage } from "@/lib/api";
-import { ALL_ICONS, emojiFor } from "@/lib/icons";
+import {
+  CircleCheck,
+  HeartHandshake,
+  KeyRound,
+  Mic,
+  Smile,
+  UserRound,
+} from "lucide-react";
+import { ApiError, api, apiMessage, shortName } from "@/lib/api";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField, type TextFieldProps } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-
-// Two icons, picked one at a time. Ordered, so the sequence is part of the key
-// — see ICON_POOL in core/icons.py for the trade this makes.
-const PICK_COUNT = 2;
-// Mirrors PASSWORD_MIN_LENGTH in backend/app/core/security.py.
-const PASSWORD_MIN_LENGTH = 8;
+import {
+  IconKeyPicker,
+  IconKeyShown,
+  PASSWORD_MIN_LENGTH,
+  PICK_COUNT,
+  type AuthMethod,
+} from "@/components/member/IconKey";
+import {
+  CareLinkForm,
+  type CareLinkResult,
+} from "@/components/member/CareLinkForm";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
 // Which credential the member last chose, per browser.
 const METHOD_KEY = "tbc.member-auth-method";
 
-export type AuthMethod = "icons" | "password";
+export type { AuthMethod };
 export type AuthDoor = "signup" | "login";
 export type AuthEntry = "chooser" | AuthDoor;
 
 type Step =
   | "chooser"
+  | "who"
   | "name"
   | "icons"
   | "email"
   | "password"
   | "credentials"
+  // The caregiver path after their own account exists: add the person they
+  // support, by creating that account or linking one, then show the key.
+  | "care-choice"
+  | "care-create"
+  | "care-link"
+  | "care-key"
   | "complete";
 
 /** What the surface around the flow draws: a heading, an optional line under it, and the step itself. */
@@ -72,7 +90,8 @@ export function MemberAuthFlow({
   children,
 }: {
   initial?: AuthEntry;
-  onSignedIn: (result: { mode: "login" | "signup" }) => void;
+  /** `caregiver` is set when a caregiver account was just created. */
+  onSignedIn: (result: { mode: "login" | "signup"; caregiver?: boolean }) => void;
   /** "Continue as guest". Browsing is already open; this just closes the door. */
   onGuest: () => void;
   children: (view: AuthView) => ReactNode;
@@ -100,6 +119,11 @@ export function MemberAuthFlow({
   // and "I forgot my icons" is the door for the one who genuinely can't.
   const [conflict, setConflict] = useState(false);
   const [forgot, setForgot] = useState(false);
+  // Chosen on the "who" step. A caregiver's account is always a password
+  // account — they have an email, and the icon key is for the people who
+  // can't type — so the Icons | Password switch stays out of their way.
+  const [caregiver, setCaregiver] = useState(false);
+  const [careResult, setCareResult] = useState<CareLinkResult | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   // Saying a name instead of typing it — the one place a member has to type.
@@ -177,7 +201,16 @@ export function MemberAuthFlow({
     setDoor(next);
     clearFeedback();
     setPicked([]);
+    setCaregiver(false);
     setStep(firstStep(next, method));
+  }
+
+  function enterAs(asCaregiver: boolean) {
+    setDoor("signup");
+    clearFeedback();
+    setPicked([]);
+    setCaregiver(asCaregiver);
+    setStep("name");
   }
 
   function togglePick(slug: string) {
@@ -253,9 +286,13 @@ export function MemberAuthFlow({
           last_name: last,
           email,
           password,
+          is_caregiver: caregiver,
         }),
       });
-      finish("signup");
+      // A caregiver's own account is half the job; the other half is the
+      // person they support, offered now and again on the profile page.
+      if (caregiver) setStep("care-choice");
+      else finish("signup");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setEmailTaken(true);
       setError(
@@ -295,8 +332,10 @@ export function MemberAuthFlow({
   }
 
   const nameReady = first.trim() !== "" && last.trim() !== "";
+  // The member's door is a choice of credential; a caregiver's is a password.
+  const passwordDoor = caregiver ? "password" : method;
 
-  const switcher = (
+  const switcher = caregiver ? null : (
     <div className="flex items-center gap-4">
       <SegmentedToggle
         label="Sign-in method"
@@ -339,7 +378,7 @@ export function MemberAuthFlow({
         subtitle: "Create an account to save events.",
         body: (
           <div className="flex flex-col gap-4">
-            <Button variant="primary" size="lg" onClick={() => enter("signup")}>
+            <Button variant="primary" size="lg" onClick={() => setStep("who")}>
               Create an account
             </Button>
             <Button variant="secondary" size="lg" onClick={() => enter("login")}>
@@ -369,15 +408,50 @@ export function MemberAuthFlow({
       };
       break;
 
+    case "who":
+      view = {
+        title: "Who are you?",
+        subtitle: "A caregiver supports a member and can save programs for them.",
+        body: (
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <WhoTile
+                icon={<UserRound />}
+                label="I'm a member"
+                hint="I go to programs."
+                onClick={() => enterAs(false)}
+                focusFirst
+              />
+              <WhoTile
+                icon={<HeartHandshake />}
+                label="I'm a caregiver"
+                hint="I support someone who does."
+                onClick={() => enterAs(true)}
+              />
+            </div>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setStep("chooser")}
+            >
+              Back
+            </Button>
+          </div>
+        ),
+      };
+      break;
+
     case "name":
       view = {
         title:
           door === "signup"
-            ? "Create your member account"
+            ? caregiver
+              ? "Create your caregiver account"
+              : "Create your member account"
             : "Login to your account",
         subtitle:
           door === "signup"
-            ? method === "icons"
+            ? passwordDoor === "icons"
               ? "Your name, then two icons."
               : "Your name, email and a password."
             : "Your name, then your two icons.",
@@ -387,7 +461,7 @@ export function MemberAuthFlow({
               e.preventDefault();
               if (!nameReady) return;
               clearFeedback();
-              setStep(method === "icons" ? "icons" : "email");
+              setStep(passwordDoor === "icons" ? "icons" : "email");
             }}
             className="flex flex-col gap-6"
           >
@@ -431,7 +505,9 @@ export function MemberAuthFlow({
             <Footer
               secondary={
                 door === "signup"
-                  ? { label: "Login", onClick: () => enter("login") }
+                  ? caregiver
+                    ? { label: "Back", onClick: () => setStep("who") }
+                    : { label: "Login", onClick: () => enter("login") }
                   : { label: "Cancel", onClick: () => setStep("chooser") }
               }
               primary={{ label: "Next", disabled: !nameReady }}
@@ -664,10 +740,107 @@ export function MemberAuthFlow({
       };
       break;
 
+    case "care-choice":
+      view = {
+        title: "Add the person you support?",
+        subtitle: "You can also do this later from your profile.",
+        body: (
+          <div className="flex flex-col gap-4">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setStep("care-create")}
+            >
+              Create their account
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setStep("care-link")}
+            >
+              Link an existing account
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setStep("complete")}
+            >
+              Skip
+            </Button>
+          </div>
+        ),
+      };
+      break;
+
+    case "care-create":
+      view = {
+        title: "Their account",
+        subtitle: "Their name, then their icons or a password. It is theirs to sign in with.",
+        body: (
+          <CareLinkForm
+            mode="create"
+            onDone={(result) => {
+              setCareResult(result);
+              setStep(result.icons.length ? "care-key" : "complete");
+            }}
+            onCancel={() => setStep("care-choice")}
+          />
+        ),
+      };
+      break;
+
+    case "care-link":
+      view = {
+        title: "Link their account",
+        subtitle: "Enter what they use to sign in.",
+        body: (
+          <CareLinkForm
+            mode="link"
+            onDone={(result) => {
+              setCareResult(result);
+              setStep("complete");
+            }}
+            onCancel={() => setStep("care-choice")}
+          />
+        ),
+      };
+      break;
+
+    case "care-key":
+      view = {
+        title: "Write these down",
+        subtitle: careResult
+          ? `${careResult.person.first_name} signs in with their name and these icons, in this order.`
+          : undefined,
+        body: (
+          <div className="flex flex-col gap-6">
+            <IconKeyShown
+              icons={careResult?.icons ?? []}
+              label={
+                careResult
+                  ? `${careResult.person.first_name}'s login icons`
+                  : "Their login icons"
+              }
+              note="Hand them over. If they are lost, staff can issue new ones."
+            />
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setStep("complete")}
+            >
+              Done
+            </Button>
+          </div>
+        ),
+      };
+      break;
+
     case "complete":
       view = {
         title: "Account creation complete!",
-        subtitle: "You can now save events.",
+        subtitle: careResult
+          ? `You can now save events for ${shortName(careResult.person)}`
+          : "You can now save events.",
         icon: (
           <CircleCheck
             aria-hidden="true"
@@ -677,34 +850,11 @@ export function MemberAuthFlow({
         ),
         body: (
           <div className="flex flex-col gap-6">
-            {method === "icons" && (
-              <div>
-                <p className="text-lg font-medium text-fg">Your login icons</p>
-                <ol className="mt-2 flex gap-4">
-                  {picked.map((slug, i) => (
-                    <li
-                      key={slug}
-                      className="relative grid size-20 place-items-center rounded-control border-2 border-primary-border bg-primary-soft text-4xl"
-                    >
-                      <span aria-hidden="true" className="glyph-centred">
-                        {emojiFor(slug)}
-                      </span>
-                      <span className="sr-only">
-                        Icon {i + 1}: {slug}
-                      </span>
-                      <OrderBadge n={i + 1} />
-                    </li>
-                  ))}
-                </ol>
-                <p className="mt-2 text-base text-fg-muted">
-                  Remember them, in this order.
-                </p>
-              </div>
-            )}
+            {passwordDoor === "icons" && <IconKeyShown icons={picked} />}
             <Button
               variant="primary"
               size="lg"
-              onClick={() => onSignedIn({ mode: "signup" })}
+              onClick={() => onSignedIn({ mode: "signup", caregiver })}
             >
               Continue to events
             </Button>
@@ -792,108 +942,32 @@ function NameField({
   );
 }
 
-function OrderBadge({ n }: { n: number }) {
-  // Centred on the corner point itself — half in, half out on both axes —
-  // which is the only offset that reads as deliberate at any tile size.
-  return (
-    <span
-      aria-hidden="true"
-      className="absolute right-0 top-0 grid size-6 -translate-y-1/2 translate-x-1/2 place-items-center rounded-full bg-primary-strong text-sm font-medium leading-none text-fg"
-    >
-      {n}
-    </span>
-  );
-}
-
-/**
- * The whole pool — two rows of six, nothing to scroll for — with the two
- * slots above it saying which pick they are on. One grid asked for two icons
- * with nothing saying so read as a single choice that had stopped responding.
- */
-function IconKeyPicker({
-  picked,
-  onToggle,
+/** One of the two big "who are you" choices: icon, short label, one line. */
+function WhoTile({
+  icon,
+  label,
+  hint,
+  onClick,
+  focusFirst = false,
 }: {
-  picked: string[];
-  onToggle: (slug: string) => void;
+  icon: ReactNode;
+  label: string;
+  hint: string;
+  onClick: () => void;
+  focusFirst?: boolean;
 }) {
   return (
-    <div>
-      <div className="flex items-center gap-4">
-        <p className="text-lg font-medium text-fg" aria-live="polite">
-          {picked.length >= PICK_COUNT
-            ? "Both chosen"
-            : `Icon ${picked.length + 1} of ${PICK_COUNT}`}
-        </p>
-        <div className="flex items-center gap-3">
-          {Array.from({ length: PICK_COUNT }).map((_, slot) => {
-            const slug = picked[slot];
-            return (
-              <button
-                key={slot}
-                type="button"
-                // Tapping a filled slot takes it back: one press to undo.
-                onClick={() => slug && onToggle(slug)}
-                disabled={!slug}
-                aria-label={
-                  slug
-                    ? `Icon ${slot + 1}: ${slug}. Activate to remove it.`
-                    : `Icon ${slot + 1}: not chosen yet`
-                }
-                className={`grid size-11 place-items-center rounded-control border-2 text-2xl leading-none disabled:cursor-default ${
-                  slug
-                    ? "border-primary-border bg-primary-soft"
-                    : "border-dashed border-line text-fg-muted"
-                }`}
-              >
-                {slug ? (
-                  <span aria-hidden="true" className="glyph-centred">
-                    {emojiFor(slug)}
-                  </span>
-                ) : (
-                  <span aria-hidden="true" className="text-base">
-                    {slot + 1}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-4 gap-3 pt-2 sm:grid-cols-6">
-        {ALL_ICONS.map((slug, i) => {
-          const order = picked.indexOf(slug);
-          const isPicked = order !== -1;
-          const full = picked.length >= PICK_COUNT && !isPicked;
-          return (
-            <button
-              key={slug}
-              type="button"
-              data-focus-first={i === 0 ? "" : undefined}
-              onClick={() => onToggle(slug)}
-              aria-pressed={isPicked}
-              aria-label={
-                isPicked
-                  ? `${slug}, chosen as icon ${order + 1}. Activate to remove.`
-                  : `Choose ${slug} as icon ${picked.length + 1}`
-              }
-              className={`relative grid aspect-square place-items-center rounded-control border-2 text-3xl leading-none transition-colors ${
-                isPicked
-                  ? "border-primary-border bg-primary-soft"
-                  : full
-                    ? "border-line bg-surface opacity-40"
-                    : "border-line bg-surface hover:border-primary-border hover:bg-surface-subtle"
-              }`}
-            >
-              <span aria-hidden="true" className="glyph-centred">
-                {emojiFor(slug)}
-              </span>
-              {isPicked && <OrderBadge n={order + 1} />}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      data-focus-first={focusFirst ? "" : undefined}
+      className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-card border-2 border-line bg-surface p-4 text-center transition-colors hover:border-primary-border hover:bg-surface-subtle"
+    >
+      <span aria-hidden="true" className="text-primary-border [&>svg]:size-10">
+        {icon}
+      </span>
+      <span className="text-xl font-medium text-fg">{label}</span>
+      <span className="text-base text-fg-muted">{hint}</span>
+    </button>
   );
 }

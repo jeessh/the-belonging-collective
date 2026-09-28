@@ -11,6 +11,19 @@ DISMISSED_MAX = 500
 DISMISSED_ID_MAX_LEN = 64
 
 
+class CarePerson(BaseModel):
+    """One side of a care link, as the other side sees it."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    first_name: str
+    # The initial only, when this is a caregiver seen by their member.
+    last_name: str
+    avatar_url: str | None = None
+    avatar_emblem: str | None = None
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -18,6 +31,10 @@ class UserOut(BaseModel):
     first_name: str
     last_name: str
     username: str
+    is_caregiver: bool = False
+    # Members this account supports (models/care.py), and who supports it.
+    care: list[CarePerson] = []
+    caregivers: list[CarePerson] = []
     # The login for a password account; optional for an icon account.
     email: str | None = None
     # A photo or an emblem slug, never both.
@@ -95,3 +112,5 @@ class UserPrefsUpdate(BaseModel):
     avatar_url: None = None
     # One of core/avatars.EMBLEMS, or null to clear. Setting it drops the photo.
     avatar_emblem: str | None = None
+    # Turning it off keeps existing links; it only hides the caregiver tools.
+    is_caregiver: bool | None = None

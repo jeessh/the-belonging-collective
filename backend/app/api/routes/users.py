@@ -3,10 +3,11 @@ import uuid
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user, get_db, require_admin
 from app.core.avatars import EMBLEMS
+from app.models.care import CareLink
 from app.models.host import Host
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserPrefsUpdate, UserUpdate
@@ -104,6 +105,8 @@ def list_users(
     return (
         db.query(User)
         .filter(User.deleted_at.is_(None))
+        # UserOut.care reads the links; without this it is a query per row.
+        .options(selectinload(User.care_links).selectinload(CareLink.member))
         .order_by(User.created_at.desc())
         .all()
     )
@@ -120,37 +123,9 @@ def create_user(
     Deliberately does NOT set an auth cookie: the caller is a superadmin doing
     admin work, and signing them in as the new member would end their session.
     """
-    from app.api.routes.auth import _allocate_unique_icons, _make_username
-    from app.core.icons import credential, validate_icon_selection
-    from app.core.security import hash_password
+    from app.api.routes.auth import new_member
 
-    username = _make_username(body.first_name, body.last_name)
-    if body.icons is not None:
-        try:
-            icons = validate_icon_selection(body.icons)
-        except ValueError as exc:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
-    else:
-        icons = _allocate_unique_icons(db, username)
-
-    user = User(
-        first_name=body.first_name.strip(),
-        last_name=body.last_name.strip(),
-        username=username,
-        password_hash=hash_password(credential(username, icons)),
-        auth_type="icon",
-        icons=icons,
-    )
-    db.add(user)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "That name and icon combination is already taken.",
-        )
-    db.refresh(user)
+    user = new_member(db, body.first_name, body.last_name, icons=body.icons)
     # Returned so they can be written down and handed over now; staff can also
     # read them off the members table later, or re-issue them (reset_user_key).
     return {

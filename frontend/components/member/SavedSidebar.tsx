@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { longDate } from "@/lib/time";
-import { savedCalendarUrl } from "@/lib/calendar";
 import { Button, buttonClass } from "@/components/ui/Button";
 
 /** The rail's stacked icon-over-label button. */
@@ -28,6 +27,10 @@ type Props = {
   /** A card is being dragged (or held) toward the zone. */
   active: boolean;
   signedIn: boolean;
+  /** "Sam R." when a caregiver is saving for someone; null for their own. */
+  owner?: string | null;
+  /** The `.ics` for whichever list is showing. */
+  calendarUrl: string;
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
   onSignIn: () => void;
@@ -49,6 +52,8 @@ export const SavedSidebar = memo(
       events,
       active,
       signedIn,
+      owner = null,
+      calendarUrl,
       onOpenSaved,
       onOpenEvent,
       onSignIn,
@@ -58,6 +63,7 @@ export const SavedSidebar = memo(
     const open = layout === "panel";
     const count = events.length;
     const countLabel = `${count} Saved ${count === 1 ? "Event" : "Events"}`;
+    const title = owner ? `${owner}'s Saved Events` : "Saved Events";
 
     if (layout === "bar") {
       return (
@@ -78,6 +84,7 @@ export const SavedSidebar = memo(
               <span className="sr-only">
                 {" "}
                 {count === 1 ? "Event" : "Events"}
+                {owner ? ` for ${owner}` : ""}
               </span>
             </span>
             {/* The calendar export lives on the saved list here; the bar
@@ -117,7 +124,7 @@ export const SavedSidebar = memo(
     );
     const calendar = signedIn ? (
       <a
-        href={savedCalendarUrl}
+        href={calendarUrl}
         className={buttonClass("secondary", open ? "lg" : "md", open ? "w-full" : RAIL)}
       >
         {calendarInner}
@@ -156,7 +163,10 @@ export const SavedSidebar = memo(
               active ? "bg-primary-soft" : ""
             }`}
           >
-            <span className="sr-only">{countLabel}</span>
+            <span className="sr-only">
+              {owner ? `${title}: ` : ""}
+              {countLabel}
+            </span>
             {events.map((ev) => (
               <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} compact />
             ))}
@@ -184,7 +194,10 @@ export const SavedSidebar = memo(
         <div className="flex items-center justify-between gap-3 px-6">
           <div className="min-w-0">
             <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
-            <p className="text-xl text-fg-muted">{countLabel}</p>
+            <p className="truncate text-xl text-fg-muted">
+              {owner ? `For ${owner} · ` : ""}
+              {countLabel}
+            </p>
           </div>
           <Button
             variant="secondary"
