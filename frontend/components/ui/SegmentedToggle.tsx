@@ -58,11 +58,14 @@ export function SegmentedToggle<T extends string>({
   const track = pill
     ? "rounded-full border border-line bg-surface p-1"
     : "rounded-control border border-line bg-surface";
+  // The border colour lives only on the state classes: two border colours on
+  // one element resolve by stylesheet order, not class order, and the
+  // transparent one was winning over the selected cyan.
   const segmentBase = pill
-    ? "rounded-full border border-transparent px-4 py-2"
-    : "rounded-control border border-transparent px-4 py-2 sm:px-6";
+    ? "rounded-full border px-4 py-2"
+    : "rounded-control border px-4 py-2 sm:px-6";
   const selected = pill
-    ? "bg-primary-active"
+    ? "border-transparent bg-primary-active"
     : "border-primary-border bg-primary-soft";
 
   return (
@@ -88,7 +91,7 @@ export function SegmentedToggle<T extends string>({
             onClick={() => onChange(seg.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-3 whitespace-nowrap text-base text-fg transition-colors sm:text-lg ${segmentBase} ${
-              checked ? selected : "hover:bg-surface-subtle"
+              checked ? selected : "border-transparent hover:bg-surface-subtle"
             }`}
           >
             {seg.icon && (
