@@ -305,15 +305,41 @@ def shared_list(token: str, db: Session = Depends(get_db)):
     return SharedListOut(first_name=user.first_name, events=out)
 
 
-@router.get("/shared/{token}/calendar.ics")
-def shared_calendar(token: str, db: Session = Depends(get_db)):
-    """The same list as a calendar feed, for Google Calendar's "subscribe by
-    URL" — Google fetches it from its own servers, without the member's
-    cookie. Past dates stay in, so subscribing never empties last week."""
-    user = _shared_owner(db, token)
-    rows = _shared_events(db, user).order_by(Event.starts_at.asc(), Event.id.asc()).all()
+# ---------- calendar feed ----------
+
+
+@router.post("/users/me/calendar-feed")
+def calendar_feed(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """The member's private calendar handle — made on first ask, the same one
+    after, so a calendar subscribed once keeps working."""
+    if not user.calendar_token:
+        user.calendar_token = secrets.token_urlsafe(24)
+        db.commit()
+    return {"token": user.calendar_token}
+
+
+@router.get("/calendar/{token}.ics")
+def calendar_feed_ics(token: str, db: Session = Depends(get_db)):
+    """The member's saved list as a feed a calendar app subscribes to, so
+    every save lands in their calendar and an un-save leaves it. Google
+    fetches it from its own servers without the member's cookie, so the token
+    is the key. Unlike the share link it is the whole list, special access
+    included: it only goes to the member's own calendar. Past dates stay in,
+    so the calendar keeps last week."""
+    user = (
+        db.query(User)
+        .filter(User.calendar_token == token, User.deleted_at.is_(None))
+        .first()
+    )
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such calendar")
     return Response(
-        ical.build(rows, name=f"{user.first_name}'s programs · The Belonging Collective"),
+        ical.build(
+            saved_events(db, user),
+            name=f"{user.first_name}'s programs · The Belonging Collective",
+        ),
         media_type="text/calendar; charset=utf-8",
     )
 

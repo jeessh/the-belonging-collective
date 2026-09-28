@@ -39,6 +39,7 @@ class User(Base):
             postgresql_where=text("email IS NOT NULL AND deleted_at IS NULL"),
         ),
         Index("uq_users_share_token", "share_token", unique=True),
+        Index("uq_users_calendar_token", "calendar_token", unique=True),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -55,6 +56,9 @@ class User(Base):
     avatar_emblem: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Public handle for the member's saved list (GET /shared/{token}).
     share_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Private handle for the member's calendar feed (GET /calendar/{token}.ics):
+    # the whole saved list, special access included, unlike the share link.
+    calendar_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str] = mapped_column(Text)
     # 'password' for every account that can sign in; 'icon' is legacy.
     auth_type: Mapped[str] = mapped_column(Text, default="password")

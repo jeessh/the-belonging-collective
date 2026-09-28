@@ -28,8 +28,8 @@ import {
 } from "@/lib/api";
 import {
   googleCalendarUrl,
-  googleSubscribeUrl,
   openGoogleCalendar,
+  subscribeInGoogleCalendar,
 } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
@@ -112,17 +112,10 @@ export const SavedEvents = memo(function SavedEvents({
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const { show } = useToast();
 
-  // The tab opens inside the click, before the token arrives; opened after
-  // the await it would be a popup the browser blocks.
   async function subscribeInGoogle() {
-    const tab = window.open("", "_blank");
-    if (tab) tab.opener = null;
     try {
-      const url = googleSubscribeUrl((await createShareLink()).token);
-      if (tab) tab.location.href = url;
-      else window.location.href = url;
+      await subscribeInGoogleCalendar();
     } catch (err) {
-      tab?.close();
       show({
         title: apiMessage(err, "Couldn't open Google Calendar."),
         tone: "alert",
@@ -290,9 +283,9 @@ export const SavedEvents = memo(function SavedEvents({
               {/* Three of the design's large buttons are five rows on a phone;
                   the medium size there fits two to a row. */}
               <div className="flex shrink-0 flex-wrap gap-3">
-                {/* The whole list, subscribed in Google Calendar. Someone
-                    else's list (a caregiver's view) has no share link of
-                    theirs to subscribe to, so it stays a download. */}
+                {/* The whole list, subscribed in Google Calendar. The feed
+                    is the signed-in account's own, so someone else's list
+                    (a caregiver's view) stays a download. */}
                 {owner ? (
                   <a
                     href={calendarUrl}
