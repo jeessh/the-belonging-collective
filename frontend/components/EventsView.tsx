@@ -1209,15 +1209,13 @@ export function EventsView({
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
                 >
-                  {/* The deck beneath, as drawn: the next card, greyed and
-                      narrower, peeking below with its blurred Save button.
-                      Purely decorative. */}
+                  {/* The deck beneath: the next card, greyed and narrower,
+                      peeking below. Purely decorative, and plain — the
+                      design's blurred Save button on it read as a glitch. */}
                   <div
                     aria-hidden
-                    className="absolute inset-x-8 -bottom-6 top-16 overflow-hidden rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
-                  >
-                    <div className="absolute bottom-4 left-10 h-3 w-2/5 rounded-md bg-primary-strong/60 blur-[5px] short:!bottom-2" />
-                  </div>
+                    className="absolute inset-x-8 -bottom-6 top-16 rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
+                  />
                   <motion.div
                     ref={cardWrapRef}
                     style={{
