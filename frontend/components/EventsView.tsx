@@ -1174,7 +1174,12 @@ export function EventsView({
                 </div>
               </div>
 
-              <FeedFilters chips={chips} onToggleChip={toggleChip} />
+              <FeedFilters
+                chips={chips}
+                onToggleChip={toggleChip}
+                interests={taste.interests}
+                events={events}
+              />
             </div>
 
             {status === "empty" ? (
