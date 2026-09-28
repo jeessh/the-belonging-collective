@@ -10,7 +10,7 @@ import {
 } from "react";
 import {
   ArrowLeft,
-  BookmarkX,
+  BookX,
   GalleryVerticalEnd,
   LayoutGrid,
   MoveLeft,
@@ -507,7 +507,7 @@ function SavedCard({
                 onUnsave(event);
               }}
               aria-label={`Un-save ${event.title}`}
-              leadingIcon={<BookmarkX />}
+              leadingIcon={<BookX />}
             >
               Un-save
             </Button>
