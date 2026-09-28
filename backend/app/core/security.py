@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from app.core.config import settings
 
 # One rule for every typed password — organizer and member alike.
-PASSWORD_MIN_LENGTH = 8
+PASSWORD_MIN_LENGTH = 5
 
 
 def _to_bytes(password: str) -> bytes:
