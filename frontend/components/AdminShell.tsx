@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ApiError,
   api,
@@ -41,7 +41,6 @@ export function AdminShell({
   children: (ctx: ConsoleContext) => ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [ctx, setCtx] = useState<Omit<
     ConsoleContext,
     "pendingAccess" | "refreshPendingAccess"
@@ -83,11 +82,10 @@ export function AdminShell({
     };
   }, [router, attempt]);
 
-  // Re-counted on every page change: a request that arrived while staff
-  // were elsewhere in the console shows up on the next click.
+  // Each console page mounts its own shell, so this runs once per page.
   useEffect(() => {
     if (ctx) refreshPendingAccess();
-  }, [ctx, pathname, refreshPendingAccess]);
+  }, [ctx, refreshPendingAccess]);
 
   if (failed) {
     return (
