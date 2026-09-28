@@ -13,6 +13,8 @@ export const FOCUSABLE =
 // initial focus.
 const SIZE = {
   md: "max-w-lg",
+  /** The design's sign-in and form dialogs: 800px wide. */
+  form: "max-w-[800px]",
   lg: "max-w-[960px]",
 };
 
@@ -29,6 +31,7 @@ export function isTopmostDialog(el: Element | null): boolean {
 
 export function Modal({
   title,
+  subtitle,
   onClose,
   children,
   labelId,
@@ -40,11 +43,13 @@ export function Modal({
    * `labelId` naming it), as the event dialog does.
    */
   title: React.ReactNode;
+  /** The grey line under the heading, in the one style every dialog uses. */
+  subtitle?: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   /** Optional id override for the heading (defaults to a generated id). */
   labelId?: string;
-  /** `lg` is the design's Expanded Card width. */
+  /** `form` is the design's sign-in dialog; `lg` its Expanded Card. */
   size?: keyof typeof SIZE;
   /**
    * The design's Expanded Card draws its × as a ring just past the panel's
@@ -129,7 +134,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border border-line bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-10`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border border-line bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-12`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2
@@ -143,18 +148,22 @@ export function Modal({
               {title}
             </div>
           )}
+          {subtitle && (
+            <p className="mt-2 text-lg text-fg-muted">{subtitle}</p>
+          )}
           {children}
+          {/* Centred on the padding corner, as the sheet draws the ×. */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-6 sm:top-6 ${
+            className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-[26px] sm:top-[26px] ${
               closeOutside
                 ? "xl:-right-[76px] xl:top-0 xl:size-[52px] xl:rounded-full xl:border xl:border-line xl:bg-surface"
                 : ""
             }`}
           >
-            <X aria-hidden="true" className="size-8" />
+            <X aria-hidden="true" className="size-7" />
           </button>
         </motion.div>
       </div>

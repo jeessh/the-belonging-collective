@@ -82,11 +82,13 @@ export default function AcceptInvitePage() {
 
   if (invite === null) {
     return (
-      <AuthPage title="This link has expired">
-        <div className="flex flex-col gap-3 text-lg text-fg-muted">
-          <p>{problem}</p>
-          <p>Ask whoever invited you to send a new one.</p>
-        </div>
+      <AuthPage
+        title="This link has expired"
+        subtitle={problem}
+      >
+        <p className="text-lg text-fg-muted">
+          Ask whoever invited you to send a new one.
+        </p>
       </AuthPage>
     );
   }
@@ -94,28 +96,29 @@ export default function AcceptInvitePage() {
   return (
     <AuthPage
       title={`Welcome, ${invite.staff ? invite.name || invite.email : invite.organization}`}
+      // Showing who they are and who invited them is what separates this
+      // from a phishing link that just asks for a password.
+      subtitle={
+        invite.staff
+          ? `You've been invited to join ${invite.organization}'s team on The Belonging Collective. Choose a password and you're in.`
+          : "You've been invited to post events on The Belonging Collective. Choose a password and you're in."
+      }
     >
-      {/* Showing who they are and who invited them is what separates this
-          from a phishing link that just asks for a password. */}
-      <div className="flex flex-col gap-1">
-        <p className="text-lg text-fg">
-          {invite.staff
-            ? `You've been invited to join ${invite.organization}'s team on The Belonging Collective.`
-            : "You've been invited to post events on The Belonging Collective."}{" "}
-          Choose a password and you&apos;re in.
-        </p>
-        <p className="text-base text-fg-muted">
-          You&apos;ll sign in with {invite.email}.
-        </p>
-      </div>
-
       <form
-        className="flex flex-col gap-4 border-t border-line-active pt-9"
+        className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) void submit();
         }}
       >
+        <TextField
+          label="Email"
+          placeholder="Enter your email"
+          type="email"
+          value={invite.email}
+          readOnly
+        />
+        <hr className="border-line-active" />
         <TextField
           label="Set password"
           required
@@ -137,7 +140,7 @@ export default function AcceptInvitePage() {
         />
 
         {error && (
-          <p role="alert" className="text-base text-danger-fg">
+          <p role="alert" className="text-lg text-danger-fg">
             {error}
           </p>
         )}
@@ -146,10 +149,10 @@ export default function AcceptInvitePage() {
           type="submit"
           variant="primary"
           size="lg"
-          className="mt-2"
-          disabled={busy || password.length < 8 || !confirm}
+          className="mt-4"
+          disabled={busy || password.length < PASSWORD_MIN_LENGTH || !confirm}
         >
-          {busy ? "Setting up…" : "Create my account"}
+          {busy ? "Setting up…" : "Create account"}
         </Button>
       </form>
     </AuthPage>

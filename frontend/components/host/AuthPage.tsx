@@ -4,13 +4,16 @@ import { Brand } from "@/components/Brand";
 
 /**
  * The organizer door: sign-in, invitation, forgot and reset. One column
- * under the logo, the way the design draws it, in the console's tokens.
+ * under the logo, the way the design draws it: a heading, an optional grey
+ * line, then the form.
  */
 export function AuthPage({
   title,
+  subtitle,
   children,
 }: {
   title: ReactNode;
+  subtitle?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -22,9 +25,10 @@ export function AuthPage({
         >
           <Brand />
         </Link>
-        <div className="flex flex-col gap-9">
-          <h1 className="text-3xl font-medium text-fg">{title}</h1>
-          {children}
+        <div>
+          <h1 className="text-2xl font-medium text-fg sm:text-3xl">{title}</h1>
+          {subtitle && <p className="mt-2 text-lg text-fg-muted">{subtitle}</p>}
+          <div className="mt-10 flex flex-col gap-9">{children}</div>
         </div>
       </div>
     </main>

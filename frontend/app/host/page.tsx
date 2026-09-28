@@ -39,9 +39,9 @@ export default function HostAuthPage() {
   }
 
   return (
-    <AuthPage title="Sign in to the admin console">
+    <AuthPage title="Login to the admin console">
       <form
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy && email && password) void submit();
@@ -65,7 +65,7 @@ export default function HostAuthPage() {
         />
 
         {error && (
-          <p role="alert" className="text-base text-danger-fg">
+          <p role="alert" className="text-lg text-danger-fg">
             {error}
           </p>
         )}
@@ -74,10 +74,10 @@ export default function HostAuthPage() {
           type="submit"
           variant="primary"
           size="lg"
-          className="mt-2"
+          className="mt-4"
           disabled={busy || !email || !password}
         >
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Logging in…" : "Login"}
         </Button>
       </form>
 

@@ -71,8 +71,7 @@ export default function ResetPasswordPage() {
 
   if (target === null) {
     return (
-      <AuthPage title="This link has expired">
-        <p className="text-lg text-fg-muted">{problem}</p>
+      <AuthPage title="This link has expired" subtitle={problem}>
         <Link
           href="/host/forgot"
           className="w-fit text-lg text-fg underline underline-offset-4"
@@ -84,16 +83,12 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthPage title="Choose a new password">
-      <div className="flex flex-col gap-1">
-        <p className="text-lg text-fg">For {target.organization}.</p>
-        <p className="text-base text-fg-muted">
-          You&apos;ll sign in with {target.email}.
-        </p>
-      </div>
-
+    <AuthPage
+      title="Choose a new password"
+      subtitle={`For ${target.organization}. You'll log in with ${target.email}. Please include a minimum of ${PASSWORD_MIN_LENGTH} characters.`}
+    >
       <form
-        className="flex flex-col gap-4 border-t border-line-active pt-9"
+        className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) void submit();
@@ -120,12 +115,11 @@ export default function ResetPasswordPage() {
         />
 
         <p className="text-base text-fg-muted">
-          At least {PASSWORD_MIN_LENGTH} characters. Anyone still signed in to this account
-          elsewhere will be signed out.
+          Anyone still signed in to this account elsewhere will be signed out.
         </p>
 
         {error && (
-          <p role="alert" className="text-base text-danger-fg">
+          <p role="alert" className="text-lg text-danger-fg">
             {error}
           </p>
         )}
@@ -134,8 +128,8 @@ export default function ResetPasswordPage() {
           type="submit"
           variant="primary"
           size="lg"
-          className="mt-2"
-          disabled={busy || password.length < 8 || !confirm}
+          className="mt-4"
+          disabled={busy || password.length < PASSWORD_MIN_LENGTH || !confirm}
         >
           {busy ? "Saving…" : "Save new password"}
         </Button>
