@@ -18,6 +18,7 @@ export function LoginOverlay({
   onClose,
   onSignedIn,
   onGuest,
+  onBack,
   initial = "chooser",
 }: {
   onClose: () => void;
@@ -25,6 +26,12 @@ export function LoginOverlay({
   onSignedIn: () => void;
   /** "Continue as guest". Defaults to closing. */
   onGuest?: () => void;
+  /**
+   * "Go back" after an account is created: the cookie is set, so the feed
+   * still has to learn about it, but the member returns to what they were
+   * looking at rather than going on with whatever prompted the sign-in.
+   */
+  onBack?: () => void;
   initial?: AuthEntry;
 }) {
   // The Modal re-runs its focus setup whenever `onClose` changes identity,
@@ -41,6 +48,7 @@ export function LoginOverlay({
         initial={initial}
         onSignedIn={() => onSignedIn()}
         onGuest={onGuest ?? close}
+        onBack={onBack}
       >
         {(view) => (
           <Modal

@@ -103,11 +103,11 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 
       <div className="flex flex-col gap-3">
         <h1 className="text-4xl font-medium text-fg sm:text-5xl">
-          Administrative Accounts
+          All Administrative Members
         </h1>
         <p className="text-xl text-fg">
-          Organizations with access to post and manage events on The Belonging
-          Collective.
+          Organizations with administrative access to the events on The
+          Belonging Collective, and the staff logins under each.
         </p>
       </div>
 
@@ -152,8 +152,8 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </p>
       ) : (
         <TableCard
-          caption="Organizations, their staff logins, their access level, and how many programs each owns."
-          head={["Name", "Email", "Access", "Programs", ""]}
+          caption="Non-profits, their staff logins, their access level, and how many programs each owns."
+          head={["Non-Profit", "Email", "Access", "Programs", ""]}
         >
           {loading ? (
             <EmptyRow colSpan={5} text="Loading…" />
@@ -344,10 +344,10 @@ function InviteForm({
   return (
     <section className="flex max-w-[1026px] flex-col gap-3">
       <div>
-        <h2 className="text-xl font-medium text-fg">Invite an organization</h2>
+        <h2 className="text-xl font-medium text-fg">Invite New Members</h2>
         <p className="text-xl text-fg">
-          Send a unique invite link by email. They choose their own password
-          when they open it.
+          Send a unique invite link to a new organization by email. They
+          choose their own password when they open it.
         </p>
       </div>
 
@@ -409,7 +409,7 @@ function InviteForm({
             disabled={busy || !organization.trim() || !email.trim()}
             trailingIcon={<SendHorizontal />}
           >
-            {busy ? "Sending…" : "Send"}
+            {busy ? "Sending…" : "Send Email"}
           </Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">

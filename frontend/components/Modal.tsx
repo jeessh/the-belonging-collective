@@ -33,6 +33,7 @@ export function Modal({
   children,
   labelId,
   size = "md",
+  closeOutside = false,
 }: {
   /**
    * The heading. Pass null when the heading is inside `children` (with
@@ -45,6 +46,12 @@ export function Modal({
   labelId?: string;
   /** `lg` is the design's Expanded Card width. */
   size?: keyof typeof SIZE;
+  /**
+   * The design's Expanded Card draws its × as a ring just past the panel's
+   * top-right corner. Only from `xl`, where a 960px panel leaves room for
+   * it: narrower screens keep the × inside, and a phone sheet has no outside.
+   */
+  closeOutside?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -141,7 +148,11 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-6 sm:top-6"
+            className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-6 sm:top-6 ${
+              closeOutside
+                ? "xl:-right-[76px] xl:top-0 xl:size-[52px] xl:rounded-full xl:border xl:border-line xl:bg-surface"
+                : ""
+            }`}
           >
             <X aria-hidden="true" className="size-8" />
           </button>

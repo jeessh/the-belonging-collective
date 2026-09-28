@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ApiError, api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/TextField";
+import { AuthPage } from "@/components/host/AuthPage";
 
 /**
  * Accepting an invitation — to join as an organization, or as one person on
@@ -67,88 +69,88 @@ export default function AcceptInvitePage() {
     }
   }
 
+  if (invite === undefined) {
+    return (
+      <AuthPage title="Checking your invite…">
+        <p className="sr-only" role="status">
+          Loading
+        </p>
+      </AuthPage>
+    );
+  }
+
+  if (invite === null) {
+    return (
+      <AuthPage title="This link has expired">
+        <div className="flex flex-col gap-3 text-lg text-fg-muted">
+          <p>{problem}</p>
+          <p>Ask whoever invited you to send a new one.</p>
+        </div>
+      </AuthPage>
+    );
+  }
+
   return (
-    <main className="grid min-h-dvh place-items-center bg-white px-6 py-10">
-      <section className="w-full max-w-[520px]">
-        {invite === undefined ? (
-          <p className="text-center text-lg text-muted">Checking your invite…</p>
-        ) : invite === null ? (
-          <>
-            <h1 className="font-display text-4xl font-extrabold text-ink">
-              This link has expired
-            </h1>
-            <p className="mt-3 text-lg text-muted">{problem}</p>
-            <p className="mt-3 text-lg text-muted">
-              Ask whoever invited you to send a new one.
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="font-display text-4xl font-extrabold text-ink">
-              Welcome, {invite.staff ? invite.name || invite.email : invite.organization}
-            </h1>
-            {/* Showing who they are and who invited them is what separates this
-                from a phishing link that just asks for a password. */}
-            <p className="mt-3 text-lg text-ink">
-              {invite.staff
-                ? `You've been invited to join ${invite.organization}'s team on The Belonging Collective.`
-                : "You've been invited to post events on The Belonging Collective."}{" "}
-              Choose a password and you&apos;re in.
-            </p>
-            <p className="mt-1 text-base text-muted">
-              You&apos;ll sign in with {invite.email}.
-            </p>
+    <AuthPage
+      title={`Welcome, ${invite.staff ? invite.name || invite.email : invite.organization}`}
+    >
+      {/* Showing who they are and who invited them is what separates this
+          from a phishing link that just asks for a password. */}
+      <div className="flex flex-col gap-1">
+        <p className="text-lg text-fg">
+          {invite.staff
+            ? `You've been invited to join ${invite.organization}'s team on The Belonging Collective.`
+            : "You've been invited to post events on The Belonging Collective."}{" "}
+          Choose a password and you&apos;re in.
+        </p>
+        <p className="text-base text-fg-muted">
+          You&apos;ll sign in with {invite.email}.
+        </p>
+      </div>
 
-            <form
-              className="mt-7 flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!busy) void submit();
-              }}
-            >
-              <label className="flex flex-col gap-1.5">
-                <span className="text-base font-medium text-ink">Password</span>
-                <input
-                  autoFocus
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl border-2 border-[#B9B7C4] px-4 py-3 text-lg outline-none focus:border-accent"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-base font-medium text-ink">
-                  Password again
-                </span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="rounded-xl border-2 border-[#B9B7C4] px-4 py-3 text-lg outline-none focus:border-accent"
-                />
-              </label>
+      <form
+        className="flex flex-col gap-4 border-t border-line-active pt-9"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy) void submit();
+        }}
+      >
+        <TextField
+          label="Set password"
+          required
+          autoFocus
+          type="password"
+          autoComplete="new-password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <TextField
+          label="Confirm password"
+          required
+          type="password"
+          autoComplete="new-password"
+          placeholder="Re-enter password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
 
-              {error && (
-                <p role="alert" className="font-semibold text-red-600">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="mt-2"
-                disabled={busy || password.length < 8 || !confirm}
-                >
-                  {busy ? "Setting up…" : "Create my account"}
-                </Button>
-            </form>
-          </>
+        {error && (
+          <p role="alert" className="text-base text-danger-fg">
+            {error}
+          </p>
         )}
-      </section>
-    </main>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="mt-2"
+          disabled={busy || password.length < 8 || !confirm}
+        >
+          {busy ? "Setting up…" : "Create my account"}
+        </Button>
+      </form>
+    </AuthPage>
   );
 }

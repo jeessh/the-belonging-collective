@@ -1,10 +1,18 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   BookmarkX,
   CalendarDays,
+  MoveLeft,
   MoveRight,
   Printer,
   Search,
@@ -32,6 +40,9 @@ const TABS = [
   { value: "upcoming" as const, label: "Upcoming Events" },
   { value: "past" as const, label: "Past Events" },
 ];
+
+// Three rows of the two-column grid; six rows on a phone.
+const PAGE_SIZE = 6;
 
 type Props = {
   /** Null when signed out — there is no list to show, only a way to get one. */
@@ -67,7 +78,9 @@ export const SavedEvents = memo(function SavedEvents({
 }: Props) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("upcoming");
+  const [page, setPage] = useState(1);
   const [sub, setSub] = useState<"share" | "print" | null>(null);
+  const listHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -140,6 +153,18 @@ export const SavedEvents = memo(function SavedEvents({
 
   const shown = tab === "upcoming" ? upcoming : past;
   const total = oneCardPerProgram(events).length;
+  // Clamped on read rather than in an effect, so an un-save that empties the
+  // last page shows the one before it in the same render.
+  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount);
+  const onPage = shown.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  const tabLabel = TABS.find((t) => t.value === tab)!.label;
+
+  function goTo(next: number) {
+    setPage(next);
+    // The heading sits above the cards, so the new page reads from its top.
+    listHeadingRef.current?.focus();
+  }
   const listTitle = owner
     ? `${owner}'s Saved Events`
     : me
@@ -187,7 +212,10 @@ export const SavedEvents = memo(function SavedEvents({
                 <input
                   type="search"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Search for event"
                   className="min-h-14 w-full rounded-control border border-line bg-surface py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted"
                 />
@@ -230,7 +258,10 @@ export const SavedEvents = memo(function SavedEvents({
               label="Which events"
               segments={TABS}
               value={tab}
-              onChange={setTab}
+              onChange={(next) => {
+                setTab(next);
+                setPage(1);
+              }}
             />
 
             {shown.length === 0 ? (
@@ -239,40 +270,89 @@ export const SavedEvents = memo(function SavedEvents({
                   Nothing matches that.
                 </p>
               ) : (
-                <Empty onAction={onClose} action="Browse Events" />
+                <Empty
+                  onAction={onClose}
+                  action="Browse Events"
+                  icon={<Search />}
+                />
               )
             ) : (
-              <ul className="grid gap-6 xl:grid-cols-2">
-                {shown.map((ev) => (
-                  <li
-                    key={ev.id}
-                    className="rounded-card border border-line-card bg-surface p-6"
+              <>
+                {/* The toggle already says which list this is; the heading
+                    is for the keyboard and screen reader — it takes focus on
+                    a page change and names the list. */}
+                <h2
+                  ref={listHeadingRef}
+                  tabIndex={-1}
+                  className="sr-only"
+                >
+                  {tabLabel}
+                </h2>
+                <ul className="grid gap-6 xl:grid-cols-2">
+                  {onPage.map((ev) => (
+                    <li
+                      key={ev.id}
+                      className="rounded-card border border-line-card bg-surface p-6"
+                    >
+                      <EventSummary
+                        event={ev}
+                        layout="row"
+                        going={<GoingCount count={ev.saved_count} />}
+                        actions={
+                          <>
+                            <Button
+                              onClick={() => onUnsave(ev)}
+                              aria-label={`Un-save ${ev.title}`}
+                              leadingIcon={<BookmarkX />}
+                            >
+                              Un-save
+                            </Button>
+                            <Button
+                              onClick={() => onOpen(ev)}
+                              trailingIcon={<MoveRight />}
+                            >
+                              More information
+                            </Button>
+                          </>
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {pageCount > 1 && (
+                  <nav
+                    aria-label="Saved events pages"
+                    className="flex flex-wrap items-center justify-center gap-4 sm:gap-9"
                   >
-                    <EventSummary
-                      event={ev}
-                      layout="row"
-                      going={<GoingCount count={ev.saved_count} />}
-                      actions={
-                        <>
-                          <Button
-                            onClick={() => onUnsave(ev)}
-                            aria-label={`Un-save ${ev.title}`}
-                            leadingIcon={<BookmarkX />}
-                          >
-                            Un-save
-                          </Button>
-                          <Button
-                            onClick={() => onOpen(ev)}
-                            trailingIcon={<MoveRight />}
-                          >
-                            More information
-                          </Button>
-                        </>
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
+                    <Button
+                      size="lg"
+                      className={`flex-1 ${ACTION}`}
+                      disabled={current === 1}
+                      onClick={() => goTo(current - 1)}
+                      leadingIcon={<MoveLeft />}
+                    >
+                      Back
+                    </Button>
+                    <p
+                      role="status"
+                      aria-live="polite"
+                      className="order-first w-full text-center text-lg text-fg sm:order-none sm:w-auto"
+                    >
+                      Page {current} of {pageCount}
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className={`flex-1 ${ACTION}`}
+                      disabled={current === pageCount}
+                      onClick={() => goTo(current + 1)}
+                      trailingIcon={<MoveRight />}
+                    >
+                      Next
+                    </Button>
+                  </nav>
+                )}
+              </>
             )}
           </>
         )}
@@ -325,13 +405,27 @@ export const SavedEvents = memo(function SavedEvents({
   );
 });
 
-function Empty({ action, onAction }: { action: string; onAction: () => void }) {
+function Empty({
+  action,
+  icon,
+  onAction,
+}: {
+  action: string;
+  icon?: ReactNode;
+  onAction: () => void;
+}) {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 py-24 text-center">
       <p className="text-3xl font-medium text-fg">
         You don&apos;t have any saved events yet!
       </p>
-      <Button variant="primary" size="lg" className="w-full" onClick={onAction}>
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full"
+        onClick={onAction}
+        trailingIcon={icon}
+      >
         {action}
       </Button>
     </div>
