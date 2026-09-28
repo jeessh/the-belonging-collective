@@ -4,6 +4,9 @@ import {
   type Event,
   type GoogleCalendarState,
 } from "@/lib/api";
+import type { ToastOptions } from "@/components/ui/Toast";
+
+const GOOGLE_CALENDAR = "https://calendar.google.com/calendar/r";
 
 /** "20260828T170000Z" — the compact UTC form Google's template URL wants. */
 function stamp(at: Date): string {
@@ -65,14 +68,24 @@ function googleSubscribeUrl(feedToken: string): string {
  * leaves it, with nothing more to click. Call it from a click — the tab opens
  * before the token arrives, because one opened after an await is a popup the
  * browser blocks. Throws, with the tab closed, when there is no token.
+ *
+ * Once Google has fetched the feed it is already in their calendar, and a
+ * second "Add" would list it twice: the tab opens Google Calendar instead
+ * and this returns "already". `again` skips that, for a member who removed
+ * it and wants it back.
  */
-async function subscribeInGoogleCalendar(): Promise<void> {
+async function subscribeInGoogleCalendar(
+  again = false,
+): Promise<"added" | "already"> {
   const tab = window.open("", "_blank");
   if (tab) tab.opener = null;
   try {
-    const url = googleSubscribeUrl((await createCalendarFeed()).token);
+    const feed = await createCalendarFeed();
+    const already = feed.subscribed && !again;
+    const url = already ? GOOGLE_CALENDAR : googleSubscribeUrl(feed.token);
     if (tab) tab.location.href = url;
     else window.location.href = url;
+    return already ? "already" : "added";
   } catch (err) {
     tab?.close();
     throw err;
@@ -83,17 +96,27 @@ async function subscribeInGoogleCalendar(): Promise<void> {
  * What the "Google Calendar" buttons do, by `Me.google_calendar`:
  * `connected` opens Google Calendar, where the saved list already is;
  * `available` connects (Google's consent page, then back to the feed with
- * `?calendar=…`); `off` — Google sign-in not set up — subscribes instead.
+ * `?calendar=…`); `off` — Google sign-in not set up — subscribes instead,
+ * or opens Google Calendar when it already is, saying so with `show`.
  */
 export async function googleCalendarButton(
   state: GoogleCalendarState | undefined,
+  show?: (opts: ToastOptions) => number,
 ): Promise<void> {
   if (state === "connected") {
-    window.open("https://calendar.google.com/calendar/r", "_blank", "noopener");
+    window.open(GOOGLE_CALENDAR, "_blank", "noopener");
   } else if (state === "available") {
     window.location.href = `${API}/google-calendar/connect`;
-  } else {
-    await subscribeInGoogleCalendar();
+  } else if ((await subscribeInGoogleCalendar()) === "already") {
+    show?.({
+      title: "Already in your Google Calendar",
+      description: "It updates by itself when you save or un-save.",
+      tone: "info",
+      action: {
+        label: "Add it again",
+        onClick: () => void subscribeInGoogleCalendar(true).catch(() => {}),
+      },
+    });
   }
 }
 

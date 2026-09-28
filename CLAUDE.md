@@ -367,12 +367,21 @@ can open.
     calendar and revokes. Calendar scopes are sensitive: until Google verifies
     the app it runs in Testing mode — listed test users only, and their
     grants lapse after 7 days (sync then disconnects and the button offers
-    Connect again).
+    Connect again). **Reconnecting reuses the calendar, never adds a second
+    one:** `google_calendar_id` is kept after a revoke or a delete that
+    failed (only the refresh token decides "connected"), because our scope
+    can't list calendars — that id is the only way back to it. While
+    connected, the subscription feed below serves no events, so a feed the
+    member subscribed to earlier doesn't show every program twice.
   - `off` (unconfigured): subscribe-by-URL. `POST /users/me/calendar-feed`
     mints `users.calendar_token` once (migration `0024_calendar_feed`) and the
     tab goes to Google's subscribe page for `webcal://…/calendar/{token}.ics`
     — the same `saved_events()` list, followed on Google's own refresh
-    (hours). Deliberately not the share token, which is public.
+    (hours). Deliberately not the share token, which is public. A second
+    press must not list it twice: the feed stamps `calendar_feed_fetched_at`
+    when fetched (migration `0026`), and while that is under three days old
+    the POST says `subscribed`, so the button opens Google Calendar with an
+    "Add it again" toast instead of Google's Add page.
   A caregiver viewing someone else's list gets that member's `.ics` download
   either way. Single programs use Google's prefilled "add event" link.
 

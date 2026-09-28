@@ -60,9 +60,15 @@ class User(Base):
     # Private handle for the member's calendar feed (GET /calendar/{token}.ics):
     # the whole saved list, special access included, unlike the share link.
     calendar_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Last time a calendar app fetched that feed — i.e. it is subscribed.
+    calendar_feed_fetched_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Connected Google Calendar (core/gcal.py): the refresh token, encrypted,
-    # and the calendar the app made in their account. Both null when not
-    # connected; cleared together on disconnect or when Google revokes it.
+    # and the calendar the app made in their account. The token is cleared on
+    # disconnect or when Google revokes it; the calendar id outlives it while
+    # that calendar may still be in their account, so reconnecting reuses it
+    # rather than adding a second "The Belonging Collective".
     google_refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     google_calendar_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     google_connected_at: Mapped[datetime | None] = mapped_column(
