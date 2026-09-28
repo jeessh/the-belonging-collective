@@ -453,6 +453,7 @@ export function EventForm({
 
           <TextField
             label="Date"
+            placeholder="DD/MM/YYYY"
             required
             type="date"
             value={values.date}
@@ -477,6 +478,7 @@ export function EventForm({
             <div className="flex items-center gap-2">
               <TextField
                 label="Start time"
+                placeholder="9:00 AM"
                 className="flex-1 [&>label]:sr-only"
                 type="time"
                 required
@@ -486,6 +488,7 @@ export function EventForm({
               <span aria-hidden="true" className="h-px w-[30px] bg-fg-icon" />
               <TextField
                 label="End time"
+                placeholder="11:00 AM"
                 className="flex-1 [&>label]:sr-only"
                 type="time"
                 value={values.endTime}

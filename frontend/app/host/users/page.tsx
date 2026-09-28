@@ -382,12 +382,14 @@ function MemberModal({
           <>
             <TextField
               label="First name"
+              placeholder="Enter their first name"
               autoFocus
               value={first}
               onChange={(e) => setFirst(e.target.value)}
             />
             <TextField
               label="Last name"
+              placeholder="Enter their last name"
               value={last}
               onChange={(e) => setLast(e.target.value)}
             />
@@ -396,6 +398,7 @@ function MemberModal({
         {askEmail && (
           <TextField
             label="Email"
+            placeholder="Enter their email"
             type="email"
             autoFocus={emailOnly}
             autoComplete="off"

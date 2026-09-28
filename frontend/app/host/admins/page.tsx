@@ -549,12 +549,14 @@ function AddAdminModal({
       >
         <TextField
           label="Organization"
+          placeholder="Enter the organization's name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
         />
         <TextField
           label="Email"
+          placeholder="Enter their email"
           type="email"
           autoComplete="off"
           value={email}
@@ -562,6 +564,7 @@ function AddAdminModal({
         />
         <TextField
           label={`Temporary password (at least ${PASSWORD_MIN_LENGTH} characters)`}
+          placeholder="Enter a temporary password"
           type="text"
           autoComplete="off"
           value={password}
