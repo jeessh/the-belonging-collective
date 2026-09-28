@@ -1,8 +1,34 @@
 import type { ReactNode } from "react";
-import { Paperclip } from "lucide-react";
+import { ExternalLink, FileText, Paperclip } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
 import { EventSummary } from "@/components/ui/EventSummary";
+
+const LINK_ROW =
+  "flex min-h-14 items-center justify-between gap-4 rounded-control border border-line px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
+
+/** The agency's flyer: a thumbnail when it is a picture, a file icon for a PDF. */
+function Poster({ url }: { url: string }) {
+  const pdf = /\.pdf(\?|#|$)/i.test(url);
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className={LINK_ROW}>
+      <span className="flex min-w-0 items-center gap-4">
+        {pdf ? (
+          <FileText aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={url}
+            alt=""
+            className="size-16 shrink-0 rounded-control border border-line-card object-cover"
+          />
+        )}
+        <span>{pdf ? "Poster (PDF)" : "Poster"}</span>
+      </span>
+      <ExternalLink aria-hidden="true" className="size-6 shrink-0 text-fg-icon" />
+    </a>
+  );
+}
 
 /**
  * The full listing: summary, DETAILS, LINKS. No hooks, so the server-rendered
@@ -73,6 +99,15 @@ export function EventDetails({
         </section>
       )}
 
+      {event.poster_url && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-lg uppercase tracking-wide text-fg-muted">
+            Poster
+          </h3>
+          <Poster url={event.poster_url} />
+        </section>
+      )}
+
       {links.length > 0 && (
         <section className="flex flex-col gap-3">
           <h3 className="text-lg uppercase tracking-wide text-fg-muted">
@@ -85,7 +120,7 @@ export function EventDetails({
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-14 items-center justify-between gap-4 rounded-control border border-line px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle"
+                  className={LINK_ROW}
                 >
                   <span className="min-w-0 break-words">{link.label}</span>
                   <Paperclip

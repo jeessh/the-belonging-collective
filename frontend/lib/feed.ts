@@ -87,3 +87,34 @@ export function personalizedFeed(events: Event[], taste: Taste): Event[] {
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map((entry) => entry.event);
 }
+
+/** A program's id for dismissals: the series when there is one, else the row. */
+export const programKey = (event: Event): string => event.series_id ?? event.id;
+
+const WEEK_MS = 7 * 86_400_000;
+const RECOMMENDED_MAX = 6;
+
+/**
+ * "For you this week": up to six programs that match the member and start in
+ * the next seven days, best match first, one per program, minus the ones they
+ * said were not for them. Empty for a member with nothing in their profile —
+ * there is nothing to match against — and the feed itself never changes: this
+ * is a section on top of it, not a filter on it.
+ */
+export function recommendedThisWeek(
+  events: Event[],
+  taste: Taste,
+  dismissed: string[],
+  now = Date.now(),
+): Event[] {
+  if (taste.interests.length === 0 && taste.accessPrefs.length === 0) return [];
+  const gone = new Set(dismissed);
+  const soon = events.filter((event) => {
+    if (!event.starts_at) return false;
+    const at = new Date(event.starts_at).getTime();
+    return at >= now && at <= now + WEEK_MS && matchScore(event, taste) > 0;
+  });
+  return oneCardPerProgram(personalizedFeed(soon, taste))
+    .filter((event) => !gone.has(programKey(event)))
+    .slice(0, RECOMMENDED_MAX);
+}

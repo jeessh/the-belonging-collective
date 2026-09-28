@@ -47,6 +47,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: event.title,
     description,
+    // A restricted program opens from its link, but it is not for the open
+    // web to list.
+    robots: event.access_group ? { index: false, follow: false } : undefined,
     alternates: { canonical: url },
     openGraph: {
       title: event.title,
