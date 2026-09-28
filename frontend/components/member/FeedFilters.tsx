@@ -4,10 +4,13 @@ import { memo } from "react";
 import { Sparkles } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { CATEGORIES, sameCategory } from "@/lib/categories";
+import { isThisWeek } from "@/lib/time";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
-/** "free", or a canonical topic label from `CATEGORIES`. */
+/** "free", "thisweek", or a canonical topic label from `CATEGORIES`. */
 export const FREE_CHIP = "free";
+/** Starts today or in the next seven days, Toronto time. */
+export const THIS_WEEK_CHIP = "thisweek";
 /**
  * This week's picks only. Offered when there are any, and only in the card
  * view — the list shows them as a section instead. Allowed to hide cards
@@ -24,14 +27,18 @@ const SORTS = [
 
 /**
  * The member's explicit choice, so — unlike personalization — it may hide
- * cards. FREE is one axis and the topics another: an event passes when it
- * satisfies every axis that has something chosen, and any chip on that axis.
- * The For-you chip is a third axis, checked by the caller against its set.
+ * cards. FREE and THIS WEEK are each an axis and the topics another: an event
+ * passes when it satisfies every axis that has something chosen, and any chip
+ * on that axis. The For-you chip is one more, checked by the caller against
+ * its set.
  */
 export function passesFilters(event: Event, chips: Set<string>): boolean {
   if (chips.size === 0) return true;
   if (chips.has(FREE_CHIP) && !event.is_free) return false;
-  const topics = [...chips].filter((c) => c !== FREE_CHIP && c !== FOR_YOU_CHIP);
+  if (chips.has(THIS_WEEK_CHIP) && !isThisWeek(event)) return false;
+  const topics = [...chips].filter(
+    (c) => c !== FREE_CHIP && c !== THIS_WEEK_CHIP && c !== FOR_YOU_CHIP,
+  );
   if (topics.length === 0) return true;
   const own = event.categories?.length ? event.categories : [event.category];
   return topics.some((t) => own.some((c) => sameCategory(t, c)));
@@ -54,6 +61,7 @@ export const FeedFilters = memo(function FeedFilters({
   const all = [
     ...(forYou ? [{ key: FOR_YOU_CHIP, label: "For you" }] : []),
     { key: FREE_CHIP, label: "Free" },
+    { key: THIS_WEEK_CHIP, label: "This week" },
     ...CATEGORIES.map((c) => ({ key: c.label, label: c.label })),
   ];
   return (

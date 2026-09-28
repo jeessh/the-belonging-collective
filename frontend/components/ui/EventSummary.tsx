@@ -1,8 +1,24 @@
 import type { ReactNode } from "react";
-import { CalendarDays, MapPin } from "lucide-react";
+import { Cake, CalendarDays, MapPin } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
+
+/**
+ * "Ages 18+", "Ages 12–17", "Up to 12"; null when the host set neither. The
+ * imported programs write 99 for "no upper limit", so that reads as open.
+ */
+export function ageLabel(ev: {
+  min_age?: number | null;
+  max_age?: number | null;
+}): string | null {
+  const min = ev.min_age ?? null;
+  const max = ev.max_age != null && ev.max_age < 99 ? ev.max_age : null;
+  if (min != null && max != null) return `Ages ${min}–${max}`;
+  if (min != null) return `Ages ${min}+`;
+  if (max != null) return `Up to ${max}`;
+  return null;
+}
 
 /**
  * The body every event surface shares: image, tags, title, when, where, and
@@ -40,6 +56,7 @@ export function EventSummary({
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = event.cover_image_url ?? event.images[0]?.url ?? null;
+  const ages = ageLabel(event);
 
   const meta = card ? "text-xl sm:text-2xl" : "text-lg";
   const icon = card ? "size-7 sm:size-9" : "size-6";
@@ -115,6 +132,15 @@ export function EventSummary({
               />
               <p className="min-w-0 text-fg">{where}</p>
             </div>
+            {ages && (
+              <div className="flex items-start gap-3">
+                <Cake
+                  aria-hidden="true"
+                  className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+                />
+                <p className="min-w-0 text-fg">{ages}</p>
+              </div>
+            )}
             {going && <div className={meta}>{going}</div>}
           </div>
 

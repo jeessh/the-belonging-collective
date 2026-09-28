@@ -42,7 +42,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const description = summarize(event);
   const url = `${siteUrl()}/events/${event.id}`;
-  const images = event.cover_image_url ? [event.cover_image_url] : undefined;
+  // No cover → the branded card drawn by ./og/route.tsx.
+  const images = [event.cover_image_url ?? `${url}/og`];
 
   return {
     title: event.title,
@@ -59,7 +60,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       images,
     },
     twitter: {
-      card: images ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: event.title,
       description,
       images,

@@ -8,12 +8,13 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { CircleCheck, KeyRound, Smile } from "lucide-react";
+import { CircleCheck, KeyRound, Mic, Smile } from "lucide-react";
 import { ApiError, api, apiMessage } from "@/lib/api";
 import { ALL_ICONS, emojiFor } from "@/lib/icons";
+import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { TextField } from "@/components/ui/TextField";
+import { TextField, type TextFieldProps } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 
 // Two icons, picked one at a time. Ordered, so the sequence is part of the key
@@ -100,6 +101,34 @@ export function MemberAuthFlow({
   const [conflict, setConflict] = useState(false);
   const [forgot, setForgot] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Saying a name instead of typing it — the one place a member has to type.
+  const dictation = useDictation();
+  const [dictating, setDictating] = useState<"first" | "last" | null>(null);
+  const [dictationNote, setDictationNote] = useState("");
+
+  function dictate(field: "first" | "last") {
+    if (dictating === field) {
+      dictation.stop();
+      return;
+    }
+    const label = field === "first" ? "First name" : "Last name";
+    setDictating(field);
+    setDictationNote(`Listening for ${label.toLowerCase()}`);
+    dictation.start((text) => {
+      setDictating(null);
+      if (text === null) {
+        setDictationNote("Microphone blocked");
+        return;
+      }
+      if (!text) {
+        setDictationNote("Nothing heard");
+        return;
+      }
+      (field === "first" ? setFirst : setLast)(text);
+      setDictationNote(`${label}: ${text}`);
+    });
+  }
 
   function clearFeedback() {
     setError(null);
@@ -363,20 +392,41 @@ export function MemberAuthFlow({
             className="flex flex-col gap-6"
           >
             {switcher}
-            <TextField
+            <NameField
               label="First name"
               placeholder="Enter your first name"
               autoComplete="given-name"
               value={first}
               onChange={(e) => setFirst(e.target.value)}
+              mic={
+                dictation.supported
+                  ? {
+                      listening: dictating === "first",
+                      blocked: dictation.denied,
+                      onPress: () => dictate("first"),
+                    }
+                  : null
+              }
             />
-            <TextField
+            <NameField
               label="Last name"
               placeholder="Enter your last name"
               autoComplete="family-name"
               value={last}
               onChange={(e) => setLast(e.target.value)}
+              mic={
+                dictation.supported
+                  ? {
+                      listening: dictating === "last",
+                      blocked: dictation.denied,
+                      onPress: () => dictate("last"),
+                    }
+                  : null
+              }
             />
+            <p role="status" aria-live="polite" className="sr-only">
+              {dictationNote}
+            </p>
             {errorLine}
             <Footer
               secondary={
@@ -707,6 +757,37 @@ function Footer({
       >
         {primary.label}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * A name field with a mic beside it, where the browser can listen. `mic` is
+ * null where it can't, and the field is the plain one.
+ */
+function NameField({
+  mic,
+  ...field
+}: TextFieldProps & {
+  mic: { listening: boolean; blocked: boolean; onPress: () => void } | null;
+}) {
+  if (!mic) return <TextField {...field} />;
+  return (
+    // Bottom-aligned so the button sits beside the input, under the label.
+    <div className="flex items-end gap-3">
+      <TextField {...field} className="min-w-0 flex-1" />
+      <Button
+        variant={mic.listening ? "primary" : "secondary"}
+        aria-label={
+          mic.blocked ? "Microphone blocked" : `Say your ${field.label.toLowerCase()}`
+        }
+        aria-pressed={mic.listening}
+        disabled={mic.blocked}
+        onClick={mic.onPress}
+        leadingIcon={<Mic />}
+        // The input's height: its text-lg line plus py-3 and the border.
+        className="h-[3.375rem] px-3"
+      />
     </div>
   );
 }

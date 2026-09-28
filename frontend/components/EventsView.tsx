@@ -1029,7 +1029,19 @@ export function EventsView({
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-              <h1 className="text-3xl font-medium text-fg">{heading}</h1>
+              {/* In the card view the page heading stays "Programs" for a
+                  screen reader — the live region already reads "n of m" per
+                  card, and a heading that changes on every arrow is noise. */}
+              <h1 className="text-3xl font-medium text-fg">
+                {viewMode === "card" ? (
+                  <>
+                    <span className="sr-only">Programs</span>
+                    <span aria-hidden="true">{heading}</span>
+                  </>
+                ) : (
+                  heading
+                )}
+              </h1>
               <div data-tour="view">
                 <SegmentedToggle
                   label="View"
