@@ -287,6 +287,7 @@ function Members() {
 
       {removing && (
         <Modal
+          tone="danger"
           title={`Remove ${removing.first_name}?`}
           onClose={() => setRemoving(null)}
         >

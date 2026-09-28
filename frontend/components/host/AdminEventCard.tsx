@@ -104,7 +104,7 @@ export const AdminEventCard = memo(function AdminEventCard({
                 label={`Un-publish ${event.title}`}
                 title="Un-publish"
                 onClick={() => onUnpublish(event)}
-                className="bg-danger text-danger-fg hover:bg-danger-border"
+                className="bg-danger text-danger-fg hover:bg-danger-hover"
               >
                 <Trash2 aria-hidden="true" className="size-5" />
               </Tool>

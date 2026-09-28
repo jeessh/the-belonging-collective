@@ -343,6 +343,7 @@ function ArchiveModal({
 
   return (
     <Modal
+      tone="danger"
       onClose={onClose}
       title={
         <>

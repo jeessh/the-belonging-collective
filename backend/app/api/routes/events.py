@@ -23,7 +23,6 @@ from app.api.deps import (
 from app.core import holds, ical, member_mail
 from app.core.categories import require_live_slugs
 from app.core.storage import StorageError, upload_image
-from app.models.attendance import Attendance
 from app.core.access import (
     NONE,
     membership_statuses,
@@ -462,11 +461,12 @@ def delete_event(
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
 ):
-    """Archive the program.
+    """Archive the program — the console's "Un-publish".
 
-    Superadmins always; an owner may retire their own program while nobody has
-    saved it, and is refused once somebody has. "Superadmins only" is what this
-    said before the owner path was added, and it has been wrong since.
+    The organization that posted it (any of its logins) may un-publish its own
+    programs; a superadmin may un-publish anyone's. Saves no longer block the
+    owner: an agency that cancels a program has to be able to take it down
+    itself, and nothing here destroys anything members or funders rely on.
 
     `series=true` archives every remaining date of a repeating program, not just
     the one identified. The console lists a repeating program as one row, so
@@ -477,11 +477,6 @@ def delete_event(
     attendance history stay — those counts are what the organizer reports to
     funders, and a program members already attended is not something a later
     mistake should be able to erase.
-
-    Removing a program is the one action here that reaches beyond the
-    organization that posted it: members have it saved, and its attendance is
-    somebody's grant evidence. An agency that needs one gone asks KW Hab, the
-    same as they do today. Editing stays with whoever owns the program.
     """
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
@@ -489,27 +484,12 @@ def delete_event(
 
     targets = _series_targets(db, event, series)
 
-    # Superadmins always. An owner may take down a program only while nobody
-    # has saved it — the moment somebody has, removing it reaches past the
-    # agency that posted it, and it's also somebody's grant evidence. That's
-    # what makes "undo" work on a program posted seconds ago while still
-    # keeping removal a KW Hab decision once it matters.
-    if not host.is_superadmin:
-        if any(e.host_id != org_id_of(host) for e in targets):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
-        # Across the whole run, not just the date on the card: one saved date
-        # is enough to make removing the program somebody else's business.
-        saved_by = (
-            db.query(func.count(Attendance.user_id))
-            .filter(Attendance.event_id.in_([e.id for e in targets]))
-            .scalar()
-            or 0
-        )
-        if saved_by:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "People have saved this program — ask KW Hab to remove it.",
-            )
+    # Across the whole run, not just the date on the card: a series that
+    # somehow spans two organizations is not one either of them can retire.
+    if not host.is_superadmin and any(
+        e.host_id != org_id_of(host) for e in targets
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
     for target in targets:
         target.deleted_at = func.now()
     db.commit()
@@ -524,8 +504,8 @@ def restore_event(
 ):
     """Put an archived program back. This is what Undo calls.
 
-    Same rule as archiving: superadmins always, and an owner while nobody has
-    saved it. Nothing was destroyed, so this only has to clear the flag.
+    Same rule as archiving: the owning organization, or a superadmin. Nothing
+    was destroyed, so this only has to clear the flag.
 
     Takes `series` for the same reason delete does — Undo has to put back
     exactly what was taken away, or the undo of removing a repeating program
