@@ -264,7 +264,6 @@ export default function ProfilePage() {
             {hasPicture && (
               <Button
                 size="lg"
-                variant="danger"
                 leadingIcon={<Trash2 />}
                 disabled={busy === "picture"}
                 onClick={() => void pickEmblem(null)}

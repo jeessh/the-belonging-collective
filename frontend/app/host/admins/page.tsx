@@ -616,6 +616,7 @@ function RemoveAdminModal({
 
   return (
     <Modal
+      tone="danger"
       onClose={onClose}
       title={
         <>

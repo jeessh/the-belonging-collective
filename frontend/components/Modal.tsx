@@ -37,6 +37,7 @@ export function Modal({
   labelId,
   size = "md",
   closeOutside = false,
+  tone = "default",
 }: {
   /**
    * The heading. Pass null when the heading is inside `children` (with
@@ -57,6 +58,12 @@ export function Modal({
    * it: narrower screens keep the × inside, and a phone sheet has no outside.
    */
   closeOutside?: boolean;
+  /**
+   * `danger` draws the panel with the danger edge, as the component sheet's
+   * un-publish dialog. Only for a confirmation that takes something away
+   * (un-publish, remove, revoke, archive) — red has to keep meaning careful.
+   */
+  tone?: "default" | "danger";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -134,7 +141,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border border-line bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-12`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-12`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2

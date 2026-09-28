@@ -286,7 +286,7 @@ function GroupPanel({
         decision === "approve"
           ? { title: `Approved ${name}.` }
           : decision === "decline"
-            ? { title: `Declined ${name}.`, tone: "alert" }
+            ? { title: `Declined ${name}.`, tone: "info" }
             : { title: `Revoked access for ${name}.`, tone: "alert" },
       );
       await load();
@@ -449,6 +449,7 @@ function GroupPanel({
 
       {revoking && (
         <Modal
+          tone="danger"
           onClose={() => setRevoking(null)}
           title={
             <>
@@ -607,6 +608,7 @@ function ArchiveModal({
 
   return (
     <Modal
+      tone="danger"
       onClose={onClose}
       title={
         <>

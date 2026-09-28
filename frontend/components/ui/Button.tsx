@@ -12,7 +12,7 @@ const VARIANT: Record<ButtonVariant, string> = {
     "border border-transparent bg-transparent hover:bg-surface-subtle disabled:text-fg-muted",
   // The design's "Un-publish" / "Yes, delete": pink fill, red edge.
   danger:
-    "border border-danger-border bg-danger hover:bg-[#FFBFC6] disabled:border-transparent disabled:bg-surface-subtle disabled:text-fg-muted",
+    "border border-danger-border bg-danger hover:bg-danger-hover disabled:border-transparent disabled:bg-surface-subtle disabled:text-fg-muted",
 };
 
 // Both clear 44px; `lg` is the design's 20px-text control for member CTAs,
