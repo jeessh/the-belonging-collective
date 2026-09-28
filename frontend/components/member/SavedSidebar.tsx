@@ -1,6 +1,7 @@
 "use client";
 
-import { forwardRef, memo } from "react";
+import { forwardRef, memo, useCallback, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
   ChevronsLeft,
@@ -18,6 +19,8 @@ import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
+const RAIL_WIDTH = 100;
+const PANEL_WIDTH = 377;
 
 type Props = {
   /**
@@ -73,6 +76,19 @@ export const SavedSidebar = memo(
     const countLabel = `${count} Saved ${count === 1 ? "Event" : "Events"}`;
     const title = owner ? `${owner}'s Saved Events` : "Saved Events";
     const { show } = useToast();
+    const reduceMotion = useReducedMotion();
+    // The fly-to-save target. While rail and panel cross-fade both are
+    // mounted, and the one leaving would null a plain ref as it unmounts —
+    // after the arriving one had set it — so a save mid-fade would have
+    // nowhere to aim. This only ever points at the newest zone.
+    const attachDrop = useCallback(
+      (node: HTMLDivElement | null) => {
+        if (!node || !dropRef) return;
+        if (typeof dropRef === "function") dropRef(node);
+        else dropRef.current = node;
+      },
+      [dropRef],
+    );
 
     async function subscribe() {
       try {
@@ -93,7 +109,7 @@ export const SavedSidebar = memo(
           className="flex shrink-0 items-center gap-3 border-t border-line bg-surface px-4 py-2"
         >
           <div
-            ref={dropRef}
+            ref={attachDrop}
             className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed px-2 transition-colors ${
               active
                 ? "border-primary-border bg-primary-soft"
@@ -107,9 +123,12 @@ export const SavedSidebar = memo(
             {/* The calendar export lives on the saved list here; the bar
                 keeps to what a thumb can reach. */}
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
-              {events.map((ev) => (
-                <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="row" />
-              ))}
+              <Arrivals
+                events={events}
+                axis="x"
+                reduceMotion={reduceMotion}
+                render={(ev) => <Thumb event={ev} onOpen={onOpenEvent} layout="row" />}
+              />
             </div>
           </div>
           {/* The count rides on the button: a label of its own left the
@@ -164,126 +183,165 @@ export const SavedSidebar = memo(
         </Button>
       );
 
-    if (!open) {
-      return (
-        <aside
-          aria-label="Saved events"
-          data-tour="saved"
-          className="flex w-[100px] shrink-0 flex-col border-r border-line bg-surface"
-        >
-          <div className="p-3">
-            <Button
-              variant="secondary"
-              onClick={onToggle}
-              aria-expanded={false}
-              className={RAIL}
-            >
-              <ChevronsRight aria-hidden="true" className="size-7" />
-              Open
-            </Button>
-          </div>
-          <div
-            ref={dropRef}
-            className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3 transition-colors ${
-              active ? "bg-primary-soft" : ""
-            }`}
-          >
-            <span className="sr-only">
-              {owner ? `${title}: ` : ""}
-              {countLabel}
-            </span>
-            {events.map((ev) => (
-              <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="rail" />
-            ))}
-          </div>
-          <div className="flex flex-col gap-3 border-t border-line p-3">
-            <Button
-              variant="secondary"
-              onClick={onOpenSaved}
-              className={RAIL}
-            >
-              <Bookmark aria-hidden="true" className="size-6 fill-primary-strong text-primary-strong" />
-              Events
-            </Button>
-            {calendar}
-          </div>
-        </aside>
-      );
-    }
-
+    // Rail and panel are one aside whose width animates between them, so
+    // opening, closing and the fold after a first save all glide. Each
+    // layout sits in a layer of its own full width — the panel's content
+    // never reflows at 100px — and the two cross-fade inside the clip.
+    const ease = reduceMotion
+      ? { duration: 0 }
+      : { duration: 0.32, ease: [0.4, 0, 0.2, 1] as const };
     return (
-      <aside
+      <motion.aside
         aria-label="Saved events"
         data-tour="saved"
-        className="flex w-[377px] shrink-0 flex-col gap-6 border-r border-line bg-surface pt-6"
+        initial={false}
+        animate={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
+        transition={ease}
+        className="relative shrink-0 overflow-hidden border-r border-line bg-surface"
       >
-        <div className="flex items-center justify-between gap-3 px-6">
-          <div className="min-w-0">
-            <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
-            <p className="truncate text-xl text-fg-muted">
-              {owner ? `For ${owner} · ` : ""}
-              {countLabel}
-            </p>
-          </div>
-          <Button
-            variant="secondary"
-            onClick={onToggle}
-            aria-expanded
-            aria-label="Close saved events sidebar"
-            leadingIcon={<ChevronsLeft />}
-            className="pl-3"
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={open ? "panel" : "rail"}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={ease}
+            style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
+            className={`absolute inset-y-0 left-0 flex flex-col ${open ? "gap-6 pt-6" : ""}`}
           >
-            Close
-          </Button>
-        </div>
+            {open ? (
+              <>
+                <div className="flex items-center justify-between gap-3 px-6">
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
+                    <p className="truncate text-xl text-fg-muted">
+                      {owner ? `For ${owner} · ` : ""}
+                      {countLabel}
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={onToggle}
+                    aria-expanded
+                    aria-label="Close saved events sidebar"
+                    leadingIcon={<ChevronsLeft />}
+                    className="pl-3"
+                  >
+                    Close
+                  </Button>
+                </div>
 
-        <div className="flex min-h-0 flex-1 flex-col px-6">
-          <div
-            ref={dropRef}
-            className={`flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
-              active
-                ? "border-primary-border bg-primary-soft"
-                : events.length === 0
-                  ? "border-fg-muted bg-surface"
-                  : // The dashed outline only marks the empty drop zone; once
-                    // there are saved events the list stands on its own. The
-                    // border stays (transparent) so nothing shifts on drag.
-                    "border-transparent bg-surface"
-            }`}
-          >
-            {events.length === 0 || active ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-                <CirclePlus
-                  aria-hidden="true"
-                  className={`size-10 ${active ? "text-fg" : "text-fg-muted"}`}
-                />
-                <p className={`text-xl ${active ? "text-fg" : "text-fg-muted"}`}>
-                  {active ? "Drag events here" : "Saved Events go Here"}
-                </p>
-              </div>
+                <div className="flex min-h-0 flex-1 flex-col px-6">
+                  <div
+                    ref={attachDrop}
+                    className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
+                      active
+                        ? "border-primary-border bg-primary-soft"
+                        : events.length === 0
+                          ? "border-fg-muted bg-surface"
+                          : // The dashed outline only marks the empty drop zone; once
+                            // there are saved events the list stands on its own. The
+                            // border stays (transparent) so nothing shifts on drag.
+                            "border-transparent bg-surface"
+                    }`}
+                  >
+                    {/* The list stays mounted while a card is on its way —
+                        faded under the drop message rather than swapped for
+                        it — so the program that lands grows in (Arrivals)
+                        instead of arriving with a rebuilt list. */}
+                    {events.length > 0 && (
+                      <div
+                        className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 transition-opacity ${
+                          active ? "opacity-0" : ""
+                        }`}
+                      >
+                        <Arrivals
+                          events={events}
+                          reduceMotion={reduceMotion}
+                          render={(ev) => (
+                            <Thumb event={ev} onOpen={onOpenEvent} layout="panel" />
+                          )}
+                        />
+                      </div>
+                    )}
+                    {(events.length === 0 || active) && (
+                      <div
+                        className={`flex flex-col items-center justify-center gap-3 p-6 text-center ${
+                          events.length > 0 ? "absolute inset-0" : "flex-1"
+                        }`}
+                      >
+                        <CirclePlus
+                          aria-hidden="true"
+                          className={`size-10 ${active ? "text-fg" : "text-fg-muted"}`}
+                        />
+                        <p className={`text-xl ${active ? "text-fg" : "text-fg-muted"}`}>
+                          {active ? "Drag events here" : "Saved Events go Here"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4 border-t border-line px-6 py-4">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={onOpenSaved}
+                    leadingIcon={<Bookmark className="fill-primary-strong text-primary-strong" />}
+                    className="w-full"
+                  >
+                    See Saved Events
+                  </Button>
+                  {calendar}
+                </div>
+              </>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
-                {events.map((ev) => (
-                  <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="panel" />
-                ))}
-              </div>
+              <>
+                <div className="p-3">
+                  <Button
+                    variant="secondary"
+                    onClick={onToggle}
+                    aria-expanded={false}
+                    className={RAIL}
+                  >
+                    <ChevronsRight aria-hidden="true" className="size-7" />
+                    Open
+                  </Button>
+                </div>
+                <div
+                  ref={attachDrop}
+                  className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3 transition-colors ${
+                    active ? "bg-primary-soft" : ""
+                  }`}
+                >
+                  <span className="sr-only">
+                    {owner ? `${title}: ` : ""}
+                    {countLabel}
+                  </span>
+                  <Arrivals
+                    events={events}
+                    reduceMotion={reduceMotion}
+                    render={(ev) => (
+                      <Thumb event={ev} onOpen={onOpenEvent} layout="rail" />
+                    )}
+                  />
+                </div>
+                <div className="flex flex-col gap-3 border-t border-line p-3">
+                  <Button
+                    variant="secondary"
+                    onClick={onOpenSaved}
+                    className={RAIL}
+                  >
+                    <Bookmark aria-hidden="true" className="size-6 fill-primary-strong text-primary-strong" />
+                    Events
+                  </Button>
+                  {calendar}
+                </div>
+              </>
             )}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4 border-t border-line px-6 py-4">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={onOpenSaved}
-            leadingIcon={<Bookmark className="fill-primary-strong text-primary-strong" />}
-            className="w-full"
-          >
-            See Saved Events
-          </Button>
-          {calendar}
-        </div>
-      </aside>
+          </motion.div>
+        </AnimatePresence>
+      </motion.aside>
     );
   }),
 );
@@ -298,6 +356,55 @@ function monthDay(iso?: string | null): string {
     month: "long",
     day: "numeric",
   });
+}
+
+/**
+ * A saved program arriving grows in and an un-saved one folds away, rather
+ * than popping — whichever way it came: a drag, the Save button, the ← hold,
+ * voice or head tracking all land in this list. Height animates too, so the
+ * rest of the list slides instead of jumping. What is already there when the
+ * list mounts (a reload, the rail/panel switch) stays still.
+ */
+function Arrivals({
+  events,
+  render,
+  reduceMotion,
+  axis = "y",
+}: {
+  events: Event[];
+  render: (event: Event) => ReactNode;
+  reduceMotion: boolean | null;
+  /** `x` for the phone bar's row, which grows sideways. */
+  axis?: "x" | "y";
+}) {
+  const shut = axis === "x" ? { width: 0 } : { height: 0 };
+  const full = axis === "x" ? { width: "auto" } : { height: "auto" };
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const };
+  return (
+    <AnimatePresence initial={false}>
+      {events.map((ev) => (
+        <motion.div
+          key={ev.id}
+          // Clipped only while it moves: at rest the thumbnail's focus ring
+          // reaches past this box.
+          initial={{ opacity: 0, scale: 0.9, overflow: "hidden", ...shut }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            ...full,
+            transitionEnd: { overflow: "visible" },
+          }}
+          exit={{ opacity: 0, scale: 0.9, overflow: "hidden", ...shut }}
+          transition={transition}
+          className={axis === "x" ? "shrink-0" : "w-full shrink-0"}
+        >
+          {render(ev)}
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  );
 }
 
 /**
