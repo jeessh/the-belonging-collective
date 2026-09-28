@@ -92,8 +92,9 @@ const config: Config = {
         card: "24px", // cards, modals
       },
       fontFamily: {
-        display: ["var(--font-display)", "system-ui", "sans-serif"],
-        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        sans: ["var(--font-body)"],
+        display: ["var(--font-display)"],
+        body: ["var(--font-body)"],
       },
       boxShadow: {
         card: "0 24px 60px -20px rgba(32,27,51,0.35)",

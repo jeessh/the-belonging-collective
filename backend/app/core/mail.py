@@ -56,7 +56,7 @@ def render_html(body: str, button: tuple[str, str] | None = None) -> str:
         )
     return f"""<!doctype html>
 <html lang="en">
-<body style="margin:0;padding:24px 12px;background:#eeebf5;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<body style="margin:0;padding:24px 12px;background:#eeebf5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:32px 28px">
     <p style="margin:0 0 24px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#5b4b9a">{BRAND}</p>
     {''.join(paragraphs)}

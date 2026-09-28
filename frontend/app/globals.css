@@ -4,7 +4,10 @@
 
 :root {
   color-scheme: light;
-  /* Lexend Deca (loaded in layout.tsx) serves both display and body. */
+  /* Helvetica Neue, as the design specifies. It is a licensed face, so it is
+     never served: Apple devices have it built in, and everything else falls
+     back to Helvetica, then Arial. */
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body: var(--font-display);
 }
 
@@ -16,7 +19,7 @@ body {
 body {
   background: var(--paper, #eeebf5);
   color: #201b33;
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }

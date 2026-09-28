@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
-import { Lexend_Deca } from "next/font/google";
 import { siteUrl } from "@/lib/serverApi";
 import { MotionRoot } from "@/components/MotionRoot";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
-
-const lexend = Lexend_Deca({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   // metadataBase is what makes per-page canonical and OG URLs resolve; without
@@ -30,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={lexend.variable}>
+    <html lang="en">
       <body>
         <MotionRoot>
           <ToastProvider>{children}</ToastProvider>
