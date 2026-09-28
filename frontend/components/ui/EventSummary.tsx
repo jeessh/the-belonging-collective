@@ -32,18 +32,25 @@ export function ageLabel(ev: {
 export function EventTags({
   event,
   recommended = false,
+  className = "",
 }: {
   event: Event;
   recommended?: boolean;
+  /** Passed to every pill, e.g. the feed card's larger type. */
+  className?: string;
 }) {
   return (
     <>
-      {recommended && <Tag kind="foryou" />}
+      {recommended && <Tag kind="foryou" className={className} />}
       {eventTags(event).map((kind) => (
-        <Tag key={kind} kind={kind} />
+        <Tag key={kind} kind={kind} className={className} />
       ))}
       {event.access_group && (
-        <Tag kind="access" detail={event.access_group.name} />
+        <Tag
+          kind="access"
+          detail={event.access_group.name}
+          className={className}
+        />
       )}
     </>
   );
@@ -91,6 +98,9 @@ export function EventSummary({
   className?: string;
 }) {
   const card = layout === "card" || layout === "detail";
+  // The feed's one card, sized to the Figma frame; `short` tightens it on a
+  // window too short for the frame (see tailwind.config.ts).
+  const feed = layout === "card";
   const stack = layout === "stack";
   const when = whenLine(event);
   const where =
@@ -105,8 +115,12 @@ export function EventSummary({
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
   // 18, the saved card's 24 over 20.
-  const meta = card ? "text-xl sm:text-2xl" : stack ? "text-xl" : "text-lg";
-  const icon = card ? "size-7 sm:size-9" : "size-6";
+  const meta = card
+    ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
+    : stack
+      ? "text-xl"
+      : "text-lg";
+  const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -118,13 +132,23 @@ export function EventSummary({
     />
   );
 
-  const tags = <EventTags event={event} recommended={recommended} />;
+  const tags = (
+    <EventTags
+      event={event}
+      recommended={recommended}
+      className={feed ? "lg:text-xl short:!text-lg" : ""}
+    />
+  );
 
   const title = (
     <Title
       id={titleId}
       className={`font-medium leading-tight text-fg ${
-        card ? "text-2xl sm:text-3xl" : "text-2xl"
+        feed
+          ? "text-2xl sm:text-3xl lg:text-[32px] short:!text-[28px]"
+          : card
+            ? "text-2xl sm:text-3xl"
+            : "text-2xl"
       } ${stack ? "line-clamp-2" : ""}`}
     >
       {event.title}
@@ -132,13 +156,13 @@ export function EventSummary({
   );
 
   const facts = (
-    <div className={`flex flex-col gap-3 ${meta}`}>
+    <div className={`flex flex-col gap-3 ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}>
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
         />
-        <div className="min-w-0">
+        <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
           {/* Each part stays whole, so a narrow column breaks between
               "In 52 weeks" and "· September 24, 2027", never around
               the dot. */}
@@ -213,13 +237,16 @@ export function EventSummary({
   if (card) {
     const detail = layout === "detail";
     return (
-      <div className={`flex flex-col gap-6 ${className}`}>
+      <div
+        className={`flex flex-col gap-6 ${feed ? "lg:gap-8 short:!gap-5" : ""} ${className}`}
+      >
         {/* Image beside the text from `sm`; on a phone it sits on top. The
-            box is square, and stretches taller when the text beside it is. */}
+            box keeps its shape (the feed card's is the frame's 324:292), and
+            stretches taller when the text beside it is. */}
         <div className="flex flex-col gap-6 sm:flex-row">
           <div
-            className={`relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle sm:aspect-square ${
-              detail ? "sm:w-[30%]" : "sm:w-2/5"
+            className={`relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
+              detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
             }`}
           >
             {img}
