@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_admin
+from app.core.avatars import EMBLEMS
 from app.models.host import Host
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserPrefsUpdate, UserUpdate
@@ -24,14 +25,70 @@ def update_me(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """A member updates their own preferences (voice/accessibility/interests).
-    Defined before /{user_id} so the literal path wins the match."""
+    """A member updates their own preferences (voice/accessibility/interests),
+    email and profile picture. Defined before /{user_id} so the literal path
+    wins the match."""
     fields = body.model_dump(exclude_unset=True)
     # A flag in, a timestamp out. Only ever set forward — see UserPrefsUpdate.
     if fields.pop("onboarded", None) and user.onboarded_at is None:
         user.onboarded_at = func.now()
+    if "email" in fields:
+        email = fields.pop("email")
+        # A password account's email is how it signs in, so it can move but
+        # not go; an icon account's is only a channel, so it can do both.
+        if email is None and user.auth_type != "icon":
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "This account signs in with its email, so it needs one.",
+            )
+        user.email = email.strip().lower() if email else None
+    if "avatar_emblem" in fields:
+        emblem = fields.pop("avatar_emblem")
+        if emblem is not None:
+            if emblem not in EMBLEMS:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown emblem")
+            user.avatar_url = None
+        user.avatar_emblem = emblem
+    if "avatar_url" in fields:
+        fields.pop("avatar_url")
+        user.avatar_url = None
     for field, value in fields.items():
         setattr(user, field, value)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Another member already uses that email."
+        )
+    db.refresh(user)
+    return user
+
+
+# A picture is small; the 2 MB cap is a fraction of the cover-image one.
+ALLOWED_AVATAR_TYPES = {"image/png", "image/jpeg", "image/webp"}
+MAX_AVATAR_BYTES = 2 * 1024 * 1024
+
+
+@router.post("/me/avatar", response_model=UserOut)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """A profile photo, stored the same way event images are. Replaces any
+    emblem — a member has one picture, not two."""
+    from app.api.routes.events import _store_upload
+
+    url = await _store_upload(
+        file,
+        ALLOWED_AVATAR_TYPES,
+        MAX_AVATAR_BYTES,
+        "Photo is too large (max 2 MB).",
+        "Please choose a PNG, JPEG, or WebP photo.",
+    )
+    user.avatar_url = url
+    user.avatar_emblem = None
     db.commit()
     db.refresh(user)
     return user

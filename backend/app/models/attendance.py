@@ -40,6 +40,15 @@ class Attendance(Base):
     status: Mapped[str] = mapped_column(
         Text, nullable=False, default=SAVED, server_default=text(f"'{SAVED}'")
     )
+    # Saving a program with a capacity holds a spot for an hour (core/holds.py).
+    # Null = saved without a hold, or the hour is up; the save itself stays.
+    held_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # When the day-before reminder went out, so it goes out once.
+    reminded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # The PK is (user_id, event_id), so it can't serve "everyone who saved event
     # X" — the per-event counts the console needs would seq-scan without this.

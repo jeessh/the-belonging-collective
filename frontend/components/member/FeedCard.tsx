@@ -6,6 +6,7 @@ import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
+import { HoldInfo } from "@/components/member/HoldInfo";
 
 /**
  * The one card on screen. The buttons stop pointer-down so pressing one is
@@ -31,7 +32,10 @@ export const FeedCard = memo(function FeedCard({
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:px-4 max-sm:text-base";
   return (
-    <div className="rounded-card border-2 border-line-card bg-surface p-5 sm:p-6 lg:p-8">
+    <div className="relative rounded-card border-2 border-line-card bg-surface p-5 sm:p-6 lg:p-8">
+      {event.capacity != null && (
+        <HoldInfo className="absolute right-2 top-2 sm:right-3 sm:top-3" />
+      )}
       <EventSummary
         event={event}
         layout="card"

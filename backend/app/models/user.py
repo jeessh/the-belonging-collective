@@ -38,6 +38,7 @@ class User(Base):
             unique=True,
             postgresql_where=text("email IS NOT NULL AND deleted_at IS NULL"),
         ),
+        Index("uq_users_share_token", "share_token", unique=True),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -46,8 +47,15 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(Text)
     last_name: Mapped[str] = mapped_column(Text)
     username: Mapped[str] = mapped_column(Text, index=True)  # firstname_lastname
-    # Only password accounts have one; always stored lowercase.
+    # The sign-in name for a password account; optional for an icon account,
+    # where it is only a channel for reminders and change notices. Lowercase.
     email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Profile picture: an uploaded photo or one of core/avatars.EMBLEMS, never
+    # both. Emblems are deliberately not sign-in icons — those are the password.
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_emblem: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Public handle for the member's saved list (GET /shared/{token}).
+    share_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str] = mapped_column(Text)
     # 'icon' (default) means password is the icon slugs; 'password' means custom.
     auth_type: Mapped[str] = mapped_column(Text, default="icon")
