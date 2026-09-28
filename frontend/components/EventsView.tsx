@@ -1299,28 +1299,29 @@ export function EventsView({
                   </motion.div>
                 </div>
 
-                <div
-                  className="flex shrink-0 gap-6 sm:flex-col sm:pt-24"
-                  data-tour="arrows"
-                >
-                  <button
-                    type="button"
-                    aria-label="Previous event"
-                    onClick={prev}
-                    disabled={flying}
-                    className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
-                  >
-                    <ArrowUp aria-hidden="true" className="size-12" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Next event"
-                    onClick={next}
-                    disabled={flying}
-                    className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
-                  >
-                    <ArrowDown aria-hidden="true" className="size-12" />
-                  </button>
+                {/* The top padding lines the arrows up with the card; the tour
+                    target sits inside it so its highlight hugs the buttons. */}
+                <div className="flex shrink-0 sm:pt-24">
+                  <div className="flex gap-6 sm:flex-col" data-tour="arrows">
+                    <button
+                      type="button"
+                      aria-label="Previous event"
+                      onClick={prev}
+                      disabled={flying}
+                      className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
+                    >
+                      <ArrowUp aria-hidden="true" className="size-12" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next event"
+                      onClick={next}
+                      disabled={flying}
+                      className="grid size-24 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50"
+                    >
+                      <ArrowDown aria-hidden="true" className="size-12" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1361,7 +1362,6 @@ export function EventsView({
           this keeps it out of the way should either come up meanwhile. */}
       {tourOpen && !authOpen && !calibrating && (
         <Tour
-          signedIn={signedIn}
           phone={phone}
           speak={ttsEnabled && ttsSupported ? speak : undefined}
           onClose={closeTour}

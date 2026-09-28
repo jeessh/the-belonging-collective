@@ -13,10 +13,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpDown,
   Bookmark,
+  BookmarkCheck,
   Info,
   PersonStanding,
   SlidersHorizontal,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
@@ -29,7 +29,7 @@ type Step = {
   targets: string[];
 };
 
-function stepsFor(signedIn: boolean): Step[] {
+function stepsFor(): Step[] {
   return [
     {
       icon: <ArrowUpDown />,
@@ -56,12 +56,10 @@ function stepsFor(signedIn: boolean): Step[] {
       targets: ["filters", "view"],
     },
     {
-      icon: <Sparkles />,
-      title: "For you",
-      body: signedIn
-        ? "Programs picked for you each week are marked For you."
-        : "Sign in to get picks for you.",
-      targets: ["foryou"],
+      icon: <BookmarkCheck />,
+      title: "Your saved events",
+      body: "Saved events are your bookmarks. Find them here anytime.",
+      targets: ["saved"],
     },
     {
       icon: <PersonStanding />,
@@ -106,12 +104,10 @@ function unionRect(names: string[]): Rect | null {
  * phone and a card beside the spotlight otherwise.
  */
 export function Tour({
-  signedIn,
   phone,
   speak,
   onClose,
 }: {
-  signedIn: boolean;
   phone: boolean;
   /** Reads each step aloud; pass it only while text-to-speech is on. */
   speak?: (text: string) => void;
@@ -119,7 +115,7 @@ export function Tour({
   onClose: (finished: boolean) => void;
 }) {
   const reduceMotion = useReducedMotion();
-  const steps = useMemo(() => stepsFor(signedIn), [signedIn]);
+  const steps = useMemo(() => stepsFor(), []);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const step = steps[index];

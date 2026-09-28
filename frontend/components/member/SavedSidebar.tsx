@@ -69,6 +69,7 @@ export const SavedSidebar = memo(
       return (
         <aside
           aria-label="Saved events"
+          data-tour="saved"
           className="flex shrink-0 items-center gap-3 border-t border-line bg-surface px-4 py-2"
         >
           <div
@@ -144,6 +145,7 @@ export const SavedSidebar = memo(
       return (
         <aside
           aria-label="Saved events"
+          data-tour="saved"
           className="flex w-[100px] shrink-0 flex-col border-r border-line bg-surface"
         >
           <div className="p-3">
@@ -189,6 +191,7 @@ export const SavedSidebar = memo(
     return (
       <aside
         aria-label="Saved events"
+        data-tour="saved"
         className="flex w-[377px] shrink-0 flex-col gap-6 border-r border-line bg-surface pt-6"
       >
         <div className="flex items-center justify-between gap-3 px-6">

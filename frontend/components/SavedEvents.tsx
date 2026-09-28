@@ -259,6 +259,7 @@ export const SavedEvents = memo(function SavedEvents({
 
             <SegmentedToggle
               label="Which events"
+              className="self-start"
               segments={TABS}
               value={tab}
               onChange={(next) => {
