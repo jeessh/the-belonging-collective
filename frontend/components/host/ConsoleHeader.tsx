@@ -41,7 +41,9 @@ export function ConsoleHeader({
   const org = me.org;
 
   const area: Area =
-    pathname.startsWith("/host/admins") || pathname.startsWith("/host/users")
+    pathname.startsWith("/host/admins") ||
+    pathname.startsWith("/host/users") ||
+    pathname.startsWith("/host/topics")
       ? "accounts"
       : "events";
   const onAccess = pathname.startsWith("/host/access");

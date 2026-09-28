@@ -1,5 +1,4 @@
 import type { Event } from "@/lib/api";
-import { sameCategory } from "@/lib/categories";
 
 // Weights for the personalized ordering.
 //
@@ -35,7 +34,9 @@ export type Taste = {
  */
 export function matchScore(event: Event, taste: Taste): number {
   let score = 0;
-  if (taste.interests.some((c) => sameCategory(c, event.category))) {
+  // Slug equality: both sides store the topic's slug (lib/categories), so a
+  // rename in the console changes what's printed and nothing about this.
+  if (event.category && taste.interests.includes(event.category)) {
     score += TOPIC_WEIGHT;
   }
   for (const pref of taste.accessPrefs) {

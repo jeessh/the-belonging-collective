@@ -12,6 +12,8 @@ import {
   Printer,
 } from "lucide-react";
 import { ApiError, api, type Event } from "@/lib/api";
+import { categoryLabel } from "@/lib/categories";
+import { useCategories } from "@/lib/useCategories";
 import { longDate, timeRange } from "@/lib/time";
 import { repeatLabel } from "@/lib/recurrence";
 import { isDerivedTag, tagLabel } from "@/lib/accessibility";
@@ -23,6 +25,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PosterSection } from "@/components/host/PosterSection";
+import { PosterSheet, printSheet } from "@/components/host/PrintSheets";
 import { UnpublishModal, restoreEvent } from "@/components/host/UnpublishModal";
 
 /**
@@ -40,6 +43,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const { show } = useToast();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [unpublishing, setUnpublishing] = useState(false);
+  // Re-renders once the topic list lands, so Activity Type shows labels.
+  useCategories();
 
   useEffect(() => {
     api<Event>(`/events/${id}`)
@@ -66,7 +71,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const facts: [string, ReactNode][] = [
     ["Organization", event.host_name],
     ["Cost", event.price_label || (event.is_free ? "Free" : "Paid")],
-    ["Activity Type", (event.categories ?? []).join(", ") || event.category],
+    [
+      "Activity Type",
+      (event.categories?.length ? event.categories : [event.category])
+        .map(categoryLabel)
+        .filter(Boolean)
+        .join(", "),
+    ],
     ["Repeats", repeatLabel(event.recurrence)],
     ["Spaces", event.capacity != null ? String(event.capacity) : null],
     [
@@ -122,6 +133,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <CopyLinkButton eventId={event.id} title={event.title} />
             <Button leadingIcon={<Printer />} onClick={print}>
               Print
+            </Button>
+            <Button
+              leadingIcon={<Printer />}
+              onClick={() => printSheet(document.getElementById("program-poster"))}
+            >
+              Print poster
             </Button>
             {canManage && (
               <>
@@ -235,6 +252,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       </article>
 
       {event.poster_url && <PosterSection event={event} />}
+      <PosterSheet id="program-poster" event={event} />
 
       {unpublishing && (
         <UnpublishModal

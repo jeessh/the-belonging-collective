@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user, get_db, require_admin
 from app.core.avatars import EMBLEMS
+from app.core.categories import require_live_slugs
 from app.models.care import CareLink
 from app.models.host import Host
 from app.models.user import User
@@ -53,6 +54,8 @@ def update_me(
     if "avatar_url" in fields:
         fields.pop("avatar_url")
         user.avatar_url = None
+    if fields.get("interest_categories"):
+        require_live_slugs(db, fields["interest_categories"])
     for field, value in fields.items():
         setattr(user, field, value)
     try:

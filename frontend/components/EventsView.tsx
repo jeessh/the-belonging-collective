@@ -35,6 +35,7 @@ import {
   type MePrefs,
   type PreferredView,
 } from "@/lib/api";
+import { categoryLabel } from "@/lib/categories";
 import { isUpcoming, whenLine } from "@/lib/time";
 import { googleCalendarUrl, savedCalendarUrl } from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
@@ -657,17 +658,17 @@ export function EventsView({
   // Re-scoring reorders the feed under the cursor, so `i` goes to the top:
   // they just said what they want to see first, so show them that.
   const toggleInterest = useCallback(
-    (label: string) => {
+    (slug: string) => {
       const chosen = meRef.current?.interest_categories ?? [];
-      const adding = !chosen.includes(label);
+      const adding = !chosen.includes(slug);
       void setPref({
         interest_categories: adding
-          ? [...chosen, label]
-          : chosen.filter((c) => c !== label),
+          ? [...chosen, slug]
+          : chosen.filter((c) => c !== slug),
       });
       setI(0);
       setSrMessage(
-        `${adding ? "Added" : "Removed"} ${label}. Showing your best matches from the start.`,
+        `${adding ? "Added" : "Removed"} ${categoryLabel(slug)}. Showing your best matches from the start.`,
       );
     },
     [setPref],

@@ -3,11 +3,11 @@
 import { memo } from "react";
 import { Sparkles } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { CATEGORIES, sameCategory } from "@/lib/categories";
+import { useCategories } from "@/lib/useCategories";
 import { isThisWeek } from "@/lib/time";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
-/** "free", "thisweek", or a canonical topic label from `CATEGORIES`. */
+/** "free", "thisweek", or a topic slug from `GET /categories`. */
 export const FREE_CHIP = "free";
 /** Starts today or within the following seven days, Toronto time. */
 export const THIS_WEEK_CHIP = "thisweek";
@@ -41,7 +41,7 @@ export function passesFilters(event: Event, chips: Set<string>): boolean {
   );
   if (topics.length === 0) return true;
   const own = event.categories?.length ? event.categories : [event.category];
-  return topics.some((t) => own.some((c) => sameCategory(t, c)));
+  return topics.some((t) => own.includes(t));
 }
 
 export const FeedFilters = memo(function FeedFilters({
@@ -58,11 +58,12 @@ export const FeedFilters = memo(function FeedFilters({
   /** Offer the For-you chip. */
   forYou?: boolean;
 }) {
+  const categories = useCategories();
   const all = [
     ...(forYou ? [{ key: FOR_YOU_CHIP, label: "For you" }] : []),
     { key: FREE_CHIP, label: "Free" },
     { key: THIS_WEEK_CHIP, label: "This week" },
-    ...CATEGORIES.map((c) => ({ key: c.label, label: c.label })),
+    ...categories.map((c) => ({ key: c.slug, label: c.label })),
   ];
   return (
     <div className="flex flex-col gap-4" data-tour="filters">

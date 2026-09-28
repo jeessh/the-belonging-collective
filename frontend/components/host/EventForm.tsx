@@ -8,7 +8,8 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
 import { PosterField } from "@/components/host/PosterField";
 import { checkPostingLink } from "@/lib/postingLink";
-import { CATEGORIES } from "@/lib/categories";
+import { categoryStyle } from "@/lib/categories";
+import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS, isDerivedTag } from "@/lib/accessibility";
 import {
   PAID_MODELS,
@@ -380,6 +381,7 @@ export function EventForm({
   error: string | null;
 }) {
   const [showMissing, setShowMissing] = useState(false);
+  const categories = useCategories();
   const missing = missingRequired(values);
   const set = <K extends keyof EventFormValues>(
     key: K,
@@ -733,22 +735,23 @@ export function EventForm({
           lead="Members pick these same topics as interests — this is what puts your event in front of the right people. Choose as many as fit."
         >
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => {
-              const on = values.categories.includes(c.label);
+            {categories.map((c) => {
+              const on = values.categories.includes(c.slug);
               return (
                 <Chip
-                  key={c.label}
+                  key={c.slug}
                   on={on}
                   onClick={() =>
                     set(
                       "categories",
                       on
-                        ? values.categories.filter((x) => x !== c.label)
-                        : [...values.categories, c.label],
+                        ? values.categories.filter((x) => x !== c.slug)
+                        : [...values.categories, c.slug],
                     )
                   }
                 >
-                  <span aria-hidden="true">{c.emoji}</span> {c.label}
+                  <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>{" "}
+                  {c.label}
                 </Chip>
               );
             })}

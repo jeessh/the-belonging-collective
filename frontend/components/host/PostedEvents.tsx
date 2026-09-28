@@ -13,6 +13,7 @@ import {
   PartyPopper,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
+import { useCategories } from "@/lib/useCategories";
 import { DIMENSIONS, bucketsFor, type DimensionKey } from "@/lib/dimensions";
 import { buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -73,6 +74,8 @@ export const FilterPanel = memo(function FilterPanel({
   onChange: (next: HostFilters) => void;
 }) {
   const [open, setOpen] = useState<Partial<Record<DimensionKey, boolean>>>({});
+  // Activity Type labels come from the topic list; recompute when it lands.
+  const categories = useCategories();
 
   const options = useMemo(() => {
     const byKey = new Map<DimensionKey, { id: string; label: string }[]>();
@@ -83,7 +86,8 @@ export const FilterPanel = memo(function FilterPanel({
       );
     }
     return byKey;
-  }, [events]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, categories]);
 
   function toggle(key: DimensionKey, id: string) {
     const cur = filters[key] ?? [];

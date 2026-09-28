@@ -11,6 +11,7 @@ import {
   Send,
 } from "lucide-react";
 import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
+import { categoryLabel } from "@/lib/categories";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { listShareText } from "@/lib/share";
@@ -115,7 +116,7 @@ export const SavedEvents = memo(function SavedEvents({
     const q = query.trim().toLowerCase();
     const matching = q
       ? events.filter((ev) =>
-          [ev.title, ev.location, ev.host_name, ev.category]
+          [ev.title, ev.location, ev.host_name, categoryLabel(ev.category)]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()

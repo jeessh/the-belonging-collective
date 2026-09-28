@@ -40,6 +40,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.core.categories import require_live_slugs
 from app.core.config import settings
 from app.core.security import decode_token
 from app.core.mail import send as send_mail
@@ -252,6 +253,7 @@ def signup_user(
     """
     username = _make_username(body.first_name, body.last_name)
     email = body.email.strip().lower()
+    require_live_slugs(db, body.interest_categories)
     # Same budget as login, keyed on the same thing: the 409 below says
     # whether an address has an account, so a sweep here has to cost what a
     # sweep of the login route costs.
@@ -371,6 +373,7 @@ def auth_user(
 
     # 3) Fresh (name + icons) → create the account. Different people may share
     #    the same icons as long as their names differ; a clash needs both.
+    require_live_slugs(db, body.interest_categories)
     user = new_member(
         db,
         body.first_name,
