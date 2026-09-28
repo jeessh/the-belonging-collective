@@ -187,8 +187,9 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
 
       {/* One filter row; everything below reads the same slice. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
-        {/* Four presets don't fit a phone side by side; the row scrolls. */}
-        <div className="max-w-full overflow-x-auto scroll-fade-x">
+        {/* Four presets don't fit a phone side by side, so there (only) the
+            row scrolls with an edge fade; wider, the toggle shows whole. */}
+        <div className="max-w-full max-sm:overflow-x-auto max-sm:scroll-fade-x">
           <SegmentedToggle<Preset>
             label="Date range"
             value={preset}
