@@ -102,8 +102,8 @@ def create_invite(
             invited_by=current.id,
         )
         intro = (
-            f"{current.name} has invited you to join {org.name}'s team on The\n"
-            "Belonging Collective, where the organization posts its programs."
+            f"{current.name} invited you to join {org.name}'s team on The "
+            "Belonging Collective, where you can post and manage its programs."
         )
     else:
         # A new organization: superadmins only. There is no host signup route,
@@ -123,7 +123,7 @@ def create_invite(
             invited_by=current.id,
         )
         intro = (
-            f"{current.name} has invited {organization} to post programs on The\n"
+            f"{current.name} invited {organization} to post programs on The "
             "Belonging Collective."
         )
 
@@ -141,8 +141,7 @@ def create_invite(
 
 {intro}
 
-Open this link to choose a password and get started. It expires in
-{INVITE_DAYS} days:
+Open this link to choose a password and get started. It stops working after {INVITE_DAYS} days:
 
 {link}
 

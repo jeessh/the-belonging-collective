@@ -139,9 +139,9 @@ function Topics() {
       <div className="flex flex-col gap-3">
         <h1 className="text-4xl font-medium text-fg sm:text-5xl">Topics</h1>
         <p className="text-xl text-fg">
-          What members pick as interests and organizations file programs under.
-          Renaming a topic keeps every match; archiving one moves its programs
-          to a topic you choose.
+          Members pick these as interests, and organizations sort programs by
+          them. Renaming a topic keeps every match. Archiving one moves its
+          programs to a topic you choose.
         </p>
       </div>
 
@@ -358,8 +358,8 @@ function ArchiveModal({
             <strong className="text-fg">
               {topic.event_count} live {topic.event_count === 1 ? "program is" : "programs are"}
             </strong>{" "}
-            filed under it. Choose where they go; members interested in{" "}
-            {topic.label} move with them.
+            use it. Choose where they go. Members interested in {topic.label}{" "}
+            move with them.
           </>
         ) : (
           "No live programs use it. Members who picked it as an interest lose that pick."

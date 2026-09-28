@@ -167,12 +167,12 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
             Analytics
           </h1>
           <p className="text-xl text-fg">
-            How members are finding and keeping{" "}
+            How members are finding and saving{" "}
             {ctx.isSuper && !orgId
               ? "programs"
               : `${data?.host_name ?? ctx.org.name}'s programs`}
-            . These are the numbers for a grant application: download them as a
-            spreadsheet with the range you need.
+            . Pick a date range and download it as a spreadsheet for grant
+            applications.
           </p>
         </div>
         <a
@@ -399,9 +399,8 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
 
       {data && (
         <p className="text-base text-fg-muted">
-          Counting {data.from} to {data.to}. Saves count every time a member
-          kept a program, even if they later removed it; programs un-published
-          since still count for what happened while they were up.
+          Counting {data.from} to {data.to}. Saves include ones a member later
+          removed, and un-published programs still count.
           <Button
             variant="ghost"
             className="ml-2"

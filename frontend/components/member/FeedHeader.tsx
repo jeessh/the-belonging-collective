@@ -401,7 +401,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               hint="Turn your head to an edge: up and down move, left saves, right opens your list."
               checked={headEnabled}
               disabled={!headSupported}
-              disabledHint="Needs a webcam on Chrome or Edge over https."
+              disabledHint="Needs a webcam, and Chrome or Edge."
               onChange={onToggleHead}
             />
           </div>

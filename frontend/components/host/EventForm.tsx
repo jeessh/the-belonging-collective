@@ -351,7 +351,7 @@ export function EventForm({
     >
       <div id={`${id}-missing`} className="flex flex-col gap-2">
         <p className="text-base text-fg-muted">
-          Mandatory fields are marked with{" "}
+          Required fields are marked with{" "}
           <span className="text-danger-fg">*</span>.
         </p>
         {showMissing && missing.length > 0 && (
@@ -470,7 +470,7 @@ export function EventForm({
 
           <Section
             title="Important Links"
-            lead="A flyer, a map, your own page — up to three. Each needs a short label and the address."
+            lead="Up to three, like a flyer, a map or your own page. Each needs a label and a web address."
           >
             <div className="flex flex-col gap-3">
               {values.links.map((link, i) => (
@@ -670,7 +670,7 @@ export function EventForm({
         <Section
           title="Activity Type"
           required
-          lead="Members pick these same topics as interests — this is what puts your event in front of the right people. Choose as many as fit."
+          lead="Members pick these topics as interests, so this helps the right people find your event. Choose all that fit."
         >
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => {
@@ -740,7 +740,7 @@ export function EventForm({
                 Each date is posted separately, so people can save the ones they
                 can make.
                 {values.repeatForever &&
-                  " We'll post about two years ahead and extend it from there."}
+                  " We'll post dates about two years ahead and keep adding more."}
               </p>
             )}
           </Section>
@@ -800,7 +800,7 @@ export function EventForm({
 
         <Section
           title="Who can see this"
-          lead="Everyone, or only people your organization has approved into a special-access group."
+          lead="Everyone, or only people you've approved into a special-access group."
         >
           <AccessPicker
             hostId={hostId}
@@ -814,7 +814,7 @@ export function EventForm({
 
         <Section
           title="Printable poster"
-          lead="Your own flyer — a PDF, PNG or JPEG up to 4 MB. Members open it from the program's page, and the details page gives you a QR code that points there."
+          lead="Your own flyer: a PDF, PNG or JPEG up to 4 MB. Members can open it from the program's page. The details page has a QR code for that page."
         >
           <PosterField
             value={values.posterUrl}
@@ -824,7 +824,7 @@ export function EventForm({
 
         <Section
           title="What does it offer?"
-          lead="Tick only what you can vouch for. Anything left unticked just means you haven't said."
+          lead="Only tick what you're sure of. Leaving one unticked doesn't mean no."
         >
           <div className="flex flex-wrap gap-2">
             {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {

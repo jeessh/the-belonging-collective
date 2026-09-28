@@ -81,8 +81,8 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
     if event.access_group_id and not is_approved(db, user.id, event.access_group_id):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "This program is for members the organization has given special "
-            "access. Request access from the program page first.",
+            "Only members with special access can save this program. Ask for "
+            "access on the program page first.",
         )
     now = holds.now_utc()
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})

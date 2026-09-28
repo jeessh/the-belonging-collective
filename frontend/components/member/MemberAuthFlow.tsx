@@ -301,13 +301,13 @@ export function MemberAuthFlow({
               <legend className="sr-only">Account type</legend>
               <RoleCard
                 name="Community Member"
-                hint="Member affiliated with a non-profit attending hosted events"
+                hint="Finds and saves programs to go to."
                 checked={!caregiver}
                 onChange={() => setCaregiver(false)}
               />
               <RoleCard
                 name="Caregiver"
-                hint="Supports a member and can save events on their behalf"
+                hint="Saves programs for someone they support."
                 checked={caregiver}
                 onChange={() => setCaregiver(true)}
               />
@@ -328,8 +328,8 @@ export function MemberAuthFlow({
           ? "Create your caregiver account"
           : "Create your member account",
         subtitle: caregiver
-          ? "You will be able to save events for the people you support"
-          : "You will be able to save events that you like and would like to attend later",
+          ? "Save events for the people you support."
+          : "Save the events you want to go to.",
         body: (
           <form
             onSubmit={(e) => {
@@ -418,7 +418,7 @@ export function MemberAuthFlow({
     case "password":
       view = {
         title: "Set up your password",
-        subtitle: `Please include a minimum of ${PASSWORD_MIN_LENGTH} characters`,
+        subtitle: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
         body: (
           <form
             onSubmit={submitPassword}
@@ -534,7 +534,7 @@ export function MemberAuthFlow({
     case "care-create":
       view = {
         title: "Their account",
-        subtitle: "Their name, email and a password. It is theirs to sign in with.",
+        subtitle: "Their name, email and a password. They use these to sign in.",
         body: (
           <CareLinkForm
             mode="create"

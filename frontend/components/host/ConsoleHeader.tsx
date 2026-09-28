@@ -215,8 +215,8 @@ function LogoModal({
   return (
     <Modal title="Your organization's logo" onClose={onClose}>
       <p className="mt-2 text-lg text-fg-muted">
-        This is how members pick {organization} out in the feed. A square
-        image works best.
+        Members see it next to {organization}&apos;s programs in the feed. A
+        square image works best.
       </p>
       <div className="mt-4">
         <ImageDrop label="Logo" sizing="logo" value={url} onChange={setUrl} />

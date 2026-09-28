@@ -117,8 +117,8 @@ def request_access(
     if membership.status in (DECLINED, REVOKED):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "The organization has already decided on your access. Please "
-            "contact them directly if you think that should change.",
+            "The organization already answered your request. Please contact "
+            "them if you have questions.",
         )
     return membership
 

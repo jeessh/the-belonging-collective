@@ -157,9 +157,8 @@ export function AccessPicker({
           )}
 
           <p className="text-base text-fg-muted">
-            Only members approved into this group find the program in the feed.
-            Anyone with the link or the QR code can still open its page and ask
-            to join.
+            Only approved members see it in the feed. Anyone with the link or
+            QR code can still open its page and ask to join.
           </p>
         </div>
       )}

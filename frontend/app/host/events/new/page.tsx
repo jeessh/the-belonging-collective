@@ -63,7 +63,7 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
         return;
       }
       setError(
-        apiMessage(e, "Couldn't publish that event. Check the fields and retry."),
+        apiMessage(e, "Couldn't publish that event. Check the fields and try again."),
       );
       setBusy(false);
     }

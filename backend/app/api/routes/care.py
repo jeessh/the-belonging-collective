@@ -58,7 +58,7 @@ def _require_caregiver(user: User) -> None:
     if not user.is_caregiver:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "Turn on “I'm a caregiver” in your profile first.",
+            "Only caregiver accounts can do this.",
         )
 
 
@@ -138,7 +138,11 @@ def link_member(
         record(db, id_key, ip_key)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password.")
     if member.id == user.id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "That is your own account.")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "That's your own account. Use the email and password of the person "
+            "you support.",
+        )
     clear(db, id_key)
     _link(db, user, member)
     return member

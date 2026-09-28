@@ -97,8 +97,8 @@ function Members() {
           Community Members
         </h1>
         <p className="text-xl text-fg">
-          Everyone with a member account. Set password gives someone a
-          temporary password to read out when they can&apos;t get in.
+          Everyone with a member account. If someone can&apos;t get in, use
+          Set password to give them a temporary one.
         </p>
       </div>
 
@@ -246,7 +246,7 @@ function Members() {
       {resetting && (
         <MemberModal
           title={`Set a password for ${resetting.first_name}?`}
-          lead="Confirm the email they will sign in with. A temporary password is generated; what they have now stops working, so only do this if they can be told."
+          lead="Confirm the email they sign in with. This makes a temporary password and their current one stops working, so only do it if you can tell them."
           submitLabel="Set password"
           emailOnly
           initial={resetting}
@@ -274,8 +274,8 @@ function Members() {
             {issued.password}
           </p>
           <p className="mt-4 text-base text-fg-muted">
-            It is shown once. They can change it from &quot;Forgot your
-            password?&quot; at login, or you can set another one here.
+            You won&apos;t see it again. They can change it with &quot;Forgot
+            your password?&quot; at login.
           </p>
           <div className="mt-6 flex justify-end">
             <Button variant="primary" onClick={() => setIssued(null)}>

@@ -105,10 +105,9 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             Special Access
           </h1>
           <p className="text-xl text-fg">
-            Some programs are only for people your organization has approved. A
-            group is who&apos;s approved, and one approval covers every program
-            filed under it. Members ask from a program&apos;s page; you answer
-            here.
+            Some programs are only for people you approve. Approve someone into
+            a group once and they can see every program in it. Members ask
+            from a program&apos;s page, and you answer here.
           </p>
         </div>
         <Button
@@ -461,9 +460,9 @@ function GroupPanel({
           }
         >
           <p className="mt-3 text-lg text-fg-muted">
-            They stop seeing programs in {group.name} straight away. Programs
-            they already saved stay on their list, and you can approve them
-            again from the Declined tab.
+            They stop seeing {group.name} programs right away. Anything they
+            already saved stays saved. You can approve them again from the
+            Declined tab.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => setRevoking(null)}>Cancel</Button>
@@ -532,8 +531,7 @@ function GroupModal({
     <Modal title={group ? "Rename group" : "New group"} onClose={onClose}>
       {!group && (
         <p className="mt-2 text-lg text-fg-muted">
-          Name it the way your staff talk about it — the residence, the
-          program, the cohort.
+          Use a name your staff will recognize, like a residence or program.
         </p>
       )}
       <form
@@ -618,9 +616,8 @@ function ArchiveModal({
       }
     >
       <p className="mt-3 text-lg text-fg-muted">
-        It leaves this page and the program form. Nothing is deleted — who was
-        approved is kept. A group still used by a live program can&apos;t be
-        archived until that program is moved or un-published.
+        It disappears from this page and the program form. Approvals are kept.
+        You can&apos;t archive a group while a live program still uses it.
       </p>
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">

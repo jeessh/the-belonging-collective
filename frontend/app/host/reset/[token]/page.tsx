@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthPage
       title="Choose a new password"
-      subtitle={`For ${target.organization}. You'll log in with ${target.email}. Please include a minimum of ${PASSWORD_MIN_LENGTH} characters.`}
+      subtitle={`For ${target.organization}. You'll log in with ${target.email}. Use at least ${PASSWORD_MIN_LENGTH} characters.`}
     >
       <form
         className="flex flex-col gap-6"

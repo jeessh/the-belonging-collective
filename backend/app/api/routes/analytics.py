@@ -45,7 +45,7 @@ def _range(from_: date | None, to: date | None) -> tuple[date, date]:
     to = to or today
     from_ = from_ or to - timedelta(days=DEFAULT_DAYS)
     if from_ > to:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "'from' must be on or before 'to'")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "The start date must be on or before the end date.")
     if (to - from_).days > MAX_DAYS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That range is too long.")
     return from_, to
