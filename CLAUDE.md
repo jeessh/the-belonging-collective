@@ -327,11 +327,17 @@ can open.
 - **Shareable saved list**: `POST /users/me/share-link` mints `users.share_token`
   once; `GET /shared/{token}` is public and lists the member's upcoming saved
   *public* programs — special-access ones are excluded whoever holds the link.
+  `GET /shared/{token}/calendar.ics` is the same programs (past dates kept) as
+  a calendar feed: the saved list's "Google Calendar" button mints the token
+  and opens Google's subscribe-by-URL page (`lib/calendar.googleSubscribeUrl`,
+  `webcal://`), since Google fetches the feed without the member's cookie.
+  Single programs use Google's prefilled "add event" link instead.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
-  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
-  profile toggle). **The member keeps their own account and their own
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`; the profile
+  no longer has a toggle, it only lists "People I support" for an account that
+  already is one). **The member keeps their own account and their own
   credential**; a caregiver never signs in as them. `care_links(caregiver_id,
   member_id, created_at, removed_at)` (migration `0021_caregivers`,
   `models/care.py`) is the only user-to-user relation. Unlinking sets

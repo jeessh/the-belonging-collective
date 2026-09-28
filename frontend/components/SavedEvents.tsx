@@ -19,8 +19,18 @@ import {
   Search,
   Send,
 } from "lucide-react";
-import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
-import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
+import {
+  apiMessage,
+  createShareLink,
+  sharedListUrl,
+  type Event,
+  type Me,
+} from "@/lib/api";
+import {
+  googleCalendarUrl,
+  googleSubscribeUrl,
+  openGoogleCalendar,
+} from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -34,6 +44,7 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
+import { useToast } from "@/components/ui/Toast";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
@@ -100,6 +111,25 @@ export const SavedEvents = memo(function SavedEvents({
     viewChoice ?? (me?.preferred_view === "list" ? "grid" : "card");
   const phone = useMediaQuery("(max-width: 639px)");
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
+  const { show } = useToast();
+
+  // The tab opens inside the click, before the token arrives; opened after
+  // the await it would be a popup the browser blocks.
+  async function subscribeInGoogle() {
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const url = googleSubscribeUrl((await createShareLink()).token);
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+    } catch (err) {
+      tab?.close();
+      show({
+        title: apiMessage(err, "Couldn't open Google Calendar."),
+        tone: "alert",
+      });
+    }
+  }
 
   // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -257,15 +287,27 @@ export const SavedEvents = memo(function SavedEvents({
               {/* Three of the design's large buttons are five rows on a phone;
                   the medium size there fits two to a row. */}
               <div className="flex shrink-0 flex-wrap gap-3">
-                {/* The whole list as an .ics file. Google's "add" page takes
-                    one event, so each card below has its own button for that. */}
-                <a
-                  href={calendarUrl}
-                  className={buttonClass("secondary", "lg", ACTION)}
-                >
-                  <GoogleCalendarIcon />
-                  Google Calendar
-                </a>
+                {/* The whole list, subscribed in Google Calendar. Someone
+                    else's list (a caregiver's view) has no share link of
+                    theirs to subscribe to, so it stays a download. */}
+                {owner ? (
+                  <a
+                    href={calendarUrl}
+                    className={buttonClass("secondary", "lg", ACTION)}
+                  >
+                    <GoogleCalendarIcon />
+                    Download calendar
+                  </a>
+                ) : (
+                  <Button
+                    size="lg"
+                    className={ACTION}
+                    onClick={() => void subscribeInGoogle()}
+                    leadingIcon={<GoogleCalendarIcon />}
+                  >
+                    Google Calendar
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   className={ACTION}
