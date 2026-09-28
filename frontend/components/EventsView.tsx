@@ -65,6 +65,7 @@ import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
 import { Tour } from "@/components/member/Tour";
+import { FeedLoading } from "@/components/member/FeedLoading";
 
 const DROP_THRESHOLD = 150; // drag-left px to save
 const SWIPE_THRESHOLD = 90; // drag up/down px to page
@@ -1000,13 +1001,7 @@ export function EventsView({
     setDragActive(on);
   };
 
-  if (status === "loading") {
-    return (
-      <main className="grid h-dvh place-items-center bg-surface text-fg-muted">
-        <p className="text-2xl">Loading your programs…</p>
-      </main>
-    );
-  }
+  if (status === "loading") return <FeedLoading />;
 
   const name = me ? shortName(me) : null;
   // "Sam R." when a caregiver is saving for someone; every list surface
