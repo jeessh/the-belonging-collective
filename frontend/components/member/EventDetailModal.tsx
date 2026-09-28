@@ -87,7 +87,7 @@ export function EventDetailModal({
                   rel="noopener noreferrer"
                   className={buttonClass("secondary", "lg")}
                 >
-                  Google Maps
+                  See on Map
                   <MapPin aria-hidden="true" className="size-6 shrink-0" />
                 </a>
               )}
@@ -116,7 +116,7 @@ export function EventDetailModal({
                   onClick={() => onSave(event)}
                   trailingIcon={<Bookmark />}
                 >
-                  Save event
+                  Save Event
                 </Button>
               )}
               {external && (
