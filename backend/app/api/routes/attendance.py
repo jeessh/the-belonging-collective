@@ -50,13 +50,13 @@ def record_registration_click(
     db.commit()
 
 
-@router.post("/events/{event_id}/attend", status_code=status.HTTP_201_CREATED)
-def attend_event(
-    event_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Save the program — a bookmark, never a registration.
+def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
+    """Save the program for `user` — a bookmark, never a registration.
+
+    The one implementation behind a member saving for themselves and a
+    caregiver saving for them (routes/care.py): the row is the member's, and
+    so are the rules — special access is the member's approval, the hold is
+    the member's spot.
 
     Capacity never refuses a save. What it does is hold a spot for the first
     hour (core/holds.py) when the holds still running are under capacity;
@@ -143,14 +143,16 @@ def attend_event(
     return {"ok": True, "held_until": held_until}
 
 
-@router.delete(
-    "/events/{event_id}/attend", status_code=status.HTTP_204_NO_CONTENT
-)
-def unattend_event(
+@router.post("/events/{event_id}/attend", status_code=status.HTTP_201_CREATED)
+def attend_event(
     event_id: uuid.UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    return save_event(db, user, event_id)
+
+
+def unsave_event(db: Session, user: User, event_id: uuid.UUID) -> None:
     """Un-saving flips the status; the row stays so the organizer's cumulative
     save count doesn't walk backwards. Any hold goes with it."""
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})
@@ -176,7 +178,18 @@ def unattend_event(
     db.commit()
 
 
-def _saved_events(db: Session, user: User) -> list[Event]:
+@router.delete(
+    "/events/{event_id}/attend", status_code=status.HTTP_204_NO_CONTENT
+)
+def unattend_event(
+    event_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    unsave_event(db, user, event_id)
+
+
+def saved_events(db: Session, user: User) -> list[Event]:
     # One query with eager loads; iterating user.attending lazy-loads each
     # event (and then its host/images) row by row.
     return (
@@ -207,7 +220,7 @@ def _saved_events(db: Session, user: User) -> list[Event]:
 def my_events(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    rows = _saved_events(db, user)
+    rows = saved_events(db, user)
     out = [EventOut.model_validate(row) for row in rows]
     holds.annotate(rows, out, user.id)
     return out
@@ -284,7 +297,7 @@ def my_events_calendar(
 ):
     """Every dated program the member has saved, as one calendar file."""
     return Response(
-        ical.build(_saved_events(db, user)),
+        ical.build(saved_events(db, user)),
         media_type="text/calendar; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="saved-programs.ics"'},
     )

@@ -199,6 +199,11 @@ export type Me = {
   dismissed_program_ids: string[];
   /** When the first-run tour was seen; null until then. */
   onboarded_at: string | null;
+  /** Supports a member — opens the caregiver tools. Support, not proxy. */
+  is_caregiver: boolean;
+  /** Members this account is linked to (saves for), and who saves for it. */
+  care: CarePerson[];
+  caregivers: CarePerson[];
 };
 
 /** Fields a member can update on themselves via PATCH /users/me. */
@@ -214,6 +219,7 @@ export type MePrefs = Partial<
     | "dismissed_program_ids"
     | "email"
     | "avatar_emblem"
+    | "is_caregiver"
   >
 > & {
   /** `true` stamps `onboarded_at` with now; `false` is ignored. */
@@ -267,6 +273,78 @@ export async function fetchAllEvents(): Promise<Event[]> {
 }
 
 export const logout = () => api("/auth/logout", { method: "POST" });
+
+/* ---------------- caregivers ---------------- */
+
+/**
+ * One side of a care link as the other sees it. A caregiver's `last_name` is
+ * the initial only when a member is looking.
+ */
+export type CarePerson = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  avatar_url?: string | null;
+  avatar_emblem?: string | null;
+};
+
+/** "Sam R." — the short form every surface uses for a linked person. */
+export const shortName = (p: { first_name: string; last_name: string }) =>
+  `${p.first_name} ${p.last_name.charAt(0)}.`.trim();
+
+/** What a member types to sign in: name + icons, or email + password. */
+export type MemberCredential =
+  | { first_name: string; last_name: string; icons: string[] }
+  | { email: string; password: string };
+
+/**
+ * A caregiver creating the member's account. Icons come back once when the
+ * account is an icon account, so they can be handed over.
+ */
+export const createCareMember = (
+  body: { first_name: string; last_name: string } & (
+    | { icons: string[] }
+    | { email: string; password: string }
+  ),
+) =>
+  api<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    auth_type: "icon" | "password";
+    icons: string[];
+  }>("/users/me/care/members", { method: "POST", body: JSON.stringify(body) });
+
+/** Link an existing member by proving their credential. 401 when it's wrong. */
+export const linkCareMember = (body: MemberCredential) =>
+  api<CarePerson>("/users/me/care/links", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const unlinkCareMember = (memberId: string) =>
+  api(`/users/me/care/${memberId}`, { method: "DELETE" });
+
+/** The member's side: drop one of the people who support them. */
+export const removeCaregiver = (caregiverId: string) =>
+  api(`/users/me/caregivers/${caregiverId}`, { method: "DELETE" });
+
+export const fetchCareEvents = (memberId: string) =>
+  api<Event[]>(`/users/me/care/${memberId}/events`);
+
+/** Save / un-save *for* a linked member. The row is theirs, so are the rules. */
+export const attendEventFor = (memberId: string, eventId: string) =>
+  api<AttendResult>(`/users/me/care/${memberId}/events/${eventId}/attend`, {
+    method: "POST",
+  });
+
+export const unattendEventFor = (memberId: string, eventId: string) =>
+  api(`/users/me/care/${memberId}/events/${eventId}/attend`, {
+    method: "DELETE",
+  });
+
+export const careCalendarUrl = (memberId: string) =>
+  `${API}/users/me/care/${memberId}/events/calendar.ics`;
 
 /* ---------------- special access ---------------- */
 
@@ -396,6 +474,9 @@ export type Session = {
   auth_type?: "icon" | "password";
   avatar_url?: string | null;
   avatar_emblem?: string | null;
+  is_caregiver?: boolean;
+  care?: CarePerson[];
+  caregivers?: CarePerson[];
 };
 
 export const getSession = () => api<Session>("/auth/me");
