@@ -105,7 +105,9 @@ can open.
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
-  not `attend`, or it skips the animation; the toast comes from `attend`.
+  not `attend`, or it skips the animation. A save shows no toast (Jesse's
+  call) — the card's own "Event saved" and the live region say it; only
+  errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
   While the card travels (drag, ← hold, flight) it is **lifted**: `position:

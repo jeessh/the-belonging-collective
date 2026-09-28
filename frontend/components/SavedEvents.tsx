@@ -13,6 +13,8 @@ import {
   BookmarkX,
   CalendarDays,
   CalendarPlus,
+  GalleryVerticalEnd,
+  LayoutGrid,
   MoveLeft,
   MoveRight,
   Printer,
@@ -23,6 +25,7 @@ import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { isUpcoming } from "@/lib/time";
 import { listShareText } from "@/lib/share";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
@@ -44,7 +47,15 @@ const TABS = [
   { value: "past" as const, label: "Past Events" },
 ];
 
-// Three rows of the two-column grid; six rows on a phone.
+/** Card View is the vertical cards, three across; Grid View the two-up rows. */
+type SavedView = "card" | "grid";
+const VIEWS = [
+  { value: "card" as const, label: "Card View", icon: <GalleryVerticalEnd /> },
+  { value: "grid" as const, label: "Grid View", icon: <LayoutGrid /> },
+];
+
+// Two rows of three, three rows of two, or six down a phone: every view
+// fills its rows.
 const PAGE_SIZE = 6;
 
 type Props = {
@@ -83,6 +94,12 @@ export const SavedEvents = memo(function SavedEvents({
   const [tab, setTab] = useState<Tab>("upcoming");
   const [page, setPage] = useState(1);
   const [sub, setSub] = useState<"share" | "print" | null>(null);
+  // Follows the feed's own view until the member picks one here; the pick
+  // is this page's alone and is not written back to the profile.
+  const [viewChoice, setViewChoice] = useState<SavedView | null>(null);
+  const view: SavedView =
+    viewChoice ?? (me?.preferred_view === "list" ? "grid" : "card");
+  const phone = useMediaQuery("(max-width: 639px)");
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // Dialog focus management. Escape is handled globally by EventsView.
@@ -188,27 +205,40 @@ export const SavedEvents = memo(function SavedEvents({
       aria-label="All saved events"
       className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none"
     >
-      <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-9">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Back to events"
-            className="grid size-11 shrink-0 place-items-center rounded-control text-fg hover:bg-surface-subtle"
-          >
-            <ArrowLeft aria-hidden="true" className="size-8" />
-          </button>
-          <h1 className="text-3xl font-medium text-fg">
-            {owner ? listTitle : "All Saved Events"} ({me ? total : 0})
-          </h1>
+      {/* The panel shares the screen with the sidebar, so how many cards fit
+          across is the panel's own width, not the viewport's. */}
+      <div className="flex flex-col gap-6 p-4 [container-type:inline-size] sm:gap-8 sm:p-6 lg:p-9">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Back to events"
+              className="grid size-11 shrink-0 place-items-center rounded-control text-fg hover:bg-surface-subtle"
+            >
+              <ArrowLeft aria-hidden="true" className="size-8" />
+            </button>
+            <h1 className="text-2xl font-medium text-fg sm:text-3xl">
+              {owner ? listTitle : "All Saved Events"} ({me ? total : 0})
+            </h1>
+          </div>
+          {me && (
+            <SegmentedToggle
+              label="Saved events view"
+              className="shrink-0"
+              segments={VIEWS.map((v) => ({ ...v, iconOnly: phone }))}
+              value={view}
+              onChange={setViewChoice}
+            />
+          )}
         </div>
 
         {!me ? (
           <Empty onAction={onSignIn} action="Login" />
         ) : (
           <>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <label className="relative block w-full max-w-[640px]">
+            <div className="flex flex-col gap-4 cq-xl:flex-row cq-xl:items-center cq-xl:justify-between">
+              <label className="relative block w-full min-w-0 cq-xl:max-w-[640px] cq-xl:flex-1">
                 <span className="sr-only">Search for event</span>
                 <Search
                   aria-hidden="true"
@@ -222,14 +252,14 @@ export const SavedEvents = memo(function SavedEvents({
                     setPage(1);
                   }}
                   placeholder="Search for event"
-                  className="min-h-14 w-full rounded-control border border-line bg-surface py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted"
+                  className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
                 />
               </label>
               {/* Three of the design's large buttons are five rows on a phone;
                   the medium size there fits two to a row. */}
-              <div className="flex flex-wrap gap-3">
+              <div className="flex shrink-0 flex-wrap gap-3">
                 {/* The whole list as an .ics file. Google's "add" page takes
-                    one event, so each row below has its own button for that. */}
+                    one event, so each card below has its own button for that. */}
                 <a
                   href={calendarUrl}
                   className={buttonClass("secondary", "lg", ACTION)}
@@ -250,6 +280,7 @@ export const SavedEvents = memo(function SavedEvents({
                   Share list
                 </Button>
                 <Button
+                  variant="primary"
                   size="lg"
                   className={ACTION}
                   onClick={() => setSub("print")}
@@ -296,77 +327,51 @@ export const SavedEvents = memo(function SavedEvents({
                 >
                   {tabLabel}
                 </h2>
-                <ul className="grid gap-6 xl:grid-cols-2">
+                <ul
+                  className={`grid gap-6 ${
+                    view === "card"
+                      ? "cq-md:grid-cols-2 cq-xl:grid-cols-3"
+                      : "cq-xl:grid-cols-2"
+                  }`}
+                >
                   {onPage.map((ev) => (
-                    <li
+                    <SavedCard
                       key={ev.id}
-                      className="rounded-card border border-line-card bg-surface p-6"
-                    >
-                      <EventSummary
-                        event={ev}
-                        layout="row"
-                        going={<GoingCount count={ev.saved_count} />}
-                        actions={
-                          <>
-                            <Button
-                              onClick={() => onUnsave(ev)}
-                              aria-label={`Un-save ${ev.title}`}
-                              leadingIcon={<BookmarkX />}
-                            >
-                              Un-save
-                            </Button>
-                            {tab === "upcoming" && googleCalendarUrl(ev) && (
-                              <Button
-                                onClick={() => openGoogleCalendar(ev)}
-                                aria-label={`Add to calendar: ${ev.title}`}
-                                leadingIcon={<CalendarPlus />}
-                              >
-                                Add to calendar
-                              </Button>
-                            )}
-                            <Button
-                              onClick={() => onOpen(ev)}
-                              trailingIcon={<MoveRight />}
-                            >
-                              More information
-                            </Button>
-                          </>
-                        }
-                      />
-                    </li>
+                      event={ev}
+                      view={view}
+                      calendar={tab === "upcoming"}
+                      onUnsave={onUnsave}
+                      onOpen={onOpen}
+                    />
                   ))}
                 </ul>
                 {pageCount > 1 && (
                   <nav
                     aria-label="Saved events pages"
-                    className="flex flex-wrap items-center justify-center gap-4 sm:gap-9"
+                    className="grid grid-cols-2 gap-4 sm:gap-6"
                   >
                     <Button
                       size="lg"
-                      className={`flex-1 ${ACTION}`}
+                      className={ACTION}
                       disabled={current === 1}
                       onClick={() => goTo(current - 1)}
                       leadingIcon={<MoveLeft />}
                     >
                       Back
                     </Button>
-                    <p
-                      role="status"
-                      aria-live="polite"
-                      className="order-first w-full text-center text-lg text-fg sm:order-none sm:w-auto"
-                    >
-                      Page {current} of {pageCount}
-                    </p>
                     <Button
                       variant="primary"
                       size="lg"
-                      className={`flex-1 ${ACTION}`}
+                      className={ACTION}
                       disabled={current === pageCount}
                       onClick={() => goTo(current + 1)}
                       trailingIcon={<MoveRight />}
                     >
                       Next
                     </Button>
+                    <p role="status" aria-live="polite" className="sr-only">
+                      Page {current} of {pageCount}
+                    </p>
                   </nav>
                 )}
               </>
@@ -421,6 +426,79 @@ export const SavedEvents = memo(function SavedEvents({
     </div>
   );
 });
+
+/**
+ * One saved program. The whole card opens the details for a pointer; the
+ * "More information" button is the same door for the keyboard, after
+ * Un-save, in the order they are drawn.
+ */
+function SavedCard({
+  event,
+  view,
+  calendar,
+  onUnsave,
+  onOpen,
+}: {
+  event: Event;
+  view: SavedView;
+  /** Offer "Add to calendar" — the upcoming list only. */
+  calendar: boolean;
+  onUnsave: (event: Event) => void;
+  onOpen: (event: Event) => void;
+}) {
+  const stack = view === "card";
+  return (
+    <li
+      onClick={() => onOpen(event)}
+      className={`cursor-pointer overflow-hidden rounded-card border border-line-card bg-surface transition-colors hover:border-primary-border focus-within:border-primary-border ${
+        stack ? "" : "p-6"
+      }`}
+    >
+      <EventSummary
+        event={event}
+        layout={stack ? "stack" : "row"}
+        going={<GoingCount count={event.saved_count} />}
+        actions={
+          <>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnsave(event);
+              }}
+              aria-label={`Un-save ${event.title}`}
+              leadingIcon={<BookmarkX />}
+            >
+              Un-save
+            </Button>
+            {calendar && googleCalendarUrl(event) && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openGoogleCalendar(event);
+                }}
+                aria-label={`Add to calendar: ${event.title}`}
+                leadingIcon={<CalendarPlus />}
+              >
+                Add to calendar
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen(event);
+              }}
+              trailingIcon={<MoveRight />}
+            >
+              More information
+              <span className="sr-only"> about {event.title}</span>
+            </Button>
+          </>
+        }
+      />
+    </li>
+  );
+}
 
 function Empty({
   action,

@@ -37,11 +37,8 @@ import {
 } from "@/lib/api";
 import { isUpcoming, whenLine } from "@/lib/time";
 import { useCategories } from "@/lib/useCategories";
-import {
-  googleCalendarUrl,
-  openGoogleCalendar,
-  savedCalendarUrl,
-} from "@/lib/calendar";
+import { savedCalendarUrl } from "@/lib/calendar";
+import { eventImage } from "@/lib/eventImage";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
 import { useHeadTracking } from "@/lib/useHeadTracking";
@@ -315,6 +312,15 @@ export function EventsView({
 
   const current = feed[i];
 
+  // The cards either side are fetched ahead, so the one that slides in
+  // never arrives as a grey box that fills a moment later.
+  useEffect(() => {
+    const n = feed.length;
+    if (n < 2) return;
+    for (const ev of [feed[(i + 1) % n], feed[(i - 1 + n) % n]])
+      new Image().src = eventImage(ev);
+  }, [feed, i]);
+
   // +1 = advancing (next slides up from below), -1 = going back.
   const [dir, setDir] = useState(1);
   const feedLenRef = useRef(feed.length);
@@ -447,29 +453,9 @@ export function EventsView({
                 : ev.spots_left,
           });
         }
-        // Saving is only a bookmark. Where registration lives on the
-        // organizer's site, the next step is that, not the calendar.
-        const external =
-          ev.requires_signup &&
-          ev.registration_mode === "external" &&
-          !!ev.registration_url;
-        const calendar = googleCalendarUrl(ev);
-        toast.show({
-          title:
-            ev.capacity == null
-              ? `Event saved${forWhom}`
-              : heldUntil
-                ? `Spot held${forWhom} for 1 hour`
-                : `Saved${forWhom} — no spots left to hold`,
-          action: external
-            ? { label: "Register", onClick: () => openRegistration(ev) }
-            : calendar
-              ? {
-                  label: "Add to calendar",
-                  onClick: () => openGoogleCalendar(ev),
-                }
-              : undefined,
-        });
+        // No toast: the card itself says "Event saved", and the sidebar shows
+        // where it went. The live region above has already told a screen
+        // reader.
         void syncSaved();
         if (advance) advanceAfterSave(ev);
       } catch (e) {
@@ -492,7 +478,7 @@ export function EventsView({
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
-    [toSignIn, syncSaved, toast, openRegistration, patchEvent, advanceAfterSave],
+    [toSignIn, syncSaved, toast, patchEvent, advanceAfterSave],
   );
 
   /**
@@ -1226,15 +1212,14 @@ export function EventsView({
                     className="relative z-10"
                   >
                     {/* Enter-only slide from the travel direction, keyed by id
-                        so it never fights the drag transforms. */}
+                        so it never fights the drag transforms. Opaque the
+                        whole way: there is no exit, so the card before is
+                        gone the frame this one mounts, and fading in from
+                        0 showed the deck through an empty slot — the flash. */}
                     <motion.div
                       key={current.id}
-                      initial={
-                        reduceMotion
-                          ? false
-                          : { y: dir > 0 ? 80 : -80, opacity: 0 }
-                      }
-                      animate={{ y: 0, opacity: 1 }}
+                      initial={reduceMotion ? false : { y: dir > 0 ? 80 : -80 }}
+                      animate={{ y: 0 }}
                       transition={{ type: "spring", stiffness: 320, damping: 34 }}
                     >
                       <motion.div
