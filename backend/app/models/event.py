@@ -125,6 +125,16 @@ class Event(Base):
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
     cover_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The agency's own flyer (PDF or image), uploaded via POST /events/posters.
+    poster_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Null = public. Set = only members approved into that group (and the
+    # owning organization) find it in lists; anyone holding the link still
+    # opens it by id. See app/core/access.py for the one place the rule lives.
+    access_group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("access_groups.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -145,6 +155,7 @@ class Event(Base):
     __table_args__ = (
         Index("ix_events_host", "host_id"),
         Index("ix_events_series", "series_id"),
+        Index("ix_events_access_group", "access_group_id"),
         Index(
             "ix_events_live",
             "starts_at",
@@ -153,6 +164,7 @@ class Event(Base):
     )
 
     host = relationship("Host", back_populates="events")
+    access_group = relationship("AccessGroup")
 
     @property
     def host_name(self) -> str:

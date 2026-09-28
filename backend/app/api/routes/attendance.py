@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user, get_db, get_optional_user
 from app.core import ical
+from app.core.access import is_approved, visible_to_member
 from app.core.rate_limit import CLICK_LIMIT, client_key, enforce, record
 from app.core.pricing import covers_whole_series
 from app.models.attendance import REMOVED, SAVED, Attendance
@@ -60,6 +61,13 @@ def attend_event(
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+    # The page opens for anyone with the link; saving is what needs approval.
+    if event.access_group_id and not is_approved(db, user.id, event.access_group_id):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "This program is for members the organization has given special "
+            "access. Request access from the program page first.",
+        )
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})
     if existing:
         # A previously un-saved row is re-saved in place rather than recreated —
@@ -157,11 +165,15 @@ def _saved_events(db: Session, user: User) -> list[Event]:
             Attendance.user_id == user.id,
             Attendance.status == SAVED,
             Event.deleted_at.is_(None),
+            # A revoked member's saves stay on the row (the count survives)
+            # but leave their list, the same way an archived program does.
+            visible_to_member(user.id),
         )
         # attendees included: EventOut.saved_count reads it, and without this
         # every saved program costs an extra query on each member page load.
         .options(
             joinedload(Event.host),
+            joinedload(Event.access_group),
             selectinload(Event.images),
             selectinload(Event.attendees),
         )
