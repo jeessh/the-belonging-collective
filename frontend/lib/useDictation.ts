@@ -14,6 +14,18 @@ function RecognitionCtor(): AnyRecognition | null {
   );
 }
 
+/**
+ * "j e s s e" (or "J. E. S. S. E.", "j-e-s-s-e") → "jesse". Spelling a name
+ * out is how a member gets past the recognizer's guess ("Jessie"), so a phrase
+ * made only of single letters is one word.
+ */
+function joinSpelled(text: string): string {
+  const parts = text.trim().split(/[\s.,-]+/).filter(Boolean);
+  return parts.length > 1 && parts.every((p) => /^\p{L}$/u.test(p))
+    ? parts.join("").toLowerCase()
+    : text;
+}
+
 /** "jesse huang" → "Jesse huang": a name, so the first letter is upper case. */
 function capitalize(text: string): string {
   const t = text.trim();
@@ -92,7 +104,7 @@ export function useDictation() {
       rec.onend = () => {
         setListening(false);
         if (recRef.current === rec) recRef.current = null;
-        onText(blocked ? null : capitalize(heard));
+        onText(blocked ? null : capitalize(joinSpelled(heard)));
       };
 
       try {
