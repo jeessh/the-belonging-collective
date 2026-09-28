@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/TextField";
+import { AuthPage } from "@/components/host/AuthPage";
 
 // Sign-in only. There is no self-serve organizer registration: a superadmin
 // creates accounts from Admin console → Admins. Anyone being able to register
@@ -36,71 +39,59 @@ export default function HostAuthPage() {
   }
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-slate-50 px-6">
-      <section className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-          Admin console
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-slate-900">
-          Sign in
-        </h1>
+    <AuthPage title="Sign in to the admin console">
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && email && password) void submit();
+        }}
+      >
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="username"
+          placeholder="Enter email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-        <form
-          className="mt-6 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!busy && email && password) void submit();
-          }}
+        {error && (
+          <p role="alert" className="text-base text-danger-fg">
+            {error}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="mt-2"
+          disabled={busy || !email || !password}
         >
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Email</span>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              autoComplete="username"
-              className="rounded-md border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Password</span>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              autoComplete="current-password"
-              className="rounded-md border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-            />
-          </label>
+          {busy ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
 
-          {error && (
-            <p role="alert" className="text-sm font-medium text-red-600">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={busy || !email || !password}
-            className="mt-1 rounded-md bg-accent px-4 py-2.5 font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-40"
-          >
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-sm">
-          <Link
-            href="/host/forgot"
-            className="font-semibold text-accent underline underline-offset-2"
-          >
-            Forgot your password?
-          </Link>
-        </p>
-
-        <p className="mt-6 border-t border-slate-200 pt-4 text-sm text-slate-500">
+      <div className="flex flex-col gap-3 text-lg">
+        <Link
+          href="/host/forgot"
+          className="w-fit text-fg underline underline-offset-4"
+        >
+          Forgot your password?
+        </Link>
+        <p className="text-fg-muted">
           Need an account? Ask a superadmin at your organization to create one.
         </p>
-      </section>
-    </main>
+      </div>
+    </AuthPage>
   );
 }
