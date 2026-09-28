@@ -22,6 +22,12 @@ from app.api.deps import (
 from app.core import ical
 from app.core.storage import StorageError, upload_image
 from app.models.attendance import Attendance
+from app.core.access import (
+    NONE,
+    membership_statuses,
+    resolve_group_for_host,
+    scope_to_viewer,
+)
 from app.models.event import Event
 from app.models.event_image import EventImage
 from app.models.host import Host
@@ -41,11 +47,16 @@ router = APIRouter(prefix="/events", tags=["events"])
 # Cover + gallery uploads accept these; must match the bucket's allowed types.
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+# A poster is the agency's own flyer, so PDF joins the two photo formats. Capped
+# under Vercel's 4.5 MB request body limit, which would otherwise reject the
+# request before this code ever saw it.
+ALLOWED_POSTER_TYPES = {"application/pdf", "image/png", "image/jpeg"}
+MAX_POSTER_BYTES = 4 * 1024 * 1024  # 4 MB
 _READ_CHUNK = 64 * 1024
 
 
-def _sniff_image_type(head: bytes) -> str | None:
-    """Actual image type from magic bytes; the client's header is untrusted."""
+def _sniff_file_type(head: bytes) -> str | None:
+    """Actual file type from magic bytes; the client's header is untrusted."""
     if head.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
     if head.startswith(b"\xff\xd8\xff"):
@@ -54,7 +65,33 @@ def _sniff_image_type(head: bytes) -> str | None:
         return "image/gif"
     if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
         return "image/webp"
+    if head.startswith(b"%PDF-"):
+        return "application/pdf"
     return None
+
+
+async def _store_upload(
+    file: UploadFile, allowed: set[str], max_bytes: int, too_large: str, wrong_type: str
+) -> str:
+    """Read, cap, sniff and store one uploaded file; return its public URL."""
+    # Read in chunks so the size cap is enforced during the read, not after
+    # the whole body is already buffered.
+    data = bytearray()
+    while chunk := await file.read(_READ_CHUNK):
+        data.extend(chunk)
+        if len(data) > max_bytes:
+            raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, too_large)
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "The file is empty.")
+
+    content_type = _sniff_file_type(bytes(data[:16]))
+    if content_type not in allowed:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, wrong_type)
+
+    try:
+        return await upload_image(bytes(data), content_type)
+    except StorageError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
 
 
 @router.post("/images", status_code=status.HTTP_201_CREATED)
@@ -67,30 +104,33 @@ async def upload_event_image(
     The frontend uploads on drop/select, then stores the returned URL on the
     event via the normal create/patch flow — no schema change.
     """
-    # Read in chunks so the size cap is enforced during the read, not after
-    # the whole body is already buffered.
-    data = bytearray()
-    while chunk := await file.read(_READ_CHUNK):
-        data.extend(chunk)
-        if len(data) > MAX_IMAGE_BYTES:
-            raise HTTPException(
-                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                "Image is too large (max 5 MB).",
-            )
-    if not data:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "The file is empty.")
+    url = await _store_upload(
+        file,
+        ALLOWED_IMAGE_TYPES,
+        MAX_IMAGE_BYTES,
+        "Image is too large (max 5 MB).",
+        "Please choose a PNG, JPEG, WebP, or GIF image.",
+    )
+    return {"url": url}
 
-    content_type = _sniff_image_type(bytes(data[:16]))
-    if content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            "Please choose a PNG, JPEG, WebP, or GIF image.",
-        )
 
-    try:
-        url = await upload_image(bytes(data), content_type)
-    except StorageError as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+@router.post("/posters", status_code=status.HTTP_201_CREATED)
+async def upload_event_poster(
+    file: UploadFile = File(...),
+    _host: Host = Depends(get_current_host),  # host-only
+):
+    """Upload a program poster (the agency's flyer) and return its public URL.
+
+    Stored on the event as `poster_url` through the normal create/patch flow,
+    the same way a cover image is.
+    """
+    url = await _store_upload(
+        file,
+        ALLOWED_POSTER_TYPES,
+        MAX_POSTER_BYTES,
+        "Poster is too large (max 4 MB).",
+        "Please choose a PDF, PNG, or JPEG poster.",
+    )
     return {"url": url}
 
 
@@ -118,19 +158,34 @@ _REQUIRED_FIELDS = frozenset(
 # each serialized row lazy-loads per-relation (N+1 through pgbouncer).
 _EVENT_OUT_OPTIONS = (
     joinedload(Event.host),
+    joinedload(Event.access_group),
     selectinload(Event.images),
     # Powers EventOut.saved_count without a query per row.
     selectinload(Event.attendees),
 )
 
 
-def _public_view(rows: list[Event], signed_in: bool) -> list[EventOut]:
+def _public_view(
+    db: Session, rows: list[Event], viewer: User | None, organizer: Host | None
+) -> list[EventOut]:
     """Serialize for a public route. "N going" is for people who are signed
-    in — a member or an organizer — so anonymous visitors get null, not 0."""
+    in — a member or an organizer — so anonymous visitors get null, not 0.
+
+    A signed-in member also learns where they stand with each restricted
+    program's group (`access_status`), so the page can offer "request access"
+    or say the request is in — one query for the whole page, not one per row.
+    """
     out = [EventOut.model_validate(row) for row in rows]
-    if not signed_in:
+    if not (viewer or organizer):
         for item in out:
             item.saved_count = None
+    if viewer:
+        statuses = membership_statuses(
+            db, viewer.id, {row.access_group_id for row in rows if row.access_group_id}
+        )
+        for row, item in zip(rows, out):
+            if row.access_group_id:
+                item.access_status = statuses.get(row.access_group_id, NONE)
     return out
 
 
@@ -162,6 +217,9 @@ def list_events(
     query = db.query(Event).options(*_EVENT_OUT_OPTIONS).filter(
         Event.deleted_at.is_(None)
     )
+    # Special-access programs are listed only to who may see them; every by-id
+    # route below still serves them, so a link or QR code on a flyer works.
+    query = scope_to_viewer(query, viewer, organizer)
     if category:
         query = query.filter(Event.category == category)
     if free is not None:
@@ -184,7 +242,7 @@ def list_events(
         .offset(offset)
         .all()
     )
-    return _public_view(rows, bool(viewer or organizer))
+    return _public_view(db, rows, viewer, organizer)
 
 
 @router.get("/{event_id}", response_model=EventOut)
@@ -195,7 +253,7 @@ def get_event(
     db: Session = Depends(get_db),
 ):
     event = _live_event(db, event_id)
-    return _public_view([event], bool(viewer or organizer))[0]
+    return _public_view(db, [event], viewer, organizer)[0]
 
 
 @router.get("/{event_id}/calendar.ics")
@@ -236,6 +294,9 @@ def create_event(
             "repeat_forever",
         }
     )
+    # Every occurrence of the series is restricted the same way — `data` is
+    # copied into each row below.
+    resolve_group_for_host(db, body.access_group_id, host.id)
     starts_at = data.get("starts_at")
 
     if body.frequency and body.frequency != "once":
@@ -306,7 +367,12 @@ def update_event(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
     if not _owns_or_admin(host, event):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    fields = body.model_dump(exclude_unset=True)
+    # Checked against the event's own organization, not the caller's — a
+    # superadmin editing another agency's program may only use that agency's
+    # groups. Queried here, before the row is touched (see the note below).
+    resolve_group_for_host(db, fields.get("access_group_id"), event.host_id)
+    for field, value in fields.items():
         # Every field on EventUpdate is Optional so it can be omitted, but an
         # explicit null is a different thing from an omission — exclude_unset
         # tracks presence, not value — and assigning it to a NOT NULL column

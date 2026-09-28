@@ -39,6 +39,13 @@ def validate_registration(
         raise ValueError("The registration link must start with http:// or https://")
 
 
+class AccessGroupRef(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
 class EventImageIn(BaseModel):
     url: str
     caption: str | None = None
@@ -106,6 +113,11 @@ class EventBase(BaseModel):
     # registration_url is the only link those use.
     links: list[EventLink] = Field([], max_length=LINKS_MAX)
     cover_image_url: str | None = None
+    # The agency's flyer — PDF or image — from POST /events/posters.
+    poster_url: str | None = None
+    # Null = public. Set = special access: only members approved into the
+    # group find it in lists. The group must belong to the event's own host.
+    access_group_id: uuid.UUID | None = None
 
 
 def normalize_url(url: str | None) -> str | None:
@@ -196,6 +208,8 @@ class EventUpdate(BaseModel):
     registration_url: str | None = None
     links: list[EventLink] | None = Field(None, max_length=LINKS_MAX)
     cover_image_url: str | None = None
+    poster_url: str | None = None
+    access_group_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _normalize(self):
@@ -214,6 +228,13 @@ class EventOut(EventBase):
     id: uuid.UUID
     host_id: uuid.UUID
     host_name: str = ""
+    # The group a restricted program belongs to, so the page can name what the
+    # member is asking to join. Null for a public program.
+    access_group: AccessGroupRef | None = None
+    # requested | approved | declined | revoked | none — this member's standing
+    # with that group. Only set for a signed-in member on a restricted program;
+    # null otherwise. Filled by the route, not read off the row.
+    access_status: str | None = None
     host_logo_url: str | None = None
     event_no: int = 0
     series_id: uuid.UUID | None = None

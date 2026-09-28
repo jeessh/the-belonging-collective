@@ -11,12 +11,14 @@ import httpx
 
 from app.core.config import settings
 
-# Map a MIME type to a file extension for the stored object's name.
+# Map a MIME type to a file extension for the stored object's name. Every type
+# here must also be allowed by the bucket, or Storage rejects the upload.
 _EXT = {
     "image/png": "png",
     "image/jpeg": "jpg",
     "image/webp": "webp",
     "image/gif": "gif",
+    "application/pdf": "pdf",
 }
 
 
@@ -25,17 +27,17 @@ class StorageError(RuntimeError):
 
 
 async def upload_image(data: bytes, content_type: str) -> str:
-    """Upload image bytes to the configured bucket; return the public URL.
+    """Upload file bytes (an image or a PDF poster) to the bucket; return the public URL.
 
     Async so the (up to 30s) storage round trip never blocks the event loop.
     Raises StorageError if storage isn't configured or the upload fails.
     """
     if not settings.SUPABASE_URL or not settings.SUPABASE_SECRET_KEY:
-        raise StorageError("Image storage is not configured on the server.")
+        raise StorageError("File storage is not configured on the server.")
 
     ext = _EXT.get(content_type)
     if ext is None:
-        raise StorageError(f"Unsupported image type: {content_type}")
+        raise StorageError(f"Unsupported file type: {content_type}")
 
     bucket = settings.SUPABASE_IMAGE_BUCKET
     key = f"{uuid.uuid4()}.{ext}"
@@ -55,7 +57,7 @@ async def upload_image(data: bytes, content_type: str) -> str:
                 },
             )
     except httpx.HTTPError as exc:
-        raise StorageError(f"Could not reach image storage: {exc}") from exc
+        raise StorageError(f"Could not reach file storage: {exc}") from exc
 
     if res.status_code >= 400:
         raise StorageError(f"Storage rejected the upload ({res.status_code}): {res.text}")

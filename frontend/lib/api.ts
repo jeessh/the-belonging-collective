@@ -118,8 +118,25 @@ export type Event = {
   /** Up to three. */
   links?: EventLink[];
   cover_image_url?: string | null;
+  /** The agency's own flyer — a PDF, PNG or JPEG from POST /events/posters. */
+  poster_url?: string | null;
+  /**
+   * Special access. Null = public. Set = only members approved into this
+   * group (and the owning organization) find it in lists; every by-id route
+   * still serves it, so it opens from a link or QR code.
+   */
+  access_group_id?: string | null;
+  access_group?: { id: string; name: string } | null;
+  /**
+   * This member's standing with `access_group`. Only set for a signed-in
+   * member on a restricted program; null otherwise.
+   */
+  access_status?: AccessStatus | "none" | null;
   images: EventImage[];
 };
+
+/** How the member last chose to see the feed. */
+export type PreferredView = "card" | "list";
 
 export type Me = {
   id: string;
@@ -137,6 +154,15 @@ export type Me = {
   tts_enabled: boolean;
   voice_commands_enabled: boolean;
   eye_tracking_enabled: boolean;
+  preferred_view: PreferredView;
+  /**
+   * Recommendations the member dismissed. A program id is the event's
+   * `series_id` when it has one, else its `id`. Capped server-side at 500
+   * entries of up to 64 chars; PATCH replaces the whole list.
+   */
+  dismissed_program_ids: string[];
+  /** When the first-run tour was seen; null until then. */
+  onboarded_at: string | null;
 };
 
 /** Fields a member can update on themselves via PATCH /users/me. */
@@ -148,8 +174,13 @@ export type MePrefs = Partial<
     | "tts_enabled"
     | "voice_commands_enabled"
     | "eye_tracking_enabled"
+    | "preferred_view"
+    | "dismissed_program_ids"
   >
->;
+> & {
+  /** `true` stamps `onboarded_at` with now; `false` is ignored. */
+  onboarded?: boolean;
+};
 
 export const updateMe = (body: MePrefs) =>
   api<Me>("/users/me", { method: "PATCH", body: JSON.stringify(body) });
@@ -173,6 +204,87 @@ export async function fetchAllEvents(): Promise<Event[]> {
 }
 
 export const logout = () => api("/auth/logout", { method: "POST" });
+
+/* ---------------- special access ---------------- */
+
+/** A membership row's status. Rows are never deleted; they move between these. */
+export type AccessStatus = "requested" | "approved" | "declined" | "revoked";
+
+/** A per-organization group a member is approved into. */
+export type AccessGroup = {
+  id: string;
+  host_id: string;
+  host_name: string;
+  name: string;
+  created_at: string;
+  /** Requests waiting on the organization. */
+  pending_count: number;
+  approved_count: number;
+};
+
+/** The member's own view of a request. */
+export type AccessMembership = {
+  group_id: string;
+  status: AccessStatus;
+  requested_at: string;
+  decided_at?: string | null;
+};
+
+/** One row of the console's members list for a group. */
+export type AccessMember = {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email?: string | null;
+  status: AccessStatus;
+  requested_at: string;
+  decided_at?: string | null;
+  /** The program whose page they asked from, if any. */
+  requested_via?: { id: string; title: string } | null;
+};
+
+/**
+ * A member asks to join a group, usually from a restricted program's page.
+ * Idempotent while requested or approved; 409 once declined or revoked.
+ */
+export const requestAccess = (groupId: string, eventId?: string) =>
+  api<AccessMembership>(`/access-groups/${groupId}/request`, {
+    method: "POST",
+    body: JSON.stringify({ event_id: eventId ?? null }),
+  });
+
+/* Organizer side: own groups only, every group for a superadmin. */
+export const fetchAccessGroups = () => api<AccessGroup[]>("/access-groups");
+
+export const createAccessGroup = (name: string, hostId?: string) =>
+  api<AccessGroup>("/access-groups", {
+    method: "POST",
+    body: JSON.stringify({ name, host_id: hostId ?? null }),
+  });
+
+export const renameAccessGroup = (groupId: string, name: string) =>
+  api<AccessGroup>(`/access-groups/${groupId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+
+/** Archives. 409 while live programs still use the group. */
+export const archiveAccessGroup = (groupId: string) =>
+  api(`/access-groups/${groupId}`, { method: "DELETE" });
+
+export const fetchAccessMembers = (groupId: string, status?: AccessStatus) =>
+  api<AccessMember[]>(
+    `/access-groups/${groupId}/members${status ? `?status=${status}` : ""}`,
+  );
+
+export const decideAccess = (
+  groupId: string,
+  userId: string,
+  decision: "approve" | "decline" | "revoke",
+) =>
+  api<AccessMember>(`/access-groups/${groupId}/members/${userId}/${decision}`, {
+    method: "POST",
+  });
 
 /* ---------------- admin console ---------------- */
 

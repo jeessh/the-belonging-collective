@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin
 from app.core.security import hash_password
+from app.models.access import AccessGroup
 from app.models.event import Event
 from app.models.host import Host
 from app.schemas.host import (
@@ -225,5 +226,8 @@ def delete_host(
     db.query(Event).filter(
         Event.host_id == host.id, Event.deleted_at.is_(None)
     ).update({Event.deleted_at: now}, synchronize_session=False)
+    db.query(AccessGroup).filter(
+        AccessGroup.host_id == host.id, AccessGroup.deleted_at.is_(None)
+    ).update({AccessGroup.deleted_at: now}, synchronize_session=False)
     host.deleted_at = now
     db.commit()

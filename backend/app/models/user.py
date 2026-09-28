@@ -73,6 +73,21 @@ class User(Base):
     eye_tracking_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
+    # card | list — how the member last chose to see the feed. Values are
+    # enforced by the schema (UserPrefsUpdate), as for auth_type.
+    preferred_view: Mapped[str] = mapped_column(
+        Text, nullable=False, default="card", server_default=text("'card'")
+    )
+    # Recommendations the member waved away. A program id is the event's
+    # series_id when it has one, else its id, so dismissing one date of a
+    # repeating program dismisses the run. Replaced whole on each write.
+    dismissed_program_ids: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, default=list, server_default="{}"
+    )
+    # When the first-run tour was seen; null until then.
+    onboarded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

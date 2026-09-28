@@ -26,7 +26,11 @@ def update_me(
 ):
     """A member updates their own preferences (voice/accessibility/interests).
     Defined before /{user_id} so the literal path wins the match."""
-    for field, value in body.model_dump(exclude_unset=True).items():
+    fields = body.model_dump(exclude_unset=True)
+    # A flag in, a timestamp out. Only ever set forward — see UserPrefsUpdate.
+    if fields.pop("onboarded", None) and user.onboarded_at is None:
+        user.onboarded_at = func.now()
+    for field, value in fields.items():
         setattr(user, field, value)
     db.commit()
     db.refresh(user)

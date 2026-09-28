@@ -183,6 +183,18 @@ value produces links nobody can open.
   `null` for signed-out viewers — the public event routes withhold it.
 - **Member emails are unique over live rows only** (`uq_users_email_live` on
   `lower(email)`), the same rule as `uq_hosts_email_live`.
+- **Special access is per group, not per event.** `access_groups` belong to
+  one organization; `events.access_group_id` (null = public) restricts a
+  program to members whose `access_memberships` row is `approved`. The rule
+  lives in `app/core/access.py`: lists (`GET /events`, the saved list) are
+  scoped — anonymous sees public, a member adds their approved groups, an
+  organizer adds their own org's restricted programs, a superadmin sees all —
+  but **every by-id route serves a restricted program to anyone**, so a link
+  or QR code opens and the page can offer "request access". Saving is what
+  needs approval (403 otherwise). Memberships are never deleted, they move
+  between `requested | approved | declined | revoked`; a declined/revoked
+  member re-requesting gets 409 and only the console can let them back in.
+  Groups archive (`deleted_at`) and refuse to while live programs use them.
 - **`lib/accessibility.ts` is the same idea for access needs.** The slugs sit on
   both `events.accessibility_tags` and `users.accessibility_prefs`, and matching
   is string equality, so one list drives the host picker and the member picker.

@@ -1,7 +1,14 @@
 import uuid
 from datetime import datetime
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+# Dismissed recommendations are the only member-writable list without a fixed
+# vocabulary, so it gets a hard cap: enough for years of waving programs away,
+# small enough that nobody can use the column as storage.
+DISMISSED_MAX = 500
+DISMISSED_ID_MAX_LEN = 64
 
 
 class UserOut(BaseModel):
@@ -21,6 +28,10 @@ class UserOut(BaseModel):
     tts_enabled: bool
     voice_commands_enabled: bool
     eye_tracking_enabled: bool
+    preferred_view: str = "card"
+    dismissed_program_ids: list[str] = []
+    # Null until the first-run tour has been seen.
+    onboarded_at: datetime | None = None
     created_at: datetime
 
     @model_validator(mode="after")
@@ -64,3 +75,12 @@ class UserPrefsUpdate(BaseModel):
     tts_enabled: bool | None = None
     voice_commands_enabled: bool | None = None
     eye_tracking_enabled: bool | None = None
+    preferred_view: Literal["card", "list"] | None = None
+    # Full replacement, not a diff — the client owns the list.
+    dismissed_program_ids: (
+        list[Annotated[str, Field(min_length=1, max_length=DISMISSED_ID_MAX_LEN)]]
+        | None
+    ) = Field(None, max_length=DISMISSED_MAX)
+    # `true` stamps onboarded_at with now; `false` is ignored rather than
+    # clearing it, so the tour can't be un-seen by a stray write.
+    onboarded: bool | None = None
