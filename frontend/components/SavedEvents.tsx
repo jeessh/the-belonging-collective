@@ -13,7 +13,6 @@ import {
 import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
-import { savedCalendarUrl } from "@/lib/calendar";
 import { listShareText } from "@/lib/share";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -40,6 +39,10 @@ type Props = {
   open: boolean;
   /** Every saved row, as the feed holds it; this sorts and de-duplicates. */
   events: Event[];
+  /** "Sam R." when a caregiver is looking at someone else's list. */
+  owner?: string | null;
+  /** The `.ics` for whichever list is showing. */
+  calendarUrl: string;
   onClose: () => void;
   onSignIn: () => void;
   onUnsave: (event: Event) => void;
@@ -55,6 +58,8 @@ export const SavedEvents = memo(function SavedEvents({
   me,
   open,
   events,
+  owner = null,
+  calendarUrl,
   onClose,
   onSignIn,
   onUnsave,
@@ -135,7 +140,11 @@ export const SavedEvents = memo(function SavedEvents({
 
   const shown = tab === "upcoming" ? upcoming : past;
   const total = oneCardPerProgram(events).length;
-  const listTitle = me ? `${me.first_name}'s Saved Events` : "Saved Events";
+  const listTitle = owner
+    ? `${owner}'s Saved Events`
+    : me
+      ? `${me.first_name}'s Saved Events`
+      : "Saved Events";
 
   return (
     <div
@@ -160,7 +169,7 @@ export const SavedEvents = memo(function SavedEvents({
             <ArrowLeft aria-hidden="true" className="size-8" />
           </button>
           <h1 className="text-3xl font-medium text-fg">
-            All Saved Events ({me ? total : 0})
+            {owner ? listTitle : "All Saved Events"} ({me ? total : 0})
           </h1>
         </div>
 
@@ -187,7 +196,7 @@ export const SavedEvents = memo(function SavedEvents({
                   the medium size there fits two to a row. */}
               <div className="flex flex-wrap gap-3">
                 <a
-                  href={savedCalendarUrl}
+                  href={calendarUrl}
                   className={buttonClass("secondary", "lg", ACTION)}
                 >
                   <CalendarDays
@@ -279,11 +288,17 @@ export const SavedEvents = memo(function SavedEvents({
             text: listShareText(upcoming, window.location.origin),
           }}
           // A live link to the list, as against the text above, which is a
-          // snapshot. Public by design: it is only a list.
-          link={{
-            label: "Link to my list",
-            getUrl: async () => sharedListUrl((await createShareLink()).token),
-          }}
+          // snapshot. Public by design: it is only a list. The link is the
+          // signed-in account's own, so it is left out of someone else's list.
+          link={
+            owner
+              ? undefined
+              : {
+                  label: "Link to my list",
+                  getUrl: async () =>
+                    sharedListUrl((await createShareLink()).token),
+                }
+          }
           onClose={() => setSub(null)}
         />
       )}

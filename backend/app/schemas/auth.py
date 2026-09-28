@@ -15,6 +15,8 @@ class UserSignup(BaseModel):
     # empty, never null.
     accessibility_prefs: list[str] = []
     interest_categories: list[str] = []
+    # A caregiver's account is this door with the flag on — see models/care.py.
+    is_caregiver: bool = False
 
 
 class UserAuth(BaseModel):

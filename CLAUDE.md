@@ -307,10 +307,58 @@ can open.
   once; `GET /shared/{token}` is public and lists the member's upcoming saved
   *public* programs — special-access ones are excluded whoever holds the link.
 
+## Caregivers and care links (support, not proxy)
+- A **caregiver** is a password member account with `users.is_caregiver`
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
+  profile toggle). **The member keeps their own account and their own
+  credential**; a caregiver never signs in as them. `care_links(caregiver_id,
+  member_id, created_at, removed_at)` (migration `0021_caregivers`,
+  `models/care.py`) is the only user-to-user relation. Unlinking sets
+  `removed_at` from either side (`DELETE /users/me/care/{member_id}` or
+  `DELETE /users/me/caregivers/{caregiver_id}`); re-linking clears it. Never
+  delete the row.
+- **Linking is the member's consent.** `POST /users/me/care/links` takes the
+  member's *own* credential (name + icons, or email + password —
+  `auth.member_by_credential`), and `POST /users/me/care/members` creates the
+  member's account on the spot through the same `auth.new_member` every door
+  uses, returning the icon key once so it can be handed over. Both are
+  rate-limited like sign-in, on the same identity keys
+  (`auth.credential_identity`), so guessing a member's icons here costs what
+  guessing them at the door does.
+- **Saving for a member is the member's row.** `routes/care.py` calls the
+  same `attendance.save_event` / `unsave_event` the member's own routes use,
+  with the member as the user — so the hold is the member's spot and special
+  access is the member's approval (403 if they aren't approved, whatever the
+  caregiver's standing). Every care route goes through `_member_for`, which
+  403s without an active link to a live member.
+- `UserOut` / `GET /users/me` carry `is_caregiver`, `care` (the members this
+  account supports) and `caregivers` (first name + last initial only — the
+  member sees who can save for them, not the caregiver's full name or
+  email). `/auth/me` echoes the same three. `GET /users` (console) eager-loads
+  the links; add `selectinload` to any new list that returns `UserOut`.
+- **Reminders ride along**: `member_mail.send_reminders` mails each linked
+  caregiver with an email one message per run, grouped by member, for the
+  members' programs starting tomorrow. It uses the member's `reminded_at`
+  stamp — the caregiver copy goes out after the stamps commit, so a run that
+  dies loses today's copy rather than sending anyone's twice. Members without
+  an email now appear in the query (their caregiver may have one); their rows
+  are stamped like everyone else's.
+- Frontend: the "Saving for: Me ▾ / Sam R." switcher in `FeedHeader`
+  (`CareSwitcher`, only for a caregiver with links) sets `careFor` in
+  `EventsView`; `attend`, `unsave` and `syncSaved` read it through a ref, so
+  **every save path still ends in `flyToDrop` → `attend`** and saves for whoever
+  is selected. The sidebar, "All Saved Events" and the `.ics` show that
+  member's list (`owner` / `calendarUrl` props); "Link to my list" is hidden
+  there because the share link is the signed-in account's own. Default is
+  "Me", reset on sign-in/out. `member/CareLinkForm` (create or link, with the
+  same Icons | Password switch as sign-up) is shared by the sign-up flow's
+  "I'm a caregiver" path and `/profile` ("People I support" / "People who
+  support me"); the shared icon-key pieces live in `member/IconKey.tsx`.
+
 ## Roles and admin tiers
 - **members** — icon sign-in (`POST /auth/user`) or email + password
   (`POST /auth/signup/user`, `POST /auth/login/user`), the `/` + `/events`
-  experience.
+  experience. A member may also be a caregiver — see above.
 - **admins** — hosts with `is_admin = false`. Create and manage only their own
   programs.
 - **superadmins** — hosts with `is_admin = true`. Manage any program, plus member

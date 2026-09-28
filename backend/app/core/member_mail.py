@@ -16,6 +16,7 @@ from app.core import mail
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.attendance import SAVED, Attendance
+from app.models.care import CareLink
 from app.models.event import Event
 from app.models.user import User
 
@@ -54,9 +55,25 @@ def _where(event: Event) -> str:
 # ---------- reminders ----------
 
 
+def _program_lines(event: Event) -> list[str]:
+    return [
+        "",
+        event.title,
+        when_text(event),
+        _where(event),
+        f"Add to calendar: {ics_url(event)}",
+    ]
+
+
 def send_reminders(db: Session, now: datetime | None = None) -> dict:
     """Mail every member with an email whose saved programs start tomorrow
-    (Toronto), once, and mark the rows so the next run skips them."""
+    (Toronto), once, and mark the rows so the next run skips them.
+
+    Each linked caregiver with an email gets one mail too, grouped by the
+    members they support. It rides on the same `reminded_at` stamp: the
+    member's rows are marked once whether one mail went out or three, so
+    nothing is sent twice.
+    """
     now = now or datetime.now(timezone.utc)
     tomorrow = now.astimezone(TZ).date() + timedelta(days=1)
     start = datetime.combine(tomorrow, time.min, TZ)
@@ -73,7 +90,6 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
             Event.starts_at >= start,
             Event.starts_at < end,
             User.deleted_at.is_(None),
-            User.email.isnot(None),
         )
         .options(joinedload(Event.host))
         .order_by(Event.starts_at.asc(), Event.id.asc())
@@ -84,25 +100,45 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
     for row in rows:
         by_member.setdefault(row[2].id, []).append(row)
 
+    # Who hears about each member: the caregivers linked to them who have an
+    # address. An icon-account member with no email still reaches their
+    # caregiver this way.
+    by_caregiver: dict[uuid.UUID, tuple[User, list[tuple[User, list[Event]]]]] = {}
+    if by_member:
+        links = (
+            db.query(CareLink)
+            .join(User, User.id == CareLink.caregiver_id)
+            .filter(
+                CareLink.member_id.in_(by_member.keys()),
+                CareLink.removed_at.is_(None),
+                User.deleted_at.is_(None),
+                User.email.isnot(None),
+            )
+            .options(joinedload(CareLink.caregiver))
+            .all()
+        )
+        for link in links:
+            entries = by_member[link.member_id]
+            member = entries[0][2]
+            events = [event for _, event, _ in entries]
+            by_caregiver.setdefault(link.caregiver_id, (link.caregiver, []))[1].append(
+                (member, events)
+            )
+
     for entries in by_member.values():
         user = entries[0][2]
         events = [event for _, event, _ in entries]
-        lines = [f"Hello {user.first_name},", "", "Tomorrow you have:"]
-        for event in events:
-            lines += [
-                "",
-                event.title,
-                when_text(event),
-                _where(event),
-                f"Add to calendar: {ics_url(event)}",
-            ]
-        lines += ["", "See you there."]
-        mail.send(
-            user.email,
-            "Tomorrow: " + ", ".join(e.title for e in events),
-            "\n".join(lines),
-            button=("Open my saved programs", settings.FRONTEND_ORIGIN),
-        )
+        if user.email:
+            lines = [f"Hello {user.first_name},", "", "Tomorrow you have:"]
+            for event in events:
+                lines += _program_lines(event)
+            lines += ["", "See you there."]
+            mail.send(
+                user.email,
+                "Tomorrow: " + ", ".join(e.title for e in events),
+                "\n".join(lines),
+                button=("Open my saved programs", settings.FRONTEND_ORIGIN),
+            )
         # Marked whether or not the SMTP hand-off succeeded: a retry tomorrow
         # would be about a different day, so a failed send is logged and gone
         # rather than left to re-fire. Committed per member, right after the
@@ -111,7 +147,28 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
         for attendance, _, _ in entries:
             attendance.reminded_at = now
         db.commit()
-    return {"members": len(by_member), "programs": len(rows)}
+
+    # After the stamps: a run that dies here loses the caregiver copy for
+    # today rather than sending anyone's twice tomorrow.
+    for caregiver, members in by_caregiver.values():
+        lines = [f"Hello {caregiver.first_name},", ""]
+        for member, events in members:
+            lines.append(f"Tomorrow {member.first_name} has:")
+            for event in events:
+                lines += _program_lines(event)
+            lines.append("")
+        names = ", ".join(member.first_name for member, _ in members)
+        mail.send(
+            caregiver.email,
+            f"Tomorrow for {names}",
+            "\n".join(lines).rstrip() + "\n",
+            button=("Open saved programs", settings.FRONTEND_ORIGIN),
+        )
+    return {
+        "members": len(by_member),
+        "programs": len(rows),
+        "caregivers": len(by_caregiver),
+    }
 
 
 # ---------- change notices ----------

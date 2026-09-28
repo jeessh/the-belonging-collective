@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  Check,
   ChevronDown,
   Compass,
   LogOut,
@@ -13,6 +14,14 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { CATEGORIES } from "@/lib/categories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
+import { shortName, type CarePerson } from "@/lib/api";
+
+/** Whose list saves go into: the caregiver's own (null) or a linked member's. */
+export type CareChoice = {
+  members: CarePerson[];
+  selected: CarePerson | null;
+  onSelect: (member: CarePerson | null) => void;
+};
 
 /**
  * The feed's top bar: who you are on the left, Accessibility Tools on the
@@ -27,6 +36,7 @@ export type AvatarChoice = {
 export const FeedHeader = memo(function FeedHeader({
   name,
   avatar,
+  care,
   onSignIn,
   onSignOut,
   children,
@@ -34,23 +44,131 @@ export const FeedHeader = memo(function FeedHeader({
   /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
   avatar?: AvatarChoice | null;
+  /** Only for a caregiver with linked members; the switcher is hidden otherwise. */
+  care?: CareChoice | null;
   onSignIn: () => void;
   onSignOut: () => void;
   /** The Accessibility Tools menu. */
   children: ReactNode;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 py-3 sm:px-6 sm:py-5 lg:px-9">
-      <AccountButton
-        name={name}
-        avatar={avatar}
-        onSignIn={onSignIn}
-        onSignOut={onSignOut}
-      />
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 sm:py-5 lg:px-9">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+        <AccountButton
+          name={name}
+          avatar={avatar}
+          // Beside the switcher a phone has room for the picture, not the
+          // name; the menu still carries it.
+          compact={!!care && care.members.length > 0}
+          onSignIn={onSignIn}
+          onSignOut={onSignOut}
+        />
+        {care && care.members.length > 0 && <CareSwitcher {...care} />}
+      </div>
       {children}
     </header>
   );
 });
+
+/**
+ * "Saving for: Me ▾". Compact on purpose — it sits in the header next to the
+ * name — and it only appears for a caregiver who has someone linked.
+ */
+function CareSwitcher({ members, selected, onSelect }: CareChoice) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const current = selected ? shortName(selected) : "Me";
+  const item =
+    "flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle";
+
+  return (
+    <div ref={wrapRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Saving for ${current}`}
+        className={`inline-flex min-h-11 max-w-[11rem] items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-lg ${
+          selected
+            ? "border-primary-border bg-primary-soft"
+            : "border-line bg-surface hover:bg-surface-subtle"
+        }`}
+      >
+        <span className="hidden text-fg-muted sm:inline">Saving for:</span>
+        <span className="truncate font-medium text-fg">{current}</span>
+        <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label="Save programs for"
+          // Right-anchored on a phone, where the switcher sits near the
+          // middle and a left-anchored menu would run off the edge.
+          className="absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto"
+        >
+          <button
+            role="menuitemradio"
+            aria-checked={selected === null}
+            type="button"
+            className={item}
+            onClick={() => {
+              setOpen(false);
+              onSelect(null);
+            }}
+          >
+            <Avatar name="Me" size={28} />
+            <span className="flex-1">Me</span>
+            {selected === null && <Check aria-hidden="true" className="size-5" />}
+          </button>
+          {members.map((m) => {
+            const on = selected?.id === m.id;
+            return (
+              <button
+                key={m.id}
+                role="menuitemradio"
+                aria-checked={on}
+                type="button"
+                className={item}
+                onClick={() => {
+                  setOpen(false);
+                  onSelect(m);
+                }}
+              >
+                <Avatar
+                  name={shortName(m)}
+                  src={m.avatar_url}
+                  emblem={m.avatar_emblem}
+                  size={28}
+                />
+                <span className="flex-1 truncate">{shortName(m)}</span>
+                {on && <Check aria-hidden="true" className="size-5" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Signed out it signs you in. Signed in it opens a menu, because pressing your
@@ -59,11 +177,14 @@ export const FeedHeader = memo(function FeedHeader({
 function AccountButton({
   name,
   avatar,
+  compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
   avatar?: AvatarChoice | null;
+  /** Hide the name below `sm`; the picture stands in for it. */
+  compact?: boolean;
   onSignIn: () => void;
   onSignOut: () => void;
 }) {
@@ -102,7 +223,11 @@ function AccountButton({
           emblem={avatar?.emblem}
           size={36}
         />
-        <span className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"}`}>
+        <span
+          className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"} ${
+            compact ? "max-sm:sr-only" : ""
+          }`}
+        >
           {name ?? "Not Logged In"}
         </span>
         {signedIn && (

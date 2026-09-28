@@ -19,10 +19,16 @@ import {
   ApiError,
   api,
   apiMessage,
+  attendEventFor,
+  careCalendarUrl,
   fetchAllEvents,
+  fetchCareEvents,
   logout,
   requestAccess,
+  shortName,
+  unattendEventFor,
   updateMe,
+  type CarePerson,
   type Event,
   type Me,
   attendEvent,
@@ -30,7 +36,7 @@ import {
   type PreferredView,
 } from "@/lib/api";
 import { isUpcoming, whenLine } from "@/lib/time";
-import { googleCalendarUrl } from "@/lib/calendar";
+import { googleCalendarUrl, savedCalendarUrl } from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
 import { useHeadTracking } from "@/lib/useHeadTracking";
@@ -169,6 +175,13 @@ export function EventsView({
   const [authFor, setAuthFor] = useState<Pending | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [detailFor, setDetailFor] = useState<Event | null>(null);
+  // Whose list saves go into. Null is the signed-in account's own; a linked
+  // member means every save path below writes that member's row and the
+  // sidebar, the saved list and the .ics show theirs. Support, not proxy:
+  // the member's own account is untouched apart from the save.
+  const [careFor, setCareFor] = useState<CarePerson | null>(null);
+  const careForRef = useRef(careFor);
+  careForRef.current = careFor;
 
   // Drag transforms (inner card).
   const x = useMotionValue(0);
@@ -341,12 +354,34 @@ export function EventsView({
    */
   const syncSaved = useCallback(async () => {
     if (!signedInRef.current) return;
+    const target = careForRef.current;
     try {
-      setSavedEvents(await api<Event[]>("/users/me/events"));
+      const list = await (target
+        ? fetchCareEvents(target.id)
+        : api<Event[]>("/users/me/events"));
+      // Switched lists while this was in flight: the answer is stale.
+      if (careForRef.current?.id === target?.id) setSavedEvents(list);
     } catch {
       /* leave the optimistic state; the next reload settles it */
     }
   }, []);
+
+  // Change whose list is showing, and re-read it. Announced, since the only
+  // other sign is the switcher's label.
+  const selectCare = useCallback(
+    (member: CarePerson | null) => {
+      setCareFor(member);
+      careForRef.current = member;
+      setSavedEvents([]);
+      setSrMessage(
+        member
+          ? `Saving for ${shortName(member)} Showing their saved events.`
+          : "Saving for yourself. Showing your saved events.",
+      );
+      void syncSaved();
+    },
+    [syncSaved],
+  );
 
   // Counting the click before leaving; losing the count must never cost the
   // member the link.
@@ -365,12 +400,16 @@ export function EventsView({
         toSignIn({ kind: "save", event: ev });
         return;
       }
-      setSrMessage(`Saved ${ev.title}`);
+      const target = careForRef.current;
+      const forWhom = target ? ` for ${shortName(target)}` : "";
+      setSrMessage(`Saved ${ev.title}${forWhom}`);
       setSavedEvents((prev) =>
         prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
       );
       try {
-        const result = await attendEvent(ev.id);
+        const result = await (target
+          ? attendEventFor(target.id, ev.id)
+          : attendEvent(ev.id));
         // A program with a capacity holds a spot for the first hour, when
         // one is left; the card says so until the hour is up.
         const heldUntil = result.held_until ?? null;
@@ -393,10 +432,10 @@ export function EventsView({
         toast.show({
           title:
             ev.capacity == null
-              ? "Event saved"
+              ? `Event saved${forWhom}`
               : heldUntil
-                ? "Spot held for 1 hour"
-                : "Saved — no spots left to hold",
+                ? `Spot held${forWhom} for 1 hour`
+                : `Saved${forWhom} — no spots left to hold`,
           action: external
             ? { label: "Register", onClick: () => openRegistration(ev) }
             : calendar
@@ -473,7 +512,10 @@ export function EventsView({
       );
       setSrMessage(`Removed ${ev.title}`);
       try {
-        await api(`/events/${ev.id}/attend`, { method: "DELETE" });
+        const target = careForRef.current;
+        await (target
+          ? unattendEventFor(target.id, ev.id)
+          : api(`/events/${ev.id}/attend`, { method: "DELETE" }));
         toast.show({
           title: `${ev.title} was unsaved`,
           tone: "info",
@@ -494,6 +536,8 @@ export function EventsView({
     setAuthOpen(false);
     const pending = authFor;
     setAuthFor(null);
+    setCareFor(null);
+    careForRef.current = null;
     try {
       const [profile, attended, refreshed] = await Promise.all([
         api<Me>("/users/me"),
@@ -701,6 +745,7 @@ export function EventsView({
     }
     setMe(null);
     setSavedEvents([]);
+    setCareFor(null);
     // The counts are for signed-in eyes; drop them rather than refetch.
     setEvents((evs) => evs.map((ev) => ({ ...ev, saved_count: null })));
     setDetailFor(null);
@@ -913,7 +958,15 @@ export function EventsView({
     );
   }
 
-  const name = me ? `${me.first_name} ${me.last_name.charAt(0)}.` : null;
+  const name = me ? shortName(me) : null;
+  // "Sam R." when a caregiver is saving for someone; every list surface
+  // says so, and the .ics is theirs too.
+  const listOwner = careFor ? shortName(careFor) : null;
+  const calendarUrl = careFor ? careCalendarUrl(careFor.id) : savedCalendarUrl;
+  const careChoice =
+    me && me.care.length > 0
+      ? { members: me.care, selected: careFor, onSelect: selectCare }
+      : null;
   const heading =
     viewMode === "card"
       ? feed.length
@@ -979,6 +1032,7 @@ export function EventsView({
       <FeedHeader
         name={name}
         avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+        care={careChoice}
         onSignIn={() => toSignIn()}
         onSignOut={() => void doLogout()}
       >
@@ -1022,6 +1076,8 @@ export function EventsView({
             events={savedList}
             active={dragActive}
             signedIn={signedIn}
+            owner={listOwner}
+            calendarUrl={calendarUrl}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
             onSignIn={() => toSignIn()}
@@ -1034,6 +1090,8 @@ export function EventsView({
             me={me}
             open={view === "saved"}
             events={savedEvents}
+            owner={listOwner}
+            calendarUrl={calendarUrl}
             onClose={closeSaved}
             onSignIn={() => {
               closeSaved();
@@ -1227,6 +1285,8 @@ export function EventsView({
             events={savedList}
             active={dragActive}
             signedIn={signedIn}
+            owner={listOwner}
+            calendarUrl={calendarUrl}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
             onSignIn={() => toSignIn()}
