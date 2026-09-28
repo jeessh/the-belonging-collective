@@ -1,11 +1,14 @@
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from pydantic import BaseModel
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user, get_db, get_optional_user
-from app.core import ical
+from app.core import holds, ical
 from app.core.access import is_approved, visible_to_member
 from app.core.rate_limit import CLICK_LIMIT, client_key, enforce, record
 from app.core.pricing import covers_whole_series
@@ -55,8 +58,9 @@ def attend_event(
 ):
     """Save the program — a bookmark, never a registration.
 
-    Capacity is information on the event, not a gate here: saving takes no
-    place, so a full program can still be saved.
+    Capacity never refuses a save. What it does is hold a spot for the first
+    hour (core/holds.py) when the holds still running are under capacity;
+    `held_until` in the response says whether this save got one.
     """
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
@@ -68,15 +72,21 @@ def attend_event(
             "This program is for members the organization has given special "
             "access. Request access from the program page first.",
         )
+    now = holds.now_utc()
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})
     if existing:
         # A previously un-saved row is re-saved in place rather than recreated —
         # the row never went away, so an insert here would just hit the PK.
         if existing.status == SAVED:
-            return {"ok": True, "already": True}
+            return {
+                "ok": True,
+                "already": True,
+                "held_until": holds.active_until(existing, now),
+            }
         existing.status = SAVED
+        existing.held_until = holds.take_hold(db, event, now)
         db.commit()
-        return {"ok": True}
+        return {"ok": True, "held_until": existing.held_until}
     # A series price covers the whole run, so saving one date enrols them in
     # all of them. Making somebody who paid for eight weeks save eight dates by
     # hand is busywork that also loses what they actually bought.
@@ -103,15 +113,22 @@ def attend_event(
         limit = event.price_sessions or len(run)
         targets = run[:limit]
 
+    held_until = None
     for target in targets:
+        held = holds.take_hold(db, target, now)
+        if target.id == event.id:
+            held_until = held
         existing = db.get(
             Attendance, {"user_id": user.id, "event_id": target.id}
         )
         if existing:
             existing.status = SAVED
+            existing.held_until = held
         else:
             db.add(
-                Attendance(user_id=user.id, event_id=target.id, status=SAVED)
+                Attendance(
+                    user_id=user.id, event_id=target.id, status=SAVED, held_until=held
+                )
             )
     try:
         db.commit()
@@ -121,9 +138,9 @@ def attend_event(
         # same outcome as the pre-check, stay idempotent. An FK violation
         # means the event was deleted mid-request: no attendance exists.
         if getattr(exc.orig, "sqlstate", None) == "23505":
-            return {"ok": True, "already": True}
+            return {"ok": True, "already": True, "held_until": None}
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
-    return {"ok": True}
+    return {"ok": True, "held_until": held_until}
 
 
 @router.delete(
@@ -135,7 +152,7 @@ def unattend_event(
     db: Session = Depends(get_db),
 ):
     """Un-saving flips the status; the row stays so the organizer's cumulative
-    save count doesn't walk backwards."""
+    save count doesn't walk backwards. Any hold goes with it."""
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})
     if not existing or existing.status == REMOVED:
         return
@@ -149,9 +166,13 @@ def unattend_event(
             Attendance.event_id.in_(
                 db.query(Event.id).filter(Event.series_id == event.series_id)
             ),
-        ).update({Attendance.status: REMOVED}, synchronize_session=False)
+        ).update(
+            {Attendance.status: REMOVED, Attendance.held_until: None},
+            synchronize_session=False,
+        )
     else:
         existing.status = REMOVED
+        existing.held_until = None
     db.commit()
 
 
@@ -186,7 +207,75 @@ def _saved_events(db: Session, user: User) -> list[Event]:
 def my_events(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    return _saved_events(db, user)
+    rows = _saved_events(db, user)
+    out = [EventOut.model_validate(row) for row in rows]
+    holds.annotate(rows, out, user.id)
+    return out
+
+
+# ---------- shareable saved list ----------
+
+
+@router.post("/users/me/share-link")
+def share_link(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """The member's public list handle — made on first ask, the same one after."""
+    if not user.share_token:
+        user.share_token = secrets.token_urlsafe(24)
+        db.commit()
+    return {"token": user.share_token}
+
+
+class SharedListOut(BaseModel):
+    first_name: str
+    events: list[EventOut]
+
+
+@router.get("/shared/{token}", response_model=SharedListOut)
+def shared_list(token: str, db: Session = Depends(get_db)):
+    """A member's upcoming saved programs, for anyone with the link.
+
+    The list has no gate — it is only a list — but special-access programs
+    do, so those are left out whoever is looking. "N going" is withheld the
+    same way the public event routes withhold it from anonymous viewers.
+    """
+    user = (
+        db.query(User)
+        .filter(User.share_token == token, User.deleted_at.is_(None))
+        .first()
+    )
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such list")
+    now = holds.now_utc()
+    rows = (
+        db.query(Event)
+        .join(Attendance, Attendance.event_id == Event.id)
+        .filter(
+            Attendance.user_id == user.id,
+            Attendance.status == SAVED,
+            Event.deleted_at.is_(None),
+            Event.access_group_id.is_(None),
+            # Upcoming, measured from the end as lib/time.isUpcoming does;
+            # undated programs haven't happened yet either.
+            or_(
+                Event.starts_at.is_(None),
+                func.coalesce(Event.ends_at, Event.starts_at) >= now,
+            ),
+        )
+        .options(
+            joinedload(Event.host),
+            selectinload(Event.images),
+            selectinload(Event.attendees),
+        )
+        .order_by(Event.starts_at.asc().nullslast(), Event.id.asc())
+        .all()
+    )
+    out = [EventOut.model_validate(row) for row in rows]
+    holds.annotate(rows, out, None)
+    for item in out:
+        item.saved_count = None
+    return SharedListOut(first_name=user.first_name, events=out)
 
 
 @router.get("/users/me/events/calendar.ics")

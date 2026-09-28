@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: str = ""
     SUPABASE_IMAGE_BUCKET: str = "event-images"
 
-    # Outbound mail. Used only for organizer password resets and invitations —
-    # members are never mailed. Unset (the default) means no mail is sent and
-    # the link is logged instead, which is right for local development and
-    # must never be the state in production.
+    # Outbound mail: organizer password resets and invitations, plus reminders
+    # and change notices to members who added an email. Unset (the default)
+    # means no mail is sent and the message is logged instead, which is right
+    # for local development and must never be the state in production.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     SMTP_STARTTLS: bool = True
     SMTP_SSL: bool = False
     MAIL_FROM: str = ""
+    # The display name on every message; MAIL_FROM stays the address.
+    MAIL_FROM_NAME: str = "The Belonging Collective"
+
+    # Shared secret Vercel Cron sends as `Authorization: Bearer …` to
+    # /internal/reminders. Unset means the endpoint refuses to run at all.
+    CRON_SECRET: str = ""
 
     # Path prefix the backend is served under. Empty in local dev (the frontend
     # calls http://localhost:8000 directly); "/api" on Vercel, where the service

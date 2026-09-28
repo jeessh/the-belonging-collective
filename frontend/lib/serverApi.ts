@@ -1,4 +1,4 @@
-import type { Event } from "@/lib/api";
+import type { Event, SharedList } from "@/lib/api";
 
 /**
  * Base URL for fetches made on the server (Server Components, metadata,
@@ -49,6 +49,20 @@ export async function fetchEvent(id: string): Promise<Event | null> {
     throw new Error(`Event fetch failed: ${res.status}`);
   }
   return (await res.json()) as Event;
+}
+
+/**
+ * A member's shared list, or null for an unknown token. Never cached: the
+ * list changes every time they save something.
+ */
+export async function fetchSharedList(token: string): Promise<SharedList | null> {
+  const res = await fetch(
+    `${serverApiBase()}/shared/${encodeURIComponent(token)}`,
+    { cache: "no-store" },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Shared list fetch failed: ${res.status}`);
+  return (await res.json()) as SharedList;
 }
 
 /** Every live event, for the sitemap. Empty on failure — never a broken build. */

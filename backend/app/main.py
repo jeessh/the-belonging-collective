@@ -15,6 +15,7 @@ from app.api.routes import (
     auth,
     events,
     hosts,
+    internal,
     invites,
     users,
 )
@@ -62,3 +63,4 @@ app.include_router(attendance.router)
 app.include_router(invites.router)
 app.include_router(access.router)
 app.include_router(analytics.router)
+app.include_router(internal.router)

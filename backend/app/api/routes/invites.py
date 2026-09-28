@@ -133,6 +133,7 @@ def create_invite(
     db.add(invite)
     db.commit()
     db.refresh(invite)
+    link = f"{settings.FRONTEND_ORIGIN}/host/invite/{token}"
     send_mail(
         email,
         "You're invited to The Belonging Collective",
@@ -143,10 +144,11 @@ def create_invite(
 Open this link to choose a password and get started. It expires in
 {INVITE_DAYS} days:
 
-{settings.FRONTEND_ORIGIN}/host/invite/{token}
+{link}
 
 If you weren't expecting this, you can ignore it.
 """,
+        button=("Accept the invitation", link),
     )
     return {
         "id": str(invite.id),

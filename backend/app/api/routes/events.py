@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     HTTPException,
@@ -19,7 +20,7 @@ from app.api.deps import (
     get_optional_host,
     get_optional_user,
 )
-from app.core import ical
+from app.core import holds, ical, member_mail
 from app.core.storage import StorageError, upload_image
 from app.models.attendance import Attendance
 from app.core.access import (
@@ -177,6 +178,7 @@ def _public_view(
     or say the request is in — one query for the whole page, not one per row.
     """
     out = [EventOut.model_validate(row) for row in rows]
+    holds.annotate(rows, out, viewer.id if viewer else None)
     if not (viewer or organizer):
         for item in out:
             item.saved_count = None
@@ -375,6 +377,7 @@ def create_event(
 def update_event(
     event_id: uuid.UUID,
     body: EventUpdate,
+    background: BackgroundTasks,
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
 ):
@@ -384,6 +387,9 @@ def update_event(
     if not _owns_or_admin(host, event):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
     fields = body.model_dump(exclude_unset=True)
+    # Compared after the commit: a moved time or place is mailed to everyone
+    # who saved the program (member_mail.send_change_notice).
+    before = {f: getattr(event, f) for f in member_mail.NOTICE_FIELDS}
     # Checked against the event's own organization, not the caller's — a
     # superadmin editing another agency's program may only use that agency's
     # groups. Queried here, before the row is touched (see the note below).
@@ -418,6 +424,11 @@ def update_event(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     db.commit()
     db.refresh(event)
+    changed = [f for f in member_mail.NOTICE_FIELDS if getattr(event, f) != before[f]]
+    if changed:
+        # After the response: an SMTP round trip per member is not something
+        # the organizer's save should wait on.
+        background.add_task(member_mail.send_change_notice, event.id, changed)
     return event
 
 

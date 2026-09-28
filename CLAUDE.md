@@ -55,14 +55,21 @@ and BE **must share one origin**. In prod set `NEXT_PUBLIC_API_URL=/api`; FastAP
 uses `settings.ROOT_PATH` (`""` local, `/api` prod).
 
 Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,
-`NEXT_PUBLIC_API_URL=/api`, `FRONTEND_ORIGIN`, `ROOT_PATH=/api`.
+`NEXT_PUBLIC_API_URL=/api`, `FRONTEND_ORIGIN`, `ROOT_PATH=/api`, `CRON_SECRET`
+(Vercel Cron sends it as `Authorization: Bearer …` to `/api/internal/reminders`,
+scheduled in the root `vercel.json`; unset, the endpoint refuses to run rather
+than running open).
 
-Organizer password reset and invitations need SMTP: `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`).
-**Unset means no mail is sent and the link is written to the log instead** —
-right for local dev, never acceptable in production. `FRONTEND_ORIGIN` is what
-the links in that mail (and in the `.ics` exports) are built from, so a wrong
-value produces links nobody can open.
+All outgoing mail — organizer password resets and invitations, member reminders
+and change notices — needs SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASSWORD`, `MAIL_FROM` (plus `SMTP_STARTTLS` / `SMTP_SSL`). Every message
+goes through `core/mail.send` as plain text plus a branded HTML alternative
+(wordmark, one message block, one button), from "The Belonging Collective"
+(`MAIL_FROM_NAME`; `MAIL_FROM` stays the address). **Unset means no mail is sent
+and the message is written to the log instead** — right for local dev, never
+acceptable in production. `FRONTEND_ORIGIN` is what the links in that mail (and
+in the `.ics` exports) are built from, so a wrong value produces links nobody
+can open.
 
 ## Frontend architecture
 
@@ -143,9 +150,11 @@ value produces links nobody can open.
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".
-- There is no public link to a member's saved list; "Share list" is
-  `mailto:`/copy of the titles and per-event URLs only. That is a privacy
-  decision not yet made, not an omission.
+- "Share list" is `mailto:`/copy of the titles and per-event URLs, plus "Copy
+  link to my list" — the public `/shared/[token]` page (see "Holds, member
+  email, sharing"). Jesse's call: no privacy gate, it's only a list. The
+  page is `noindex` and server-rendered; `/profile` (from the account menu)
+  is where a member sets their email, picture and copies the same link.
 
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session and
@@ -232,9 +241,10 @@ value produces links nobody can open.
   `delete-orphan` cascade. Attendance counts are what nonprofits put in grant
   applications, so they have to outlive the event and the account. Every read
   path filters `deleted_at IS NULL`; add the filter when you add a query.
-- **Saving is a bookmark.** It never registers anyone and never takes a place;
-  `events.capacity` is information only. `EventOut.saved_count` ("N going") is
-  `null` for signed-out viewers — the public event routes withhold it.
+- **Saving is a bookmark.** It never registers anyone, and it never fails for
+  capacity. What `events.capacity` does is hold a spot for the first hour —
+  see "Holds, member email, sharing" below. `EventOut.saved_count` ("N going")
+  is `null` for signed-out viewers — the public event routes withhold it.
 - **Member emails are unique over live rows only** (`uq_users_email_live` on
   `lower(email)`), the same rule as `uq_hosts_email_live`.
 - **Special access is per group, not per event.** `access_groups` belong to
@@ -274,6 +284,28 @@ value produces links nobody can open.
 - The persisted field is `eye_tracking_enabled` but the hook is
   **`useHeadTracking`** (head pose, not gaze — webgazer was replaced). The column
   name is legacy; don't rename it expecting the hook to follow.
+
+## Holds, member email, sharing
+- **Saving a program with a `capacity` holds a spot for one hour**
+  (`event_attendees.held_until`, `core/holds.py`). Capacity never refuses a
+  save: if the holds still running are under capacity the save gets one, else
+  it is saved without. Un-saving clears it; re-saving after expiry can take a
+  fresh one. `take_hold` locks the event row so two members can't both get the
+  last spot. `EventOut.spots_left` = capacity − active holds (null without a
+  capacity) and `held_until` is the viewer's own hold; both come from
+  `holds.annotate` over the eager-loaded attendees, never off the row.
+- **Members may add an optional email** (`PATCH /users/me {email}`). An icon
+  account can set, change or clear it; a password account can change but not
+  clear it, since it is their login. Unique over live rows, lowercased. It is
+  a channel only: the day-before reminder (`GET /internal/reminders`, cron,
+  `reminded_at` makes it once) and the change notice `update_event` sends when
+  `starts_at`/`ends_at`/`location` move (`core/member_mail.py`, background).
+- **Profile pictures** are a photo (`POST /users/me/avatar`, ≤ 2 MB, sniffed,
+  same bucket as event images) or an emblem from `core/avatars.EMBLEMS` —
+  deliberately not sign-in icons, which are the password. One clears the other.
+- **Shareable saved list**: `POST /users/me/share-link` mints `users.share_token`
+  once; `GET /shared/{token}` is public and lists the member's upcoming saved
+  *public* programs — special-access ones are excluded whoever holds the link.
 
 ## Roles and admin tiers
 - **members** — icon sign-in (`POST /auth/user`) or email + password

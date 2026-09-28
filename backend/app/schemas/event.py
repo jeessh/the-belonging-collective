@@ -250,5 +250,11 @@ class EventOut(EventBase):
     click_count: int | None = None
     # The login that posted it (attribution; host_id is the owner).
     created_by_host_id: uuid.UUID | None = None
+    # capacity minus the holds still running, floored at 0; null without a
+    # capacity. Filled by core/holds.annotate, not read off the row.
+    spots_left: int | None = None
+    # When the signed-in member's own hold on this program runs out; null when
+    # they have none (not saved, no capacity, or the hour is up).
+    held_until: datetime | None = None
     images: list[EventImageOut] = []
     created_at: datetime

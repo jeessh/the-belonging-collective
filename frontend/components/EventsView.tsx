@@ -25,6 +25,7 @@ import {
   updateMe,
   type Event,
   type Me,
+  attendEvent,
   type MePrefs,
   type PreferredView,
 } from "@/lib/api";
@@ -369,7 +370,19 @@ export function EventsView({
         prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
       );
       try {
-        await api(`/events/${ev.id}/attend`, { method: "POST" });
+        const result = await attendEvent(ev.id);
+        // A program with a capacity holds a spot for the first hour, when
+        // one is left; the card says so until the hour is up.
+        const heldUntil = result.held_until ?? null;
+        if (ev.capacity != null) {
+          patchEvent(ev.id, {
+            held_until: heldUntil,
+            spots_left:
+              heldUntil && typeof ev.spots_left === "number"
+                ? Math.max(ev.spots_left - 1, 0)
+                : ev.spots_left,
+          });
+        }
         // Saving is only a bookmark. Where registration lives on the
         // organizer's site, the next step is that, not the calendar.
         const external =
@@ -378,7 +391,12 @@ export function EventsView({
           !!ev.registration_url;
         const calendar = googleCalendarUrl(ev);
         toast.show({
-          title: "Event saved",
+          title:
+            ev.capacity == null
+              ? "Event saved"
+              : heldUntil
+                ? "Spot held for 1 hour"
+                : "Saved — no spots left to hold",
           action: external
             ? { label: "Register", onClick: () => openRegistration(ev) }
             : calendar
@@ -409,7 +427,7 @@ export function EventsView({
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
       }
     },
-    [toSignIn, syncSaved, toast, openRegistration],
+    [toSignIn, syncSaved, toast, openRegistration, patchEvent],
   );
 
   /**
@@ -960,6 +978,7 @@ export function EventsView({
 
       <FeedHeader
         name={name}
+        avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
         onSignIn={() => toSignIn()}
         onSignOut={() => void doLogout()}
       >

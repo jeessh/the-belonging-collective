@@ -3,6 +3,7 @@ import { ExternalLink, FileText, Paperclip } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
 import { EventSummary } from "@/components/ui/EventSummary";
+import { HoldInfo } from "@/components/member/HoldInfo";
 
 const LINK_ROW =
   "flex min-h-14 items-center justify-between gap-4 rounded-control border border-line px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
@@ -69,9 +70,16 @@ export function EventDetails({
       : []),
   ];
 
+  const hold = event.capacity != null;
+
   return (
     <div className="flex flex-col gap-8">
-      {tools && <div className="flex justify-end">{tools}</div>}
+      {(tools || hold) && (
+        <div className="flex items-center justify-end gap-3">
+          {hold && <HoldInfo />}
+          {tools}
+        </div>
+      )}
 
       <EventSummary
         event={event}

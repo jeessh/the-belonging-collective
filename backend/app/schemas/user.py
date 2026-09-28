@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 # Dismissed recommendations are the only member-writable list without a fixed
 # vocabulary, so it gets a hard cap: enough for years of waving programs away,
@@ -18,8 +18,11 @@ class UserOut(BaseModel):
     first_name: str
     last_name: str
     username: str
-    # Only password accounts have one.
+    # The login for a password account; optional for an icon account.
     email: str | None = None
+    # A photo or an emblem slug, never both.
+    avatar_url: str | None = None
+    avatar_emblem: str | None = None
     # 'icon' or 'password' — which door the member uses.
     auth_type: str
     icons: list[str]
@@ -84,3 +87,11 @@ class UserPrefsUpdate(BaseModel):
     # `true` stamps onboarded_at with now; `false` is ignored rather than
     # clearing it, so the tour can't be un-seen by a stray write.
     onboarded: bool | None = None
+    # An icon account may set, change or clear (null) it; a password account
+    # may change it — it is their login — but not clear it. Stored lowercase.
+    email: EmailStr | None = None
+    # Only null is accepted here: a photo is set through POST /users/me/avatar,
+    # so nobody can point their picture at an arbitrary address.
+    avatar_url: None = None
+    # One of core/avatars.EMBLEMS, or null to clear. Setting it drops the photo.
+    avatar_emblem: str | None = None

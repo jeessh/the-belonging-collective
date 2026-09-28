@@ -1,7 +1,14 @@
 "use client";
 
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, Compass, LogOut, PersonStanding } from "lucide-react";
+import Link from "next/link";
+import {
+  ChevronDown,
+  Compass,
+  LogOut,
+  PersonStanding,
+  UserRound,
+} from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { CATEGORIES } from "@/lib/categories";
@@ -11,14 +18,22 @@ import { SELECTABLE_TAGS } from "@/lib/accessibility";
  * The feed's top bar: who you are on the left, Accessibility Tools on the
  * right. Signed out, the name is the way in.
  */
+/** The member's chosen picture, if any — see components/ui/Avatar. */
+export type AvatarChoice = {
+  url?: string | null;
+  emblem?: string | null;
+};
+
 export const FeedHeader = memo(function FeedHeader({
   name,
+  avatar,
   onSignIn,
   onSignOut,
   children,
 }: {
   /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
+  avatar?: AvatarChoice | null;
   onSignIn: () => void;
   onSignOut: () => void;
   /** The Accessibility Tools menu. */
@@ -26,7 +41,12 @@ export const FeedHeader = memo(function FeedHeader({
 }) {
   return (
     <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 py-3 sm:px-6 sm:py-5 lg:px-9">
-      <AccountButton name={name} onSignIn={onSignIn} onSignOut={onSignOut} />
+      <AccountButton
+        name={name}
+        avatar={avatar}
+        onSignIn={onSignIn}
+        onSignOut={onSignOut}
+      />
       {children}
     </header>
   );
@@ -38,10 +58,12 @@ export const FeedHeader = memo(function FeedHeader({
  */
 function AccountButton({
   name,
+  avatar,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
+  avatar?: AvatarChoice | null;
   onSignIn: () => void;
   onSignOut: () => void;
 }) {
@@ -74,7 +96,12 @@ function AccountButton({
         aria-expanded={signedIn ? open : undefined}
         className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control py-1 pl-1 pr-3 text-xl transition-colors hover:bg-surface-subtle sm:gap-4"
       >
-        <Avatar name={name} size={36} />
+        <Avatar
+          name={name}
+          src={avatar?.url}
+          emblem={avatar?.emblem}
+          size={36}
+        />
         <span className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"}`}>
           {name ?? "Not Logged In"}
         </span>
@@ -88,6 +115,15 @@ function AccountButton({
           role="menu"
           className="absolute left-0 top-full z-50 mt-2 min-w-[200px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift"
         >
+          <Link
+            role="menuitem"
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle"
+          >
+            <UserRound aria-hidden="true" className="size-5" />
+            Profile
+          </Link>
           <button
             role="menuitem"
             type="button"
