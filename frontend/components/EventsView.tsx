@@ -60,12 +60,7 @@ import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
 import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
 import { SavedSidebar } from "@/components/member/SavedSidebar";
-import {
-  FOR_YOU_CHIP,
-  FeedFilters,
-  passesFilters,
-  type FeedSort,
-} from "@/components/member/FeedFilters";
+import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
 import { Tour } from "@/components/member/Tour";
@@ -161,7 +156,6 @@ export function EventsView({
   });
   const [chips, setChips] = useState<Set<string>>(new Set());
   const [tourOpen, setTourOpen] = useState(false);
-  const [sort, setSort] = useState<FeedSort>("foryou");
   // Open on a desktop, the rail below `lg` — the design is desktop-first.
   // Starts open on both server and client, then corrects after mount, so the
   // first client render matches the server's.
@@ -197,6 +191,23 @@ export function EventsView({
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
+
+  // The feed column scrolls, so it clips: a card dragged, held or flown
+  // toward the saved column disappeared under its edge. While the card
+  // travels it is lifted out — fixed exactly where it sits, above the page —
+  // and the deck keeps its height underneath.
+  const [lift, setLift] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const liftCard = useCallback(() => {
+    const el = cardWrapRef.current;
+    if (!el) return;
+    const { left, top, width, height } = el.getBoundingClientRect();
+    setLift({ left, top, width, height });
+  }, []);
 
   const {
     supported: ttsSupported,
@@ -251,8 +262,8 @@ export function EventsView({
   );
 
   // The feed the member browses: their explicit filters applied, then ordered
-  // by how well each program matches them ("For you") or by date. Nothing is
-  // hidden by personalization — only the chips remove cards.
+  // by how well each program matches them. Nothing is hidden by
+  // personalization — only the chips remove cards.
   //
   // Keyed on the two profile arrays rather than `me`: setPref rebuilds `me` on
   // every preference write, and toggling text-to-speech must not re-sort.
@@ -264,8 +275,8 @@ export function EventsView({
     [interests, accessPrefs],
   );
 
-  // This week's picks. A section over the list and an opt-in chip over the
-  // cards; never a change to the feed itself.
+  // This week's picks. A section over the list and a tag on the card; never
+  // a change to the feed itself.
   const recommended = useMemo(
     () => (signedIn ? recommendedThisWeek(events, taste, dismissed ?? []) : []),
     [events, taste, dismissed, signedIn],
@@ -274,23 +285,15 @@ export function EventsView({
     () => new Set(recommended.map(programKey)),
     [recommended],
   );
-  const forYouOn =
-    viewMode === "card" && recommended.length > 0 && chips.has(FOR_YOU_CHIP);
 
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
     const upcoming = events.filter(
-      (ev) =>
-        isUpcoming(ev) &&
-        passesFilters(ev, chips) &&
-        (!forYouOn || recommendedKeys.has(programKey(ev))),
+      (ev) => isUpcoming(ev) && passesFilters(ev, chips),
     );
-    // The server already orders by starts_at, so "Soonest" is its order.
-    const ordered =
-      sort === "foryou" ? personalizedFeed(upcoming, taste) : upcoming;
-    return oneCardPerProgram(ordered);
-  }, [events, chips, sort, taste, forYouOn, recommendedKeys]);
+    return oneCardPerProgram(personalizedFeed(upcoming, taste));
+  }, [events, chips, taste]);
 
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(
@@ -577,7 +580,7 @@ export function EventsView({
       // Signed out this opens sign-in and already-saved is a no-op; flying the
       // card away in either case would say something untrue.
       if (!signedInRef.current || savedRef.current.has(ev.id)) {
-        void animate(x, 0, { duration: 0.2 });
+        void animate(x, 0, { duration: 0.2 }).then(() => setLift(null));
         setDragActive(false);
         void attend(ev);
         return;
@@ -586,6 +589,7 @@ export function EventsView({
       const target = dropRef.current;
       if (reduceMotion || !wrap || !target) {
         x.set(0);
+        setLift(null);
         setDragActive(false);
         await attend(ev);
         return;
@@ -593,6 +597,7 @@ export function EventsView({
 
       setFlying(true);
       setDragActive(true);
+      liftCard();
       // The wrapper's box is where the card rests; the drag moved only the
       // inner element, so the hand-off puts that offset on the wrapper.
       const card = wrap.getBoundingClientRect();
@@ -617,10 +622,23 @@ export function EventsView({
       flyY.set(0);
       cardScale.set(1);
       cardOpacity.set(1);
+      setLift(null);
       setDragActive(false);
       setFlying(false);
     },
-    [feed, i, reduceMotion, attend, next, x, flyX, flyY, cardScale, cardOpacity],
+    [
+      feed,
+      i,
+      reduceMotion,
+      attend,
+      next,
+      liftCard,
+      x,
+      flyX,
+      flyY,
+      cardScale,
+      cardOpacity,
+    ],
   );
   // Stable identity for the voice / head handlers and the Save button.
   const flyToDropRef = useRef(flyToDrop);
@@ -906,6 +924,7 @@ export function EventsView({
           e.preventDefault();
           if (e.repeat || hold.holding()) return;
           setDragActive(true);
+          liftCard();
           hold.start(
             HOLD_MS,
             (p) => {
@@ -921,7 +940,9 @@ export function EventsView({
       // Let go early: nothing saved, the card settles back.
       hold.cancel();
       setDragActive(false);
-      void animate(x, 0, { duration: 0.2 });
+      void animate(x, 0, { duration: 0.2 }).then(() => {
+        if (!hold.holding()) setLift(null);
+      });
     };
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
@@ -944,6 +965,7 @@ export function EventsView({
     reduceMotion,
     x,
     flyToDrop,
+    liftCard,
   ]);
 
   // Only re-render for the tint when the answer changes, not every drag frame.
@@ -1133,13 +1155,7 @@ export function EventsView({
               </div>
             </div>
 
-            <FeedFilters
-              chips={chips}
-              onToggleChip={toggleChip}
-              sort={sort}
-              onSort={setSort}
-              forYou={viewMode === "card" && recommended.length > 0}
-            />
+            <FeedFilters chips={chips} onToggleChip={toggleChip} />
 
             {status === "empty" ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
@@ -1160,7 +1176,10 @@ export function EventsView({
             ) : (
               /* card view: one card on a stacked deck, ↑ / ↓ beside it */
               <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
-                <div className="relative w-full min-w-0 max-w-[880px]">
+                <div
+                  className="relative w-full min-w-0 max-w-[880px]"
+                  style={lift ? { height: lift.height } : undefined}
+                >
                   {/* the deck beneath — purely decorative */}
                   <div
                     aria-hidden
@@ -1177,6 +1196,13 @@ export function EventsView({
                       y: flyY,
                       scale: cardScale,
                       opacity: cardOpacity,
+                      ...(lift && {
+                        position: "fixed",
+                        left: lift.left,
+                        top: lift.top,
+                        width: lift.width,
+                        zIndex: 50,
+                      }),
                     }}
                     className="relative z-10"
                   >
@@ -1206,6 +1232,11 @@ export function EventsView({
                           touchAction: phone ? "pan-y" : "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
+                        onDragStart={liftCard}
+                        // Settled back without a save; a flight drops it itself.
+                        onDragTransitionEnd={() => {
+                          if (!flyingRef.current) setLift(null);
+                        }}
                         onDrag={(_, info) => {
                           // Leftward travel is a save in progress; anything
                           // else leaves the zone alone.

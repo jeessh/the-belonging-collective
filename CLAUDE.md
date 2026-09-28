@@ -79,8 +79,8 @@ can open.
   `FeedHeader` (account + the Accessibility Tools menu), `SavedSidebar` (the
   saved column — open panel from `lg`, collapsed rail on a tablet, a bar
   under the feed on a phone; its forwarded ref is the drop target every save
-  animates into, whichever of the three is showing), `FeedFilters` (chips +
-  sort; one scrolling row on a phone), `FeedCard` (the one card, on
+  animates into, whichever of the three is showing), `FeedFilters` (FREE +
+  topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
@@ -108,6 +108,10 @@ can open.
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation; the toast comes from `attend`.
+  While the card travels (drag, ← hold, flight) it is **lifted**: `position:
+  fixed` where it sits, `z-index: 50`, with the deck holding its height. The
+  feed column is a scroll container, so its overflow clips the card at the
+  saved column's edge — no z-index on the card can fix that.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,
@@ -117,17 +121,15 @@ can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` (FREE + THIS WEEK + `CATEGORIES`), which are the member's own
-  explicit choice; "For you" (match score) vs "Soonest" (server order) is the
-  only sort.
+  `FeedFilters` (FREE + the topics from `useCategories`, as in the design),
+  which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
 - **"For you this week"** (`recommendedThisWeek` in `lib/feed.ts`): up to six
   programs with `matchScore > 0` starting in the next seven days, one per
   program, for a signed-in member with at least one interest or need. It is a
-  section over the list and an opt-in "For you" chip in the card view (a chip
-  is the member's choice, so it may filter) — never a change to the feed
-  itself. "Not for me" writes the program id (`series_id ?? id`) to
+  section over the list and a "For you" tag on the card — never a change to
+  the feed itself. "Not for me" writes the program id (`series_id ?? id`) to
   `Me.dismissed_program_ids` (PATCH replaces the whole list) and only removes
   the row from the section; the toast's Undo writes the list back.
 - `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See

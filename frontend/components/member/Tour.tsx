@@ -59,7 +59,7 @@ function stepsFor(signedIn: boolean): Step[] {
       icon: <Sparkles />,
       title: "For you",
       body: signedIn
-        ? "Programs picked for you each week."
+        ? "Programs picked for you each week are marked For you."
         : "Sign in to get picks for you.",
       targets: ["foryou"],
     },
