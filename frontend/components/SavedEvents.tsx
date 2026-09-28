@@ -10,7 +10,7 @@ import {
   Search,
   Send,
 } from "lucide-react";
-import type { Event, Me } from "@/lib/api";
+import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { savedCalendarUrl } from "@/lib/calendar";
@@ -277,6 +277,12 @@ export const SavedEvents = memo(function SavedEvents({
           copy={{
             label: "List",
             text: listShareText(upcoming, window.location.origin),
+          }}
+          // A live link to the list, as against the text above, which is a
+          // snapshot. Public by design: it is only a list.
+          link={{
+            label: "Link to my list",
+            getUrl: async () => sharedListUrl((await createShareLink()).token),
           }}
           onClose={() => setSub(null)}
         />

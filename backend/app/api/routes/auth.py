@@ -449,6 +449,7 @@ Open this link to choose a new one. It works once, and expires in one hour:
 If it wasn't you, nothing has changed — ignore this and your password stays
 as it is.
 """,
+        button=("Choose a new password", link),
     )
 
 
@@ -599,6 +600,8 @@ def me(request: Request, db: Session = Depends(get_db)):
         # never shows an icon key to a password account).
         out["email"] = member.email
         out["auth_type"] = member.auth_type
+        out["avatar_url"] = member.avatar_url
+        out["avatar_emblem"] = member.avatar_emblem
         # What the feed needs before its first paint: which layout to draw,
         # which recommendations to skip, and whether to run the tour.
         out["preferred_view"] = member.preferred_view

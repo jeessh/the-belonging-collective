@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Cake, CalendarDays, MapPin } from "lucide-react";
+import { Cake, CalendarDays, MapPin, Ticket } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { whenLine } from "@/lib/time";
+import { clockTime, whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
 
 /**
@@ -59,6 +59,11 @@ export function EventSummary({
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = event.cover_image_url ?? event.images[0]?.url ?? null;
   const ages = ageLabel(event);
+  // The member's own hold, while it is still running.
+  const held =
+    event.held_until && new Date(event.held_until).getTime() > Date.now()
+      ? event.held_until
+      : null;
 
   const meta = card ? "text-xl sm:text-2xl" : "text-lg";
   const icon = card ? "size-7 sm:size-9" : "size-6";
@@ -141,6 +146,20 @@ export function EventSummary({
                   className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
                 />
                 <p className="min-w-0 text-fg">{ages}</p>
+              </div>
+            )}
+            {typeof event.spots_left === "number" && (
+              <div className="flex items-start gap-3">
+                <Ticket
+                  aria-hidden="true"
+                  className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+                />
+                <p className="min-w-0 text-fg">
+                  {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left
+                  {held && (
+                    <span className="text-fg-muted"> · Held until {clockTime(held)}</span>
+                  )}
+                </p>
               </div>
             )}
             {going && <div className={meta}>{going}</div>}

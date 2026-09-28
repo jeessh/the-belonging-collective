@@ -150,8 +150,23 @@ export type Event = {
    * member on a restricted program; null otherwise.
    */
   access_status?: AccessStatus | "none" | null;
+  /** Capacity minus the holds still running; null without a capacity. */
+  spots_left?: number | null;
+  /** When the signed-in member's own hold runs out; null when they have none. */
+  held_until?: string | null;
   images: EventImage[];
 };
+
+/** What POST /events/{id}/attend answers. `held_until` is null when the
+    program has no capacity, or no spot was left to hold. */
+export type AttendResult = {
+  ok: boolean;
+  already?: boolean;
+  held_until?: string | null;
+};
+
+export const attendEvent = (eventId: string) =>
+  api<AttendResult>(`/events/${eventId}/attend`, { method: "POST" });
 
 /** How the member last chose to see the feed. */
 export type PreferredView = "card" | "list";
@@ -161,8 +176,11 @@ export type Me = {
   first_name: string;
   last_name: string;
   username: string;
-  /** Only password accounts have one. */
+  /** The login for a password account; optional for an icon account. */
   email?: string | null;
+  /** Profile picture: a photo or an emblem slug (lib/emblems), never both. */
+  avatar_url?: string | null;
+  avatar_emblem?: string | null;
   /** Which door the member uses. */
   auth_type: "icon" | "password";
   /** Empty for password accounts — the key is never shown for those. */
@@ -194,14 +212,41 @@ export type MePrefs = Partial<
     | "eye_tracking_enabled"
     | "preferred_view"
     | "dismissed_program_ids"
+    | "email"
+    | "avatar_emblem"
   >
 > & {
   /** `true` stamps `onboarded_at` with now; `false` is ignored. */
   onboarded?: boolean;
+  /** Only null: a photo is set through `uploadAvatar`, this only removes it. */
+  avatar_url?: null;
 };
 
 export const updateMe = (body: MePrefs) =>
   api<Me>("/users/me", { method: "PATCH", body: JSON.stringify(body) });
+
+/** A profile photo — PNG, JPEG or WebP, at most 2 MB. Replaces any emblem. */
+export async function uploadAvatar(file: File): Promise<Me> {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch(`${API}/users/me/avatar`, {
+    method: "POST",
+    credentials: "include",
+    body,
+  });
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  return (await res.json()) as Me;
+}
+
+/** The member's list handle; the same token comes back every time. */
+export const createShareLink = () =>
+  api<{ token: string }>("/users/me/share-link", { method: "POST" });
+
+export const sharedListUrl = (token: string, origin?: string) =>
+  `${origin ?? window.location.origin}/shared/${token}`;
+
+/** GET /shared/{token}: a member's upcoming saved public programs. */
+export type SharedList = { first_name: string; events: Event[] };
 
 /**
  * The whole feed. Paginated, not a bare call: the API defaults to 100 and
@@ -349,6 +394,8 @@ export type Session = {
   /** Members only. */
   email?: string | null;
   auth_type?: "icon" | "password";
+  avatar_url?: string | null;
+  avatar_emblem?: string | null;
 };
 
 export const getSession = () => api<Session>("/auth/me");
