@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 /**
  * Design tokens, from the Figma "Final" page (file 0wXuDItlg03uwYoVqRvDZQ,
@@ -104,7 +105,19 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Container-query variants, for layouts that depend on the width they
+    // are given rather than the viewport's: an `EventSummary` row sits in the
+    // feed's full column, a two-up grid and a print page, and the saved list
+    // shares the screen with a sidebar that is a panel, a rail or a bar. The
+    // element measured carries `[container-type:inline-size]`.
+    plugin(({ addVariant }) => {
+      addVariant("cq-sm", "@container (min-width: 26rem)");
+      addVariant("cq-md", "@container (min-width: 35rem)");
+      addVariant("cq-lg", "@container (min-width: 40rem)");
+      addVariant("cq-xl", "@container (min-width: 52rem)");
+    }),
+  ],
 };
 
 export default config;
