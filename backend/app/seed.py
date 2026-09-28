@@ -29,7 +29,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "Drop in and cook a big pot of soup together, then share it. "
                 "No experience needed — just show up hungry."
             ),
-            category="Cooking",
+            category="cooking", categories=["cooking"],
             location="Kitchener Community Kitchen, 45 Weber St",
             starts_at=now + timedelta(days=2, hours=18),
             ends_at=now + timedelta(days=2, hours=20),
@@ -45,7 +45,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "Cook three cheap, freezer-friendly dinners and take the recipes "
                 "home. Drop in — ingredients are shared."
             ),
-            category="Cooking",
+            category="cooking", categories=["cooking"],
             location="Kitchener Community Kitchen, 45 Weber St",
             starts_at=now + timedelta(days=3, hours=17),
             ends_at=now + timedelta(days=3, hours=19),
@@ -62,7 +62,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "station are reserved per person, so please sign up to hold your "
                 "spot."
             ),
-            category="Cooking",
+            category="cooking", categories=["cooking"],
             location="Kitchener Community Kitchen, 45 Weber St",
             starts_at=now + timedelta(days=4, hours=17, minutes=30),
             ends_at=now + timedelta(days=4, hours=19, minutes=30),
@@ -79,7 +79,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "Follow along and paint a simple landscape on canvas. All supplies "
                 "provided — beginners welcome, no experience needed."
             ),
-            category="Arts",
+            category="arts", categories=["arts"],
             location="KW Hab Community Room",
             starts_at=now + timedelta(days=5, hours=18),
             ends_at=now + timedelta(days=5, hours=20),
@@ -95,7 +95,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "Get your hands muddy and shape your first bowl on the wheel. Clay "
                 "and aprons supplied; come dressed to make a mess."
             ),
-            category="Arts",
+            category="arts", categories=["arts"],
             location="Registry Theatre Studio, 122 Frederick St",
             starts_at=now + timedelta(days=6, hours=13),
             ends_at=now + timedelta(days=6, hours=15),
@@ -112,7 +112,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "One-on-one guidance on resumes and job applications. Bring a draft "
                 "or start fresh with a volunteer advisor."
             ),
-            category="Advice",
+            category="advice", categories=["advice"],
             location="KW Hab Community Room",
             starts_at=now + timedelta(days=7, hours=10),
             ends_at=now + timedelta(days=7, hours=13),
@@ -128,7 +128,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "A supportive group talk on setting boundaries, communicating "
                 "clearly, and spotting red flags — in any relationship."
             ),
-            category="Advice",
+            category="advice", categories=["advice"],
             location="KW Hab Community Room",
             starts_at=now + timedelta(days=8, hours=18),
             ends_at=now + timedelta(days=8, hours=19, minutes=30),
@@ -144,7 +144,7 @@ def sample_events(now: datetime, kitchen: Host, admin: Host) -> list[Event]:
                 "Plain-language help with budgeting, banking, and paying down debt. "
                 "Bring your questions — nothing is too small to ask."
             ),
-            category="Advice",
+            category="advice", categories=["advice"],
             location="Kitchener Public Library, Central Branch",
             starts_at=now + timedelta(days=9, hours=14),
             ends_at=now + timedelta(days=9, hours=16),

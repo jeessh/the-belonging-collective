@@ -276,11 +276,27 @@ can open.
   grow. `free` and `no_registration` are marked `derived`: they are written from
   the cost and drop-in answers rather than offered as chips, because asking twice
   is how the two answers end up disagreeing.
-- **`lib/categories.ts` `CATEGORIES` is the one canonical topic list.** The signup
-  interest chips, the member topic stepper, and the host category picker all read
-  it. Interest matching compares a member's interests against `event.category`,
-  so a category typed by hand can never match anyone — don't reintroduce a
-  free-text category input, and don't start a second list.
+- **Topics live in the `categories` table (`slug` pk, `label`, `sort_order`,
+  `deleted_at`), and the slug is the identity.** `events.categories` (with
+  `events.category` mirroring its first entry), `users.interest_categories`
+  and interest matching (`lib/feed.ts`, `FeedFilters`) all hold and compare
+  **slugs**; the label is display-only. Superadmins rename, reorder, add and
+  archive topics on `/host/topics` (`GET /categories` is public; the rest is
+  `require_admin`) — a rename changes what's printed and nothing about who
+  matches, and archiving a topic that live programs use requires
+  `reassign_to`, moving those programs *and* members' interests in the same
+  transaction. A slug is minted once (`core/categories.slugify`, suffixed if
+  taken) and never reused, even after archiving. Every write of a topic —
+  event create/update, member sign-up, `PATCH /users/me` — goes through
+  `require_live_slugs`, so a value typed by hand can never reach the database.
+  On the frontend `lib/categories.ts` fetches the list once per page load
+  (`useCategories()` for chips and pickers, `categoryLabel(slug)` for plain
+  functions like `lib/dimensions.ts`); emoji/colour per slug stay in that
+  file, so a new topic gets a stable hashed colour. Migration
+  `0022_categories` rewrote the stored labels to slugs (ignoring case and stray spaces) and
+  keeps anything it doesn't recognise as-is (the archived demo programming's
+  `Advice`/`Arts`/`Hangout`/`Food`) — don't add a free-text category input,
+  and don't start a second list.
 - The persisted field is `eye_tracking_enabled` but the hook is
   **`useHeadTracking`** (head pose, not gaze — webgazer was replaced). The column
   name is legacy; don't rename it expecting the hook to follow.

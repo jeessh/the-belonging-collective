@@ -9,11 +9,13 @@ from app.models.password_reset import HostPasswordReset
 from app.models.rate_limit import AuthRateLimit
 from app.models.access import AccessGroup, AccessMembership
 from app.models.care import CareLink
+from app.models.category import Category
 
 __all__ = [
     "AccessGroup",
     "AccessMembership",
     "CareLink",
+    "Category",
     "User",
     "Host",
     "Event",

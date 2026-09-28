@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
+import { useCategories } from "@/lib/useCategories";
 import { isUpcoming } from "@/lib/time";
 import { listShareText } from "@/lib/share";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
@@ -121,6 +122,8 @@ export const SavedEvents = memo(function SavedEvents({
     };
   }, [open]);
 
+  const { label: topicLabel } = useCategories();
+
   // One entry per program, at its next date — the same thing the feed shows.
   // Saving a series-priced program writes a row per date; the member's own
   // list says what they saved, not how many rows that took.
@@ -128,7 +131,7 @@ export const SavedEvents = memo(function SavedEvents({
     const q = query.trim().toLowerCase();
     const matching = q
       ? events.filter((ev) =>
-          [ev.title, ev.location, ev.host_name, ev.category]
+          [ev.title, ev.location, ev.host_name, topicLabel(ev.category)]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
@@ -147,7 +150,7 @@ export const SavedEvents = memo(function SavedEvents({
           .sort((a, b) => startMs(b) - startMs(a)),
       ),
     };
-  }, [events, query]);
+  }, [events, query, topicLabel]);
 
   if (!open) return null;
 
