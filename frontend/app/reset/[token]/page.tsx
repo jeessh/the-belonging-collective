@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { api, apiMessage } from "@/lib/api";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
-import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
+import { FormFooter } from "@/components/member/FormFooter";
 import { MemberAuthPage } from "@/components/member/MemberAuthPage";
 
 /** A member choosing a new password from a reset link. Names the account
@@ -71,13 +70,13 @@ export default function ResetPasswordPage() {
 
   if (target === null) {
     return (
-      <MemberAuthPage title="This link has expired" subtitle={problem ?? undefined}>
-        <Link
-          href="/forgot"
-          className="w-fit text-lg text-fg underline underline-offset-4"
-        >
-          Ask for a new one
-        </Link>
+      <MemberAuthPage title="This link has expired" subtitle={problem}>
+        <FormFooter
+          primary={{
+            label: "Ask for a new one",
+            onClick: () => router.push("/forgot"),
+          }}
+        />
       </MemberAuthPage>
     );
   }
@@ -85,7 +84,7 @@ export default function ResetPasswordPage() {
   return (
     <MemberAuthPage
       title={`Hi ${target.first_name}, choose a new password`}
-      subtitle={`You'll log in with ${target.email}. At least ${PASSWORD_MIN_LENGTH} characters.`}
+      subtitle={`You'll log in with ${target.email}. Please include a minimum of ${PASSWORD_MIN_LENGTH} characters.`}
     >
       <form
         className="flex flex-col gap-6"
@@ -116,18 +115,17 @@ export default function ResetPasswordPage() {
           Anywhere else you are logged in will be logged out.
         </p>
         {error && (
-          <p role="alert" className="text-lg font-medium text-danger-fg">
+          <p role="alert" className="text-lg text-danger-fg">
             {error}
           </p>
         )}
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          disabled={busy || password === "" || confirm === ""}
-        >
-          {busy ? "Saving…" : "Save new password"}
-        </Button>
+        <FormFooter
+          className="mt-6"
+          primary={{
+            label: busy ? "Saving…" : "Save new password",
+            disabled: busy || password === "" || confirm === "",
+          }}
+        />
       </form>
     </MemberAuthPage>
   );

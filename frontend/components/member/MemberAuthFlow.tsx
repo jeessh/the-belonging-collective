@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { CircleCheck, HeartHandshake, Mic, UserRound } from "lucide-react";
+import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
 import { TextField, type TextFieldProps } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
+import { FormFooter } from "@/components/member/FormFooter";
 import {
   CareLinkForm,
   type CareLinkResult,
@@ -51,10 +52,13 @@ export type AuthView = {
 /**
  * Member sign-up and log-in, one step at a time.
  *
- * Owns the whole state machine — chooser, sign-up (name → email → password),
- * log-in (email + password) and the success screen — and hands each step
- * back as a title plus a body. The in-feed overlay wraps that in a Modal;
- * `/signup` wraps it in a page. Both toast on their own.
+ * Owns the whole state machine — chooser, account type, sign-up (name →
+ * email → password), log-in (email + password) and the success screen — and
+ * hands each step back as a title plus a body. The in-feed overlay wraps that
+ * in a Modal; `/signup` wraps it in a page. Both toast on their own.
+ *
+ * As the design draws it, every sign-up step's left button is Login and the
+ * × (or the chooser) is the way back; there is no Back between steps.
  *
  * `onSignedIn` fires once the cookie is set: straight away for a log-in, and
  * from "Continue to events" after an account is created. `onBack` is the
@@ -66,6 +70,7 @@ export function MemberAuthFlow({
   initial = "chooser",
   onSignedIn,
   onGuest,
+  onGuestSignIn,
   onBack,
   children,
 }: {
@@ -74,13 +79,15 @@ export function MemberAuthFlow({
   onSignedIn: (result: { mode: "login" | "signup"; caregiver?: boolean }) => void;
   /** "Continue as guest". Browsing is already open; this just closes the door. */
   onGuest: () => void;
+  /** The guest toast's "Sign up/Login": bring the chooser back. */
+  onGuestSignIn: () => void;
   /** "Go back" on the success screen; left out, the screen has only "Continue". */
   onBack?: () => void;
   children: (view: AuthView) => ReactNode;
 }) {
   const toast = useToast();
   const [step, setStep] = useState<Step>(
-    initial === "chooser" ? "chooser" : initial === "login" ? "credentials" : "name",
+    initial === "chooser" ? "chooser" : initial === "login" ? "credentials" : "who",
   );
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
@@ -91,7 +98,7 @@ export function MemberAuthFlow({
   const [error, setError] = useState<string | null>(null);
   // The address already has an account, so "log in instead" is the fix.
   const [emailTaken, setEmailTaken] = useState(false);
-  // Chosen on the "who" step.
+  // The account type card chosen on the "who" step.
   const [caregiver, setCaregiver] = useState(false);
   const [careResult, setCareResult] = useState<CareLinkResult | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -139,16 +146,14 @@ export function MemberAuthFlow({
     target?.focus();
   }, [step]);
 
-  function enterLogin() {
+  function go(next: Step) {
     clearFeedback();
-    setPassword("");
-    setStep("credentials");
+    setStep(next);
   }
 
-  function enterAs(asCaregiver: boolean) {
-    clearFeedback();
-    setCaregiver(asCaregiver);
-    setStep("name");
+  function enterLogin() {
+    setPassword("");
+    go("credentials");
   }
 
   function finish(mode: "login" | "signup") {
@@ -218,9 +223,11 @@ export function MemberAuthFlow({
 
   function guest() {
     toast.show({
-      title: "Viewing as a guest",
-      description: "Log in to save events.",
+      title: "You're logged in as a guest!",
+      description: "Login or sign up to save events.",
       tone: "info",
+      cancel: { label: "Later" },
+      action: { label: "Sign up/Login", onClick: onGuestSignIn },
     });
     onGuest();
   }
@@ -229,7 +236,7 @@ export function MemberAuthFlow({
 
   const errorLine = error && (
     <div role="alert" className="flex flex-col items-start gap-2">
-      <p className="text-lg font-medium text-danger-fg">{error}</p>
+      <p className="text-lg text-danger-fg">{error}</p>
       {emailTaken && (
         <Button variant="ghost" onClick={enterLogin}>
           Login instead
@@ -238,22 +245,24 @@ export function MemberAuthFlow({
     </div>
   );
 
+  const loginAside = { label: "Login", onClick: enterLogin };
+
   let view: AuthView;
 
   switch (step) {
     case "chooser":
       view = {
-        title: "You're not logged in",
-        subtitle: "Create an account to save events.",
+        title: "You're not logged in!",
+        subtitle: "Create an account to save events to your page and calendar",
         body: (
           <div className="flex flex-col gap-4">
-            <Button variant="primary" size="lg" onClick={() => setStep("who")}>
+            <Button variant="primary" size="lg" onClick={() => go("who")}>
               Create an account
             </Button>
             <Button variant="secondary" size="lg" onClick={enterLogin}>
               Login
             </Button>
-            <div aria-hidden="true" className="flex items-center gap-6 py-1">
+            <div aria-hidden="true" className="flex items-center gap-6 py-2">
               <span className="h-px flex-1 bg-line" />
               <span className="text-xl text-fg">Or</span>
               <span className="h-px flex-1 bg-line" />
@@ -264,7 +273,7 @@ export function MemberAuthFlow({
             {/* The way into the staff console. This is the sign-in surface,
                 so it is where an organizer will be looking. */}
             <p className="mt-2 text-base text-fg-muted">
-              Are you an organizer?{" "}
+              Organizer?{" "}
               <Link
                 href="/host"
                 className="font-medium text-fg underline underline-offset-2"
@@ -279,33 +288,36 @@ export function MemberAuthFlow({
 
     case "who":
       view = {
-        title: "Who are you?",
-        subtitle: "A caregiver supports a member and can save programs for them.",
+        title: "Account type",
+        subtitle: "Choose the one that fits you.",
         body: (
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <WhoTile
-                icon={<UserRound />}
-                label="I'm a member"
-                hint="I go to programs."
-                onClick={() => enterAs(false)}
-                focusFirst
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              go("name");
+            }}
+          >
+            <fieldset className="flex flex-col gap-4">
+              <legend className="sr-only">Account type</legend>
+              <RoleCard
+                name="Community Member"
+                hint="Member affiliated with a non-profit attending hosted events"
+                checked={!caregiver}
+                onChange={() => setCaregiver(false)}
               />
-              <WhoTile
-                icon={<HeartHandshake />}
-                label="I'm a caregiver"
-                hint="I support someone who does."
-                onClick={() => enterAs(true)}
+              <RoleCard
+                name="Caregiver"
+                hint="Supports a member and can save events on their behalf"
+                checked={caregiver}
+                onChange={() => setCaregiver(true)}
               />
-            </div>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setStep("chooser")}
-            >
-              Back
-            </Button>
-          </div>
+            </fieldset>
+            <FormFooter
+              className="mt-12"
+              secondary={loginAside}
+              primary={{ label: "Next" }}
+            />
+          </form>
         ),
       };
       break;
@@ -315,14 +327,14 @@ export function MemberAuthFlow({
         title: caregiver
           ? "Create your caregiver account"
           : "Create your member account",
-        subtitle: "Your name, email and a password.",
+        subtitle: caregiver
+          ? "You will be able to save events for the people you support"
+          : "You will be able to save events that you like and would like to attend later",
         body: (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!nameReady) return;
-              clearFeedback();
-              setStep("email");
+              if (nameReady) go("email");
             }}
             className="flex flex-col gap-6"
           >
@@ -362,12 +374,9 @@ export function MemberAuthFlow({
               {dictationNote}
             </p>
             {errorLine}
-            <Footer
-              secondary={
-                caregiver
-                  ? { label: "Back", onClick: () => setStep("who") }
-                  : { label: "Login", onClick: enterLogin }
-              }
+            <FormFooter
+              className="mt-6"
+              secondary={loginAside}
               primary={{ label: "Next", disabled: !nameReady }}
             />
           </form>
@@ -377,14 +386,13 @@ export function MemberAuthFlow({
 
     case "email":
       view = {
-        title: "Your email",
-        subtitle: "You will log in with it.",
+        title: "Provide your email",
+        subtitle: "You will log in with it and get reminders for saved events",
         body: (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              clearFeedback();
-              setStep("password");
+              go("password");
             }}
             className="flex flex-col gap-6"
           >
@@ -397,14 +405,9 @@ export function MemberAuthFlow({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <Footer
-              secondary={{
-                label: "Back",
-                onClick: () => {
-                  clearFeedback();
-                  setStep("name");
-                },
-              }}
+            <FormFooter
+              className="mt-6"
+              secondary={loginAside}
               primary={{ label: "Next", disabled: email.trim() === "" }}
             />
           </form>
@@ -415,7 +418,7 @@ export function MemberAuthFlow({
     case "password":
       view = {
         title: "Set up your password",
-        subtitle: `At least ${PASSWORD_MIN_LENGTH} characters.`,
+        subtitle: `Please include a minimum of ${PASSWORD_MIN_LENGTH} characters`,
         body: (
           <form
             onSubmit={submitPassword}
@@ -441,14 +444,9 @@ export function MemberAuthFlow({
               onChange={(e) => setConfirm(e.target.value)}
             />
             {errorLine}
-            <Footer
-              secondary={{
-                label: "Back",
-                onClick: () => {
-                  clearFeedback();
-                  setStep("email");
-                },
-              }}
+            <FormFooter
+              className="mt-6"
+              secondary={loginAside}
               primary={{
                 label: busy ? "Creating…" : "Create account",
                 disabled: busy || password === "" || confirm === "",
@@ -462,7 +460,7 @@ export function MemberAuthFlow({
     case "credentials":
       view = {
         title: "Login to your account",
-        subtitle: "Your email and password.",
+        subtitle: "Please login with your email and password.",
         body: (
           <form onSubmit={submitCredentials} className="flex flex-col gap-6">
             <TextField
@@ -488,8 +486,9 @@ export function MemberAuthFlow({
               Forgot your password?
             </Link>
             {errorLine}
-            <Footer
-              secondary={{ label: "Cancel", onClick: () => setStep("chooser") }}
+            <FormFooter
+              className="mt-6"
+              secondary={{ label: "Cancel", onClick: () => go("chooser") }}
               primary={{
                 label: busy ? "Logging in…" : "Login",
                 disabled: busy || email.trim() === "" || password === "",
@@ -570,35 +569,23 @@ export function MemberAuthFlow({
       view = {
         title: "Account creation complete!",
         subtitle: careResult
-          ? `You can now save events for ${shortName(careResult.person)}`
-          : "You can now save events.",
+          ? `You're now free to browse and save events for ${shortName(careResult.person)}`
+          : "You're now free to browse and save events",
         icon: (
           <CircleCheck
             aria-hidden="true"
-            strokeWidth={1.5}
-            className="mb-4 size-12 text-toast-success"
+            strokeWidth={2}
+            className="mb-6 size-12 text-toast-success"
           />
         ),
         body: (
-          <div className="flex gap-4">
-            {onBack && (
-              <Button
-                size="lg"
-                className="flex-1 max-sm:px-4 max-sm:text-lg"
-                onClick={onBack}
-              >
-                Go back
-              </Button>
-            )}
-            <Button
-              variant="primary"
-              size="lg"
-              className="flex-1 max-sm:px-4 max-sm:text-lg"
-              onClick={() => onSignedIn({ mode: "signup", caregiver })}
-            >
-              Continue to events
-            </Button>
-          </div>
+          <FormFooter
+            secondary={onBack && { label: "Go back", onClick: onBack }}
+            primary={{
+              label: "Continue to events",
+              onClick: () => onSignedIn({ mode: "signup", caregiver }),
+            }}
+          />
         ),
       };
       break;
@@ -606,49 +593,8 @@ export function MemberAuthFlow({
 
   return children({
     ...view,
-    body: (
-      <div ref={bodyRef} className="mt-8">
-        {view.body}
-      </div>
-    ),
+    body: <div ref={bodyRef}>{view.body}</div>,
   });
-}
-
-/** The design's side-by-side pair: outlined on the left, cyan on the right. */
-function Footer({
-  secondary,
-  primary,
-}: {
-  secondary?: { label: string; onClick: () => void };
-  primary: { label: string; disabled?: boolean };
-}) {
-  // "Back" beside "Create account" is wider than a phone sheet at the
-  // design's 20px; a step down in type and padding keeps the pair on one
-  // row and the buttons at their full height.
-  const half = "flex-1 max-sm:px-4 max-sm:text-lg";
-  return (
-    <div className="mt-2 flex gap-4">
-      {secondary && (
-        <Button
-          variant="secondary"
-          size="lg"
-          className={half}
-          onClick={secondary.onClick}
-        >
-          {secondary.label}
-        </Button>
-      )}
-      <Button
-        type="submit"
-        variant="primary"
-        size="lg"
-        className={half}
-        disabled={primary.disabled}
-      >
-        {primary.label}
-      </Button>
-    </div>
-  );
 }
 
 /**
@@ -675,39 +621,42 @@ function NameField({
         disabled={mic.blocked}
         onClick={mic.onPress}
         leadingIcon={<Mic />}
-        // The input's height: its text-lg line plus py-3 and the border.
-        className="h-[3.375rem] px-3"
+        // The input box's height.
+        className="h-12"
       />
     </div>
   );
 }
 
-/** One of the two big "who are you" choices: icon, short label, one line. */
-function WhoTile({
-  icon,
-  label,
+/**
+ * The sheet's account-type card: a grey block with a name and a grey line,
+ * cyan when chosen. A real radio underneath, so arrow keys move between the
+ * two and the form submits with Enter.
+ */
+function RoleCard({
+  name,
   hint,
-  onClick,
-  focusFirst = false,
+  checked,
+  onChange,
 }: {
-  icon: ReactNode;
-  label: string;
+  name: string;
   hint: string;
-  onClick: () => void;
-  focusFirst?: boolean;
+  checked: boolean;
+  onChange: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-focus-first={focusFirst ? "" : undefined}
-      className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-card border-2 border-line bg-surface p-4 text-center transition-colors hover:border-primary-border hover:bg-surface-subtle"
-    >
-      <span aria-hidden="true" className="text-primary-border [&>svg]:size-10">
-        {icon}
+    <label className="cursor-pointer">
+      <input
+        type="radio"
+        name="account-type"
+        className="peer sr-only"
+        checked={checked}
+        onChange={onChange}
+      />
+      <span className="flex flex-col gap-2 rounded-control border border-line bg-surface-subtle p-6 transition-colors peer-checked:border-primary-border peer-checked:bg-primary-soft peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#5b5bd6]">
+        <span className="text-xl font-medium text-fg">{name}</span>
+        <span className="text-base text-fg-muted">{hint}</span>
       </span>
-      <span className="text-xl font-medium text-fg">{label}</span>
-      <span className="text-base text-fg-muted">{hint}</span>
-    </button>
+    </label>
   );
 }

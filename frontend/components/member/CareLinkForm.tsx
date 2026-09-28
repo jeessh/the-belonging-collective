@@ -9,8 +9,8 @@ import {
   type CarePerson,
 } from "@/lib/api";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
-import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
+import { FormFooter } from "@/components/member/FormFooter";
 
 /** What a finished form hands back: who got linked. */
 export type CareLinkResult = { person: CarePerson };
@@ -88,7 +88,7 @@ export function CareLinkForm({
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
       {create && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 sm:gap-4">
           <TextField
             label="Their first name"
             placeholder="Enter their first name"
@@ -133,30 +133,19 @@ export function CareLinkForm({
       )}
 
       {error && (
-        <p role="alert" className="text-lg font-medium text-danger-fg">
+        <p role="alert" className="text-lg text-danger-fg">
           {error}
         </p>
       )}
 
-      <div className="mt-2 flex gap-4">
-        <Button
-          variant="secondary"
-          size="lg"
-          className="flex-1 max-sm:px-4 max-sm:text-lg"
-          onClick={onCancel}
-        >
-          {cancelLabel}
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="flex-1 max-sm:px-4 max-sm:text-lg"
-          disabled={busy || !ready}
-        >
-          {busy ? "Working…" : create ? "Create account" : "Link"}
-        </Button>
-      </div>
+      <FormFooter
+        className="mt-6"
+        secondary={{ label: cancelLabel, onClick: onCancel }}
+        primary={{
+          label: busy ? "Working…" : create ? "Create account" : "Link",
+          disabled: busy || !ready,
+        }}
+      />
     </form>
   );
 }
