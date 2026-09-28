@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, ExternalLink, MapPin, SquareX } from "lucide-react";
+import { Bookmark, ExternalLink, SquareX } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf, mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
@@ -10,6 +10,7 @@ import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
 import { EventTools } from "@/components/member/EventTools";
 import { AccessAction, accessStateOf } from "@/components/member/AccessAction";
+import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 
 const TITLE_ID = "event-detail-title";
 
@@ -88,7 +89,7 @@ export function EventDetailModal({
                   className={buttonClass("secondary", "lg")}
                 >
                   See on Map
-                  <MapPin aria-hidden="true" className="size-6 shrink-0" />
+                  <GoogleMapsIcon />
                 </a>
               )}
               {!canSave ? (
