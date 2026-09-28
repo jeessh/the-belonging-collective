@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, ExternalLink, SquareX } from "lucide-react";
+import { Bookmark, BookX, ExternalLink } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf, mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
@@ -106,7 +106,7 @@ export function EventDetailModal({
                   variant="danger"
                   size="lg"
                   onClick={() => onUnsave(event)}
-                  trailingIcon={<SquareX />}
+                  trailingIcon={<BookX />}
                 >
                   Un-Save Event
                 </Button>
