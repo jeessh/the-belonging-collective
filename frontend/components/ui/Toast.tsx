@@ -71,10 +71,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       {/* The live region is always mounted, so screen readers have it in
-          hand before the first toast arrives rather than discovering it. */}
+          hand before the first toast arrives rather than discovering it.
+          z-[80] puts it over every dialog, the event dialog's z-[60] and
+          the share / print sheets' z-[70] included. */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-4 top-4 z-50 flex flex-col items-center gap-3"
+        className="pointer-events-none fixed inset-x-4 top-4 z-[80] flex flex-col items-center gap-3"
       >
         <AnimatePresence>
           {toasts.map((t) => (
