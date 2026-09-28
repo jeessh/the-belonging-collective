@@ -81,21 +81,6 @@ function dayOffset(at: Date, now: Date): number {
 }
 
 /**
- * Starts today or within the following seven Toronto calendar days. Undated
- * programs don't: "date to be announced" isn't this week.
- */
-export function isThisWeek(
-  ev: { starts_at?: string | null },
-  now = new Date(),
-): boolean {
-  if (!ev.starts_at) return false;
-  const at = new Date(ev.starts_at);
-  if (Number.isNaN(at.getTime())) return false;
-  const days = dayOffset(at, now);
-  return days >= 0 && days <= 7;
-}
-
-/**
  * "Today", "Tomorrow", "In 7 days", "In 3 weeks"; "Yesterday", "5 days ago".
  * Counted in Toronto calendar days, so a 1 AM program is "Tomorrow" all
  * evening rather than "Today" once the clock passes 1 AM UTC-equivalent.
