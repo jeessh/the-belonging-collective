@@ -58,7 +58,7 @@ export const FeedFilters = memo(function FeedFilters({
   /** Offer the For-you chip. */
   forYou?: boolean;
 }) {
-  const categories = useCategories();
+  const { categories } = useCategories();
   const all = [
     ...(forYou ? [{ key: FOR_YOU_CHIP, label: "For you" }] : []),
     { key: FREE_CHIP, label: "Free" },

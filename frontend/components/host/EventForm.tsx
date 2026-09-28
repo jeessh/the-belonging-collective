@@ -381,7 +381,7 @@ export function EventForm({
   error: string | null;
 }) {
   const [showMissing, setShowMissing] = useState(false);
-  const categories = useCategories();
+  const { categories } = useCategories();
   const missing = missingRequired(values);
   const set = <K extends keyof EventFormValues>(
     key: K,

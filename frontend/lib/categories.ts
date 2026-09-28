@@ -50,13 +50,19 @@ export function subscribeCategories(fn: () => void): () => void {
 export const peekCategories = (): Category[] | null => cache;
 
 /**
- * The label for a stored slug. Falls back to prettifying the slug, so a value
- * not in the list — the archived demo programming's "Advice", a topic read
- * before the list has loaded — still renders as words rather than vanishing.
+ * The label for a stored slug, from `list`. Falls back to prettifying the
+ * slug, so a value not in the list — the archived demo programming's
+ * "Advice", a topic read before the list has loaded — still renders as words
+ * rather than vanishing. Components reach this through `useCategories().label`,
+ * which is what re-renders them once the list is in; plain functions
+ * (dimensions.ts) read the cache and rely on their caller holding the hook.
  */
-export function categoryLabel(slug?: string | null): string {
+export function categoryLabel(
+  slug?: string | null,
+  list: Category[] | null = cache,
+): string {
   if (!slug) return "";
-  const hit = cache?.find((c) => c.slug === slug);
+  const hit = list?.find((c) => c.slug === slug);
   if (hit) return hit.label;
   return slug
     .split(/[-_\s]+/)

@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiMessage, updateMe } from "@/lib/api";
-import { categoryLabel, categoryStyle } from "@/lib/categories";
+import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { Button } from "@/components/ui/Button";
 import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
@@ -65,7 +65,7 @@ function SignupFlow() {
     router.replace(safeNext(params.get("next"), { asGuest }));
   }
 
-  const categories = useCategories();
+  const { categories, label: topicLabel } = useCategories();
 
   function toggleInterest(slug: string) {
     setInterests((prev) =>
@@ -153,7 +153,7 @@ function SignupFlow() {
             <p className="sr-only" role="status" aria-live="polite">
               {interests.length === 0
                 ? "Nothing chosen yet"
-                : `${interests.length} chosen: ${interests.map(categoryLabel).join(", ")}`}
+                : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
             </p>
 
             {error && (

@@ -35,8 +35,8 @@ import {
   type MePrefs,
   type PreferredView,
 } from "@/lib/api";
-import { categoryLabel } from "@/lib/categories";
 import { isUpcoming, whenLine } from "@/lib/time";
+import { useCategories } from "@/lib/useCategories";
 import { googleCalendarUrl, savedCalendarUrl } from "@/lib/calendar";
 import { useTextToSpeech } from "@/lib/useTextToSpeech";
 import { useSpeechCommands } from "@/lib/useSpeechCommands";
@@ -124,6 +124,7 @@ export function EventsView({
   const [me, setMe] = useState<Me | null>(initialMe);
   const [events, setEvents] = useState<Event[]>([]);
   const [i, setI] = useState(0);
+  const { label: topicLabel } = useCategories();
   // What the server says is saved (every occurrence row), plus this session's
   // optimistic saves. The card asks "is this id saved?"; the sidebar shows one
   // entry per program.
@@ -668,10 +669,10 @@ export function EventsView({
       });
       setI(0);
       setSrMessage(
-        `${adding ? "Added" : "Removed"} ${categoryLabel(slug)}. Showing your best matches from the start.`,
+        `${adding ? "Added" : "Removed"} ${topicLabel(slug)}. Showing your best matches from the start.`,
       );
     },
-    [setPref],
+    [setPref, topicLabel],
   );
   const toggleAccessPref = useCallback(
     (slug: string, label: string) => {

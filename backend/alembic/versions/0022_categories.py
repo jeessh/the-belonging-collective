@@ -6,13 +6,13 @@ equality — so the first rename would have silently broken every match. Each
 topic now has a stable slug (the `categories` table's key) and a display
 label a superadmin may change; the three columns store the slug.
 
-The upgrade rewrites every stored label to its slug by exact match against the
-seed list, which is today's `CATEGORIES` in frontend/lib/categories.ts. A
-value that matches no label is left exactly as it was (the archived demo
-programming's "Advice", "Arts", "Hangout", "Food") and reported, so nothing is
-re-filed by guesswork. Slugs are lowercase and no label is, so re-running the
+The upgrade rewrites every stored label to its slug, matched case- and
+whitespace-insensitively against the seed list, which is today's `CATEGORIES`
+in frontend/lib/categories.ts. A value that matches no label is left exactly
+as it was (the archived demo programming's "Advice", "Arts", "Hangout",
+"Food") and reported, so nothing is re-filed by guesswork. Re-running the
 upgrade — or running it against a database that already holds slugs — changes
-nothing.
+nothing: a slug matches no label, or (for one-word topics) only its own.
 
 Revision ID: 0022_categories
 Revises: 0021_caregivers
@@ -52,17 +52,30 @@ COLUMNS = [
 
 
 def _rewrite(mapping: list[tuple[str, str]]) -> None:
-    """Replace each `old` with `new` in every topic column, exact match only."""
+    """Replace each `old` with `new` in every topic column.
+
+    Matched on lower(trim(value)) = lower(old), so a stray space or a
+    differently-cased label still maps; anything that matches nothing is
+    left exactly as it was. Array order is preserved.
+    """
     conn = op.get_bind()
     for old, new in mapping:
         for table, column, is_array in COLUMNS:
             if is_array:
                 sql = (
-                    f"UPDATE {table} SET {column} = array_replace({column}, :old, :new) "
-                    f"WHERE :old = ANY({column})"
+                    f"UPDATE {table} SET {column} = ("
+                    f"  SELECT array_agg(CASE WHEN lower(trim(c)) = lower(:old) "
+                    f"                        THEN CAST(:new AS text) ELSE c END ORDER BY ord)"
+                    f"  FROM unnest({column}) WITH ORDINALITY AS u(c, ord)"
+                    f") WHERE EXISTS ("
+                    f"  SELECT 1 FROM unnest({column}) AS c WHERE lower(trim(c)) = lower(:old)"
+                    f")"
                 )
             else:
-                sql = f"UPDATE {table} SET {column} = :new WHERE {column} = :old"
+                sql = (
+                    f"UPDATE {table} SET {column} = :new "
+                    f"WHERE lower(trim({column})) = lower(:old)"
+                )
             conn.execute(sa.text(sql), {"old": old, "new": new})
 
 

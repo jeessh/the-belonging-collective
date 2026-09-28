@@ -12,7 +12,6 @@ import {
   Printer,
 } from "lucide-react";
 import { ApiError, api, type Event } from "@/lib/api";
-import { categoryLabel } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { longDate, timeRange } from "@/lib/time";
 import { repeatLabel } from "@/lib/recurrence";
@@ -43,8 +42,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const { show } = useToast();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [unpublishing, setUnpublishing] = useState(false);
-  // Re-renders once the topic list lands, so Activity Type shows labels.
-  useCategories();
+  const { label: topicLabel } = useCategories();
 
   useEffect(() => {
     api<Event>(`/events/${id}`)
@@ -74,7 +72,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
     [
       "Activity Type",
       (event.categories?.length ? event.categories : [event.category])
-        .map(categoryLabel)
+        .map(topicLabel)
         .filter(Boolean)
         .join(", "),
     ],

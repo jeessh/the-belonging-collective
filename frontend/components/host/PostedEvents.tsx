@@ -75,7 +75,7 @@ export const FilterPanel = memo(function FilterPanel({
 }) {
   const [open, setOpen] = useState<Partial<Record<DimensionKey, boolean>>>({});
   // Activity Type labels come from the topic list; recompute when it lands.
-  const categories = useCategories();
+  const { categories } = useCategories();
 
   const options = useMemo(() => {
     const byKey = new Map<DimensionKey, { id: string; label: string }[]>();

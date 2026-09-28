@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { categoryLabel, categoryStyle } from "@/lib/categories";
+import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
@@ -316,7 +316,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   /** Replays the first-run tour. */
   onShowTour: () => void;
 }) {
-  const categories = useCategories();
+  const { categories, label: topicLabel } = useCategories();
   // Escape closes it and focus returns to the trigger. Capture, without
   // stopping propagation, matching the other menus on this surface.
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -445,7 +445,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               <p className="sr-only" role="status" aria-live="polite">
                 {interests.length === 0
                   ? "Nothing chosen yet"
-                  : `${interests.length} chosen: ${interests.map(categoryLabel).join(", ")}`}
+                  : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
               </p>
 
               {/* Needs, not tastes — they sort harder than topics do (see
