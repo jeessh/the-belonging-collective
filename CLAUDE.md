@@ -74,8 +74,19 @@ value produces links nobody can open.
   under the feed on a phone; its forwarded ref is the drop target every save
   animates into, whichever of the three is showing), `FeedFilters` (chips +
   sort; one scrolling row on a phone), `FeedCard` (the one card, on
-  `ui/EventSummary`) and `ListFeed` (the rows). The saved list overlay
-  (`components/SavedEvents.tsx`) opens from "See Saved Events".
+  `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
+  section on top) and `Tour` (the first-run walk-through). The saved list
+  overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **Two things a member's profile remembers about the feed itself:**
+  `Me.preferred_view` (card | list — the feed opens in it and the toggle
+  PATCHes it) and `Me.onboarded_at` (the tour is shown once, then stamped by
+  `PATCH /users/me {onboarded: true}` on Start or Skip). Signed out, both
+  live in `localStorage` (`tbc.preferred_view`, `tbc.toured`), every read and
+  write wrapped in try/catch. The tour spotlights `data-tour="…"` targets
+  (`arrows`, `save`, `more`, `filters`, `view`, `foryou`, `a11y`) — keep those
+  attributes when moving a control — and is never mounted over sign-in or
+  head-tracking calibration; "Show me around" in Accessibility Tools replays
+  it.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
   (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
   on the x axis only (`touch-action: pan-y`, so a finger still scrolls);
@@ -103,13 +114,23 @@ value produces links nobody can open.
   choice; "For you" (match score) vs "Soonest" (server order) is the only sort.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
+- **"For you this week"** (`recommendedThisWeek` in `lib/feed.ts`): up to six
+  programs with `matchScore > 0` starting in the next seven days, one per
+  program, for a signed-in member with at least one interest or need. It is a
+  section over the list and an opt-in "For you" chip in the card view (a chip
+  is the member's choice, so it may filter) — never a change to the feed
+  itself. "Not for me" writes the program id (`series_id ?? id`) to
+  `Me.dismissed_program_ids` (PATCH replaces the whole list) and only removes
+  the row from the section; the toast's Undo writes the list back.
 - `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See
   who else is going" and opens sign-in (or links to `/signup?next=` on the
   server-rendered page). The feed re-reads `/events` on sign-in
   (`fetchAllEvents`) so the counts appear, and nulls them on sign-out.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
-  full program — summary, DETAILS, LINKS (`event.links` plus the organizer's
-  `registration_url`) — for the "More information" dialog
+  full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
+  tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
+  LINKS (`event.links` plus the organizer's `registration_url`) — for the
+  "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
   and bottom `actions`. Share and Print need no backend: `ShareModal` opens a
@@ -195,6 +216,15 @@ value produces links nobody can open.
   between `requested | approved | declined | revoked`; a declined/revoked
   member re-requesting gets 409 and only the console can let them back in.
   Groups archive (`deleted_at`) and refuse to while live programs use them.
+  Member side: `ui/Tag kind="access"` (lock + group name) is drawn by
+  `EventSummary`, so every surface carries it; `member/AccessAction` is the
+  one control that stands in for Save until `access_status` is `approved`
+  (`none` → Request access, `requested` → disabled "Request sent",
+  `declined`/`revoked` → "Access not approved"). The public `/events/[id]`
+  page is rendered without the viewer's cookie, so `EventActions` re-reads
+  the event in the browser to learn their standing, and a signed-out request
+  resumes through `/signup?next=…?access=1` the way `?save=1` does. Those
+  pages set `robots: noindex`.
 - **`lib/accessibility.ts` is the same idea for access needs.** The slugs sit on
   both `events.accessibility_tags` and `users.accessibility_prefs`, and matching
   is string equality, so one list drives the host picker and the member picker.

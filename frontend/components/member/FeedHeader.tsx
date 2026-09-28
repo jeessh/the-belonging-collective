@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, LogOut, PersonStanding } from "lucide-react";
+import { ChevronDown, Compass, LogOut, PersonStanding } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { CATEGORIES } from "@/lib/categories";
@@ -128,6 +128,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   onToggleAccessPref,
   signedIn,
   onSignIn,
+  onShowTour,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -150,6 +151,8 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   onToggleAccessPref: (slug: string, label: string) => void;
   signedIn: boolean;
   onSignIn: () => void;
+  /** Replays the first-run tour. */
+  onShowTour: () => void;
 }) {
   // Escape closes it and focus returns to the trigger. Capture, without
   // stopping propagation, matching the other menus on this surface.
@@ -181,6 +184,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
         aria-haspopup="dialog"
+        data-tour="a11y"
         className="relative inline-flex min-h-11 items-center gap-3 rounded-control px-2 py-1 text-xl text-fg transition-colors hover:bg-surface-subtle"
       >
         <PersonStanding aria-hidden="true" className="size-10 shrink-0" />
@@ -238,6 +242,14 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               onChange={onToggleHead}
             />
           </div>
+
+          <Button
+            className="mt-4 w-full"
+            onClick={onShowTour}
+            leadingIcon={<Compass />}
+          >
+            Show me around
+          </Button>
 
           <h2 className="mt-6 text-xl font-medium text-fg">What you like</h2>
           <p className="text-base text-fg-muted">

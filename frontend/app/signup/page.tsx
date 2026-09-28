@@ -16,8 +16,9 @@ import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
  * router does a real cross-origin navigation for it. Only the path, query and
  * hash of a URL that stayed on our origin survive.
  *
- * `save=1` is the pending save from the program page; a guest has no account
- * to complete it with, so it is dropped rather than resumed into a 401.
+ * `save=1` / `access=1` is the pending save or access request from the
+ * program page; a guest has no account to complete it with, so it is dropped
+ * rather than resumed into a 401.
  */
 function safeNext(raw: string | null, { asGuest = false } = {}): string {
   if (!raw) return "/";
@@ -25,7 +26,10 @@ function safeNext(raw: string | null, { asGuest = false } = {}): string {
     const here = new URL(window.location.href);
     const target = new URL(raw, here.origin);
     if (target.origin !== here.origin) return "/";
-    if (asGuest) target.searchParams.delete("save");
+    if (asGuest) {
+      target.searchParams.delete("save");
+      target.searchParams.delete("access");
+    }
     return `${target.pathname}${target.search}${target.hash}`;
   } catch {
     return "/";

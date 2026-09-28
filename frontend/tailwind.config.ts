@@ -68,6 +68,9 @@ const config: Config = {
           "inperson-fg": "#610591",
           "virtual-bg": "#FFDFE3",
           "virtual-fg": "#7F000E",
+          // Special access — neutral, so it reads as a notice, not a topic.
+          "access-bg": "#E4E4E4",
+          "access-fg": "#333333",
         },
         // Toast borders; the fills reuse tag/primary tokens (see ui/Toast).
         toast: {

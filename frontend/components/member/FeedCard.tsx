@@ -14,12 +14,15 @@ import { GoingCount } from "@/components/ui/GoingCount";
 export const FeedCard = memo(function FeedCard({
   event,
   saved,
+  recommended = false,
   onMoreInfo,
   onSave,
   onSignIn,
 }: {
   event: Event;
   saved: boolean;
+  /** In this week's picks. */
+  recommended?: boolean;
   onMoreInfo: (event: Event) => void;
   onSave: () => void;
   onSignIn: () => void;
@@ -32,6 +35,7 @@ export const FeedCard = memo(function FeedCard({
       <EventSummary
         event={event}
         layout="card"
+        recommended={recommended}
         going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
         actions={
           <>
@@ -42,6 +46,7 @@ export const FeedCard = memo(function FeedCard({
               onClick={() => onMoreInfo(event)}
               onPointerDown={stop}
               trailingIcon={<MoveRight />}
+              data-tour="more"
             >
               More information
             </Button>
@@ -53,6 +58,7 @@ export const FeedCard = memo(function FeedCard({
                 disabled
                 onPointerDown={stop}
                 trailingIcon={<BookmarkCheck />}
+                data-tour="save"
               >
                 Event saved
               </Button>
@@ -64,6 +70,7 @@ export const FeedCard = memo(function FeedCard({
                 onClick={onSave}
                 onPointerDown={stop}
                 trailingIcon={<Bookmark />}
+                data-tour="save"
               >
                 Save event
               </Button>

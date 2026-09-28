@@ -1,12 +1,19 @@
 "use client";
 
 import { memo } from "react";
+import { Sparkles } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { CATEGORIES, sameCategory } from "@/lib/categories";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** "free", or a canonical topic label from `CATEGORIES`. */
 export const FREE_CHIP = "free";
+/**
+ * This week's picks only. Offered when there are any, and only in the card
+ * view — the list shows them as a section instead. Allowed to hide cards
+ * because it is the member's own choice, like every other chip.
+ */
+export const FOR_YOU_CHIP = "foryou";
 
 export type FeedSort = "foryou" | "soonest";
 
@@ -19,11 +26,12 @@ const SORTS = [
  * The member's explicit choice, so — unlike personalization — it may hide
  * cards. FREE is one axis and the topics another: an event passes when it
  * satisfies every axis that has something chosen, and any chip on that axis.
+ * The For-you chip is a third axis, checked by the caller against its set.
  */
 export function passesFilters(event: Event, chips: Set<string>): boolean {
   if (chips.size === 0) return true;
   if (chips.has(FREE_CHIP) && !event.is_free) return false;
-  const topics = [...chips].filter((c) => c !== FREE_CHIP);
+  const topics = [...chips].filter((c) => c !== FREE_CHIP && c !== FOR_YOU_CHIP);
   if (topics.length === 0) return true;
   const own = event.categories?.length ? event.categories : [event.category];
   return topics.some((t) => own.some((c) => sameCategory(t, c)));
@@ -34,18 +42,22 @@ export const FeedFilters = memo(function FeedFilters({
   onToggleChip,
   sort,
   onSort,
+  forYou = false,
 }: {
   chips: Set<string>;
   onToggleChip: (chip: string) => void;
   sort: FeedSort;
   onSort: (sort: FeedSort) => void;
+  /** Offer the For-you chip. */
+  forYou?: boolean;
 }) {
   const all = [
+    ...(forYou ? [{ key: FOR_YOU_CHIP, label: "For you" }] : []),
     { key: FREE_CHIP, label: "Free" },
     ...CATEGORIES.map((c) => ({ key: c.label, label: c.label })),
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-tour="filters">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p
           id="feed-filters-label"
@@ -71,18 +83,21 @@ export const FeedFilters = memo(function FeedFilters({
       >
         {all.map(({ key, label }) => {
           const on = chips.has(key);
+          const pick = key === FOR_YOU_CHIP;
           return (
             <button
               key={key}
               type="button"
               aria-pressed={on}
               onClick={() => onToggleChip(key)}
-              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control border px-4 py-1 text-base uppercase tracking-wide transition-colors sm:text-lg ${
+              data-tour={pick ? "foryou" : undefined}
+              className={`inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-control border px-4 py-1 text-base uppercase tracking-wide transition-colors sm:text-lg ${
                 on
                   ? "border-primary-border bg-primary-soft text-fg"
                   : "border-primary-strong bg-surface text-fg-muted hover:bg-primary-soft"
               }`}
             >
+              {pick && <Sparkles aria-hidden="true" className="size-5" />}
               {label}
             </button>
           );
