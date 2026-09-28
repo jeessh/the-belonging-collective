@@ -8,7 +8,7 @@ import { Modal } from "@/components/Modal";
 
 /**
  * "Are you sure?" before taking a program off the calendar — the component
- * sheet's pink-edged dialog.
+ * sheet's pink-edged dialog (`Modal tone="danger"`).
  *
  * Un-publish is the one word that is true: the API archives (`deleted_at`),
  * the row and its attendance survive, and `restore` puts it back — which is
@@ -42,6 +42,7 @@ export function UnpublishModal({
 
   return (
     <Modal
+      tone="danger"
       onClose={onClose}
       title={
         <>
@@ -53,10 +54,6 @@ export function UnpublishModal({
       }
       subtitle="It leaves the member feed straight away. Nothing is deleted — attendance already recorded still counts, and you can put it back."
     >
-      {/* The sheet draws this dialog with a pink edge. `Modal` has no tone
-          of its own yet, so the panel is recoloured from inside it. */}
-      <style>{`[role="dialog"]:has(> [data-dialog-tone="danger"]) { border-color: #FD9BA6; }`}</style>
-      <div data-dialog-tone="danger" className="contents" />
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">
           {error}
