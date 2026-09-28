@@ -86,78 +86,83 @@ export function ShareModal({
     onClose();
   }
 
+  // z-[70]: over the event dialog it opens from, which EventDetailModal
+  // lifts to z-[60] above the feed chrome. At Modal's own z-30 it opened
+  // behind it, and Share looked like it did nothing.
   return createPortal(
-    <Modal title={title} onClose={onClose}>
-      <form onSubmit={send} className="mt-6 flex flex-col gap-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <TextField
-            label="Share by Email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="Enter Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1"
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            trailingIcon={<Send />}
-          >
-            Send
-          </Button>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <p className="text-lg font-medium text-fg">{copy.label}</p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-            <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-              {copy.text}
-            </p>
+    <div className="relative z-[70]">
+      <Modal title={title} onClose={onClose}>
+        <form onSubmit={send} className="mt-6 flex flex-col gap-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <TextField
+              label="Share by Email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="Enter Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1"
+            />
             <Button
+              type="submit"
+              variant="primary"
               size="lg"
-              onClick={() => void copyText()}
-              trailingIcon={<Copy />}
+              trailingIcon={<Send />}
             >
-              Copy
+              Send
             </Button>
           </div>
-          {copyFailed && (
-            <p role="alert" className="text-base text-danger-fg">
-              Copy didn&apos;t work here — select the text and copy it.
-            </p>
-          )}
-        </div>
 
-        {link && (
           <div className="flex flex-col gap-1">
-            <p className="text-lg font-medium text-fg">{link.label}</p>
+            <p className="text-lg font-medium text-fg">{copy.label}</p>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              {linkUrl && (
-                <p className="flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                  {linkUrl}
-                </p>
-              )}
+              <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
+                {copy.text}
+              </p>
               <Button
                 size="lg"
-                onClick={() => void copyLink()}
-                trailingIcon={<Link2 />}
-                className={linkUrl ? "" : "sm:self-start"}
+                onClick={() => void copyText()}
+                trailingIcon={<Copy />}
               >
-                Copy link to my list
+                Copy
               </Button>
             </div>
-            {linkError && (
+            {copyFailed && (
               <p role="alert" className="text-base text-danger-fg">
-                {linkError}
+                Copy didn&apos;t work here — select the text and copy it.
               </p>
             )}
           </div>
-        )}
-      </form>
-    </Modal>,
+
+          {link && (
+            <div className="flex flex-col gap-1">
+              <p className="text-lg font-medium text-fg">{link.label}</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                {linkUrl && (
+                  <p className="flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
+                    {linkUrl}
+                  </p>
+                )}
+                <Button
+                  size="lg"
+                  onClick={() => void copyLink()}
+                  trailingIcon={<Link2 />}
+                  className={linkUrl ? "" : "sm:self-start"}
+                >
+                  Copy link to my list
+                </Button>
+              </div>
+              {linkError && (
+                <p role="alert" className="text-base text-danger-fg">
+                  {linkError}
+                </p>
+              )}
+            </div>
+          )}
+        </form>
+      </Modal>
+    </div>,
     document.body,
   );
 }
