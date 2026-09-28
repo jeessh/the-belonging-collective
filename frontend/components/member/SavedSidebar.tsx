@@ -9,8 +9,9 @@ import {
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
-import { longDate } from "@/lib/time";
+import { TIME_ZONE, longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { GoingCount } from "@/components/ui/GoingCount";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 
 /** The rail's stacked icon-over-label button. */
@@ -81,24 +82,20 @@ export const SavedSidebar = memo(
                 : "border-transparent"
             }`}
           >
-            <span className="shrink-0 whitespace-nowrap text-base text-fg">
-              {count} Saved
-              <span className="sr-only">
-                {" "}
-                {count === 1 ? "Event" : "Events"}
-                {owner ? ` for ${owner}` : ""}
-              </span>
+            <span className="sr-only">
+              {owner ? `${title}: ` : ""}
+              {countLabel}
             </span>
             {/* The calendar export lives on the saved list here; the bar
                 keeps to what a thumb can reach. */}
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
               {events.map((ev) => (
-                <div key={ev.id} className="w-11 shrink-0">
-                  <Thumb event={ev} onOpen={onOpenEvent} compact />
-                </div>
+                <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="row" />
               ))}
             </div>
           </div>
+          {/* The count rides on the button: a label of its own left the
+              strip too narrow for one thumbnail row. */}
           <Button
             variant="secondary"
             onClick={onOpenSaved}
@@ -107,7 +104,7 @@ export const SavedSidebar = memo(
             }
             className="shrink-0"
           >
-            Saved
+            {count} Saved
           </Button>
         </aside>
       );
@@ -168,7 +165,7 @@ export const SavedSidebar = memo(
               {countLabel}
             </span>
             {events.map((ev) => (
-              <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} compact />
+              <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="rail" />
             ))}
           </div>
           <div className="flex flex-col gap-3 border-t border-line p-3">
@@ -234,7 +231,7 @@ export const SavedSidebar = memo(
             ) : (
               <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
                 {events.map((ev) => (
-                  <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} />
+                  <Thumb key={ev.id} event={ev} onOpen={onOpenEvent} layout="panel" />
                 ))}
               </div>
             )}
@@ -258,43 +255,104 @@ export const SavedSidebar = memo(
   }),
 );
 
-/** A saved program: photo, title, date. Opens the full listing. */
+/** "October 24" — the compact thumbnail's date, as the design shortens it. */
+function monthDay(iso?: string | null): string {
+  if (!iso) return "Date to be announced";
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "Date to be announced";
+  return at.toLocaleDateString("en-CA", {
+    timeZone: TIME_ZONE,
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/**
+ * A saved program, as the design's Event Thumbnail. Opens the full listing.
+ *
+ * `panel` is the large one: the photo over the title and date. `row` is the
+ * compact one on the phone's bar: photo, title and date side by side on a
+ * grey tile. `rail` is the photo alone, which is all a 100px column has
+ * room for; the title is the accessible name.
+ */
 function Thumb({
   event,
   onOpen,
-  compact = false,
+  layout,
 }: {
   event: Event;
   onOpen: (event: Event) => void;
-  compact?: boolean;
+  layout: "panel" | "row" | "rail";
 }) {
   const image = eventImage(event);
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={image}
+      alt=""
+      draggable={false}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+  const going = <GoingCount count={event.saved_count} variant="tag" />;
+
+  if (layout === "rail") {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(event)}
+        aria-label={`Open ${event.title}`}
+        className="relative aspect-square w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle"
+      >
+        {img}
+      </button>
+    );
+  }
+
+  if (layout === "row") {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(event)}
+        className="flex w-48 shrink-0 items-center gap-2 rounded-control bg-surface-subtle p-1.5 text-left"
+      >
+        <span
+          aria-hidden="true"
+          className="relative size-14 shrink-0 overflow-hidden rounded-control"
+        >
+          {img}
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="line-clamp-2 text-sm font-medium leading-snug text-fg">
+            {event.title}
+          </span>
+          <span className="text-xs text-fg-muted">{monthDay(event.starts_at)}</span>
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
-      aria-label={compact ? `Open ${event.title}` : undefined}
       className="flex w-full shrink-0 flex-col gap-2 rounded-control text-left"
     >
       <span
         aria-hidden="true"
-        className={`block w-full overflow-hidden rounded-control bg-surface-subtle ${
-          compact ? "aspect-square" : "aspect-[324/292] max-h-[150px]"
-        }`}
+        className="relative block h-[150px] w-full overflow-hidden rounded-control bg-surface-subtle"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image} alt="" draggable={false} className="h-full w-full object-cover" />
+        {img}
       </span>
-      {!compact && (
-        <span className="flex flex-col">
-          <span className="text-lg font-medium leading-snug text-fg">
-            {event.title}
-          </span>
-          <span className="text-base text-fg-muted">
-            {longDate(event.starts_at) || "Date to be announced"}
-          </span>
+      <span className="flex flex-col items-start gap-1">
+        <span className="text-lg font-medium leading-snug text-fg">
+          {event.title}
         </span>
-      )}
+        <span className="text-base text-fg-muted">
+          {longDate(event.starts_at) || "Date to be announced"}
+        </span>
+        {going}
+      </span>
     </button>
   );
 }

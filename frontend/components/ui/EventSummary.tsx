@@ -24,18 +24,48 @@ export function ageLabel(ev: {
 }
 
 /**
+ * The tag pills every surface shows for a program, in the design's order:
+ * cost, registration, venue, then the special-access notice. Drawn by
+ * `EventSummary`, except in the `detail` layout, where the listing puts them
+ * on its own top row beside Share / Print.
+ */
+export function EventTags({
+  event,
+  recommended = false,
+}: {
+  event: Event;
+  recommended?: boolean;
+}) {
+  return (
+    <>
+      {recommended && <Tag kind="foryou" />}
+      {eventTags(event).map((kind) => (
+        <Tag key={kind} kind={kind} />
+      ))}
+      {event.access_group && (
+        <Tag kind="access" detail={event.access_group.name} />
+      )}
+    </>
+  );
+}
+
+/**
  * The body every event surface shares: image, tags, title, when, where, and
  * whoever is going. It draws no container — the feed card, list row, saved
  * card and console card each wrap it in their own box.
  *
- * `card` is the feed's horizontal card (big image, big type). `row` is the
- * compact shape the list rows, saved grid cards and console cards use: a
+ * `card` is the feed's Main Card (square image beside big type). `detail` is
+ * the Expanded Card — the same shape with a smaller image and no tags, since
+ * the listing draws those on its top row. `row` is the Listed Event: a
  * square image that fills the row's height beside the text, stacking on top
  * of it where the row is narrow — by the row's own width, not the viewport,
  * since the same row sits in a full column and in a two-up grid. `stack` is
- * the saved page's vertical card: the image bleeds to the box's edges with
- * the tags over its foot, so the box that wraps it should clip and carry no
- * padding of its own.
+ * the Saved Event Card: the image bleeds to the box's edges with the tags
+ * over its foot, so the box that wraps it should clip and carry no padding
+ * of its own.
+ *
+ * Every image box is a stretched flex or grid item with an aspect ratio, so
+ * it is never shorter than the text beside it, and the picture fills it.
  */
 export function EventSummary({
   event,
@@ -48,7 +78,7 @@ export function EventSummary({
   className = "",
 }: {
   event: Event;
-  layout?: "card" | "row" | "stack";
+  layout?: "card" | "detail" | "row" | "stack";
   /** The going slot — usually a `GoingCount`. */
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
@@ -60,7 +90,7 @@ export function EventSummary({
   recommended?: boolean;
   className?: string;
 }) {
-  const card = layout === "card";
+  const card = layout === "card" || layout === "detail";
   const stack = layout === "stack";
   const when = whenLine(event);
   const where =
@@ -73,7 +103,9 @@ export function EventSummary({
       ? event.held_until
       : null;
 
-  const meta = card ? "text-xl sm:text-2xl" : "text-lg";
+  // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
+  // 18, the saved card's 24 over 20.
+  const meta = card ? "text-xl sm:text-2xl" : stack ? "text-xl" : "text-lg";
   const icon = card ? "size-7 sm:size-9" : "size-6";
 
   const img = (
@@ -86,23 +118,13 @@ export function EventSummary({
     />
   );
 
-  const tags = (
-    <>
-      {recommended && <Tag kind="foryou" />}
-      {eventTags(event).map((kind) => (
-        <Tag key={kind} kind={kind} />
-      ))}
-      {event.access_group && (
-        <Tag kind="access" detail={event.access_group.name} />
-      )}
-    </>
-  );
+  const tags = <EventTags event={event} recommended={recommended} />;
 
   const title = (
     <Title
       id={titleId}
       className={`font-medium leading-tight text-fg ${
-        card ? "text-2xl sm:text-3xl" : "text-xl"
+        card ? "text-2xl sm:text-3xl" : "text-2xl"
       } ${stack ? "line-clamp-2" : ""}`}
     >
       {event.title}
@@ -189,15 +211,21 @@ export function EventSummary({
   }
 
   if (card) {
+    const detail = layout === "detail";
     return (
       <div className={`flex flex-col gap-6 ${className}`}>
-        {/* Image beside the text from `sm`; on a phone it sits on top. */}
+        {/* Image beside the text from `sm`; on a phone it sits on top. The
+            box is square, and stretches taller when the text beside it is. */}
         <div className="flex flex-col gap-6 sm:flex-row">
-          <div className="relative aspect-[324/292] w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle sm:w-2/5">
+          <div
+            className={`relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle sm:aspect-square ${
+              detail ? "sm:w-[30%]" : "sm:w-2/5"
+            }`}
+          >
             {img}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <div className="flex flex-wrap gap-3">{tags}</div>
+            {!detail && <div className="flex flex-wrap gap-3">{tags}</div>}
             {title}
             {facts}
           </div>

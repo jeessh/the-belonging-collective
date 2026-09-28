@@ -154,7 +154,7 @@ export function EventActions({ event }: { event: Event }) {
           rel="noopener noreferrer"
           className={buttonClass("secondary", "lg")}
         >
-          Google Maps
+          See on Map
           <MapPin aria-hidden="true" className="size-6 shrink-0" />
         </a>
       )}
@@ -166,7 +166,7 @@ export function EventActions({ event }: { event: Event }) {
           disabled={busy || saved}
           trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
         >
-          {saved ? "Event saved" : "Save event"}
+          {saved ? "Event Saved" : "Save Event"}
         </Button>
       ) : (
         <AccessAction

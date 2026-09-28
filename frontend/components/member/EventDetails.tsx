@@ -2,11 +2,16 @@ import type { ReactNode } from "react";
 import { ExternalLink, FileText, Paperclip } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
-import { EventSummary } from "@/components/ui/EventSummary";
+import { EventSummary, EventTags } from "@/components/ui/EventSummary";
 import { HoldInfo } from "@/components/member/HoldInfo";
 
+// The design's LINKS box: one bordered frame, a row per link, the paperclip
+// (or the file's own icon) at the row's end.
+const LINK_BOX =
+  "divide-y divide-line overflow-hidden rounded-control border border-line";
 const LINK_ROW =
-  "flex min-h-14 items-center justify-between gap-4 rounded-control border border-line px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
+  "flex min-h-14 items-center justify-between gap-4 px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
+const HEADING = "text-base uppercase tracking-wide text-fg-muted";
 
 /** The agency's flyer: a thumbnail when it is a picture, a file icon for a PDF. */
 function Poster({ url }: { url: string }) {
@@ -32,10 +37,11 @@ function Poster({ url }: { url: string }) {
 }
 
 /**
- * The full listing: summary, DETAILS, LINKS. No hooks, so the server-rendered
- * public page, the dialog over the feed and the print preview all draw the
- * same thing; each hands in its own `tools` (Share / Print), `going` and
- * bottom `actions`.
+ * The full listing, drawn as the design's Expanded Card: tags beside Share /
+ * Print on top, then the summary, DETAILS, POSTER and LINKS. No hooks, so the
+ * server-rendered public page, the dialog over the feed and the print
+ * preview all draw the same thing; each hands in its own `tools`, `going`
+ * and bottom `actions`.
  */
 export function EventDetails({
   event,
@@ -74,16 +80,21 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      {(tools || hold) && (
-        <div className="flex items-center justify-end gap-3">
-          {hold && <HoldInfo />}
-          {tools}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap gap-3">
+          <EventTags event={event} />
         </div>
-      )}
+        {(tools || hold) && (
+          <div className="flex items-center gap-3">
+            {hold && <HoldInfo />}
+            {tools}
+          </div>
+        )}
+      </div>
 
       <EventSummary
         event={event}
-        layout="card"
+        layout="detail"
         going={going}
         titleAs={titleAs}
         titleId={titleId}
@@ -91,16 +102,14 @@ export function EventDetails({
 
       {(event.description || event.notes) && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-lg uppercase tracking-wide text-fg-muted">
-            Details
-          </h3>
+          <h3 className={HEADING}>Details</h3>
           {event.description && (
-            <p className="whitespace-pre-line text-lg leading-relaxed text-fg">
+            <p className="whitespace-pre-line text-lg leading-relaxed text-fg-muted">
               {event.description}
             </p>
           )}
           {event.notes && (
-            <p className="whitespace-pre-line text-lg leading-relaxed text-fg">
+            <p className="whitespace-pre-line text-lg leading-relaxed text-fg-muted">
               {event.notes}
             </p>
           )}
@@ -109,19 +118,17 @@ export function EventDetails({
 
       {event.poster_url && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-lg uppercase tracking-wide text-fg-muted">
-            Poster
-          </h3>
-          <Poster url={event.poster_url} />
+          <h3 className={HEADING}>Poster</h3>
+          <div className={LINK_BOX}>
+            <Poster url={event.poster_url} />
+          </div>
         </section>
       )}
 
       {links.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-lg uppercase tracking-wide text-fg-muted">
-            Links
-          </h3>
-          <ul className="flex flex-col gap-3">
+          <h3 className={HEADING}>Links</h3>
+          <ul className={LINK_BOX}>
             {links.map((link, i) => (
               <li key={`${link.url}-${i}`}>
                 <a
