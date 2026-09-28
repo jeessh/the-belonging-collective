@@ -8,37 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import {
-  CircleCheck,
-  HeartHandshake,
-  KeyRound,
-  Mic,
-  Smile,
-  UserRound,
-} from "lucide-react";
+import { CircleCheck, HeartHandshake, Mic, UserRound } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField, type TextFieldProps } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import {
-  IconKeyPicker,
-  IconKeyShown,
-  PASSWORD_MIN_LENGTH,
-  PICK_COUNT,
-  type AuthMethod,
-} from "@/components/member/IconKey";
 import {
   CareLinkForm,
   type CareLinkResult,
 } from "@/components/member/CareLinkForm";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
-// Which credential the member last chose, per browser.
-const METHOD_KEY = "tbc.member-auth-method";
 
-export type { AuthMethod };
 export type AuthDoor = "signup" | "login";
 export type AuthEntry = "chooser" | AuthDoor;
 
@@ -46,16 +29,14 @@ type Step =
   | "chooser"
   | "who"
   | "name"
-  | "icons"
   | "email"
   | "password"
   | "credentials"
   // The caregiver path after their own account exists: add the person they
-  // support, by creating that account or linking one, then show the key.
+  // support, by creating that account or linking one.
   | "care-choice"
   | "care-create"
   | "care-link"
-  | "care-key"
   | "complete";
 
 /** What the surface around the flow draws: a heading, an optional line under it, and the step itself. */
@@ -67,23 +48,19 @@ export type AuthView = {
   body: ReactNode;
 };
 
-function firstStep(door: AuthDoor, method: AuthMethod): Step {
-  return door === "login" && method === "password" ? "credentials" : "name";
-}
-
 /**
  * Member sign-up and log-in, one step at a time.
  *
- * Owns the whole state machine — chooser, either door, either credential,
- * the conflict handling on the icon key, and the success screen — and hands
- * each step back as a title plus a body. The in-feed overlay wraps that in a
- * Modal; `/signup` wraps it in a page. Both toast on their own.
+ * Owns the whole state machine — chooser, sign-up (name → email → password),
+ * log-in (email + password) and the success screen — and hands each step
+ * back as a title plus a body. The in-feed overlay wraps that in a Modal;
+ * `/signup` wraps it in a page. Both toast on their own.
  *
  * `onSignedIn` fires once the cookie is set: straight away for a log-in, and
- * from "Continue to events" after an account is created, so a new member
- * sees their icons before the modal goes. `onBack` is the success screen's
- * other way out: the account exists and the cookie is set, but the member
- * goes back to what they were looking at instead of on to the feed.
+ * from "Continue to events" after an account is created. `onBack` is the
+ * success screen's other way out: the account exists and the cookie is set,
+ * but the member goes back to what they were looking at instead of on to
+ * the feed.
  */
 export function MemberAuthFlow({
   initial = "chooser",
@@ -102,16 +79,11 @@ export function MemberAuthFlow({
   children: (view: AuthView) => ReactNode;
 }) {
   const toast = useToast();
-  const [door, setDoor] = useState<AuthDoor>(
-    initial === "login" ? "login" : "signup",
-  );
-  const [method, setMethod] = useState<AuthMethod>("icons");
   const [step, setStep] = useState<Step>(
-    initial === "chooser" ? "chooser" : "name",
+    initial === "chooser" ? "chooser" : initial === "login" ? "credentials" : "name",
   );
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
-  const [picked, setPicked] = useState<string[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -119,19 +91,12 @@ export function MemberAuthFlow({
   const [error, setError] = useState<string | null>(null);
   // The address already has an account, so "log in instead" is the fix.
   const [emailTaken, setEmailTaken] = useState(false);
-  // The name exists but this key does not open it. Distinct from any other
-  // error because it is the only one a member cannot resolve by retrying —
-  // and "I forgot my icons" is the door for the one who genuinely can't.
-  const [conflict, setConflict] = useState(false);
-  const [forgot, setForgot] = useState(false);
-  // Chosen on the "who" step. A caregiver's account is always a password
-  // account — they have an email, and the icon key is for the people who
-  // can't type — so the Icons | Password switch stays out of their way.
+  // Chosen on the "who" step.
   const [caregiver, setCaregiver] = useState(false);
   const [careResult, setCareResult] = useState<CareLinkResult | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  // Saying a name instead of typing it — the one place a member has to type.
+  // Saying a name instead of typing it.
   const dictation = useDictation();
   const [dictating, setDictating] = useState<"first" | "last" | null>(null);
   const [dictationNote, setDictationNote] = useState("");
@@ -162,37 +127,9 @@ export function MemberAuthFlow({
   function clearFeedback() {
     setError(null);
     setEmailTaken(false);
-    setConflict(false);
-    setForgot(false);
   }
 
-  function chooseMethod(next: AuthMethod) {
-    setMethod(next);
-    try {
-      localStorage.setItem(METHOD_KEY, next);
-    } catch {
-      /* private mode, or storage blocked — the default still works */
-    }
-    clearFeedback();
-    setPicked([]);
-    setStep((s) =>
-      s === "chooser" || s === "complete" ? s : firstStep(door, next),
-    );
-  }
-
-  // Read after mount so the server render and the first client render agree.
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(METHOD_KEY) === "password")
-        chooseMethod("password");
-    } catch {
-      /* see above */
-    }
-  }, []);
-
-  // Each step lands focus on its first field, else its first button — the
-  // icon grid marks its own first tile, since the switch above it comes
-  // first in the DOM.
+  // Each step lands focus on its first field, else its first button.
   useEffect(() => {
     const root = bodyRef.current;
     if (!root) return;
@@ -200,31 +137,18 @@ export function MemberAuthFlow({
       root.querySelector<HTMLElement>("input, [data-focus-first]") ??
       root.querySelector<HTMLElement>("button:not([disabled])");
     target?.focus();
-  }, [step, forgot]);
+  }, [step]);
 
-  function enter(next: AuthDoor) {
-    setDoor(next);
+  function enterLogin() {
     clearFeedback();
-    setPicked([]);
-    setCaregiver(false);
-    setStep(firstStep(next, method));
+    setPassword("");
+    setStep("credentials");
   }
 
   function enterAs(asCaregiver: boolean) {
-    setDoor("signup");
     clearFeedback();
-    setPicked([]);
     setCaregiver(asCaregiver);
     setStep("name");
-  }
-
-  function togglePick(slug: string) {
-    clearFeedback();
-    setPicked((prev) => {
-      if (prev.includes(slug)) return prev.filter((s) => s !== slug);
-      if (prev.length >= PICK_COUNT) return prev;
-      return [...prev, slug];
-    });
   }
 
   function finish(mode: "login" | "signup") {
@@ -234,41 +158,6 @@ export function MemberAuthFlow({
       return;
     }
     setStep("complete");
-  }
-
-  async function submitIcons(createNew = false) {
-    setBusy(true);
-    clearFeedback();
-    try {
-      const res = await api<{ mode: "login" | "signup" | "conflict" }>(
-        "/auth/user",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            first_name: first,
-            last_name: last,
-            icons: picked,
-            // Only after the member has been told the name is taken and said
-            // they are someone else. Otherwise a mistap would quietly become
-            // a second account, stranding the one they own.
-            create_new: createNew,
-          }),
-        },
-      );
-      if (res.mode === "conflict") {
-        setConflict(true);
-        return;
-      }
-      finish(res.mode);
-    } catch (e) {
-      setError(
-        e instanceof ApiError && e.status === 400
-          ? `Choose ${PICK_COUNT} icons.`
-          : apiMessage(e, GENERIC_ERROR),
-      );
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function submitPassword(e: FormEvent) {
@@ -337,37 +226,12 @@ export function MemberAuthFlow({
   }
 
   const nameReady = first.trim() !== "" && last.trim() !== "";
-  // The member's door is a choice of credential; a caregiver's is a password.
-  const passwordDoor = caregiver ? "password" : method;
-
-  const switcher = caregiver ? null : (
-    <div className="flex items-center gap-4">
-      <SegmentedToggle
-        label="Sign-in method"
-        shape="pill"
-        value={method}
-        onChange={chooseMethod}
-        segments={[
-          { value: "icons", label: "Icons", icon: <Smile />, iconOnly: true },
-          {
-            value: "password",
-            label: "Password",
-            icon: <KeyRound />,
-            iconOnly: true,
-          },
-        ]}
-      />
-      <span aria-hidden="true" className="text-lg text-fg-muted">
-        {method === "icons" ? "Icons" : "Password"}
-      </span>
-    </div>
-  );
 
   const errorLine = error && (
     <div role="alert" className="flex flex-col items-start gap-2">
       <p className="text-lg font-medium text-danger-fg">{error}</p>
       {emailTaken && (
-        <Button variant="ghost" onClick={() => enter("login")}>
+        <Button variant="ghost" onClick={enterLogin}>
           Login instead
         </Button>
       )}
@@ -386,7 +250,7 @@ export function MemberAuthFlow({
             <Button variant="primary" size="lg" onClick={() => setStep("who")}>
               Create an account
             </Button>
-            <Button variant="secondary" size="lg" onClick={() => enter("login")}>
+            <Button variant="secondary" size="lg" onClick={enterLogin}>
               Login
             </Button>
             <div aria-hidden="true" className="flex items-center gap-6 py-1">
@@ -448,29 +312,20 @@ export function MemberAuthFlow({
 
     case "name":
       view = {
-        title:
-          door === "signup"
-            ? caregiver
-              ? "Create your caregiver account"
-              : "Create your member account"
-            : "Login to your account",
-        subtitle:
-          door === "signup"
-            ? passwordDoor === "icons"
-              ? "Your name, then two icons."
-              : "Your name, email and a password."
-            : "Your name, then your two icons.",
+        title: caregiver
+          ? "Create your caregiver account"
+          : "Create your member account",
+        subtitle: "Your name, email and a password.",
         body: (
           <form
             onSubmit={(e) => {
               e.preventDefault();
               if (!nameReady) return;
               clearFeedback();
-              setStep(passwordDoor === "icons" ? "icons" : "email");
+              setStep("email");
             }}
             className="flex flex-col gap-6"
           >
-            {switcher}
             <NameField
               label="First name"
               placeholder="Enter your first name"
@@ -509,115 +364,12 @@ export function MemberAuthFlow({
             {errorLine}
             <Footer
               secondary={
-                door === "signup"
-                  ? caregiver
-                    ? { label: "Back", onClick: () => setStep("who") }
-                    : { label: "Login", onClick: () => enter("login") }
-                  : { label: "Cancel", onClick: () => setStep("chooser") }
+                caregiver
+                  ? { label: "Back", onClick: () => setStep("who") }
+                  : { label: "Login", onClick: enterLogin }
               }
               primary={{ label: "Next", disabled: !nameReady }}
             />
-          </form>
-        ),
-      };
-      break;
-
-    case "icons":
-      view = {
-        title: door === "signup" ? "Pick your icons" : "Your icons",
-        // Said plainly: people were choosing one the way you choose an avatar
-        // and then couldn't understand why the wrong one wouldn't let them in.
-        subtitle:
-          door === "signup"
-            ? "Two icons, in order. They are your password."
-            : "The two you chose, in the same order.",
-        body: (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (picked.length === PICK_COUNT && !busy) void submitIcons();
-            }}
-            className="flex flex-col gap-6"
-          >
-            {switcher}
-            <IconKeyPicker picked={picked} onToggle={togglePick} />
-            {conflict ? (
-              forgot ? (
-                <div
-                  role="status"
-                  className="rounded-control border border-line bg-surface-subtle p-4"
-                >
-                  <p className="text-lg font-medium text-fg">
-                    Someone can give you new icons.
-                  </p>
-                  {/* There is no reset a member can do alone — the icons are
-                      the password — so the honest answer is who to ask. */}
-                  <p className="mt-1 text-base text-fg-muted">
-                    Ask a staff member where you go for programs.
-                  </p>
-                  <Button className="mt-4" onClick={() => setForgot(false)}>
-                    Back
-                  </Button>
-                </div>
-              ) : (
-                <div
-                  role="alert"
-                  className="rounded-control border border-danger-border bg-danger p-4"
-                >
-                  <p className="text-lg font-medium text-danger-fg">
-                    {door === "login"
-                      ? "Those icons don't match this name."
-                      : "Someone already signs in with that name."}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button
-                      variant="primary"
-                      onClick={() => {
-                        setConflict(false);
-                        setPicked([]);
-                      }}
-                    >
-                      Try again
-                    </Button>
-                    {door === "signup" && (
-                      <Button
-                        disabled={busy}
-                        onClick={() => void submitIcons(true)}
-                      >
-                        I&apos;m new
-                      </Button>
-                    )}
-                    <Button variant="ghost" onClick={() => setForgot(true)}>
-                      I forgot my icons
-                    </Button>
-                  </div>
-                </div>
-              )
-            ) : (
-              <>
-                {errorLine}
-                <Footer
-                  secondary={{
-                    label: "Back",
-                    onClick: () => {
-                      clearFeedback();
-                      setStep("name");
-                    },
-                  }}
-                  primary={{
-                    label:
-                      door === "signup"
-                        ? busy
-                          ? "Creating…"
-                          : "Create account"
-                        : busy
-                          ? "Logging in…"
-                          : "Login",
-                    disabled: busy || picked.length !== PICK_COUNT,
-                  }}
-                />
-              </>
-            )}
           </form>
         ),
       };
@@ -636,7 +388,6 @@ export function MemberAuthFlow({
             }}
             className="flex flex-col gap-6"
           >
-            {switcher}
             <TextField
               label="Email"
               type="email"
@@ -671,7 +422,6 @@ export function MemberAuthFlow({
             noValidate
             className="flex flex-col gap-6"
           >
-            {switcher}
             <TextField
               label="Password"
               type="password"
@@ -715,7 +465,6 @@ export function MemberAuthFlow({
         subtitle: "Your email and password.",
         body: (
           <form onSubmit={submitCredentials} className="flex flex-col gap-6">
-            {switcher}
             <TextField
               label="Email"
               type="email"
@@ -732,6 +481,12 @@ export function MemberAuthFlow({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <Link
+              href="/forgot"
+              className="w-fit text-lg text-fg underline underline-offset-4"
+            >
+              Forgot your password?
+            </Link>
             {errorLine}
             <Footer
               secondary={{ label: "Cancel", onClick: () => setStep("chooser") }}
@@ -780,13 +535,13 @@ export function MemberAuthFlow({
     case "care-create":
       view = {
         title: "Their account",
-        subtitle: "Their name, then their icons or a password. It is theirs to sign in with.",
+        subtitle: "Their name, email and a password. It is theirs to sign in with.",
         body: (
           <CareLinkForm
             mode="create"
             onDone={(result) => {
               setCareResult(result);
-              setStep(result.icons.length ? "care-key" : "complete");
+              setStep("complete");
             }}
             onCancel={() => setStep("care-choice")}
           />
@@ -811,35 +566,6 @@ export function MemberAuthFlow({
       };
       break;
 
-    case "care-key":
-      view = {
-        title: "Write these down",
-        subtitle: careResult
-          ? `${careResult.person.first_name} signs in with their name and these icons, in this order.`
-          : undefined,
-        body: (
-          <div className="flex flex-col gap-6">
-            <IconKeyShown
-              icons={careResult?.icons ?? []}
-              label={
-                careResult
-                  ? `${careResult.person.first_name}'s login icons`
-                  : "Their login icons"
-              }
-              note="Hand them over. If they are lost, staff can issue new ones."
-            />
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => setStep("complete")}
-            >
-              Done
-            </Button>
-          </div>
-        ),
-      };
-      break;
-
     case "complete":
       view = {
         title: "Account creation complete!",
@@ -854,27 +580,24 @@ export function MemberAuthFlow({
           />
         ),
         body: (
-          <div className="flex flex-col gap-6">
-            {passwordDoor === "icons" && <IconKeyShown icons={picked} />}
-            <div className="flex gap-4">
-              {onBack && (
-                <Button
-                  size="lg"
-                  className="flex-1 max-sm:px-4 max-sm:text-lg"
-                  onClick={onBack}
-                >
-                  Go back
-                </Button>
-              )}
+          <div className="flex gap-4">
+            {onBack && (
               <Button
-                variant="primary"
                 size="lg"
                 className="flex-1 max-sm:px-4 max-sm:text-lg"
-                onClick={() => onSignedIn({ mode: "signup", caregiver })}
+                onClick={onBack}
               >
-                Continue to events
+                Go back
               </Button>
-            </div>
+            )}
+            <Button
+              variant="primary"
+              size="lg"
+              className="flex-1 max-sm:px-4 max-sm:text-lg"
+              onClick={() => onSignedIn({ mode: "signup", caregiver })}
+            >
+              Continue to events
+            </Button>
           </div>
         ),
       };

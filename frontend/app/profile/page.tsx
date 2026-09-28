@@ -32,7 +32,6 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
-import { IconKeyShown } from "@/components/member/IconKey";
 
 const CARD = "flex flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6";
 const HEADING = "text-lg uppercase tracking-wide text-fg-muted";
@@ -55,7 +54,6 @@ export default function ProfilePage() {
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   // The caregiver's add / link sheet, and the key it hands back.
   const [careForm, setCareForm] = useState<"create" | "link" | null>(null);
-  const [careKey, setCareKey] = useState<CareLinkResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -168,7 +166,6 @@ export default function ProfilePage() {
   function careDone(result: CareLinkResult) {
     setCareForm(null);
     show({ title: `Linked ${shortName(result.person)}` });
-    if (result.icons.length) setCareKey(result);
     void reload();
   }
 
@@ -209,7 +206,6 @@ export default function ProfilePage() {
   const name = `${me.first_name} ${me.last_name}`;
   // The same short form the feed header uses, so the initials keep one colour.
   const short = shortName(me);
-  const passwordAccount = me.auth_type === "password";
   const hasPicture = !!(me.avatar_url || me.avatar_emblem);
 
   return (
@@ -242,10 +238,10 @@ export default function ProfilePage() {
           </h2>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <TextField
-              label={passwordAccount ? "Sign-in email" : "Email (optional)"}
+              label="Sign-in email"
               type="email"
               autoComplete="email"
-              required={passwordAccount}
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={emailError}
@@ -453,7 +449,7 @@ export default function ProfilePage() {
         >
           <p className="mt-2 text-lg text-fg-muted">
             {careForm === "create"
-              ? "Their name, then their icons or a password. It is theirs to sign in with."
+              ? "Their name, email and a password. It is theirs to sign in with."
               : "Enter what they use to sign in."}
           </p>
           <div className="mt-6">
@@ -467,26 +463,6 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {careKey && (
-        <Modal title="Write these down" onClose={() => setCareKey(null)}>
-          <p className="mt-2 text-lg text-fg">
-            {careKey.person.first_name} signs in with their name and these
-            icons, in this order.
-          </p>
-          <div className="mt-4">
-            <IconKeyShown
-              icons={careKey.icons}
-              label={`${careKey.person.first_name}'s login icons`}
-              note="Hand them over. If they are lost, staff can issue new ones."
-            />
-          </div>
-          <div className="mt-6 flex justify-end">
-            <Button variant="primary" onClick={() => setCareKey(null)}>
-              Done
-            </Button>
-          </div>
-        </Modal>
-      )}
     </main>
   );
 }

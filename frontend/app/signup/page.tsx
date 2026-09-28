@@ -91,6 +91,8 @@ function SignupFlow() {
       <section className="w-full max-w-lg rounded-card border border-line bg-surface p-6 shadow-lift sm:p-10">
         {phase === "auth" ? (
           <MemberAuthFlow
+            // `?login=1` lands on the login step (from /forgot).
+            initial={params.get("login") ? "login" : "chooser"}
             // Topics sort the member's own feed; a caregiver browses for
             // someone else, so they go straight through.
             onSignedIn={({ mode, caregiver }) =>

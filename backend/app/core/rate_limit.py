@@ -1,31 +1,29 @@
 """Failure-counting rate limits for the auth endpoints.
 
-The member credential is a name plus an ordered icon key — with ICON_COUNT at
-two, 132 combinations for a given name. That is small enough to exhaust from a
-script in seconds, so the sign-in routes need a ceiling on how fast someone can
-guess, and this file is what stands between the icon door and a sweep.
+Every sign-in, sign-up, reset and care-link route counts failures here, so a
+script can't sweep passwords against a known address, and the 409 on sign-up
+can't be used to list which addresses have accounts.
 
 Two deliberate design choices:
 
 * **Only failures count, and a success clears that identity's counter.** A
-  member who knows their icons is never locked out, no matter how much noise
+  member who knows their password is never locked out, no matter how much noise
   someone else is making against their name. It also means the identity budget
   can be small without ever getting in a real member's way.
 * **Success does NOT clear the IP counter.** Only the identity key is cleared.
   Signing in successfully proves you hold one credential; it says nothing about
   the other names being tried from the same address. Clearing the shared IP
-  bucket on success would let anyone with a single valid account — including one
-  they just created, since account creation is unthrottled — reset the sweep
-  protection at will by logging in periodically.
+  bucket on success would let anyone with a single valid account reset the
+  sweep protection at will by logging in periodically.
 * **The per-IP budget is generous.** Members frequently sign in from a shared
   facility — a community centre or a group home — so several people onboarding
-  together legitimately share one address, and mistaps are expected rather than
-  exceptional. A tight IP limit would lock out a whole room, which is exactly
-  the population this platform exists to serve. Since the IP bucket now only
-  drains by expiry, it is set high enough that a real session can't reach it.
-  That costs little: the per-identity budget is what stops a targeted guess, and
-  it stays at 10 regardless of how much room the IP budget has. The IP limit's
-  only job is to make sweeping across many names at once impractical.
+  together legitimately share one address, and mistypes are expected rather
+  than exceptional. A tight IP limit would lock out a whole room, which is
+  exactly the population this platform exists to serve. Since the IP bucket
+  only drains by expiry, it is set high enough that a real session can't reach
+  it. The per-identity budget is what stops a targeted guess, and it stays at
+  10 regardless of how much room the IP budget has. The IP limit's only job is
+  to make sweeping across many addresses at once impractical.
 """
 
 from fastapi import HTTPException, Request, status
