@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Brand } from "@/components/Brand";
 
 /**
  * The organizer door: sign-in, invitation, forgot and reset. One column
@@ -19,11 +20,7 @@ export function AuthPage({
           href="/"
           className="inline-flex w-fit items-center gap-3 rounded-control py-1 text-fg"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="size-11 rounded-control" />
-          <span className="text-xl font-medium leading-tight sm:text-2xl">
-            The Belonging Collective
-          </span>
+          <Brand />
         </Link>
         <div className="flex flex-col gap-9">
           <h1 className="text-3xl font-medium text-fg">{title}</h1>
