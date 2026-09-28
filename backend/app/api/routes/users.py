@@ -105,8 +105,12 @@ def list_users(
     return (
         db.query(User)
         .filter(User.deleted_at.is_(None))
-        # UserOut.care reads the links; without this it is a query per row.
-        .options(selectinload(User.care_links).selectinload(CareLink.member))
+        # UserOut reads links in both directions; without these it is a query
+        # per row.
+        .options(
+            selectinload(User.care_links).selectinload(CareLink.member),
+            selectinload(User.caregiver_links).selectinload(CareLink.caregiver),
+        )
         .order_by(User.created_at.desc())
         .all()
     )
