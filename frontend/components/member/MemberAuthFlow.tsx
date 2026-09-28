@@ -682,13 +682,17 @@ function Footer({
   secondary?: { label: string; onClick: () => void };
   primary: { label: string; disabled?: boolean };
 }) {
+  // "Back" beside "Create account" is wider than a phone sheet at the
+  // design's 20px; a step down in type and padding keeps the pair on one
+  // row and the buttons at their full height.
+  const half = "flex-1 max-sm:px-4 max-sm:text-lg";
   return (
     <div className="mt-2 flex gap-4">
       {secondary && (
         <Button
           variant="secondary"
           size="lg"
-          className="flex-1"
+          className={half}
           onClick={secondary.onClick}
         >
           {secondary.label}
@@ -698,7 +702,7 @@ function Footer({
         type="submit"
         variant="primary"
         size="lg"
-        className="flex-1"
+        className={half}
         disabled={primary.disabled}
       >
         {primary.label}

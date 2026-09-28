@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, SlidersHorizontal } from "lucide-react";
 import { ApiError, api, type Event } from "@/lib/api";
+import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
-import { buttonClass } from "@/components/ui/Button";
+import { Modal } from "@/components/Modal";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import {
   FilterPanel,
@@ -32,6 +35,14 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [scope, setScope] = useState<Scope>("all");
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
+  // Below `lg` the filter panel lives in a sheet behind a Filters button.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Rotating a tablet past `lg` shows the panel, so the sheet must not linger.
+  const wide = useMediaQuery("(min-width: 1024px)");
+  const chosen = DIMENSIONS.reduce(
+    (n, d) => n + (filters[d.key]?.length ?? 0),
+    0,
+  );
 
   useEffect(() => {
     let alive = true;
@@ -113,11 +124,13 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
       </div>
 
       <div className="flex flex-col items-start gap-8 lg:flex-row">
-        <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
+        <div className="hidden w-[431px] shrink-0 lg:block">
+          <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
+        </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <label className="relative block w-full max-w-[428px]">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <label className="relative block w-full sm:max-w-[428px]">
               <span className="sr-only">Search for event</span>
               <Search
                 aria-hidden="true"
@@ -131,10 +144,20 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                 className="min-h-14 w-full rounded-control border border-line bg-surface-subtle py-3 pl-16 pr-6 text-xl text-fg placeholder:text-fg-muted"
               />
             </label>
-            <Link href="/host/events/new" className={buttonClass("primary")}>
-              Create new event
-              <Plus aria-hidden="true" className="size-6" />
-            </Link>
+            <div className="flex gap-3 max-sm:[&>*]:flex-1">
+              <Button
+                className="lg:hidden"
+                leadingIcon={<SlidersHorizontal />}
+                aria-haspopup="dialog"
+                onClick={() => setFiltersOpen(true)}
+              >
+                Filters{chosen > 0 && ` (${chosen})`}
+              </Button>
+              <Link href="/host/events/new" className={buttonClass("primary")}>
+                Create new event
+                <Plus aria-hidden="true" className="size-6" />
+              </Link>
+            </div>
           </div>
 
           <p role="status" aria-live="polite" className="sr-only">
@@ -178,6 +201,26 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           )}
         </div>
       </div>
+
+      {filtersOpen && !wide && (
+        <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
+          <div className="mt-4">
+            <FilterPanel
+              events={inScope}
+              filters={filters}
+              onChange={setFilters}
+            />
+          </div>
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-6 w-full"
+            onClick={() => setFiltersOpen(false)}
+          >
+            Show {shown.length} {shown.length === 1 ? "program" : "programs"}
+          </Button>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -43,12 +43,13 @@ export function EventSummary({
 
   return (
     <div className={`flex flex-col gap-6 ${className}`}>
-      <div className={`flex gap-6 ${card ? "flex-col sm:flex-row" : ""}`}>
+      {/* Image beside the text from `sm`; on a phone it sits on top. */}
+      <div className="flex flex-col gap-6 sm:flex-row">
         <div
           className={`shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
             card
               ? "aspect-[324/292] w-full sm:w-2/5"
-              : "size-32 sm:size-40"
+              : "h-40 w-full sm:size-40"
           }`}
         >
           {image && (
@@ -119,7 +120,7 @@ export function EventSummary({
       </div>
 
       {actions && card && (
-        <div className="flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap [&>*]:flex-1">
           {actions}
         </div>
       )}

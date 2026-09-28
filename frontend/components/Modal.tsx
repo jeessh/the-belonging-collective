@@ -102,8 +102,12 @@ export function Modal({
 
   return (
     <AnimatePresence>
+      {/* On a phone the panel is a sheet: 16px in from every edge and at
+          least the height of the screen. From `sm` it floats in the middle.
+          Centred with auto margins rather than `place-items-center`, which
+          would push the top of a panel taller than the screen out of reach. */}
       <div
-        className="fixed inset-0 z-30 grid place-items-center overflow-y-auto bg-fg/40 px-4 py-8 backdrop-blur-sm"
+        className="fixed inset-0 z-30 flex flex-col items-center overflow-y-auto bg-fg/40 p-4 backdrop-blur-sm sm:py-8"
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -118,7 +122,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative w-full ${SIZE[size]} rounded-card border border-line bg-surface p-6 shadow-lift outline-none sm:p-10`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border border-line bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-10`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2

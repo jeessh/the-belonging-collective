@@ -61,10 +61,13 @@ export const FeedFilters = memo(function FeedFilters({
           shape="pill"
         />
       </div>
+      {/* One scrolling row on a phone (the edge fades where it continues);
+          from `sm` the chips wrap. The negative margin lets the row run to the
+          screen edge while the chips still start at the gutter. */}
       <div
         role="group"
         aria-labelledby="feed-filters-label"
-        className="flex flex-wrap gap-3"
+        className="flex gap-3 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:scroll-px-4 max-sm:py-1 max-sm:pl-4 max-sm:pr-12 max-sm:scroll-fade-x sm:flex-wrap"
       >
         {all.map(({ key, label }) => {
           const on = chips.has(key);
@@ -74,7 +77,7 @@ export const FeedFilters = memo(function FeedFilters({
               type="button"
               aria-pressed={on}
               onClick={() => onToggleChip(key)}
-              className={`inline-flex min-h-11 items-center rounded-control border px-4 py-1 text-base uppercase tracking-wide transition-colors sm:text-lg ${
+              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control border px-4 py-1 text-base uppercase tracking-wide transition-colors sm:text-lg ${
                 on
                   ? "border-primary-border bg-primary-soft text-fg"
                   : "border-primary-strong bg-surface text-fg-muted hover:bg-primary-soft"

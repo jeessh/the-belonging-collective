@@ -405,7 +405,7 @@ function InviteForm({
               type="checkbox"
               checked={isSuper}
               onChange={(e) => setIsSuper(e.target.checked)}
-              className="size-5 accent-primary-border"
+              className="size-5 shrink-0 accent-primary-border"
             />
             Can manage other organizations (KW Habilitation staff only)
           </label>
@@ -556,7 +556,7 @@ function AddAdminModal({
             type="checkbox"
             checked={isSuper}
             onChange={(e) => setIsSuper(e.target.checked)}
-            className="size-5 accent-primary-border"
+            className="size-5 shrink-0 accent-primary-border"
           />
           Can manage other organizations
         </label>
