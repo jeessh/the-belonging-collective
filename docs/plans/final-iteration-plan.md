@@ -203,6 +203,7 @@ recommendation, where there is one, is marked.
 10. **Member profile pictures.** FigJam sticky (76%); the design shows only a coloured avatar circle. The icon is the password and must not become the picture (`LoginOverlay.tsx:182`) — and `SavedEvents.tsx:147` currently renders `icons[0]`; that comes out in Phase 0 regardless. Decide: (a) member-uploaded photo (new member upload route, moderation on a shared platform); (b) a chosen emblem from a set outside the icon pool; (c) nothing — the org logo is the recognition picture that shipped. **Blocks:** A-11.
 11. **Mail sender and branding.** The templates (465:14503, 469:16790) and the organizer pages carry "KW Habilitation" / "KWEvents tool"; the app and console say The Belonging Collective; `MAIL_FROM` is one mailbox that six agencies' members would send through. Decide the product name on outbound mail and pages, and whose address sends. **Blocks:** P-6 templates, N-10, M-10.
 12. **Restricted event sets + access requests.** FigJam Access Control sticky (85%). *Unlisted* (hidden from the feed, open by link) is compatible with "events are publicly browsable" (§3.7) and cheap (A-9). *Restricted* needs a member↔organization relation and a request queue landing on the org's single shared login. Decide whether restricted is in this iteration or unlisted covers the closed-group case. **Blocks:** A-10.
+   **RESOLVED 2026-09-27 (product-context.md §3.11, item 3):** restricted, not plain unlisted — `access_groups`/`access_memberships` per organization, request-and-approve routed to that org's `/host/access`. A-9's plain visibility flag is never built; A-10 is the mechanism that covers it.
 
 **Confirmations, not decisions** — the record already answers these; one line
 each so they are not re-litigated by "matching the Figma":
@@ -238,17 +239,40 @@ marked `RESOLVED` above) and mostly built already:
   poster/list/QR); M-10 share by email (`mailto:`, not server mail — P-6
   wasn't needed for it after all); D-10/D-1/D-2 filter chips (FREE +
   `CATEGORIES` only, no organization or "this week" chip).
-- **Regressed, not just stale:** D-3 organization filtering — the member
-  feed's old grouping dimensions were removed and nothing replaced them, so
-  this is worse than before #49. R-6 capacity limits — the gate was removed
-  on purpose (item 3), so the row now reads ❌ rather than ✅.
-- **Still open from Phases 0–2:** P-6 HTML mail; O-1 view-preference
-  persistence; O-2 first-run tour; D-13 "for you this week"; A-9 unlisted
-  programs; A-10 restricted programs; A-8 caregiver accounts; A-11 profile
+- **Regressed, not just stale, at the time:** D-3 organization filtering —
+  the member feed's old grouping dimensions were removed and nothing replaced
+  them. R-6 capacity limits — the gate was removed on purpose (item 3), so
+  the row now reads ❌ rather than ✅.
+
+**Shipped 2026-09-27, second batch (PRs #53–#56).** Five more of the items
+above land, and two of the "still open" rows below get a decision instead:
+
+- **P-5 mobile/tablet** (#53) — a reflow, not a redesign, across the member
+  feed and the console at Tailwind's `sm`/`lg`. Now unblocked, since item 2
+  (the layout decision) was made in the first batch.
+- **O-1 view-preference persistence, O-2 first-run tour, D-13 "for you this
+  week"** (#54 migration `0018` + #55) — `users.preferred_view`,
+  `users.onboarded_at`, `users.dismissed_program_ids`; `Tour.tsx`;
+  `recommendedThisWeek` (`lib/feed.ts`).
+- **A-10 restricted programs + requests, superseding A-9** (#54 migration
+  `0018` + #56) — `access_groups` / `access_memberships`
+  (`app/core/access.py`, `app/api/routes/access.py`), `/host/access`,
+  `AccessAction.tsx`. Jesse's call: "unlisted" means special access, not a
+  plain visibility flag, so A-9 folds into A-10 instead of shipping as a
+  separate `events.visibility` column.
+- **M-8 poster + QR** (#54 migration `0018` + #56) — console poster upload
+  and a QR that opens the event page (never the poster file), downloadable
+  and printable. Still no generated poster (the upload is the agency's own
+  flyer) and no weekly one-sheet list.
+- **Decided against, not built:** D-3 organization filtering on the member
+  feed — Jesse: match the design, no organization filter there; the console
+  keeps its own. F-1 in-app feedback — declined outright, not merely
+  deprioritized.
+
+- **Still open:** P-6 HTML mail; A-8 caregiver accounts; A-11 profile
   picture (beyond A-11a); M-3/M-4 analytics; M-11 shareable saved-list link
-  (still no decision — the five decisions did not reach it); F-1 feedback;
-  P-5 mobile/tablet — now unblocked, since item 2 (the layout decision) is
-  made.
+  (still no decision — nothing has reached it yet); mail sender/branding
+  (§5.11); per-person organizer identities (§5.9).
 
 Sizes: S ≤ 1 day, M 2–4 days, L a week or more. "Migration" means an Alembic
 revision that must run against prod before deploy (`CLAUDE.md`, P-1). Items
