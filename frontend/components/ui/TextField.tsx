@@ -57,10 +57,14 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
+        // The box draws the focus ring (focus-within). A plain `outline-none`
+        // ties with globals.css's `input:focus-visible` ring and loses to it
+        // on source order, which drew a second ring around the text inside
+        // the box; the focus-visible variant outranks it.
         className={
           variant === "floating"
-            ? "w-full bg-transparent text-lg text-fg outline-none placeholder:text-fg-muted"
-            : "min-w-0 flex-1 bg-transparent text-lg text-fg outline-none placeholder:text-fg-muted"
+            ? "w-full bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
+            : "min-w-0 flex-1 bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
         }
         {...rest}
       />
