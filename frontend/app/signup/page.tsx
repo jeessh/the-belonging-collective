@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiMessage, updateMe } from "@/lib/api";
 import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
-import { Button } from "@/components/ui/Button";
+import { FormFooter } from "@/components/member/FormFooter";
 import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
+import { MemberAuthPage } from "@/components/member/MemberAuthPage";
 
 /**
  * A same-origin path from `?next=`, or the feed.
@@ -86,110 +87,97 @@ function SignupFlow() {
     }
   }
 
-  return (
-    <main className="grid min-h-dvh place-items-center bg-surface-subtle px-4 py-8">
-      <section className="w-full max-w-lg rounded-card border border-line bg-surface p-6 shadow-lift sm:p-10">
-        {phase === "auth" ? (
-          <MemberAuthFlow
-            // `?login=1` lands on the login step (from /forgot).
-            initial={params.get("login") ? "login" : "chooser"}
-            // Topics sort the member's own feed; a caregiver browses for
-            // someone else, so they go straight through.
-            onSignedIn={({ mode, caregiver }) =>
-              mode === "signup" && !caregiver ? setPhase("topics") : leave()
-            }
-            onGuest={() => leave(true)}
-            // Back to the page they came from, skipping the topics step.
-            onBack={() => leave(true)}
+  if (phase === "auth") {
+    return (
+      <MemberAuthFlow
+        // `?login=1` lands on the login step (from /forgot).
+        initial={params.get("login") ? "login" : "chooser"}
+        // Topics sort the member's own feed; a caregiver browses for
+        // someone else, so they go straight through.
+        onSignedIn={({ mode, caregiver }) =>
+          mode === "signup" && !caregiver ? setPhase("topics") : leave()
+        }
+        onGuest={() => leave(true)}
+        // The guest has left for the page they came from; the toast brings
+        // them back here, still bound for it.
+        onGuestSignIn={() =>
+          router.push(
+            `/signup?next=${encodeURIComponent(
+              safeNext(params.get("next"), { dropPending: true }),
+            )}`,
+          )
+        }
+        // Back to the page they came from, skipping the topics step.
+        onBack={() => leave(true)}
+      >
+        {(view) => (
+          <MemberAuthPage
+            title={view.title}
+            subtitle={view.subtitle}
+            icon={view.icon}
           >
-            {(view) => (
-              <>
-                {view.icon}
-                <h1 className="text-2xl font-medium text-fg sm:text-3xl">
-                  {view.title}
-                </h1>
-                {view.subtitle && (
-                  <p className="mt-2 text-lg text-fg-muted">{view.subtitle}</p>
-                )}
-                {view.body}
-              </>
-            )}
-          </MemberAuthFlow>
-        ) : (
-          <>
-            <h1 className="text-2xl font-medium text-fg sm:text-3xl">
-              What do you like?
-            </h1>
-            <p className="mt-2 text-lg text-fg-muted">
-              Pick any. You can change this later.
-            </p>
-
-            <div
-              role="group"
-              aria-label="Topics you are interested in"
-              className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3"
-            >
-              {categories.map(({ slug, label }) => {
-                const chosen = interests.includes(slug);
-                const { emoji } = categoryStyle(slug);
-                return (
-                  <button
-                    key={slug}
-                    type="button"
-                    onClick={() => toggleInterest(slug)}
-                    aria-pressed={chosen}
-                    className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-control border-2 p-3 text-center transition-colors ${
-                      chosen
-                        ? "border-primary-border bg-primary-soft"
-                        : "border-line bg-surface hover:bg-surface-subtle"
-                    }`}
-                  >
-                    <span className="text-3xl" aria-hidden="true">
-                      {emoji}
-                    </span>
-                    <span className="text-base font-medium text-fg">
-                      {label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <p className="sr-only" role="status" aria-live="polite">
-              {interests.length === 0
-                ? "Nothing chosen yet"
-                : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
-            </p>
-
-            {error && (
-              <p role="alert" className="mt-4 text-lg font-medium text-danger-fg">
-                {error}
-              </p>
-            )}
-
-            <div className="mt-8 flex gap-4">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                disabled={busy}
-                onClick={() => leave()}
-              >
-                Skip
-              </Button>
-              <Button
-                variant="primary"
-                size="lg"
-                className="flex-1"
-                disabled={busy}
-                onClick={() => void saveInterests()}
-              >
-                Continue
-              </Button>
-            </div>
-          </>
+            {view.body}
+          </MemberAuthPage>
         )}
-      </section>
-    </main>
+      </MemberAuthFlow>
+    );
+  }
+
+  return (
+    <MemberAuthPage
+      title="What do you like?"
+      subtitle="Pick any. You can change this later."
+    >
+      <div
+        role="group"
+        aria-label="Topics you are interested in"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+      >
+        {categories.map(({ slug, label }) => {
+          const chosen = interests.includes(slug);
+          const { emoji } = categoryStyle(slug);
+          return (
+            <button
+              key={slug}
+              type="button"
+              onClick={() => toggleInterest(slug)}
+              aria-pressed={chosen}
+              className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-control border-2 p-3 text-center transition-colors ${
+                chosen
+                  ? "border-primary-border bg-primary-soft"
+                  : "border-line bg-surface hover:bg-surface-subtle"
+              }`}
+            >
+              <span className="text-3xl" aria-hidden="true">
+                {emoji}
+              </span>
+              <span className="text-base font-medium text-fg">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {interests.length === 0
+          ? "Nothing chosen yet"
+          : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
+      </p>
+
+      {error && (
+        <p role="alert" className="mt-6 text-lg text-danger-fg">
+          {error}
+        </p>
+      )}
+
+      <FormFooter
+        className="mt-12"
+        secondary={{ label: "Skip", onClick: () => leave(), disabled: busy }}
+        primary={{
+          label: "Continue",
+          onClick: () => void saveInterests(),
+          disabled: busy,
+        }}
+      />
+    </MemberAuthPage>
   );
 }

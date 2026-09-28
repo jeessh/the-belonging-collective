@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -27,14 +27,11 @@ import {
 } from "@/lib/api";
 import { EMBLEMS } from "@/lib/emblems";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
-
-const CARD = "flex flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6";
-const HEADING = "text-lg uppercase tracking-wide text-fg-muted";
 
 /**
  * The member's own settings: email, picture, list link, and the people on
@@ -198,33 +195,30 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-dvh bg-surface-subtle px-4 py-6 text-fg sm:px-6 sm:py-10">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-medium">Profile</h1>
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-lg text-fg underline underline-offset-4 hover:bg-surface"
-          >
-            <ArrowLeft aria-hidden="true" className="size-5" />
+          <h1 className="text-2xl font-medium sm:text-3xl">Profile</h1>
+          <Link href="/" className={buttonClass("secondary")}>
+            <ArrowLeft aria-hidden="true" className="size-6" />
             Back to programs
           </Link>
         </div>
 
-        <section className={`${CARD} flex-row items-center gap-5`} aria-labelledby="name-h">
-          <Avatar name={short} src={me.avatar_url} emblem={me.avatar_emblem} size={72} />
-          <div className="min-w-0">
-            <h2 id="name-h" className={HEADING}>
-              Name
-            </h2>
-            <p className="truncate text-2xl">{name}</p>
-          </div>
-        </section>
+        <Card
+          title={name}
+          subtitle={me.is_caregiver ? "Caregiver" : "Community member"}
+          lead={
+            <Avatar name={short} src={me.avatar_url} emblem={me.avatar_emblem} size={72} />
+          }
+        />
 
-        <form onSubmit={saveEmail} className={CARD} aria-labelledby="email-h">
-          <h2 id="email-h" className={HEADING}>
-            Email
-          </h2>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Card
+          as="form"
+          onSubmit={saveEmail}
+          title="Email"
+          subtitle="You log in with it, and reminders for saved events go there."
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <TextField
               label="Sign-in email"
               placeholder="Enter your email"
@@ -245,13 +239,13 @@ export default function ProfilePage() {
               Save
             </Button>
           </div>
-        </form>
+        </Card>
 
-        <section className={CARD} aria-labelledby="picture-h">
-          <h2 id="picture-h" className={HEADING}>
-            Profile picture
-          </h2>
-          <div className="flex flex-wrap gap-3">
+        <Card
+          title="Profile picture"
+          subtitle="Upload a photo or pick an emblem."
+        >
+          <div className="flex flex-wrap gap-4">
             <input
               ref={fileRef}
               type="file"
@@ -306,19 +300,19 @@ export default function ProfilePage() {
             })}
           </div>
           {pictureError && (
-            <p role="alert" className="text-base text-danger-fg">
+            <p role="alert" className="text-lg text-danger-fg">
               {pictureError}
             </p>
           )}
-        </section>
+        </Card>
 
-        <section className={CARD} aria-labelledby="share-h">
-          <h2 id="share-h" className={HEADING}>
-            Share my list
-          </h2>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Card
+          title="Share my list"
+          subtitle="Anyone with the link can see your upcoming saved events."
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {linkUrl && (
-              <p className="flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
+              <p className="flex-1 select-text break-all rounded-control border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
                 {linkUrl}
               </p>
             )}
@@ -331,17 +325,17 @@ export default function ProfilePage() {
               Copy link
             </Button>
           </div>
-        </section>
+        </Card>
 
         {/* Care links, for an account that signed up as a caregiver — the
             profile no longer turns it on. Support, not proxy: the people
             listed keep their own accounts; a link only lets the caregiver
             save into their list. */}
         {me.is_caregiver && (
-          <section className={CARD} aria-labelledby="caregiver-h">
-            <h2 id="caregiver-h" className={HEADING}>
-              People I support
-            </h2>
+          <Card
+            title="People I support"
+            subtitle="Save programs for someone you support."
+          >
             {me.care.length === 0 ? (
               <p className="text-base text-fg-muted">Nobody linked yet.</p>
             ) : (
@@ -357,7 +351,7 @@ export default function ProfilePage() {
                 ))}
               </ul>
             )}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-4">
               <Button
                 size="lg"
                 variant="primary"
@@ -374,17 +368,14 @@ export default function ProfilePage() {
                 Link an account
               </Button>
             </div>
-          </section>
+          </Card>
         )}
 
         {me.caregivers.length > 0 && (
-          <section className={CARD} aria-labelledby="supporters-h">
-            <h2 id="supporters-h" className={HEADING}>
-              People who support me
-            </h2>
-            <p className="text-base text-fg-muted">
-              They can see your saved events and save programs for you.
-            </p>
+          <Card
+            title="People who support me"
+            subtitle="They can see your saved events and save programs for you."
+          >
             <ul className="flex flex-col divide-y divide-line-card">
               {me.caregivers.map((person) => (
                 <PersonRow
@@ -396,21 +387,22 @@ export default function ProfilePage() {
                 />
               ))}
             </ul>
-          </section>
+          </Card>
         )}
       </div>
 
       {careForm && (
         <Modal
+          size="form"
           title={careForm === "create" ? "Their account" : "Link their account"}
+          subtitle={
+            careForm === "create"
+              ? "Their name, email and a password. It is theirs to sign in with."
+              : "Enter what they use to sign in."
+          }
           onClose={() => setCareForm(null)}
         >
-          <p className="mt-2 text-lg text-fg-muted">
-            {careForm === "create"
-              ? "Their name, email and a password. It is theirs to sign in with."
-              : "Enter what they use to sign in."}
-          </p>
-          <div className="mt-6">
+          <div className="mt-10">
             <CareLinkForm
               mode={careForm}
               onDone={careDone}
@@ -420,8 +412,45 @@ export default function ProfilePage() {
           </div>
         </Modal>
       )}
-
     </main>
+  );
+}
+
+/**
+ * One card per thing, headed the way the sheet heads its blocks: a name and
+ * a grey line. `lead` sits to the left of the heading (the picture).
+ */
+function Card({
+  as = "section",
+  title,
+  subtitle,
+  lead,
+  children,
+  onSubmit,
+}: {
+  as?: "section" | "form";
+  title: string;
+  subtitle?: string;
+  lead?: ReactNode;
+  children?: ReactNode;
+  onSubmit?: (e: FormEvent) => void;
+}) {
+  const Tag = as;
+  return (
+    <Tag
+      onSubmit={onSubmit}
+      aria-label={title}
+      className="flex flex-col gap-6 rounded-card border border-line bg-surface p-6 sm:p-8"
+    >
+      <div className="flex items-center gap-5">
+        {lead}
+        <div className="min-w-0">
+          <h2 className="truncate text-xl font-medium text-fg">{title}</h2>
+          {subtitle && <p className="text-base text-fg-muted">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </Tag>
   );
 }
 

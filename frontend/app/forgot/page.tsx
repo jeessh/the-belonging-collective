@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, apiMessage } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
+import { FormFooter } from "@/components/member/FormFooter";
 import { MemberAuthPage } from "@/components/member/MemberAuthPage";
 
 /**
@@ -12,6 +12,7 @@ import { MemberAuthPage } from "@/components/member/MemberAuthPage";
  * not the address has an account — the endpoint answers identically too.
  */
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -33,14 +34,7 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  const back = (
-    <Link
-      href="/signup?login=1"
-      className="w-fit text-lg text-fg underline underline-offset-4"
-    >
-      Back to login
-    </Link>
-  );
+  const toLogin = () => router.push("/signup?login=1");
 
   if (sent) {
     return (
@@ -51,7 +45,10 @@ export default function ForgotPasswordPage() {
         <p className="text-lg text-fg-muted">
           Nothing arrived? Check the spam folder, then try again.
         </p>
-        {back}
+        <FormFooter
+          className="mt-12"
+          primary={{ label: "Back to login", onClick: toLogin }}
+        />
       </MemberAuthPage>
     );
   }
@@ -78,20 +75,19 @@ export default function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
         {error && (
-          <p role="alert" className="text-lg font-medium text-danger-fg">
+          <p role="alert" className="text-lg text-danger-fg">
             {error}
           </p>
         )}
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          disabled={busy || !email.trim()}
-        >
-          {busy ? "Sending…" : "Send reset link"}
-        </Button>
+        <FormFooter
+          className="mt-6"
+          secondary={{ label: "Back to login", onClick: toLogin }}
+          primary={{
+            label: busy ? "Sending…" : "Send reset link",
+            disabled: busy || !email.trim(),
+          }}
+        />
       </form>
-      {back}
     </MemberAuthPage>
   );
 }

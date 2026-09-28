@@ -18,6 +18,7 @@ export function LoginOverlay({
   onClose,
   onSignedIn,
   onGuest,
+  onGuestSignIn,
   onBack,
   initial = "chooser",
 }: {
@@ -26,6 +27,11 @@ export function LoginOverlay({
   onSignedIn: () => void;
   /** "Continue as guest". Defaults to closing. */
   onGuest?: () => void;
+  /**
+   * The guest toast's "Sign up/Login". The overlay is gone by then, so the
+   * feed has to open it again.
+   */
+  onGuestSignIn: () => void;
   /**
    * "Go back" after an account is created: the cookie is set, so the feed
    * still has to learn about it, but the member returns to what they were
@@ -48,11 +54,14 @@ export function LoginOverlay({
         initial={initial}
         onSignedIn={() => onSignedIn()}
         onGuest={onGuest ?? close}
+        onGuestSignIn={onGuestSignIn}
         onBack={onBack}
       >
         {(view) => (
           <Modal
+            size="form"
             onClose={close}
+            subtitle={view.subtitle}
             title={
               view.icon ? (
                 <>
@@ -66,10 +75,7 @@ export function LoginOverlay({
               )
             }
           >
-            {view.subtitle && (
-              <p className="mt-2 text-lg text-fg-muted">{view.subtitle}</p>
-            )}
-            {view.body}
+            <div className="mt-10">{view.body}</div>
           </Modal>
         )}
       </MemberAuthFlow>

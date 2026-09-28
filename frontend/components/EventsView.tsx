@@ -1367,6 +1367,7 @@ export function EventsView({
             setAuthFor(null);
           }}
           onSignedIn={() => void handleSignedIn()}
+          onGuestSignIn={() => toSignIn()}
           onBack={() => void handleSignedIn(false)}
         />
       )}

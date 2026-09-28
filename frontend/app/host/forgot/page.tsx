@@ -38,64 +38,61 @@ export default function ForgotPasswordPage() {
 
   const backToSignIn = (
     <Link href="/host" className="w-fit text-lg text-fg underline underline-offset-4">
-      Back to sign in
+      Back to login
     </Link>
   );
 
+  if (sent) {
+    return (
+      <AuthPage
+        title="Check your email"
+        subtitle={`If ${email.trim().toLowerCase()} has an account, a reset link is on its way. It works once and expires in an hour.`}
+      >
+        <p className="text-lg text-fg-muted">
+          Nothing arrived? Check the spam folder, then try again — the address
+          has to match the one the account was set up with.
+        </p>
+        {backToSignIn}
+      </AuthPage>
+    );
+  }
+
   return (
-    <AuthPage title="Reset your password">
-      {sent ? (
-        <>
-          <div className="flex flex-col gap-3">
-            <p className="text-lg text-fg">
-              If <strong>{email.trim().toLowerCase()}</strong> has an account,
-              a reset link is on its way. It works once and expires in an hour.
-            </p>
-            <p className="text-lg text-fg-muted">
-              Nothing arrived? Check the spam folder, then try again — the
-              address has to match the one the account was set up with.
-            </p>
-          </div>
-          {backToSignIn}
-        </>
-      ) : (
-        <>
-          <p className="text-lg text-fg-muted">
-            We&apos;ll email you a link to choose a new one.
+    <AuthPage
+      title="Reset your password"
+      subtitle="We'll email you a link to choose a new one."
+    >
+      <form
+        className="flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && email.trim()) void submit();
+        }}
+      >
+        <TextField
+          label="Email"
+          type="email"
+          autoFocus
+          placeholder="Enter email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {error && (
+          <p role="alert" className="text-lg text-danger-fg">
+            {error}
           </p>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!busy && email.trim()) void submit();
-            }}
-          >
-            <TextField
-              label="Email"
-              type="email"
-              autoFocus
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {error && (
-              <p role="alert" className="text-base text-danger-fg">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="mt-2"
-              disabled={busy || !email.trim()}
-            >
-              {busy ? "Sending…" : "Send reset link"}
-            </Button>
-          </form>
-          {backToSignIn}
-        </>
-      )}
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="mt-4"
+          disabled={busy || !email.trim()}
+        >
+          {busy ? "Sending…" : "Send reset link"}
+        </Button>
+      </form>
+      {backToSignIn}
     </AuthPage>
   );
 }
