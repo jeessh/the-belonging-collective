@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   BookmarkX,
   CalendarDays,
+  CalendarPlus,
   MoveLeft,
   MoveRight,
   Printer,
@@ -19,6 +20,7 @@ import {
   Send,
 } from "lucide-react";
 import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
+import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
 import { isUpcoming } from "@/lib/time";
@@ -226,6 +228,8 @@ export const SavedEvents = memo(function SavedEvents({
               {/* Three of the design's large buttons are five rows on a phone;
                   the medium size there fits two to a row. */}
               <div className="flex flex-wrap gap-3">
+                {/* The whole list as an .ics file. Google's "add" page takes
+                    one event, so each row below has its own button for that. */}
                 <a
                   href={calendarUrl}
                   className={buttonClass("secondary", "lg", ACTION)}
@@ -234,7 +238,7 @@ export const SavedEvents = memo(function SavedEvents({
                     aria-hidden="true"
                     className="size-6 shrink-0 text-primary-border"
                   />
-                  Google Calendar
+                  Download calendar
                 </a>
                 <Button
                   size="lg"
@@ -311,6 +315,15 @@ export const SavedEvents = memo(function SavedEvents({
                             >
                               Un-save
                             </Button>
+                            {tab === "upcoming" && googleCalendarUrl(ev) && (
+                              <Button
+                                onClick={() => openGoogleCalendar(ev)}
+                                aria-label={`Add to calendar: ${ev.title}`}
+                                leadingIcon={<CalendarPlus />}
+                              >
+                                Add to calendar
+                              </Button>
+                            )}
                             <Button
                               onClick={() => onOpen(ev)}
                               trailingIcon={<MoveRight />}

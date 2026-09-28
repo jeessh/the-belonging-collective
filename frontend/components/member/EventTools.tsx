@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Printer, Send } from "lucide-react";
+import { CalendarPlus, Printer, Send } from "lucide-react";
 import type { Event } from "@/lib/api";
+import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { eventShareText, publicEventUrl } from "@/lib/share";
 import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
@@ -10,14 +11,23 @@ import { EventDetails } from "@/components/member/EventDetails";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 
-/** Share and Print for one program — the dialog's and the page's top right. */
+/** Calendar, Share and Print for one program — the dialog's and the page's top right. */
 export function EventTools({ event }: { event: Event }) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
+  const dated = googleCalendarUrl(event) !== null;
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap justify-end gap-3">
+        {dated && (
+          <Button
+            onClick={() => openGoogleCalendar(event)}
+            trailingIcon={<CalendarPlus />}
+          >
+            Add to Google Calendar
+          </Button>
+        )}
         <Button onClick={() => setOpen("share")} trailingIcon={<Send />}>
           Share
         </Button>
