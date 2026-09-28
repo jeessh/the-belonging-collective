@@ -76,7 +76,7 @@ export function ImageDrop({
             src={value}
             alt=""
             className={`rounded-control object-cover ${
-              logo ? "size-40" : "aspect-[598/278] w-full"
+              logo ? "size-40" : "aspect-square w-full max-w-sm"
             }`}
           />
           <div className="flex flex-wrap gap-3">
@@ -113,7 +113,7 @@ export function ImageDrop({
             dragOver
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
-          } ${logo ? "" : "min-h-[278px]"}`}
+          } ${logo ? "" : "aspect-square w-full max-w-sm"}`}
         >
           <ArrowUpFromLine aria-hidden="true" className="size-12 text-fg" />
           <p className="text-xl text-fg">Drag an image here</p>
