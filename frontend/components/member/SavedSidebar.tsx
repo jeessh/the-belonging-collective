@@ -9,6 +9,7 @@ import {
   CirclePlus,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
+import { eventImage } from "@/lib/eventImage";
 import { longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
 
@@ -270,7 +271,7 @@ function Thumb({
   onOpen: (event: Event) => void;
   compact?: boolean;
 }) {
-  const image = event.cover_image_url ?? event.images[0]?.url ?? null;
+  const image = eventImage(event);
   return (
     <button
       type="button"
@@ -284,10 +285,8 @@ function Thumb({
           compact ? "aspect-square" : "aspect-[324/292] max-h-[150px]"
         }`}
       >
-        {image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" draggable={false} className="h-full w-full object-cover" />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt="" draggable={false} className="h-full w-full object-cover" />
       </span>
       {!compact && (
         <span className="flex flex-col">
