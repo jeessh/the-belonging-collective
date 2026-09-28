@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, Download } from "lucide-react";
+import { ArrowDown, CalendarDays, Download } from "lucide-react";
 import {
   ApiError,
   analyticsCsvUrl,
@@ -18,7 +18,8 @@ import { TIME_ZONE } from "@/lib/time";
 import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import { TextField } from "@/components/ui/TextField";
+import { EmptyRow, Field, Pill, Select, TableCard } from "@/components/AdminTable";
 import { WeeklyChart } from "@/components/host/WeeklyChart";
 
 /**
@@ -205,44 +206,37 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
         </div>
         {preset === "custom" && (
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-base font-medium text-fg">
-              From
-              <input
-                type="date"
-                value={custom.from}
-                max={custom.to}
-                onChange={(e) => setCustom({ ...custom, from: e.target.value })}
-                className="min-h-12 rounded-field border border-line bg-surface px-4 py-2 text-lg text-fg"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-base font-medium text-fg">
-              To
-              <input
-                type="date"
-                value={custom.to}
-                min={custom.from}
-                onChange={(e) => setCustom({ ...custom, to: e.target.value })}
-                className="min-h-12 rounded-field border border-line bg-surface px-4 py-2 text-lg text-fg"
-              />
-            </label>
+            <TextField
+              label="From"
+              placeholder="YYYY-MM-DD"
+              type="date"
+              icon={<CalendarDays />}
+              value={custom.from}
+              max={custom.to}
+              onChange={(e) => setCustom({ ...custom, from: e.target.value })}
+            />
+            <TextField
+              label="To"
+              placeholder="YYYY-MM-DD"
+              type="date"
+              icon={<CalendarDays />}
+              value={custom.to}
+              min={custom.from}
+              onChange={(e) => setCustom({ ...custom, to: e.target.value })}
+            />
           </div>
         )}
         {ctx.isSuper && (
-          <label className="flex flex-col gap-1 text-base font-medium text-fg lg:ml-auto">
-            Organization
-            <select
-              value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
-              className="min-h-12 rounded-field border border-line bg-surface px-4 py-2 text-lg text-fg"
-            >
+          <Field label="Organization" className="w-full sm:w-80 lg:ml-auto">
+            <Select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
               <option value="">All organizations</option>
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
         )}
       </div>
 

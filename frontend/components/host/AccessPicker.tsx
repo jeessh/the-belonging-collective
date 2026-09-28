@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField } from "@/components/ui/TextField";
+import { Field, Select } from "@/components/AdminTable";
 
 export type AccessMode = "everyone" | "group";
 
@@ -83,19 +84,11 @@ export function AccessPicker({
       {mode === "group" && (
         <div className="flex w-full flex-col gap-3">
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex min-w-[240px] flex-1 flex-col gap-1 sm:max-w-[420px]">
-              <span className="text-lg font-medium text-fg">
-                Group
-                <span aria-hidden="true" className="ml-1 text-danger-fg">
-                  *
-                </span>
-                <span className="sr-only"> (required)</span>
-              </span>
-              <select
+            <Field label="Group" required className="min-w-[240px] flex-1 sm:max-w-[420px]">
+              <Select
                 value={groupId ?? ""}
                 onChange={(e) => onChange("group", e.target.value || null)}
                 disabled={groups === null}
-                className="min-h-12 w-full rounded-field border border-line bg-surface px-4 py-3 text-lg text-fg"
               >
                 <option value="">
                   {groups === null ? "Loading…" : "Choose a group"}
@@ -105,8 +98,8 @@ export function AccessPicker({
                     {g.name}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </Field>
             {!adding && (
               <Button
                 className="min-h-12"

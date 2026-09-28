@@ -16,7 +16,14 @@ import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
+import {
+  EmptyRow,
+  Field,
+  Pill,
+  Select,
+  TableCard,
+  controlClass,
+} from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 import { AccountsNav } from "@/components/host/AccountsNav";
 
@@ -221,7 +228,8 @@ function Topics() {
                           onKeyDown={(e) => {
                             if (e.key === "Escape") setEditing(null);
                           }}
-                          className="min-h-12 rounded-field border border-line bg-surface px-4 py-2 text-lg text-fg"
+                          placeholder="Topic name"
+                          className={`${controlClass} w-auto`}
                         />
                         <Button
                           type="submit"
@@ -357,20 +365,15 @@ function ArchiveModal({
         )}
       </p>
       {needsTarget && (
-        <label className="mt-4 flex flex-col gap-1 text-lg font-medium text-fg">
-          Move programs to
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="min-h-12 rounded-field border border-line bg-surface px-4 py-3 text-lg font-normal text-fg"
-          >
+        <Field label="Move programs to" className="mt-4">
+          <Select value={target} onChange={(e) => setTarget(e.target.value)}>
             {others.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.label}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
       )}
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">
