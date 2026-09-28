@@ -148,7 +148,11 @@ export function ConsoleHeader({
                   organization itself. */}
               <span className="truncate text-lg font-bold">{me.name}</span>
               <span className="hidden truncate text-base sm:block">
-                {me.is_staff ? org.name : isSuper ? "Super admin" : "Admin"}
+                {me.is_staff
+                  ? `${org.name}${isSuper ? " · Super admin" : ""}`
+                  : isSuper
+                    ? "Super admin"
+                    : "Admin"}
               </span>
             </span>
           </button>

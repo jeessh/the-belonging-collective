@@ -227,6 +227,13 @@ def analytics(
     return _compute(db, _scope(db, host, host_id), from_, to)
 
 
+def _cell(text: str | None) -> str:
+    """Organizer-written text, safe for a spreadsheet: a leading = + - or @
+    would otherwise run as a formula when the file is opened in Excel."""
+    text = text or ""
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
 @router.get("/analytics.csv")
 def analytics_csv(
     from_: date | None = Query(None, alias="from"),
@@ -270,9 +277,9 @@ def analytics_csv(
     for p in out.programs:
         w.writerow(
             [
-                p.title,
+                _cell(p.title),
                 p.starts_at.astimezone(TZ).date().isoformat() if p.starts_at else "",
-                p.host_name,
+                _cell(p.host_name),
                 p.saves,
                 p.going,
                 p.clicks,
