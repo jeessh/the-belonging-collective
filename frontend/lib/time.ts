@@ -81,7 +81,7 @@ function dayOffset(at: Date, now: Date): number {
 }
 
 /**
- * Starts today or within the next seven Toronto calendar days. Undated
+ * Starts today or within the following seven Toronto calendar days. Undated
  * programs don't: "date to be announced" isn't this week.
  */
 export function isThisWeek(

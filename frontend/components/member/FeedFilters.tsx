@@ -9,7 +9,7 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** "free", "thisweek", or a canonical topic label from `CATEGORIES`. */
 export const FREE_CHIP = "free";
-/** Starts today or in the next seven days, Toronto time. */
+/** Starts today or within the following seven days, Toronto time. */
 export const THIS_WEEK_CHIP = "thisweek";
 /**
  * This week's picks only. Offered when there are any, and only in the card
