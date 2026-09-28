@@ -70,10 +70,20 @@ value produces links nobody can open.
 - `components/EventsView.tsx` (~900 lines) is the member feed and orchestrates
   every accessibility mode below. Its parts live in `components/member/`:
   `FeedHeader` (account + the Accessibility Tools menu), `SavedSidebar` (the
-  left column — open panel or collapsed rail; its forwarded ref is the drop
-  target every save animates into), `FeedFilters` (chips + sort), `FeedCard`
-  (the one card, on `ui/EventSummary`) and `ListFeed` (the rows). The saved
-  list overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+  saved column — open panel from `lg`, collapsed rail on a tablet, a bar
+  under the feed on a phone; its forwarded ref is the drop target every save
+  animates into, whichever of the three is showing), `FeedFilters` (chips +
+  sort; one scrolling row on a phone), `FeedCard` (the one card, on
+  `ui/EventSummary`) and `ListFeed` (the rows). The saved list overlay
+  (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
+  (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
+  on the x axis only (`touch-action: pan-y`, so a finger still scrolls);
+  `Modal` becomes a full-height sheet with 16px gutters; `EventSummary` rows
+  stack everywhere they are used. Tablet keeps the desktop shapes with
+  tighter gutters. Anything that has to swap components rather than classes
+  (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
+  false on the server so the first paint is always the desktop markup.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←

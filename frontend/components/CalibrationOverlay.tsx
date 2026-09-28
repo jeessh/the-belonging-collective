@@ -219,7 +219,8 @@ export function CalibrationOverlay({
 
   return (
     <div className="fixed inset-0 z-[80] bg-ink/85 backdrop-blur-sm">
-      <div className="absolute left-1/2 top-8 -translate-x-1/2 px-6 text-center text-white">
+      {/* Narrow enough to clear the corner dots on a tablet. */}
+      <div className="absolute left-1/2 top-8 w-full max-w-lg -translate-x-1/2 px-6 text-center text-white">
         <p className="font-display text-2xl font-extrabold">
           Turn your head toward the yellow dot and hold still
         </p>
