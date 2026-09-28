@@ -106,6 +106,8 @@ can open.
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation; the toast comes from `attend`.
+  A save from the card (`attend(ev, true)`) leaves the saved card up for
+  0.5 s, then advances, unless the member has already moved on.
   While the card travels (drag, ← hold, flight) it is **lifted**: `position:
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the
