@@ -68,7 +68,8 @@ export function EventTags({
  * since the same row sits in a full column and in a two-up grid. `stack` is
  * the Saved Event Card: the image bleeds to the box's edges with the tags
  * over its foot, so the box that wraps it should clip and carry no padding
- * of its own.
+ * of its own. `tile` is the saved list's Grid View: a 240px square picture
+ * beside the text, no buttons.
  *
  * Every image box is a stretched flex or grid item with an aspect ratio, so
  * it is never shorter than the text beside it, and the picture fills it.
@@ -84,7 +85,7 @@ export function EventSummary({
   className = "",
 }: {
   event: Event;
-  layout?: "card" | "detail" | "row" | "stack";
+  layout?: "card" | "detail" | "row" | "stack" | "tile";
   /** The going slot — usually a `GoingCount`. */
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
@@ -101,6 +102,7 @@ export function EventSummary({
   // window too short for the frame (see tailwind.config.ts).
   const feed = layout === "card";
   const stack = layout === "stack";
+  const tile = layout === "tile";
   const when = whenLine(event);
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
@@ -116,7 +118,7 @@ export function EventSummary({
   // 18, the saved card's 24 over 20.
   const meta = card
     ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
-    : stack
+    : stack || tile
       ? "text-xl"
       : "text-lg";
   const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
@@ -210,6 +212,26 @@ export function EventSummary({
       {going && <div className={meta}>{going}</div>}
     </div>
   );
+
+  if (tile) {
+    // The Saved Event tile (All Saved Events' Grid View): a square picture
+    // beside the tags, title and facts, no buttons — the whole tile opens
+    // the listing. The picture goes on top where the tile is narrow.
+    return (
+      <div className={`[container-type:inline-size] ${className}`}>
+        <div className="grid gap-6 cq-md:grid-cols-[15rem_1fr]">
+          <div className="relative aspect-[2/1] w-full self-start overflow-hidden rounded-control bg-surface-subtle cq-md:aspect-square">
+            {img}
+          </div>
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex flex-wrap gap-3">{tags}</div>
+            {title}
+            {facts}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (stack) {
     return (
