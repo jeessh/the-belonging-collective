@@ -411,7 +411,10 @@ export const SavedEvents = memo(function SavedEvents({
                 {view === "card" ? (
                   // One row that slides: the window clips it, the track
                   // moves one card per Back / Next.
-                  <div className="overflow-hidden">
+                  // The window is padded (and pulled back out by as much) so
+                  // a hovered card's lift and shadow aren't clipped; the
+                  // padding is narrower than the gap, so no neighbour peeks.
+                  <div className="-m-3 overflow-hidden p-3">
                     <ul
                       ref={trackRef}
                       className="flex gap-6"
@@ -600,52 +603,78 @@ function SavedCard({
       onClick={() => onOpen(event)}
       ref={ref}
       aria-hidden={offscreen || undefined}
-      className={`cursor-pointer overflow-hidden rounded-card border border-line-card bg-surface transition-colors hover:border-primary-border focus-within:border-primary-border ${
+      // Hover (and keyboard focus inside) says "this opens": the cyan
+      // outline, the pale cyan fill, a soft shadow and, motion allowing, a
+      // small lift.
+      className={`cursor-pointer overflow-hidden rounded-card border border-line-card bg-surface transition duration-150 ease-out hover:border-primary-border hover:bg-primary-soft hover:shadow-lg focus-within:border-primary-border focus-within:bg-primary-soft motion-safe:hover:-translate-y-0.5 ${
         stack ? "" : "p-6"
       } ${className}`}
     >
-      <EventSummary
-        event={event}
-        layout={stack ? "stack" : "row"}
-        going={<GoingCount count={event.saved_count} />}
-        actions={
-          <>
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                onUnsave(event);
-              }}
-              aria-label={`Un-save ${event.title}`}
-              leadingIcon={<BookX />}
-            >
-              Un-save
-            </Button>
-            {calendar && googleCalendarUrl(event) && (
+      {stack ? (
+        <EventSummary
+          event={event}
+          layout="stack"
+          going={<GoingCount count={event.saved_count} />}
+          actions={
+            <>
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  openGoogleCalendar(event);
+                  onUnsave(event);
                 }}
-                aria-label={`Add to calendar: ${event.title}`}
-                leadingIcon={<GoogleCalendarIcon />}
+                aria-label={`Un-save ${event.title}`}
+                leadingIcon={<BookX />}
               >
-                Add to calendar
+                Un-save
               </Button>
-            )}
-            <Button
-              variant="primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen(event);
-              }}
-              trailingIcon={<MoveRight />}
-            >
-              More information
-              <span className="sr-only"> about {event.title}</span>
-            </Button>
-          </>
-        }
-      />
+              {calendar && googleCalendarUrl(event) && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openGoogleCalendar(event);
+                  }}
+                  aria-label={`Add to calendar: ${event.title}`}
+                  leadingIcon={<GoogleCalendarIcon />}
+                >
+                  Add to calendar
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpen(event);
+                }}
+                trailingIcon={<MoveRight />}
+              >
+                More information
+                <span className="sr-only"> about {event.title}</span>
+              </Button>
+            </>
+          }
+        />
+      ) : (
+        // Grid View is the design's Saved Event tile: no buttons, the tile
+        // itself opens the listing (Un-save is in there). The link below is
+        // that same door for the keyboard.
+        <>
+          <EventSummary
+            event={event}
+            layout="tile"
+            going={<GoingCount count={event.saved_count} />}
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(event);
+            }}
+            className="sr-only focus:not-sr-only focus:mt-4 focus:inline-block focus:rounded-control focus:px-2 focus:underline"
+          >
+            More information about {event.title}
+          </button>
+        </>
+      )}
     </li>
   );
 }
