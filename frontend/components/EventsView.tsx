@@ -1178,7 +1178,6 @@ export function EventsView({
                 chips={chips}
                 onToggleChip={toggleChip}
                 interests={taste.interests}
-                events={events}
               />
             </div>
 

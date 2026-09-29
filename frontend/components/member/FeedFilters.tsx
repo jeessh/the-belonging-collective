@@ -3,7 +3,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { isUpcoming } from "@/lib/time";
 import { useCategories } from "@/lib/useCategories";
 import { FilterChip } from "@/components/ui/FilterChip";
 
@@ -28,29 +27,16 @@ type Chip = { key: string; label: string };
 
 /**
  * Every chip, the member's top ones first: FREE, then their own interests,
- * then the topics with the most upcoming programs (ties keep the topics' own
- * order). Choosing a chip doesn't move it, so the row never jumps.
+ * then the rest in the order superadmins set on /host/topics. Choosing a chip
+ * doesn't move it, so the row never jumps.
  */
-export function rankChips(
-  all: Chip[],
-  interests: string[],
-  events: Event[],
-): Chip[] {
-  const count = new Map<string, number>();
-  for (const ev of events) {
-    if (!isUpcoming(ev)) continue;
-    const own = ev.categories?.length ? ev.categories : [ev.category];
-    for (const slug of new Set(own)) {
-      if (slug) count.set(slug, (count.get(slug) ?? 0) + 1);
-    }
-  }
+export function rankChips(all: Chip[], interests: string[]): Chip[] {
   const order = new Map(all.map((c, i) => [c.key, i]));
   const rank = (c: Chip): number[] => {
     const interest = interests.indexOf(c.key);
     return [
       c.key === FREE_CHIP ? 0 : 1,
       interest === -1 ? interests.length : interest,
-      -(count.get(c.key) ?? 0),
       order.get(c.key) ?? 0,
     ];
   };
@@ -76,7 +62,8 @@ function ScrollArrow({
       type="button"
       onClick={onClick}
       aria-label={dir === "prev" ? "Previous filters" : "More filters"}
-      className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-primary-strong bg-surface text-fg transition-colors hover:bg-primary-soft"
+      // A phone swipes the row; the arrows would only crowd it.
+      className="inline-flex size-11 shrink-0 max-sm:hidden items-center justify-center rounded-full border border-primary-strong bg-surface text-fg transition-colors hover:bg-primary-soft"
     >
       <Icon aria-hidden="true" className="size-6" />
     </button>
@@ -87,14 +74,11 @@ export const FeedFilters = memo(function FeedFilters({
   chips,
   onToggleChip,
   interests = [],
-  events = [],
 }: {
   chips: Set<string>;
   onToggleChip: (chip: string) => void;
   /** The member's interest slugs; their topics come first. */
   interests?: string[];
-  /** The whole feed, unfiltered, to rank the other topics by. */
-  events?: Event[];
 }) {
   const { categories } = useCategories();
   const all = useMemo(
@@ -105,9 +89,8 @@ export const FeedFilters = memo(function FeedFilters({
           ...categories.map((c) => ({ key: c.slug, label: c.label })),
         ],
         interests,
-        events,
       ),
-    [categories, interests, events],
+    [categories, interests],
   );
 
   // Whether there is more of the row to either side, for the arrows.
@@ -174,7 +157,7 @@ export const FeedFilters = memo(function FeedFilters({
           role="group"
           aria-labelledby="feed-filters-label"
           onScroll={update}
-          className="-my-1.5 flex min-w-0 flex-1 gap-3 overflow-x-auto scroll-fade-x py-1.5 pr-12 lg:gap-[19px]"
+          className="-my-1.5 flex min-w-0 flex-1 gap-3 overflow-x-auto scroll-fade-x py-1.5 pr-12 max-sm:-mx-4 max-sm:scroll-px-4 max-sm:pl-4 lg:gap-[19px]"
         >
           {all.map(({ key, label }) => {
             const on = chips.has(key);
