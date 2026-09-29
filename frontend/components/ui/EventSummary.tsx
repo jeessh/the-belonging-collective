@@ -6,21 +6,20 @@ import { clockTime, whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
 
 /**
- * "Ages 18+", "Ages 12–17", "Up to 12", or "Youth" when only the youth flag is
- * set (the imported programs carry that and no ages); null otherwise. 99 means
- * "no upper limit", so it reads as open.
+ * "Ages 18+", "Ages 12–17", "Up to 12"; null when the program sets no ages.
+ * 99 means "no upper limit", so it reads as open. The youth flag alone draws
+ * nothing on a card — it stays a console filter, not a line members read.
  */
 export function ageLabel(ev: {
   min_age?: number | null;
   max_age?: number | null;
-  is_youth?: boolean | null;
 }): string | null {
   const min = ev.min_age ?? null;
   const max = ev.max_age != null && ev.max_age < 99 ? ev.max_age : null;
   if (min != null && max != null) return `Ages ${min}–${max}`;
   if (min != null) return `Ages ${min}+`;
   if (max != null) return `Up to ${max}`;
-  return ev.is_youth ? "Youth" : null;
+  return null;
 }
 
 /**
