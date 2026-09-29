@@ -1109,7 +1109,9 @@ export function EventsView({
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
           bar under it, so it comes after the feed in the DOM as well. */}
       <div className="relative flex min-h-0 flex-1 max-sm:flex-col">
-        {!phone && (
+        {/* All Saved Events is the whole list already, so the saved column
+            (or the phone's bar) steps aside while it is open. */}
+        {!phone && view !== "saved" && (
           <SavedSidebar
             ref={dropRef}
             layout={sidebarOpen ? "panel" : "rail"}
@@ -1127,7 +1129,8 @@ export function EventsView({
         )}
 
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* The saved list opens over the main column; the sidebar stays. */}
+          {/* The saved list opens over the main column, which has the whole
+              width while it is up. */}
           <SavedEvents
             me={me}
             open={view === "saved"}
@@ -1334,7 +1337,7 @@ export function EventsView({
           </div>
         </section>
 
-        {phone && (
+        {phone && view !== "saved" && (
           <SavedSidebar
             ref={dropRef}
             layout="bar"
