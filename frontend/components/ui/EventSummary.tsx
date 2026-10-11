@@ -115,13 +115,19 @@ export function EventSummary({
       : null;
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
-  // 18, the saved card's 24 over 20.
+  // 18, the saved card's 24 over 24, the grid tile's 24 over 20.
   const meta = card
     ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
-    : stack || tile
-      ? "text-xl"
-      : "text-lg";
-  const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
+    : stack
+      ? "text-2xl leading-[26px]"
+      : tile
+        ? "text-xl"
+        : "text-lg";
+  const icon = card
+    ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}`
+    : stack
+      ? "size-9"
+      : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -137,7 +143,7 @@ export function EventSummary({
     <EventTags
       event={event}
       recommended={recommended}
-      className={feed ? "lg:text-xl short:!text-lg" : ""}
+      className={feed ? "lg:text-xl short:!text-lg" : stack ? "text-xl" : ""}
     />
   );
 
@@ -157,13 +163,17 @@ export function EventSummary({
   );
 
   const facts = (
-    <div className={`flex flex-col gap-3 ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}>
+    <div
+      className={`flex flex-col ${stack ? "gap-4" : "gap-3"} ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}
+    >
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
         />
-        <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
+        <div
+          className={`min-w-0 ${feed || stack ? "flex flex-col gap-2" : ""} ${feed ? "short:!gap-1" : ""}`}
+        >
           {/* Each part stays whole, so a narrow column breaks between
               "In 52 weeks" and "· September 24, 2027", never around
               the dot. */}
@@ -179,14 +189,15 @@ export function EventSummary({
           {when.time && <p className="text-fg-muted">{when.time}</p>}
         </div>
       </div>
-      <div className="flex items-start gap-3">
+      <div className={`flex gap-3 ${stack ? "items-center" : "items-start"}`}>
         <MapPin
           aria-hidden="true"
-          className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+          className={`shrink-0 text-fg-icon ${stack ? "" : "mt-0.5"} ${icon}`}
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
-      {ages && (
+      {/* The saved card is when, where and who's going — nothing else. */}
+      {ages && !stack && (
         <div className="flex items-start gap-3">
           <Cake
             aria-hidden="true"
@@ -195,7 +206,7 @@ export function EventSummary({
           <p className="min-w-0 text-fg">{ages}</p>
         </div>
       )}
-      {typeof event.spots_left === "number" && (
+      {typeof event.spots_left === "number" && !stack && (
         <div className="flex items-start gap-3">
           <Ticket
             aria-hidden="true"
@@ -238,11 +249,11 @@ export function EventSummary({
       <div className={`flex h-full flex-col ${className}`}>
         <div className="relative aspect-[2/1] w-full shrink-0 bg-surface-subtle">
           {img}
-          <div className="absolute inset-x-6 bottom-4 flex flex-wrap gap-3">
+          <div className="absolute inset-x-3.5 bottom-4 flex flex-wrap gap-4">
             {tags}
           </div>
         </div>
-        <div className="flex flex-1 flex-col gap-4 p-6">
+        <div className="flex flex-1 flex-col gap-6 p-6">
           {title}
           {facts}
           {actions && (

@@ -12,6 +12,8 @@ export function GoingCount({
   onSignIn,
   signInHref,
   variant = "line",
+  label = (n) => `${n} going`,
+  iconClassName = "size-6",
   className = "",
 }: {
   count: number | null | undefined;
@@ -20,6 +22,10 @@ export function GoingCount({
   signInHref?: string;
   /** `line` (default): icon + "N going". `tag`: the sheet's small grey "26 GOING" chip. */
   variant?: "line" | "tag";
+  /** The `line` wording; the Saved Event Card says "20 People Going". */
+  label?: (count: number) => string;
+  /** The `line` icon's size. */
+  iconClassName?: string;
   className?: string;
 }) {
   if (count === 0 || count === undefined) return null;
@@ -50,8 +56,8 @@ export function GoingCount({
   }
   return (
     <span className={`inline-flex items-center gap-3 text-fg ${className}`}>
-      <Users aria-hidden="true" className="size-6 shrink-0 text-fg-icon" />
-      {count} going
+      <Users aria-hidden="true" className={`shrink-0 text-fg-icon ${iconClassName}`} />
+      {label(count)}
     </span>
   );
 }

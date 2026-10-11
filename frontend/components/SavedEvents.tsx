@@ -12,7 +12,6 @@ import {
 import { useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
-  BookX,
   GalleryVerticalEnd,
   LayoutGrid,
   MoveLeft,
@@ -28,11 +27,7 @@ import {
   type Event,
   type Me,
 } from "@/lib/api";
-import {
-  googleCalendarUrl,
-  openGoogleCalendar,
-  googleCalendarButton,
-} from "@/lib/calendar";
+import { googleCalendarButton } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -85,7 +80,6 @@ type Props = {
   calendarUrl: string;
   onClose: () => void;
   onSignIn: () => void;
-  onUnsave: (event: Event) => void;
   onOpen: (event: Event) => void;
 };
 
@@ -102,7 +96,6 @@ export const SavedEvents = memo(function SavedEvents({
   calendarUrl,
   onClose,
   onSignIn,
-  onUnsave,
   onOpen,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -430,8 +423,6 @@ export const SavedEvents = memo(function SavedEvents({
                           key={ev.id}
                           event={ev}
                           view={view}
-                          calendar={tab === "upcoming"}
-                          onUnsave={onUnsave}
                           onOpen={onOpen}
                           offscreen={i < first || i >= first + inView}
                           className="w-full shrink-0 cq-md:w-[calc((100%-1.5rem)/2)] cq-xl:w-[calc((100%-3rem)/3)]"
@@ -446,8 +437,6 @@ export const SavedEvents = memo(function SavedEvents({
                         key={ev.id}
                         event={ev}
                         view={view}
-                        calendar={tab === "upcoming"}
-                        onUnsave={onUnsave}
                         onOpen={onOpen}
                       />
                     ))}
@@ -576,17 +565,12 @@ export const SavedEvents = memo(function SavedEvents({
 function SavedCard({
   event,
   view,
-  calendar,
-  onUnsave,
   onOpen,
   offscreen = false,
   className = "",
 }: {
   event: Event;
   view: SavedView;
-  /** Offer "Add to calendar" — the upcoming list only. */
-  calendar: boolean;
-  onUnsave: (event: Event) => void;
   onOpen: (event: Event) => void;
   /** Slid out of Card View's window: kept out of Tab and screen readers. */
   offscreen?: boolean;
@@ -606,53 +590,37 @@ function SavedCard({
       // Hover (and keyboard focus inside) says "this opens": the cyan
       // outline, the pale cyan fill, a soft shadow and, motion allowing, a
       // small lift.
-      className={`cursor-pointer overflow-hidden rounded-card border border-line-card bg-surface transition duration-150 ease-out hover:border-primary-border hover:bg-primary-soft hover:shadow-lg focus-within:border-primary-border focus-within:bg-primary-soft motion-safe:hover:-translate-y-0.5 ${
+      className={`cursor-pointer overflow-hidden rounded-card border ${stack ? "border-line" : "border-line-card"} bg-surface transition duration-150 ease-out hover:border-primary-border hover:bg-primary-soft hover:shadow-lg focus-within:border-primary-border focus-within:bg-primary-soft motion-safe:hover:-translate-y-0.5 ${
         stack ? "" : "p-6"
       } ${className}`}
     >
       {stack ? (
-        <EventSummary
-          event={event}
-          layout="stack"
-          going={<GoingCount count={event.saved_count} />}
-          actions={
-            <>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUnsave(event);
-                }}
-                aria-label={`Un-save ${event.title}`}
-                leadingIcon={<BookX />}
-              >
-                Un-save
-              </Button>
-              {calendar && googleCalendarUrl(event) && (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openGoogleCalendar(event);
-                  }}
-                  aria-label={`Add to calendar: ${event.title}`}
-                  leadingIcon={<GoogleCalendarIcon />}
-                >
-                  Add to calendar
-                </Button>
-              )}
-              <Button
-                variant="primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpen(event);
-                }}
-                trailingIcon={<MoveRight />}
-              >
-                More information
-                <span className="sr-only"> about {event.title}</span>
-              </Button>
-            </>
-          }
-        />
+        // The design's Saved Event Card: when, where and who's going, no
+        // buttons — the card opens the listing (Un-save is in there), and
+        // the link below is that same door for the keyboard.
+        <>
+          <EventSummary
+            event={event}
+            layout="stack"
+            going={
+              <GoingCount
+                count={event.saved_count}
+                label={(n) => `${n} ${n === 1 ? "Person" : "People"} Going`}
+                iconClassName="size-9"
+              />
+            }
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(event);
+            }}
+            className="sr-only focus:not-sr-only focus:mx-6 focus:mb-6 focus:inline-block focus:rounded-control focus:px-2 focus:underline"
+          >
+            More information about {event.title}
+          </button>
+        </>
       ) : (
         // Grid View is the design's Saved Event tile: no buttons, the tile
         // itself opens the listing (Un-save is in there). The link below is
