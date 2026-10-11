@@ -57,8 +57,8 @@ export type AuthView = {
  * hands each step back as a title plus a body. The in-feed overlay wraps that
  * in a Modal; `/signup` wraps it in a page. Both toast on their own.
  *
- * As the design draws it, every sign-up step's left button is Login and the
- * × (or the chooser) is the way back; there is no Back between steps.
+ * Every sign-up step's left button is Back, to the step before it; the
+ * account-type step goes back to the chooser.
  *
  * `onSignedIn` fires once the cookie is set: straight away for a log-in, and
  * from "Continue to events" after an account is created. `onBack` is the
@@ -245,7 +245,7 @@ export function MemberAuthFlow({
     </div>
   );
 
-  const loginAside = { label: "Login", onClick: enterLogin };
+  const back = (to: Step) => ({ label: "Back", onClick: () => go(to) });
 
   let view: AuthView;
 
@@ -253,7 +253,7 @@ export function MemberAuthFlow({
     case "chooser":
       view = {
         title: "You're not logged in!",
-        subtitle: "Create an account to save events to your page and calendar",
+        subtitle: "Create an account to save events to your page and calendar.",
         body: (
           <div className="flex flex-col gap-4">
             <Button variant="primary" size="lg" onClick={() => go("who")}>
@@ -314,7 +314,7 @@ export function MemberAuthFlow({
             </fieldset>
             <FormFooter
               className="mt-12"
-              secondary={loginAside}
+              secondary={back("chooser")}
               primary={{ label: "Next" }}
             />
           </form>
@@ -324,12 +324,8 @@ export function MemberAuthFlow({
 
     case "name":
       view = {
-        title: caregiver
-          ? "Create your caregiver account"
-          : "Create your member account",
-        subtitle: caregiver
-          ? "Save events for the people you support."
-          : "Save the events you want to go to.",
+        title: "What's your name?",
+        subtitle: "Please enter your first name and last name.",
         body: (
           <form
             onSubmit={(e) => {
@@ -376,7 +372,7 @@ export function MemberAuthFlow({
             {errorLine}
             <FormFooter
               className="mt-6"
-              secondary={loginAside}
+              secondary={back("who")}
               primary={{ label: "Next", disabled: !nameReady }}
             />
           </form>
@@ -386,8 +382,8 @@ export function MemberAuthFlow({
 
     case "email":
       view = {
-        title: "Provide your email",
-        subtitle: "You will log in with it and get reminders for saved events",
+        title: "What's your email?",
+        subtitle: "Please enter your email.",
         body: (
           <form
             onSubmit={(e) => {
@@ -407,7 +403,7 @@ export function MemberAuthFlow({
             />
             <FormFooter
               className="mt-6"
-              secondary={loginAside}
+              secondary={back("name")}
               primary={{ label: "Next", disabled: email.trim() === "" }}
             />
           </form>
@@ -417,8 +413,8 @@ export function MemberAuthFlow({
 
     case "password":
       view = {
-        title: "Set up your password",
-        subtitle: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
+        title: "Set your password",
+        subtitle: `Please include a minimum of ${PASSWORD_MIN_LENGTH} characters.`,
         body: (
           <form
             onSubmit={submitPassword}
@@ -446,7 +442,7 @@ export function MemberAuthFlow({
             {errorLine}
             <FormFooter
               className="mt-6"
-              secondary={loginAside}
+              secondary={back("email")}
               primary={{
                 label: busy ? "Creating…" : "Create account",
                 disabled: busy || password === "" || confirm === "",
