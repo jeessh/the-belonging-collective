@@ -1142,7 +1142,6 @@ export function EventsView({
               closeSaved();
               toSignIn();
             }}
-            onUnsave={(ev) => void unsave(ev)}
             onOpen={setDetailFor}
           />
 
