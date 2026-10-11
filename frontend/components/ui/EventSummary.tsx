@@ -119,14 +119,14 @@ export function EventSummary({
   const meta = card
     ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
     : stack
-      ? "text-2xl leading-[26px]"
+      ? "text-2xl leading-[26px] short:text-xl short:leading-snug"
       : tile
         ? "text-xl"
         : "text-lg";
   const icon = card
     ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}`
     : stack
-      ? "size-9"
+      ? "size-9 short:size-7"
       : "size-6";
 
   const img = (
@@ -156,7 +156,7 @@ export function EventSummary({
           : card
             ? "text-2xl sm:text-3xl"
             : "text-2xl"
-      } ${stack ? "line-clamp-2" : ""}`}
+      } ${stack ? "line-clamp-2 min-h-[2lh]" : ""}`}
     >
       {event.title}
     </Title>
@@ -164,7 +164,7 @@ export function EventSummary({
 
   const facts = (
     <div
-      className={`flex flex-col ${stack ? "gap-4" : "gap-3"} ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}
+      className={`flex flex-col ${stack ? "gap-4 short:gap-3" : "gap-3"} ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}
     >
       <div className="flex items-start gap-3">
         <CalendarDays
@@ -246,14 +246,19 @@ export function EventSummary({
 
   if (stack) {
     return (
-      <div className={`flex h-full flex-col ${className}`}>
-        <div className="relative aspect-[2/1] w-full shrink-0 bg-surface-subtle">
+      // The card is its own width container, so the photo can be "half as
+      // tall as the card is wide" (50cqw) — the design's 2:1 — and no taller
+      // than the saved panel (a size container, `cqh`) leaves once the rest
+      // of the page is drawn; 4rem at the least. A title reserves two lines,
+      // so every card in the row comes out the same height.
+      <div className={`flex h-full flex-col [container-type:inline-size] ${className}`}>
+        <div className="relative h-[clamp(4rem,calc(100cqh-var(--saved-chrome,0px)),50cqw)] w-full shrink-0 bg-surface-subtle">
           {img}
           <div className="absolute inset-x-3.5 bottom-4 flex flex-wrap gap-4">
             {tags}
           </div>
         </div>
-        <div className="flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col gap-6 p-6 short:gap-4 short:p-5">
           {title}
           {facts}
           {actions && (

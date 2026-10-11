@@ -260,11 +260,17 @@ export const SavedEvents = memo(function SavedEvents({
       // called the same thing read as one. The feed's Escape handler finds
       // the panel by this label.
       aria-label="All saved events"
-      className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none"
+      // A size container: Card View sizes its photos from the panel's
+      // height (`cqh`), so the row and Back / Next fit without scrolling.
+      // `--saved-chrome` is everything else the panel draws in Card View —
+      // header, search, tabs, a card without its photo, Back / Next —
+      // measured at the design's sizes and at the `short:` ones. A phone
+      // scrolls its one card, so its photo stays 2:1.
+      className="absolute inset-0 z-20 overflow-y-auto bg-surface outline-none [container-type:size] sm:[--saved-chrome:724px] short:![--saved-chrome:622px]"
     >
       {/* The panel shares the screen with the sidebar, so how many cards fit
           across is the panel's own width, not the viewport's. */}
-      <div className="flex flex-col gap-6 p-4 [container-type:inline-size] sm:gap-8 sm:p-6 lg:p-9">
+      <div className="flex flex-col gap-6 p-4 [container-type:inline-size] sm:gap-8 sm:p-6 lg:p-9 short:!gap-5 short:!p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <button
@@ -314,7 +320,7 @@ export const SavedEvents = memo(function SavedEvents({
                     setStart(0);
                   }}
                   placeholder="Search for event"
-                  className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
+                  className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11 short:min-h-12 short:py-2"
                 />
               </label>
               {/* Three of the design's large buttons are five rows on a phone;
@@ -447,7 +453,7 @@ export const SavedEvents = memo(function SavedEvents({
                 {(view === "card" ? shown.length > inView : pageCount > 1) && (
                   <nav
                     aria-label="Saved events pages"
-                    className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-4 border-t border-line bg-surface px-4 py-4 sm:-mx-6 sm:-mb-6 sm:gap-6 sm:px-6 lg:-mx-9 lg:-mb-9 lg:px-9 lg:py-6"
+                    className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-4 border-t border-line bg-surface px-4 py-4 sm:-mx-6 sm:-mb-6 sm:gap-6 sm:px-6 lg:-mx-9 lg:-mb-9 lg:px-9 lg:py-6 short:!-mx-6 short:!-mb-6 short:!px-6 short:!py-4"
                   >
                     {view === "card" ? (
                       <>
