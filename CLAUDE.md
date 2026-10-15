@@ -40,6 +40,19 @@ Frontend also has `npm run typecheck` (`tsc --noEmit`) and `npm run build`.
 Interactive API docs: http://localhost:8000/docs. **There is no test suite,
 linter, or CI** — verify changes by running the app and typecheck.
 
+## Self-hosted production (KWHab) — rules for every change
+KWHab deploys production from **release tags** on its own server + Postgres
+(not Vercel/Supabase); the Vercel site is ours. So:
+- **Never edit a migration that is in a released tag.** Add a new revision.
+- **Every new env var goes in `backend/.env.example` or
+  `frontend/.env.example`** in the same change, and in the release notes.
+- **Nothing may require Vercel or Supabase.** Uploads go through
+  `core/storage.upload_image`, which honours `STORAGE_BACKEND=local`
+  (`UPLOAD_DIR`, `UPLOAD_PUBLIC_URL`; served by `main.py` at `/uploads/{name}`).
+  Any new Vercel-only feature (cron, etc.) needs a plain-HTTP equivalent.
+- Releases: `vX.Y.Z` tag + GitHub release listing new env vars and migrations.
+  See README "Self-hosting".
+
 ## Database (Supabase)
 - Project ref `xybhshhcgdvfgryklsze`, region `aws-1-us-west-2`.
 - Pooler host `aws-1-us-west-2.pooler.supabase.com` — **:5432 session** (local),

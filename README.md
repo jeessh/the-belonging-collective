@@ -17,9 +17,7 @@ python3 -m venv .venv          # needs Python 3.10+; macOS system 3.9 crashes at
                                # import on the `X | None` type unions
 .venv/bin/pip install -r requirements.txt
 
-# Create backend/.env (gitignored, no example file to copy) with at least:
-#   DATABASE_URL=postgresql+psycopg://...
-#   JWT_SECRET=<any long random string>
+cp .env.example .env           # then set at least DATABASE_URL + JWT_SECRET
 
 .venv/bin/alembic upgrade head # applies the schema (Alembic owns it)
 .venv/bin/python -m app.seed   # optional sample data; idempotent
@@ -52,6 +50,38 @@ Production env vars:
 | backend  | `FRONTEND_ORIGIN` | deployed URL (for CORS) |
 | frontend | `NEXT_PUBLIC_API_URL` | `/api` |
 | backend  | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `MAIL_FROM` | organizer password-reset mail. **Unset = nothing is sent and the reset link is logged instead** |
+
+Every setting is listed with a comment in [`backend/.env.example`](backend/.env.example)
+and [`frontend/.env.example`](frontend/.env.example).
+
+## Self-hosting
+
+KWHab runs production on its own server and Postgres, deployed from release
+tags. Nothing about it needs Vercel or Supabase:
+
+- **Uploads**: set `STORAGE_BACKEND=local` and `UPLOAD_DIR` (a persistent,
+  writable folder). Files are served by the backend at `/uploads/<name>`;
+  set `UPLOAD_PUBLIC_URL` to serve `UPLOAD_DIR` from your web server instead.
+- **Routing**: put the frontend and backend on one origin, `/api/*` → backend
+  (stripping `/api`, or run `backend/index.py`'s `app`, which strips it),
+  everything else → frontend. Set `ROOT_PATH=/api`, `NEXT_PUBLIC_API_URL=/api`.
+- **Reminders**: call `GET /api/internal/reminders` daily with
+  `Authorization: Bearer $CRON_SECRET` (Vercel's cron does this on Vercel).
+- **Schema**: `alembic upgrade head` after each deploy.
+
+### Releases
+
+- Versions ready for real users are tagged `vX.Y.Z` with a GitHub release.
+  The release notes list any **new environment variables** and any **new
+  migrations**.
+- Every setting is in an `.env.example`; a new one is added there in the same
+  change that reads it.
+- **Released migrations are never edited.** Production already has them
+  applied, so a fix is always a new revision.
+
+## License
+
+[MIT](LICENSE).
 
 ## Roles
 - **Members** — discover + attend programs (email + password sign-in)
