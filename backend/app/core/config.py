@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +15,16 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
 
     FRONTEND_ORIGIN: str = "http://localhost:3000"
+
+    # Where uploaded images and posters go: "supabase" (Supabase Storage, below)
+    # or "local" (files written to UPLOAD_DIR on this server and served by the
+    # backend at /uploads). UPLOAD_PUBLIC_URL is the URL prefix the stored
+    # links are built from; empty means FRONTEND_ORIGIN + ROOT_PATH + /uploads,
+    # which is right for a same-origin deploy. Point it elsewhere (and serve
+    # UPLOAD_DIR from a web server) to bypass the backend for these files.
+    STORAGE_BACKEND: Literal["supabase", "local"] = "supabase"
+    UPLOAD_DIR: str = "uploads"
+    UPLOAD_PUBLIC_URL: str = ""
 
     # Supabase Storage — used only by the image-upload endpoint. The SECRET key
     # (sb_secret_…) bypasses RLS and must stay server-side; never expose it to

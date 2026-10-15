@@ -1,11 +1,16 @@
-"""Supabase Storage upload helper.
+"""Upload helper: Supabase Storage or a local folder (STORAGE_BACKEND).
 
-Uploads bytes to a public bucket using the SECRET key (server-side only) and
-returns the public URL. Kept dependency-light — talks to the Storage REST API
-directly with httpx rather than pulling in the full supabase client.
+Supabase: uploads bytes to a public bucket using the SECRET key (server-side
+only) and returns the public URL. Kept dependency-light — talks to the Storage
+REST API directly with httpx rather than pulling in the full supabase client.
+
+Local: writes the bytes to UPLOAD_DIR under a random name and returns
+UPLOAD_PUBLIC_URL + name. main.py serves UPLOAD_DIR at /uploads.
 """
 
+import asyncio
 import uuid
+from pathlib import Path
 
 import httpx
 
@@ -32,15 +37,18 @@ async def upload_image(data: bytes, content_type: str) -> str:
     Async so the (up to 30s) storage round trip never blocks the event loop.
     Raises StorageError if storage isn't configured or the upload fails.
     """
-    if not settings.SUPABASE_URL or not settings.SUPABASE_SECRET_KEY:
-        raise StorageError("File storage is not configured on the server.")
-
     ext = _EXT.get(content_type)
     if ext is None:
         raise StorageError(f"Unsupported file type: {content_type}")
+    key = f"{uuid.uuid4()}.{ext}"
+
+    if settings.STORAGE_BACKEND == "local":
+        return await _upload_local(data, key)
+
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SECRET_KEY:
+        raise StorageError("File storage is not configured on the server.")
 
     bucket = settings.SUPABASE_IMAGE_BUCKET
-    key = f"{uuid.uuid4()}.{ext}"
     base = settings.SUPABASE_URL.rstrip("/")
     upload_url = f"{base}/storage/v1/object/{bucket}/{key}"
 
@@ -64,3 +72,25 @@ async def upload_image(data: bytes, content_type: str) -> str:
 
     # Public bucket → the object is served at this stable URL.
     return f"{base}/storage/v1/object/public/{bucket}/{key}"
+
+
+def upload_dir() -> Path:
+    """The local upload folder, created if missing."""
+    path = Path(settings.UPLOAD_DIR)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def upload_public_url() -> str:
+    """URL prefix local uploads are served from, without a trailing slash."""
+    if settings.UPLOAD_PUBLIC_URL:
+        return settings.UPLOAD_PUBLIC_URL.rstrip("/")
+    return f"{settings.FRONTEND_ORIGIN.rstrip('/')}{settings.ROOT_PATH}/uploads"
+
+
+async def _upload_local(data: bytes, key: str) -> str:
+    try:
+        await asyncio.to_thread((upload_dir() / key).write_bytes, data)
+    except OSError as exc:
+        raise StorageError(f"Could not save the file: {exc}") from exc
+    return f"{upload_public_url()}/{key}"

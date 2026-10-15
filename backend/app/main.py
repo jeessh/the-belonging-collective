@@ -1,10 +1,12 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.core import mail
 from app.core.config import settings
+from app.core.storage import upload_dir
 
 # Import models so every mapper is configured before the first request.
 import app.models  # noqa: F401
@@ -70,3 +72,22 @@ app.include_router(invites.router)
 app.include_router(access.router)
 app.include_router(analytics.router)
 app.include_router(internal.router)
+
+# STORAGE_BACKEND=local: serve the upload folder. A route rather than a
+# StaticFiles mount, which 404s under ROOT_PATH=/api. Only a bare file name is
+# accepted, and only sniffed image/PDF types are ever written there.
+if settings.STORAGE_BACKEND == "local":
+    _uploads = upload_dir().resolve()
+
+    @app.get("/uploads/{name}", include_in_schema=False)
+    def uploaded_file(name: str):
+        path = _uploads / name
+        if "/" in name or name.startswith(".") or not path.is_file():
+            raise HTTPException(404)
+        return FileResponse(
+            path,
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
