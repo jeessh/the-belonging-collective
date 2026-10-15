@@ -18,6 +18,7 @@ import {
   type AccessState,
 } from "@/components/member/AccessAction";
 import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
+import { useToast } from "@/components/ui/Toast";
 
 /**
  * The public page's bottom row: the map, Save, and — when registration lives
@@ -31,6 +32,7 @@ import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 export function EventActions({ event }: { event: Event }) {
   const router = useRouter();
   const params = useSearchParams();
+  const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export function EventActions({ event }: { event: Event }) {
       try {
         await api(`/events/${event.id}/attend`, { method: "POST" });
         setSaved(true);
+        toast.show({ title: "Event has been successfully saved!" });
       } catch (e) {
         if (e instanceof ApiError && e.status === 401 && !resuming) {
           toSignIn("save");
@@ -90,7 +93,7 @@ export function EventActions({ event }: { event: Event }) {
         setBusy(false);
       }
     },
-    [event.id, toSignIn],
+    [event.id, toSignIn, toast],
   );
 
   const ask = useCallback(
