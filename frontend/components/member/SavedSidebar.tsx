@@ -425,13 +425,14 @@ function Thumb({
   layout: "panel" | "row" | "rail";
 }) {
   const image = eventImage(event);
+  // Hover (and keyboard focus) darkens the photo: the thumbnail opens.
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={image}
       alt=""
       draggable={false}
-      className="absolute inset-0 h-full w-full object-cover"
+      className="absolute inset-0 h-full w-full object-cover transition duration-150 ease-out group-hover:brightness-75 group-focus-visible:brightness-75"
     />
   );
   const going = <GoingCount count={event.saved_count} variant="tag" />;
@@ -442,7 +443,7 @@ function Thumb({
         type="button"
         onClick={() => onOpen(event)}
         aria-label={`Open ${event.title}`}
-        className="relative aspect-square w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle"
+        className="group relative aspect-square w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle"
       >
         {img}
       </button>
@@ -454,7 +455,7 @@ function Thumb({
       <button
         type="button"
         onClick={() => onOpen(event)}
-        className="flex w-48 shrink-0 items-center gap-2 rounded-control bg-surface-subtle p-1.5 text-left"
+        className="group flex w-48 shrink-0 items-center gap-2 rounded-control bg-surface-subtle p-1.5 text-left transition-colors duration-150 ease-out hover:bg-line-card focus-visible:bg-line-card"
       >
         <span
           aria-hidden="true"
@@ -476,7 +477,7 @@ function Thumb({
     <button
       type="button"
       onClick={() => onOpen(event)}
-      className="flex w-full shrink-0 flex-col gap-2 rounded-control text-left"
+      className="group flex w-full shrink-0 flex-col gap-2 rounded-control text-left"
     >
       <span
         aria-hidden="true"
