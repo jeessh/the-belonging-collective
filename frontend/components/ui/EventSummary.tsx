@@ -65,11 +65,9 @@ export function EventTags({
  * the listing draws those on its top row. `row` is the Listed Event: a
  * square image that fills the row's height beside the text, stacking on top
  * of it where the row is narrow — by the row's own width, not the viewport,
- * since the same row sits in a full column and in a two-up grid. `stack` is
- * the Saved Event Card: the image bleeds to the box's edges with the tags
- * over its foot, so the box that wraps it should clip and carry no padding
- * of its own. `tile` is the saved list's Grid View: a 240px square picture
- * beside the text, no buttons.
+ * since the same row sits in a full column and in a two-up grid. `tile` is
+ * the Saved Event tile on All Saved Events: a 240px square picture beside
+ * the text, no buttons.
  *
  * Every image box is a stretched flex or grid item with an aspect ratio, so
  * it is never shorter than the text beside it, and the picture fills it.
@@ -85,7 +83,7 @@ export function EventSummary({
   className = "",
 }: {
   event: Event;
-  layout?: "card" | "detail" | "row" | "stack" | "tile";
+  layout?: "card" | "detail" | "row" | "tile";
   /** The going slot — usually a `GoingCount`. */
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
@@ -101,7 +99,6 @@ export function EventSummary({
   // The feed's one card, sized to the Figma frame; `short` tightens it on a
   // window too short for the frame (see tailwind.config.ts).
   const feed = layout === "card";
-  const stack = layout === "stack";
   const tile = layout === "tile";
   const when = whenLine(event);
   const where =
@@ -115,10 +112,10 @@ export function EventSummary({
       : null;
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
-  // 18, the saved card's 24 over 20.
+  // 18, the saved tile's 24 over 20.
   const meta = card
     ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
-    : stack || tile
+    : tile
       ? "text-xl"
       : "text-lg";
   const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
@@ -150,7 +147,7 @@ export function EventSummary({
           : card
             ? "text-2xl sm:text-3xl"
             : "text-2xl"
-      } ${stack ? "line-clamp-2" : ""}`}
+      }`}
     >
       {event.title}
     </Title>
@@ -214,7 +211,7 @@ export function EventSummary({
   );
 
   if (tile) {
-    // The Saved Event tile (All Saved Events' Grid View): a square picture
+    // The Saved Event tile (All Saved Events): a square picture
     // beside the tags, title and facts, no buttons — the whole tile opens
     // the listing. The picture goes on top where the tile is narrow.
     return (
@@ -228,28 +225,6 @@ export function EventSummary({
             {title}
             {facts}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stack) {
-    return (
-      <div className={`flex h-full flex-col ${className}`}>
-        <div className="relative aspect-[2/1] w-full shrink-0 bg-surface-subtle">
-          {img}
-          <div className="absolute inset-x-6 bottom-4 flex flex-wrap gap-3">
-            {tags}
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col gap-4 p-6">
-          {title}
-          {facts}
-          {actions && (
-            <div className="mt-auto flex flex-wrap gap-3 pt-2 [&>*]:flex-1">
-              {actions}
-            </div>
-          )}
         </div>
       </div>
     );
