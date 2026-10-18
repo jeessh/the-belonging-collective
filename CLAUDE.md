@@ -52,6 +52,11 @@ KWHab deploys production from **release tags** on its own server + Postgres
   Any new Vercel-only feature (cron, etc.) needs a plain-HTTP equivalent.
 - Releases: `vX.Y.Z` tag + GitHub release listing new env vars and migrations.
   See README "Self-hosting".
+- **Merging to `master` is not a release** — KWHab only picks up a tag. Any
+  collaborator may merge their own PRs (squash) and cut a release; no review
+  is required. Before tagging, check every change since the last tag
+  (`git log <last-tag>..master`) and put all new env vars, new migrations and
+  anything their admin must do in the release notes.
 
 ## Database (Supabase)
 - Project ref `xybhshhcgdvfgryklsze`, region `aws-1-us-west-2`.
