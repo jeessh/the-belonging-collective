@@ -391,6 +391,8 @@ export const SavedEvents = memo(function SavedEvents({
               ? undefined
               : {
                   label: "Link to my list",
+                  intro: "My saved programs, kept up to date:",
+                  note: "Anyone with the link sees your upcoming programs.",
                   getUrl: async () =>
                     sharedListUrl((await createShareLink()).token),
                 }
@@ -410,6 +412,7 @@ export const SavedEvents = memo(function SavedEvents({
                 <EventSummary
                   event={ev}
                   layout="row"
+                  fixedDates
                   going={<GoingCount count={ev.saved_count} />}
                 />
               </li>

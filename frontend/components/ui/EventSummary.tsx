@@ -80,6 +80,7 @@ export function EventSummary({
   titleAs: Title = "h3",
   titleId,
   recommended = false,
+  fixedDates = false,
   className = "",
 }: {
   event: Event;
@@ -91,6 +92,8 @@ export function EventSummary({
   /** The page's own heading where the summary is the page (or the dialog). */
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
+  /** "Monday" for "Tomorrow": paper and shared lists outlive today. */
+  fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
   className?: string;
@@ -100,7 +103,7 @@ export function EventSummary({
   // window too short for the frame (see tailwind.config.ts).
   const feed = layout === "card";
   const tile = layout === "tile";
-  const when = whenLine(event);
+  const when = whenLine(event, { fixed: fixedDates });
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = eventImage(event);

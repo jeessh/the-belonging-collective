@@ -57,6 +57,20 @@ export function EventActions({ event }: { event: Event }) {
     };
   }, [event.id, event.access_group]);
 
+  // The page is rendered without the viewer's cookie, so it can't know they
+  // already saved this. A signed-out visitor's 401 leaves Save as it is.
+  useEffect(() => {
+    let alive = true;
+    api<Event[]>("/users/me/events")
+      .then((mine) => {
+        if (alive && mine.some((e) => e.id === event.id)) setSaved(true);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [event.id]);
+
   const external =
     event.requires_signup &&
     event.registration_mode === "external" &&

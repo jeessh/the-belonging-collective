@@ -111,6 +111,14 @@ export function longDate(iso?: string | null): string {
   });
 }
 
+/** "Monday", in Toronto. */
+export function weekday(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", {
+    timeZone: TIME_ZONE,
+    weekday: "long",
+  });
+}
+
 /** "1:00PM", as the design sets it — no space before the meridiem. */
 export function clockTime(iso: string): string {
   return new Date(iso)
@@ -139,12 +147,20 @@ export function timeRange(
  * an empty time. `rel` and `date` are the two halves of `day`, for a layout
  * that wants to keep each on one line.
  */
-export function whenLine(ev: {
-  starts_at?: string | null;
-  ends_at?: string | null;
-}): { day: string; rel: string; date: string; time: string } {
+export function whenLine(
+  ev: {
+    starts_at?: string | null;
+    ends_at?: string | null;
+  },
+  /**
+   * For text that outlives the moment it was made — paper, a shared list,
+   * a message: "Monday" rather than "Tomorrow", which is wrong by the time
+   * somebody reads it.
+   */
+  { fixed = false }: { fixed?: boolean } = {},
+): { day: string; rel: string; date: string; time: string } {
   const date = longDate(ev.starts_at);
-  const rel = relativeDay(ev.starts_at);
+  const rel = fixed && date ? weekday(ev.starts_at!) : relativeDay(ev.starts_at);
   return {
     day: date ? `${rel} · ${date}` : rel,
     rel,

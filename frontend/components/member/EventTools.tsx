@@ -50,11 +50,13 @@ export function EventTools({ event }: { event: Event }) {
         <PrintPreview
           title={event.title}
           printLabel="Print Event"
+          titleOnPaper={false}
           onClose={() => setOpen(null)}
         >
           <EventDetails
             event={event}
             titleAs="h3"
+            fixedDates
             // On paper only a number means anything; the anonymous
             // "See who else is going" has nothing to open.
             going={

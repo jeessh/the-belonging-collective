@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PublicHeader } from "@/components/PublicHeader";
 import { notFound } from "next/navigation";
 import { EventActions } from "@/components/EventActions";
 import { EventDetails } from "@/components/member/EventDetails";
@@ -32,7 +33,9 @@ function summarize(event: Event): string {
     : null;
   const facts = [when, event.location, event.host_name].filter(Boolean);
   const lead = event.description?.trim();
-  return lead ? `${facts.join(" · ")} — ${lead}`.slice(0, 300) : facts.join(" · ");
+  return lead
+    ? `${facts.join(" · ")} — ${lead}`.slice(0, 300)
+    : facts.join(" · ");
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -99,38 +102,41 @@ export default async function EventPage({ params }: Params) {
   };
 
   return (
-    <main className="min-h-dvh bg-surface-subtle px-4 py-6 text-fg sm:px-6 sm:py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      <article className="mx-auto w-full max-w-[960px] rounded-card border border-line bg-surface p-6 sm:p-10">
-        <EventDetails
-          event={event}
-          titleAs="h1"
-          going={
-            <GoingCount
-              count={event.saved_count}
-              signInHref={`/signup?next=${encodeURIComponent(`/events/${event.id}`)}`}
-            />
-          }
-          tools={<EventTools event={event} />}
-          hint={external ? hostnameOf(event.registration_url) : undefined}
-          actions={
-            // useSearchParams needs a boundary.
-            <Suspense fallback={null}>
-              <EventActions event={event} />
-            </Suspense>
-          }
+    <div className="min-h-dvh bg-surface-subtle text-fg">
+      <PublicHeader />
+      <main className="px-4 py-6 sm:px-6 sm:py-10">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        <p className="mt-8 text-center text-lg">
-          <Link href="/" className="text-fg underline underline-offset-4">
-            See more programs
-          </Link>
-        </p>
-      </article>
-    </main>
+        <article className="mx-auto w-full max-w-[960px] rounded-card border border-line bg-surface p-6 sm:p-10">
+          <EventDetails
+            event={event}
+            titleAs="h1"
+            going={
+              <GoingCount
+                count={event.saved_count}
+                signInHref={`/signup?next=${encodeURIComponent(`/events/${event.id}`)}`}
+              />
+            }
+            tools={<EventTools event={event} />}
+            hint={external ? hostnameOf(event.registration_url) : undefined}
+            actions={
+              // useSearchParams needs a boundary.
+              <Suspense fallback={null}>
+                <EventActions event={event} />
+              </Suspense>
+            }
+          />
+
+          <p className="mt-8 text-center text-lg">
+            <Link href="/" className="text-fg underline underline-offset-4">
+              See more programs
+            </Link>
+          </p>
+        </article>
+      </main>
+    </div>
   );
 }

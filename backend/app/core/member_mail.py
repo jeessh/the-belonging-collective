@@ -220,7 +220,6 @@ The {what} of a program you saved has changed.
 {event.title}
 {when_text(event)}
 {_where(event)}
-
 Add to calendar: {ics_url(event)}
 """,
                 button=("See the program", program_url(event)),

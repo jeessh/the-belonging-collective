@@ -31,7 +31,14 @@ export function ShareModal({
    * A second thing to copy that has to be fetched first — the member's list
    * link. Shown as one button; the URL appears in the row once it is known.
    */
-  link?: { label: string; getUrl: () => Promise<string> };
+  link?: {
+    label: string;
+    /** The line above the link in an emailed list. */
+    intro: string;
+    /** Shown in the row until the link is made. */
+    note: string;
+    getUrl: () => Promise<string>;
+  };
   onClose: () => void;
 }) {
   const { show } = useToast();
@@ -67,9 +74,20 @@ export function ShareModal({
     return url;
   }
 
-  function send(e: FormEvent) {
+  async function send(e: FormEvent) {
     e.preventDefault();
-    window.location.href = mailtoUrl(email, subject, body);
+    // A list goes out with its live link on top, so the message stays
+    // useful after the programs in it change. Without the link it still
+    // sends: the text is the list.
+    let text = body;
+    if (link) {
+      try {
+        text = `${link.intro}\n${await getLinkUrl()}\n\n${body}`;
+      } catch {
+        // Send the snapshot alone.
+      }
+    }
+    window.location.href = mailtoUrl(email, subject, text);
     onClose();
   }
 
@@ -91,8 +109,8 @@ export function ShareModal({
   // behind it, and Share looked like it did nothing.
   return createPortal(
     <div className="relative z-[70]">
-      <Modal title={title} onClose={onClose}>
-        <form onSubmit={send} className="mt-6 flex flex-col gap-6">
+      <Modal title={title} size="form" onClose={onClose}>
+        <form onSubmit={(e) => void send(e)} className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <TextField
               label="Share by Email"
@@ -114,16 +132,17 @@ export function ShareModal({
             </Button>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <p className="text-lg font-medium text-fg">{copy.label}</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <p className="max-h-32 min-w-0 flex-1 select-text overflow-y-auto whitespace-pre-line break-words rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
                 {copy.text}
               </p>
               <Button
                 size="lg"
                 onClick={() => void copyText()}
                 trailingIcon={<Copy />}
+                className="shrink-0"
               >
                 Copy
               </Button>
@@ -136,21 +155,23 @@ export function ShareModal({
           </div>
 
           {link && (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <p className="text-lg font-medium text-fg">{link.label}</p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                {linkUrl && (
-                  <p className="flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                    {linkUrl}
-                  </p>
-                )}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <p
+                  className={`min-w-0 flex-1 rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg ${
+                    linkUrl ? "select-text break-all text-fg" : "text-fg-muted"
+                  }`}
+                >
+                  {linkUrl ?? link.note}
+                </p>
                 <Button
                   size="lg"
                   onClick={() => void copyLink()}
                   trailingIcon={<Link2 />}
-                  className={linkUrl ? "" : "sm:self-start"}
+                  className="shrink-0"
                 >
-                  Copy link to my list
+                  Copy link
                 </Button>
               </div>
               {linkError && (

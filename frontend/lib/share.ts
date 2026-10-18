@@ -26,25 +26,40 @@ export function hostnameOf(url?: string | null): string {
   }
 }
 
-/** The plain-text lines everyone gets: title, when, where, link, calendar. */
-export function eventShareText(event: Event, url: string): string {
-  const when = whenLine(event);
-  const calendar = googleCalendarUrl(event);
+/**
+ * The plain-text lines everyone gets: title, when, where, link, and — for a
+ * single program — the calendar link. Dates are fixed ("Monday, October 19"),
+ * since "Tomorrow" is wrong by the time the message is read.
+ */
+export function eventShareText(
+  event: Event,
+  url: string,
+  { calendar = true }: { calendar?: boolean } = {},
+): string {
+  const when = whenLine(event, { fixed: true });
+  const calendarUrl = calendar ? googleCalendarUrl(event) : null;
   return [
     event.title,
     `${when.day}${when.time ? `, ${when.time}` : ""}`,
     event.location ?? (event.is_virtual ? "Online" : null),
     url,
-    calendar ? `Add to Google Calendar: ${calendar}` : null,
+    calendarUrl ? `Add to Google Calendar: ${calendarUrl}` : null,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-/** One block per program, for the saved list. */
+/**
+ * One block per program, for the saved list. No calendar links: each is
+ * several hundred characters, and with a handful of programs the `mailto:`
+ * grew past what mail apps accept, so Send did nothing. The program's own
+ * page has the button.
+ */
 export function listShareText(events: Event[], origin: string): string {
   return events
-    .map((ev) => eventShareText(ev, publicEventUrl(ev.id, origin)))
+    .map((ev) =>
+      eventShareText(ev, publicEventUrl(ev.id, origin), { calendar: false }),
+    )
     .join("\n\n");
 }
 

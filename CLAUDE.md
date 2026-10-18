@@ -177,7 +177,11 @@ can open.
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
   and bottom `actions`. Share and Print need no backend: `ShareModal` opens a
   `mailto:` or copies text (`lib/share.ts`), `PrintPreview` is `window.print()`
-  over the `.print-target` CSS. Nested dialogs work because `Modal` only
+  over the `.print-target` CSS. The paper is a second copy portalled straight
+  under `<body>` (`.print-sheet`, with the logo and title) — printing the
+  dialog's own scroll box started the sheet half way down and cut it off
+  after one page. Anything that outlives today (paper, shared text, the
+  `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
 - `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:

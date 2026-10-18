@@ -83,6 +83,39 @@ body {
   .no-print {
     display: none !important;
   }
+  /* Tag pills and the image boxes are background colours, which browsers
+     drop on paper unless told otherwise. */
+  .print-target,
+  .print-target * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* The member's print sheet (member/PrintPreview) sits directly under
+     <body>, so it flows from the top of the first page and on to the next
+     instead of being pinned over the page. */
+  .print-target.print-sheet {
+    position: static;
+    padding: 0;
+  }
+  .print-sheet li,
+  .print-sheet section {
+    break-inside: avoid;
+  }
+}
+
+/* Only ever on paper; the dialog is the preview on screen. */
+@media screen {
+  .print-sheet {
+    display: none;
+  }
+}
+.print-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dcdcdc;
 }
 
 /* The date field's calendar button, moved to the leading edge.

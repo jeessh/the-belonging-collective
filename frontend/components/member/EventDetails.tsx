@@ -51,6 +51,7 @@ export function EventDetails({
   hint,
   titleAs = "h2",
   titleId,
+  fixedDates = false,
 }: {
   event: Event;
   going?: ReactNode;
@@ -62,6 +63,8 @@ export function EventDetails({
   hint?: string;
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
+  /** For paper: "Monday", not "Tomorrow". */
+  fixedDates?: boolean;
 }) {
   const links = [
     ...(event.links ?? []),
@@ -98,6 +101,7 @@ export function EventDetails({
         going={going}
         titleAs={titleAs}
         titleId={titleId}
+        fixedDates={fixedDates}
       />
 
       {(event.description || event.notes) && (
