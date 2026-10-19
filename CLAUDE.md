@@ -434,6 +434,24 @@ can open.
   Both are rate-limited like sign-in, on the same identity keys
   (`auth.credential_identity`), so guessing a member's password here costs
   what guessing it at the door does.
+- **The member can start it too: caregiver invitations** (`care_invites`,
+  migration `0027`). **Community members only** — a caregiver account gets
+  a 403, and its profile shows "People who support me" only if people were
+  linked to it before it became a caregiver (Remove / Withdraw, no Invite).
+  Profile → "People who support me" → Invite a caregiver: `POST /users/me/caregivers/invites {email}`
+  mails `/care/invite/{token}` and returns the link once (token stored as a
+  hash, 14 days, re-inviting an address replaces its waiting invite).
+  `GET /care-invites/{token}` previews it ("Sam R." + the invited email);
+  `POST /care-invites/{token}/accept` links the signed-in account **only if
+  its email is the invited one**, and turns it into a caregiver account.
+  The member withdraws an unanswered invite with
+  `DELETE /users/me/caregivers/invites/{id}` (`revoked_at`, never deleted).
+  Ending a link is the same two routes as above, whichever door made it.
+- **Duplicate-account nudge** (`lib/knownDevice.ts`): a successful member
+  sign-in or sign-up stores a masked hint (`j•••@gmail.com`) in
+  `localStorage` (`tbc.known_account`); the sign-up flow's account-type step
+  then offers "Log in instead" / "Forgot your password?" first. Browser-only,
+  never the full address.
 - **Saving for a member is the member's row.** `routes/care.py` calls the
   same `attendance.save_event` / `unsave_event` the member's own routes use,
   with the member as the user — so the hold is the member's spot and special
