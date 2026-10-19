@@ -6,7 +6,8 @@ import { notFound } from "next/navigation";
 import { EventActions } from "@/components/EventActions";
 import { EventDetails } from "@/components/member/EventDetails";
 import { EventTools } from "@/components/member/EventTools";
-import { GoingCount } from "@/components/ui/GoingCount";
+import { longDate } from "@/lib/time";
+import { LiveGoingCount } from "@/components/member/LiveGoingCount";
 import { fetchEvent, siteUrl } from "@/lib/serverApi";
 import { hostnameOf } from "@/lib/share";
 import type { Event } from "@/lib/api";
@@ -24,13 +25,9 @@ export const revalidate = 60;
 type Params = { params: Promise<{ id: string }> };
 
 function summarize(event: Event): string {
-  const when = event.starts_at
-    ? new Date(event.starts_at).toLocaleDateString("en-CA", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
+  // In Toronto: the server runs in UTC, where an evening program is
+  // already tomorrow.
+  const when = longDate(event.starts_at) || null;
   const facts = [when, event.location, event.host_name].filter(Boolean);
   const lead = event.description?.trim();
   return lead
@@ -115,8 +112,8 @@ export default async function EventPage({ params }: Params) {
             event={event}
             titleAs="h1"
             going={
-              <GoingCount
-                count={event.saved_count}
+              <LiveGoingCount
+                eventId={event.id}
                 signInHref={`/signup?next=${encodeURIComponent(`/events/${event.id}`)}`}
               />
             }

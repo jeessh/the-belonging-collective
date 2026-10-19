@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+import { toastControls } from "@/components/ui/Toast";
 
 export const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -89,9 +90,12 @@ export function Modal({
         return;
       }
       if (e.key !== "Tab" || !panel) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      const items = [
+        ...Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+          (el) => el.offsetParent !== null || el === document.activeElement,
+        ),
+        ...toastControls(),
+      ];
       if (items.length === 0) {
         e.preventDefault();
         panel.focus();

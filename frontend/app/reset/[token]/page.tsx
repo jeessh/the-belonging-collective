@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api, apiMessage } from "@/lib/api";
+import { ApiError, api, apiMessage } from "@/lib/api";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
@@ -19,6 +19,7 @@ export default function ResetPasswordPage() {
     { email: string; first_name: string } | null | undefined
   >(undefined);
   const [problem, setProblem] = useState<string | null>(null);
+  const [unreachable, setUnreachable] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,6 +29,13 @@ export default function ResetPasswordPage() {
     api<{ email: string; first_name: string }>(`/auth/reset/${token}`)
       .then(setTarget)
       .catch((e) => {
+        // Only the server saying no means the link is spent; a network
+        // failure is not the link's fault.
+        if (!(e instanceof ApiError) || e.status >= 500) {
+          setUnreachable(true);
+          setTarget(null);
+          return;
+        }
         setTarget(null);
         setProblem(apiMessage(e, "That reset link isn't valid any more."));
       });
@@ -64,6 +72,19 @@ export default function ResetPasswordPage() {
         <p className="sr-only" role="status">
           Loading
         </p>
+      </MemberAuthPage>
+    );
+  }
+
+  if (target === null && unreachable) {
+    return (
+      <MemberAuthPage
+        title="Couldn't check your link"
+        subtitle="We couldn't reach the server. Please try again in a moment."
+      >
+        <FormFooter
+          primary={{ label: "Try again", onClick: () => window.location.reload() }}
+        />
       </MemberAuthPage>
     );
   }

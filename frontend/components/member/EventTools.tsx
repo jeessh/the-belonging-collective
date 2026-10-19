@@ -42,7 +42,7 @@ export function EventTools({ event }: { event: Event }) {
           title="Share this event?"
           subject={event.title}
           body={eventShareText(event, url)}
-          copy={{ label: "Link", text: url }}
+          link={{ getUrl: async () => url }}
           onClose={() => setOpen(null)}
         />
       )}

@@ -79,7 +79,8 @@ export function EventDetails({
       : []),
   ];
 
-  const hold = event.capacity != null;
+  // The "saving holds your spot" tip, only while there is a spot to hold.
+  const hold = event.capacity != null && event.spots_left !== 0;
 
   return (
     <div className="flex flex-col gap-8">

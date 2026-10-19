@@ -48,6 +48,17 @@ def ics_url(event: Event) -> str:
     return f"{settings.FRONTEND_ORIGIN}{settings.ROOT_PATH}/events/{event.id}/calendar.ics"
 
 
+def _picture(event: Event) -> str:
+    """The program's picture for the mail's card: its own, else the same
+    branded card its link previews use (/events/{id}/og), so every row has
+    one."""
+    if event.cover_image_url:
+        return event.cover_image_url
+    if event.images:
+        return event.images[0].url
+    return f"{program_url(event)}/og"
+
+
 def _where(event: Event) -> str:
     return event.location or ("Online" if event.is_virtual else "Location to be announced")
 
@@ -138,6 +149,7 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
                 "Tomorrow: " + ", ".join(e.title for e in events),
                 "\n".join(lines),
                 button=("Open my saved programs", settings.FRONTEND_ORIGIN),
+                pictures=[_picture(e) for e in events],
             )
         # Marked whether or not the SMTP hand-off succeeded: a retry tomorrow
         # would be about a different day, so a failed send is logged and gone
@@ -163,6 +175,7 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
             f"Tomorrow for {names}",
             "\n".join(lines).rstrip() + "\n",
             button=("Open saved programs", settings.FRONTEND_ORIGIN),
+            pictures=[_picture(e) for _, evs in members for e in evs],
         )
     return {
         "members": len(by_member),
@@ -223,6 +236,7 @@ The {what} of a program you saved has changed.
 Add to calendar: {ics_url(event)}
 """,
                 button=("See the program", program_url(event)),
+                pictures=[_picture(event)],
             )
         log.info("Change notice for %s sent to %d member(s)", event_id, len(members))
     finally:

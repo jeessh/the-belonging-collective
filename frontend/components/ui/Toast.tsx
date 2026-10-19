@@ -47,6 +47,17 @@ const TONE: Record<ToastTone, string> = {
 };
 
 /** `const { show } = useToast(); show({ title: "Saved", action: { label: "Undo", onClick } })`. */
+/**
+ * Buttons on the toasts showing now. A dialog's Tab trap adds these to its
+ * own, so the Undo for something done inside a dialog can be reached
+ * without a mouse — the toasts sit outside every dialog.
+ */
+export function toastControls(): HTMLElement[] {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>("[data-toasts] button"),
+  );
+}
+
 export function useToast(): ToastApi {
   const api = useContext(ToastContext);
   if (!api) throw new Error("useToast needs a ToastProvider above it");
@@ -76,6 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           the share / print sheets' z-[70] included. */}
       <div
         aria-live="polite"
+        data-toasts
         className="pointer-events-none fixed inset-x-4 top-4 z-[80] flex flex-col items-center gap-3"
       >
         <AnimatePresence>
@@ -121,6 +133,8 @@ function ToastCard({
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setPaused(false);
       }}
+      // An error is read out straight away, not after whatever is speaking.
+      role={tone === "alert" ? "alert" : undefined}
       className={`pointer-events-auto flex w-full max-w-lg items-center gap-4 rounded-control border-[3px] px-5 py-3 shadow-toast ${TONE[tone]}`}
     >
       <div className="min-w-0 flex-1">

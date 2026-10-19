@@ -54,6 +54,7 @@ import {
   programKey,
   recommendedThisWeek,
 } from "@/lib/feed";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
@@ -145,9 +146,11 @@ export function EventsView({
   // optimistic saves. The card asks "is this id saved?"; the sidebar shows one
   // entry per program.
   const [savedEvents, setSavedEvents] = useState<Event[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty">(
-    "loading",
-  );
+  const [status, setStatus] = useState<
+    "loading" | "ready" | "empty" | "error"
+  >("loading");
+  // Bumped by "Try again" when the programs couldn't be loaded.
+  const [reload, setReload] = useState(0);
   const [view, setView] = useState<"events" | "saved">("events");
   const [flying, setFlying] = useState(false);
   // A card is on its way to the sidebar — the drop zone tints.
@@ -251,10 +254,17 @@ export function EventsView({
   useEffect(() => {
     let alive = true;
     Promise.all([
-      eventsPromise.catch(() => fetchAllEvents()).catch(() => [] as Event[]),
+      // null, not [], when both tries fail: "No programs yet" would tell
+      // someone nothing is on when the list simply didn't arrive.
+      (reload ? fetchAllEvents() : eventsPromise.catch(() => fetchAllEvents()))
+        .catch(() => null),
       attendedPromise.catch(() => [] as Event[]),
     ]).then(([evRes, attended]) => {
       if (!alive) return;
+      if (!evRes) {
+        setStatus("error");
+        return;
+      }
       setEvents(evRes);
       setSavedEvents(attended);
       setStatus(evRes.length ? "ready" : "empty");
@@ -262,7 +272,7 @@ export function EventsView({
     return () => {
       alive = false;
     };
-  }, [eventsPromise, attendedPromise]);
+  }, [eventsPromise, attendedPromise, reload]);
 
   const saved = useMemo(
     () => new Set(savedEvents.map((ev) => ev.id)),
@@ -440,6 +450,16 @@ export function EventsView({
     );
   }, []);
 
+  // The cookie expired under them. Show the signed-out app before asking
+  // them to log in again, so the header doesn't still greet them by name.
+  const sessionEnded = useCallback(() => {
+    setMe(null);
+    setSavedEvents([]);
+    setCareFor(null);
+    careForRef.current = null;
+    setSrMessage("Your session ended. Please log in again.");
+  }, []);
+
   const attend = useCallback(
     async (ev: Event, advance = false) => {
       if (savedRef.current.has(ev.id)) return;
@@ -479,6 +499,7 @@ export function EventsView({
         // would tell someone a program is saved when the server has no record.
         setSavedEvents((prev) => prev.filter((s) => s.id !== ev.id));
         if (e instanceof ApiError && e.status === 401) {
+          sessionEnded();
           toSignIn({ kind: "save", event: ev });
           return;
         }
@@ -491,10 +512,16 @@ export function EventsView({
           });
           return;
         }
+        // Said on screen too: the card quietly flipping back to "Save event"
+        // is easy to miss.
         setSrMessage(`Could not save ${ev.title}. Please try again.`);
+        toast.show({
+          title: `Couldn't save ${ev.title}. Please try again.`,
+          tone: "alert",
+        });
       }
     },
-    [toSignIn, syncSaved, toast, patchEvent, advanceAfterSave],
+    [toSignIn, syncSaved, toast, patchEvent, advanceAfterSave, sessionEnded],
   );
 
   /**
@@ -550,12 +577,21 @@ export function EventsView({
           action: { label: "Undo", onClick: () => void attend(ev) },
         });
         void syncSaved();
-      } catch {
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+          sessionEnded();
+          toSignIn();
+          return;
+        }
         setSavedEvents(before);
         setSrMessage(`Could not remove ${ev.title}.`);
+        toast.show({
+          title: `Couldn't remove ${ev.title}. Please try again.`,
+          tone: "alert",
+        });
       }
     },
-    [savedEvents, syncSaved, toast, attend],
+    [savedEvents, syncSaved, toast, attend, sessionEnded, toSignIn],
   );
 
   // Re-read the profile so the feed, the sidebar and the chrome all agree that
@@ -838,6 +874,15 @@ export function EventsView({
     view === "saved" || a11yOpen || tourOpen,
   );
 
+  // Couldn't start (camera refused, unsupported browser): switch it back off
+  // and say why once. Left on, it failed again on every visit and its banner
+  // sat over the rail's buttons.
+  useEffect(() => {
+    if (!headEnabled || !headError) return;
+    void setPref({ eye_tracking_enabled: false });
+    toast.show({ title: headError, tone: "alert" });
+  }, [headEnabled, headError, setPref, toast]);
+
   // ---- first-run tour ----
   // Once the feed is up and nothing else is asking for attention. Checked
   // once per visit: a signed-in member's profile says whether they have seen
@@ -1047,15 +1092,6 @@ export function EventsView({
           Head tracking on
         </div>
       )}
-      {headEnabled && headError && (
-        <div
-          role="alert"
-          className="pointer-events-none absolute bottom-16 left-4 z-40 max-w-xs rounded-control bg-danger px-3 py-2 text-sm font-medium text-danger-fg"
-        >
-          {headError}
-        </div>
-      )}
-
       {/* screen-reader announcement */}
       <p className="sr-only" role="status" aria-live="polite">
         {srMessage}
@@ -1183,7 +1219,23 @@ export function EventsView({
               />
             </div>
 
-            {status === "empty" ? (
+            {status === "error" ? (
+              <div className="flex flex-col items-center gap-5 py-16 text-center">
+                <p className="text-2xl text-fg-muted">
+                  Couldn&apos;t load programs.
+                </p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    setStatus("loading");
+                    setReload((n) => n + 1);
+                  }}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : status === "empty" ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
                 No programs yet. Check back soon.
               </p>
@@ -1385,6 +1437,14 @@ export function EventsView({
           onClose={() => {
             setAuthOpen(false);
             setAuthFor(null);
+            // Closed after the account was made (the "complete" or caregiver
+            // step): the cookie is already set, so pick the session up
+            // rather than leave a new member looking signed out.
+            if (!signedInRef.current) {
+              void api<Me>("/users/me")
+                .then(() => handleSignedIn(false))
+                .catch(() => {});
+            }
           }}
           onSignedIn={() => void handleSignedIn()}
           onGuestSignIn={() => toSignIn()}

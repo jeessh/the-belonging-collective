@@ -66,6 +66,9 @@ export type AuthView = {
  * but the member goes back to what they were looking at instead of on to
  * the feed.
  */
+// Enough to catch a typo before the server does; the server has the last word.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function MemberAuthFlow({
   initial = "chooser",
   onSignedIn,
@@ -197,7 +200,9 @@ export function MemberAuthFlow({
       setError(
         err instanceof ApiError && err.status === 422
           ? "Enter a valid email address."
-          : apiMessage(err, GENERIC_ERROR),
+          : err instanceof ApiError
+            ? apiMessage(err, GENERIC_ERROR)
+            : "Couldn't reach the server. Please try again.",
       );
     } finally {
       setBusy(false);
@@ -215,7 +220,11 @@ export function MemberAuthFlow({
       });
       finish("login");
     } catch (err) {
-      setError(apiMessage(err, "Wrong email or password."));
+      setError(
+        err instanceof ApiError
+          ? apiMessage(err, "Wrong email or password.")
+          : "Couldn't reach the server. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -388,8 +397,15 @@ export function MemberAuthFlow({
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              // Checked here, where the field is, not on the password step
+              // after both passwords have been typed.
+              if (!EMAIL_SHAPE.test(email.trim())) {
+                setError("Enter a valid email address, like name@example.com.");
+                return;
+              }
               go("password");
             }}
+            noValidate
             className="flex flex-col gap-6"
           >
             <TextField
@@ -399,7 +415,11 @@ export function MemberAuthFlow({
               placeholder="Enter your email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={error}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
             />
             <FormFooter
               className="mt-6"
@@ -458,7 +478,11 @@ export function MemberAuthFlow({
         title: "Login to your account",
         subtitle: "Please login with your email and password.",
         body: (
-          <form onSubmit={submitCredentials} className="flex flex-col gap-6">
+          <form
+            onSubmit={submitCredentials}
+            noValidate
+            className="flex flex-col gap-6"
+          >
             <TextField
               label="Email"
               type="email"

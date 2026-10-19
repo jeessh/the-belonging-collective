@@ -39,6 +39,7 @@ LINE = "#dcdcdc"
 PAGE = "#f1f1f1"
 BUTTON = "#94eaff"
 BUTTON_EDGE = "#00cdff"
+BAND = "#e5faff"
 LINK = "#004bde"
 
 # "Add to calendar: https://…" — a line that is a label and a link.
@@ -64,15 +65,49 @@ def _line(text: str) -> str:
 
 
 def _button(label: str, url: str) -> str:
+    # Full width, the design's email button.
     return (
         f'<p style="margin:8px 0 24px"><a href="{html.escape(url, quote=True)}" '
-        f'style="display:inline-block;padding:14px 28px;border-radius:12px;'
+        f'style="display:block;padding:14px 20px;border-radius:12px;text-align:center;'
         f"border:2px solid {BUTTON_EDGE};background:{BUTTON};color:{INK};"
         f'font-size:17px;font-weight:600;text-decoration:none">{html.escape(label)}</a></p>'
     )
 
 
-def render_html(body: str, button: tuple[str, str] | None = None) -> str:
+def _card(lines: list[str], picture: str | None) -> str:
+    """A program: its picture beside the title and facts, as the design's
+    event list email draws it. Without a picture, the text alone."""
+    title, rest = lines[0], lines[1:]
+    text = (
+        f'<p style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:{INK}">'
+        f"{html.escape(title)}</p>"
+        + "".join(
+            f'<p style="margin:6px 0 0;font-size:16px;line-height:1.45;color:{MUTED}">'
+            f"{_line(line)}</p>"
+            for line in rest
+        )
+    )
+    image = (
+        f'<td width="120" style="width:120px;padding:0 16px 0 0;vertical-align:top">'
+        # Width only: mail apps ignore object-fit, so a fixed height would
+        # squash any picture that isn't square.
+        f'<img src="{html.escape(picture, quote=True)}" alt="" width="120" '
+        f'style="display:block;width:120px;height:auto;border-radius:12px;border:0"></td>'
+        if picture
+        else ""
+    )
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" '
+        'style="margin:0 0 20px;border-collapse:collapse">'
+        f'<tr>{image}<td style="vertical-align:top">{text}</td></tr></table>'
+    )
+
+
+def render_html(
+    body: str,
+    button: tuple[str, str] | None = None,
+    pictures: list[str | None] | None = None,
+) -> str:
     """The HTML half of a message, from the plain text.
 
     Blank lines split blocks. A one-line block is a paragraph; a block of
@@ -81,9 +116,11 @@ def render_html(body: str, button: tuple[str, str] | None = None) -> str:
     lines become a link named by the label, so nobody reads a raw `.ics`
     address. The button goes where its URL stood on its own — "open this
     link:" is followed by the button, not by the sign-off — or at the end.
+    `pictures` go with the program cards in order, one per card.
     """
     blocks = []
     placed = False
+    cards = iter(pictures or [])
     for block in body.strip().split("\n\n"):
         lines = [line.strip() for line in block.strip().split("\n") if line.strip()]
         if not lines:
@@ -103,18 +140,7 @@ def render_html(body: str, button: tuple[str, str] | None = None) -> str:
                 f"{_line(lines[0])}</p>"
             )
         else:
-            title, rest = lines[0], lines[1:]
-            details = "".join(
-                f'<p style="margin:4px 0 0;font-size:16px;line-height:1.45;color:{MUTED}">'
-                f"{_line(line)}</p>"
-                for line in rest
-            )
-            blocks.append(
-                f'<div style="margin:0 0 16px;padding:16px 20px;border:1px solid {LINE};'
-                f'border-radius:14px">'
-                f'<p style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:{INK}">'
-                f"{html.escape(title)}</p>{details}</div>"
-            )
+            blocks.append(_card(lines, next(cards, None)))
     if button and not placed:
         blocks.append(_button(*button))
 
@@ -123,16 +149,15 @@ def render_html(body: str, button: tuple[str, str] | None = None) -> str:
     return f"""<!doctype html>
 <html lang="en">
 <body style="margin:0;padding:24px 12px;background:{PAGE};font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid {LINE};border-radius:20px;padding:28px">
-    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:collapse">
-      <tr>
-        <td style="padding:0 12px 0 0;vertical-align:middle"><img src="{logo}" alt="KW Habilitation" height="36" style="display:block;height:36px;width:auto;border:0"></td>
-        <td style="padding:0 0 0 12px;border-left:1px solid {LINE};vertical-align:middle;font-size:18px;font-weight:600;color:{INK}">{BRAND}</td>
-      </tr>
-    </table>
-    {''.join(blocks)}
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid {LINE};border-radius:20px;overflow:hidden">
+    <div style="background:{BAND};border-bottom:1px solid {BUTTON_EDGE};padding:16px;text-align:center">
+      <img src="{logo}" alt="KW Habilitation" height="40" style="display:inline-block;height:40px;width:auto;border:0">
+    </div>
+    <div style="padding:28px">
+      {''.join(blocks)}
+    </div>
   </div>
-  <p style="max-width:560px;margin:16px auto 0;text-align:center;font-size:13px;line-height:1.5;color:{MUTED}">
+  <p style="max-width:600px;margin:16px auto 0;text-align:center;font-size:13px;line-height:1.5;color:{MUTED}">
     <a href="{home}" style="color:{MUTED};text-decoration:underline">{BRAND}</a> · Kitchener-Waterloo
   </p>
 </body>
@@ -141,11 +166,16 @@ def render_html(body: str, button: tuple[str, str] | None = None) -> str:
 
 
 def send(
-    to: str, subject: str, body: str, button: tuple[str, str] | None = None
+    to: str,
+    subject: str,
+    body: str,
+    button: tuple[str, str] | None = None,
+    pictures: list[str | None] | None = None,
 ) -> bool:
     """Send one message, text plus HTML. True if it was handed to the server.
 
     `button` is (label, url) — the one action the mail exists for.
+    `pictures` are the programs' images, in the order the body lists them.
 
     Never raises. The password-reset endpoint deliberately answers the same
     way whether or not the address exists — so it has to answer the same way
@@ -168,7 +198,7 @@ def send(
     message["From"] = formataddr((settings.MAIL_FROM_NAME, settings.MAIL_FROM))
     message["To"] = to
     message.set_content(body)
-    message.add_alternative(render_html(body, button), subtype="html")
+    message.add_alternative(render_html(body, button, pictures), subtype="html")
 
     try:
         if settings.SMTP_SSL:

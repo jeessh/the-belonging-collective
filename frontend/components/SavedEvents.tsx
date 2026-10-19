@@ -36,7 +36,7 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { useToast } from "@/components/ui/Toast";
+import { toastControls, useToast } from "@/components/ui/Toast";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
@@ -114,9 +114,12 @@ export const SavedEvents = memo(function SavedEvents({
       if (e.key !== "Tab" || !panel) return;
       // A share sheet or print preview on top owns the keyboard while it's up.
       if (!isTopmostDialog(panel)) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      const items = [
+        ...Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+          (el) => el.offsetParent !== null || el === document.activeElement,
+        ),
+        ...toastControls(),
+      ];
       if (items.length === 0) {
         e.preventDefault();
         panel.focus();
@@ -379,20 +382,14 @@ export const SavedEvents = memo(function SavedEvents({
           title="Share list of events?"
           subject={listTitle}
           body={listShareText(upcoming, window.location.origin)}
-          copy={{
-            label: "List",
-            text: listShareText(upcoming, window.location.origin),
-          }}
-          // A live link to the list, as against the text above, which is a
-          // snapshot. Public by design: it is only a list. The link is the
-          // signed-in account's own, so it is left out of someone else's list.
+          // The live list. Public by design: it is only a list. It is the
+          // signed-in account's own, so someone else's list (a caregiver's
+          // view) gets the email-only sheet.
           link={
             owner
               ? undefined
               : {
-                  label: "Link to my list",
                   intro: "My saved programs, kept up to date:",
-                  note: "Anyone with the link sees your upcoming programs.",
                   getUrl: async () =>
                     sharedListUrl((await createShareLink()).token),
                 }

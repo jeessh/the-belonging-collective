@@ -7,10 +7,12 @@ import {
   ApiError,
   api,
   apiMessage,
+  attendEvent,
   requestAccess,
   type Event,
 } from "@/lib/api";
 import { mapsUrl } from "@/lib/share";
+import { clockTime } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
 import {
   AccessAction,
@@ -94,9 +96,18 @@ export function EventActions({ event }: { event: Event }) {
       setBusy(true);
       setError(null);
       try {
-        await api(`/events/${event.id}/attend`, { method: "POST" });
+        const result = await attendEvent(event.id);
         setSaved(true);
-        toast.show({ title: "Event has been successfully saved!" });
+        // Say whether a spot was held: the page can't redraw its own count.
+        toast.show({
+          title: "Event has been successfully saved!",
+          description:
+            event.capacity == null
+              ? undefined
+              : result.held_until
+                ? `Your spot is held until ${clockTime(result.held_until)}.`
+                : "No spot was free to hold, but it's in your saved list.",
+        });
       } catch (e) {
         if (e instanceof ApiError && e.status === 401 && !resuming) {
           toSignIn("save");

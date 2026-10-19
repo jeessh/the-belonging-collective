@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { siteUrl } from "@/lib/serverApi";
 import { MotionRoot } from "@/components/MotionRoot";
 import { ToastProvider } from "@/components/ui/Toast";
+import { SkipLink } from "@/components/SkipLink";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SkipLink />
         <MotionRoot>
           <ToastProvider>{children}</ToastProvider>
         </MotionRoot>

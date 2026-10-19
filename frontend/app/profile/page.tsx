@@ -34,6 +34,7 @@ import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
+import { FeedLoading } from "@/components/member/FeedLoading";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
 
 /**
@@ -55,9 +56,22 @@ export default function ProfilePage() {
   // The caregiver's add / link sheet, and the key it hands back.
   const [careForm, setCareForm] = useState<"create" | "link" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  // The session ended while the page was open: every action here needs it,
+  // so go and sign in rather than fail each button in turn.
+  function signedOut(err: unknown): boolean {
+    if (err instanceof ApiError && err.status === 401) {
+      router.replace(`/signup?next=${encodeURIComponent("/profile")}`);
+      return true;
+    }
+    return false;
+  }
 
   useEffect(() => {
     let alive = true;
+    setFailed(false);
     api<Me>("/users/me")
       .then((res) => {
         if (!alive) return;
@@ -69,23 +83,31 @@ export default function ProfilePage() {
         // Signed out: sign in, then come back here.
         if (e instanceof ApiError && e.status === 401) {
           router.replace(`/signup?next=${encodeURIComponent("/profile")}`);
+        } else {
+          setFailed(true);
         }
       });
     return () => {
       alive = false;
     };
-  }, [router]);
+  }, [router, attempt]);
 
   async function saveEmail(e: FormEvent) {
     e.preventDefault();
     if (!me) return;
+    const next = email.trim();
+    // It is the login, so it can be changed but never cleared.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+      setEmailError("Enter a valid email address, like name@example.com.");
+      return;
+    }
     setBusy("email");
     setEmailError(null);
     try {
-      const next = email.trim();
-      setMe(await updateMe({ email: next ? next : null }));
-      show({ title: next ? "Email saved" : "Email removed" });
+      setMe(await updateMe({ email: next }));
+      show({ title: "Email saved" });
     } catch (err) {
+      if (signedOut(err)) return;
       setEmailError(apiMessage(err, "That didn't save. Please try again."));
     } finally {
       setBusy(null);
@@ -100,6 +122,7 @@ export default function ProfilePage() {
       setMe(await uploadAvatar(file));
       show({ title: "Photo saved" });
     } catch (err) {
+      if (signedOut(err)) return;
       setPictureError(apiMessage(err, "That didn't upload. Please try again."));
     } finally {
       setBusy(null);
@@ -118,6 +141,7 @@ export default function ProfilePage() {
       );
       show({ title: slug ? "Emblem saved" : "Picture removed" });
     } catch (err) {
+      if (signedOut(err)) return;
       setPictureError(apiMessage(err, "That didn't save. Please try again."));
     } finally {
       setBusy(null);
@@ -136,6 +160,7 @@ export default function ProfilePage() {
         // The URL is on screen; they can select it.
       }
     } catch (err) {
+      if (signedOut(err)) return;
       show({ title: apiMessage(err, "Couldn't make the link."), tone: "alert" });
     } finally {
       setBusy(null);
@@ -196,13 +221,20 @@ export default function ProfilePage() {
     }
   }
 
-  if (!me) {
+  if (failed) {
     return (
-      <main className="grid min-h-dvh place-items-center bg-surface-subtle text-fg-muted">
-        <p className="text-2xl">Loading…</p>
+      <main className="grid min-h-dvh place-items-center bg-surface-subtle px-6 text-center text-fg">
+        <div className="flex flex-col items-center gap-5">
+          <p className="text-2xl font-medium">Couldn&apos;t load your profile.</p>
+          <Button variant="primary" size="lg" onClick={() => setAttempt((n) => n + 1)}>
+            Try again
+          </Button>
+        </div>
       </main>
     );
   }
+
+  if (!me) return <FeedLoading />;
 
   const name = `${me.first_name} ${me.last_name}`;
   // The same short form the feed header uses, so the initials keep one colour.
@@ -242,7 +274,10 @@ export default function ProfilePage() {
               autoComplete="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
               error={emailError}
               className="flex-1"
             />
@@ -250,11 +285,29 @@ export default function ProfilePage() {
               type="submit"
               variant="primary"
               size="lg"
-              disabled={busy === "email" || email.trim() === (me.email ?? "")}
+              disabled={
+                busy === "email" ||
+                email.trim() === "" ||
+                email.trim() === (me.email ?? "")
+              }
             >
               Save
             </Button>
           </div>
+        </Card>
+
+        {/* Changed the way it is reset: a link to the sign-in email, so there
+            is one password flow to keep working, not two. */}
+        <Card
+          title="Password"
+          subtitle="We'll email you a link to choose a new one."
+        >
+          <Link
+            href={`/forgot?email=${encodeURIComponent(me.email ?? "")}`}
+            className={buttonClass("secondary", "lg", "self-start")}
+          >
+            Change password
+          </Link>
         </Card>
 
         <Card
@@ -266,6 +319,9 @@ export default function ProfilePage() {
               ref={fileRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
+              // Opened by "Upload photo"; as its own tab stop it had no name.
+              tabIndex={-1}
+              aria-hidden="true"
               className="sr-only"
               onChange={(e) => void pickPhoto(e.target.files?.[0])}
             />
@@ -497,6 +553,8 @@ function Card({
   return (
     <Tag
       onSubmit={onSubmit}
+      // The fields show their own errors; the browser's bubbles don't match.
+      noValidate={as === "form" ? true : undefined}
       aria-label={title}
       className="flex flex-col gap-6 rounded-card border border-line bg-surface p-6 sm:p-8"
     >

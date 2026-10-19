@@ -1,106 +1,94 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { Copy, Link2, Send } from "lucide-react";
+import { Copy, Send } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { mailtoUrl } from "@/lib/share";
 
+// Enough to catch a typo; the mail app has the last word.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
- * Share by email or by copying. Nothing leaves through the server: Send hands
- * a `mailto:` to the member's own mail app, and Copy puts the text on the
- * clipboard. Rendered into `document.body` so it can sit over another dialog.
+ * Share by email or by link, as the design draws it. Nothing leaves through
+ * the server: Send hands a `mailto:` to the member's own mail app, and Copy
+ * Link puts the link on the clipboard. Rendered into `document.body` so it
+ * can sit over another dialog.
+ *
+ * Without `link` it is the design's email-only sheet — a caregiver sharing
+ * someone else's list, whose list link isn't theirs to hand out.
  */
 export function ShareModal({
   title,
   subject,
   body,
-  copy,
   link,
   onClose,
 }: {
   title: string;
   subject: string;
   body: string;
-  /** What Copy copies, and how the row is labelled. */
-  copy: { label: string; text: string };
-  /**
-   * A second thing to copy that has to be fetched first — the member's list
-   * link. Shown as one button; the URL appears in the row once it is known.
-   */
   link?: {
-    label: string;
-    /** The line above the link in an emailed list. */
-    intro: string;
-    /** Shown in the row until the link is made. */
-    note: string;
+    /** Fetched once when the sheet opens: the list link has to be minted. */
     getUrl: () => Promise<string>;
+    /** The line above the link at the top of the email, if it goes there. */
+    intro?: string;
   };
   onClose: () => void;
 }) {
   const { show } = useToast();
   const [email, setEmail] = useState("");
-  const [copyFailed, setCopyFailed] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  async function copyLink() {
-    if (!link) return;
-    setLinkError(null);
-    let url: string;
-    try {
-      url = await getLinkUrl();
-    } catch {
-      setLinkError("Couldn't make the link. Please try again.");
+  // Once, on opening: the caller's object is new on every render.
+  const [getUrl] = useState(() => link?.getUrl);
+  useEffect(() => {
+    if (!getUrl) return;
+    let alive = true;
+    getUrl()
+      .then((url) => alive && setLinkUrl(url))
+      .catch(() => alive && setLinkError("Couldn't make the link. Please try again."));
+    return () => {
+      alive = false;
+    };
+  }, [getUrl]);
+
+  function send(e: FormEvent) {
+    e.preventDefault();
+    if (!EMAIL_SHAPE.test(email.trim())) {
+      setEmailError("Enter a valid email address, like name@example.com.");
       return;
     }
+    // A list goes out with its live link on top, so the message stays useful
+    // after the programs in it change.
+    const text =
+      link?.intro && linkUrl ? `${link.intro}\n${linkUrl}\n\n${body}` : body;
+    window.location.href = mailtoUrl(email, subject, text);
+    // Nothing on this page can tell whether a mail app answered; say what
+    // should have happened, so a member without one isn't left guessing.
+    show({
+      title: "Opening your email app",
+      description: "The message is ready for you to send.",
+      tone: "info",
+    });
+    onClose();
+  }
+
+  async function copyLink() {
+    if (!linkUrl) return;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(linkUrl);
     } catch {
-      setCopyFailed(true);
+      // Clipboard access can be refused; the link is on screen to select.
+      setLinkError("Copy didn't work here — select the link and copy it.");
       return;
     }
     show({ title: "Link copied" });
-    onClose();
-  }
-
-  async function getLinkUrl(): Promise<string> {
-    if (linkUrl) return linkUrl;
-    const url = await link!.getUrl();
-    setLinkUrl(url);
-    return url;
-  }
-
-  async function send(e: FormEvent) {
-    e.preventDefault();
-    // A list goes out with its live link on top, so the message stays
-    // useful after the programs in it change. Without the link it still
-    // sends: the text is the list.
-    let text = body;
-    if (link) {
-      try {
-        text = `${link.intro}\n${await getLinkUrl()}\n\n${body}`;
-      } catch {
-        // Send the snapshot alone.
-      }
-    }
-    window.location.href = mailtoUrl(email, subject, text);
-    onClose();
-  }
-
-  async function copyText() {
-    try {
-      await navigator.clipboard.writeText(copy.text);
-    } catch {
-      // Clipboard access can be refused (permissions, insecure origin). The
-      // text is on screen already; say so rather than opening a prompt.
-      setCopyFailed(true);
-      return;
-    }
-    show({ title: `${copy.label} copied` });
     onClose();
   }
 
@@ -110,68 +98,52 @@ export function ShareModal({
   return createPortal(
     <div className="relative z-[70]">
       <Modal title={title} size="form" onClose={onClose}>
-        <form onSubmit={(e) => void send(e)} className="mt-6 flex flex-col gap-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="mt-6 flex flex-col gap-6">
+          <form
+            onSubmit={send}
+            noValidate
+            className="flex flex-col gap-3 sm:flex-row sm:items-start"
+          >
             <TextField
               label="Share by Email"
               type="email"
-              required
               autoComplete="email"
               placeholder="Enter Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={emailError}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
               className="flex-1"
             />
+            {/* Level with the field, below its label. */}
             <Button
               type="submit"
               variant="primary"
               size="lg"
               trailingIcon={<Send />}
+              className="sm:mt-9"
             >
               Send
             </Button>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <p className="text-lg font-medium text-fg">{copy.label}</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-              <p className="max-h-32 min-w-0 flex-1 select-text overflow-y-auto whitespace-pre-line break-words rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                {copy.text}
-              </p>
-              <Button
-                size="lg"
-                onClick={() => void copyText()}
-                trailingIcon={<Copy />}
-                className="shrink-0"
-              >
-                Copy
-              </Button>
-            </div>
-            {copyFailed && (
-              <p role="alert" className="text-base text-danger-fg">
-                Copy didn&apos;t work here — select the text and copy it.
-              </p>
-            )}
-          </div>
+          </form>
 
           {link && (
             <div className="flex flex-col gap-2">
-              <p className="text-lg font-medium text-fg">{link.label}</p>
+              <p className="text-lg font-medium text-fg">Share by Link</p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <p
-                  className={`min-w-0 flex-1 rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg ${
-                    linkUrl ? "select-text break-all text-fg" : "text-fg-muted"
-                  }`}
-                >
-                  {linkUrl ?? link.note}
+                <p className="min-h-14 min-w-0 flex-1 select-all break-all rounded-field border border-line bg-surface px-4 py-3 text-lg text-tag-paid-fg">
+                  {linkUrl ?? (linkError ? "" : "Making your link…")}
                 </p>
                 <Button
                   size="lg"
                   onClick={() => void copyLink()}
-                  trailingIcon={<Link2 />}
+                  disabled={!linkUrl}
+                  trailingIcon={<Copy />}
                   className="shrink-0"
                 >
-                  Copy link
+                  Copy Link
                 </Button>
               </div>
               {linkError && (
@@ -181,7 +153,7 @@ export function ShareModal({
               )}
             </div>
           )}
-        </form>
+        </div>
       </Modal>
     </div>,
     document.body,

@@ -188,9 +188,11 @@ can open.
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".
-- "Share list" is `mailto:`/copy of the titles and per-event URLs, plus "Copy
-  link to my list" — the public `/shared/[token]` page (see "Holds, member
-  email, sharing"). Jesse's call: no privacy gate, it's only a list. The
+- "Share list" is the design's two rows: Share by Email (a `mailto:` of the
+  titles, dates and per-event URLs, with the list link on top) and Share by
+  Link (the public `/shared/[token]` page, minted when the sheet opens; see
+  "Holds, member email, sharing"). A caregiver viewing someone else's list
+  gets email only. Jesse's call: no privacy gate, it's only a list. The
   page is `noindex` and server-rendered; `/profile` (from the account menu)
   is where a member sets their email, picture and copies the same link.
 
