@@ -28,6 +28,7 @@ import {
 } from "@/lib/api";
 import { googleCalendarButton } from "@/lib/calendar";
 import { EMBLEMS } from "@/lib/emblems";
+import { shrinkImage } from "@/lib/shrinkImage";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
@@ -97,7 +98,8 @@ export default function ProfilePage() {
     setBusy("picture");
     setPictureError(null);
     try {
-      setMe(await uploadAvatar(file));
+      // Scaled down first: a phone photo is usually over the 2 MB limit.
+      setMe(await uploadAvatar(await shrinkImage(file)));
       show({ title: "Photo saved" });
     } catch (err) {
       setPictureError(apiMessage(err, "That didn't upload. Please try again."));
