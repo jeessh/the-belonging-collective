@@ -255,6 +255,7 @@ function InviteStaffForm({
     name: string;
     email: string;
     url: string;
+    emailed: boolean;
   } | null>(null);
 
   async function send() {
@@ -270,6 +271,7 @@ function InviteStaffForm({
         name: inv.name,
         email: inv.email,
         url: `${window.location.origin}/host/invite/${inv.token}`,
+        emailed: inv.emailed,
       });
       setName("");
       setEmail("");
@@ -301,8 +303,18 @@ function InviteStaffForm({
           className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-control border-[3px] border-toast-success bg-tag-free-bg px-5 py-3 text-lg text-fg"
         >
           <span className="flex-1">
-            Invitation sent to <strong>{sent.email}</strong> for {sent.name}. It
-            works once and expires in 14 days.
+            {sent.emailed ? (
+              <>
+                Invitation sent to <strong>{sent.email}</strong> for {sent.name}.
+              </>
+            ) : (
+              <>
+                Invitation created for {sent.name}, but the email to{" "}
+                <strong>{sent.email}</strong> couldn&apos;t be sent. Copy the
+                link and send it to them yourself.
+              </>
+            )}{" "}
+            It works once and expires in 14 days.
           </span>
           <Button
             leadingIcon={<Copy />}

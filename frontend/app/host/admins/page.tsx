@@ -315,9 +315,12 @@ function InviteForm({
   const [isSuper, setIsSuper] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState<{ org: string; email: string; url: string } | null>(
-    null,
-  );
+  const [sent, setSent] = useState<{
+    org: string;
+    email: string;
+    url: string;
+    emailed: boolean;
+  } | null>(null);
 
   async function send() {
     setBusy(true);
@@ -332,6 +335,7 @@ function InviteForm({
         org: inv.organization,
         email: inv.email,
         url: `${window.location.origin}/host/invite/${inv.token}`,
+        emailed: inv.emailed,
       });
       setOrganization("");
       setEmail("");
@@ -360,8 +364,20 @@ function InviteForm({
           className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-control border-[3px] border-toast-success bg-tag-free-bg px-5 py-3 text-lg text-fg"
         >
           <span className="flex-1">
-            Invitation sent to <strong>{sent.email}</strong> for {sent.org}. It
-            works once and expires in 14 days.
+            {sent.emailed ? (
+              <>
+                Invitation sent to <strong>{sent.email}</strong> for {sent.org}.
+              </>
+            ) : (
+              // The invitation exists; only the email didn't go out (mail
+              // not set up, or the mail server refused it).
+              <>
+                Invitation created for {sent.org}, but the email to{" "}
+                <strong>{sent.email}</strong> couldn&apos;t be sent. Copy the
+                link and send it to them yourself.
+              </>
+            )}{" "}
+            It works once and expires in 14 days.
           </span>
           <Button
             leadingIcon={<Copy />}
