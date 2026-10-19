@@ -285,7 +285,8 @@ export function MemberAuthFlow({
               Organizer?{" "}
               <Link
                 href="/host"
-                className="font-medium text-fg underline underline-offset-2"
+                // A finger-sized target, not just the line of text.
+                className="inline-flex min-h-11 items-center font-medium text-fg underline underline-offset-2"
               >
                 Staff sign-in
               </Link>

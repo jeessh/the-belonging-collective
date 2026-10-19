@@ -208,8 +208,9 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
               setPreset(next);
             }}
             segments={[
-              { value: "30", label: "Last 30 days" },
-              { value: "90", label: "Last 90 days" },
+              // Short enough that all four fit across a phone.
+              { value: "30", label: "30 days" },
+              { value: "90", label: "90 days" },
               { value: "year", label: "This year" },
               { value: "custom", label: "Custom" },
             ]}
@@ -314,6 +315,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
                 </p>
               </div>
               <TableCard
+                stackOnPhone={false}
                 caption="Each program with its saves, current attendance and registration clicks in the chosen range. Sortable by column."
                 head={[]}
               >

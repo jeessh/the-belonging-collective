@@ -1188,7 +1188,10 @@ export function EventsView({
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
             <div className="flex flex-col gap-3 sm:gap-4">
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+              {/* One row on a phone too, the switch as icons: stacked, the
+                  heading, switch and filter label pushed the card's Save
+                  below the fold, behind the saved bar. */}
+              <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
                 {/* In the card view the page heading stays "Programs" for a
                     screen reader — the live region already reads "n of m" per
                     card, and a heading that changes on every arrow is noise. */}
@@ -1205,7 +1208,9 @@ export function EventsView({
                 <div data-tour="view">
                   <SegmentedToggle
                     label="View"
-                    segments={VIEWS}
+                    segments={
+                      phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
+                    }
                     value={viewMode}
                     onChange={changeView}
                   />

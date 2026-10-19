@@ -370,7 +370,9 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           // are menuitems.
           role="dialog"
           aria-label="Accessibility Tools"
-          className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift"
+          // On a phone it stops above the saved bar, which otherwise hid
+          // the last of the topics under it.
+          className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift max-sm:max-h-[calc(100dvh-12rem)]"
         >
           <h2 className="text-xl font-medium text-fg">Accessibility</h2>
           <div className="mt-1 flex flex-col divide-y divide-line-card">

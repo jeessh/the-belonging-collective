@@ -18,17 +18,33 @@ export function TableCard({
   caption,
   head,
   children,
+  stackOnPhone = true,
 }: {
   caption: string;
   head: string[];
   children: ReactNode;
+  /**
+   * On a phone, each row's cells stack as a little card instead of the
+   * table scrolling sideways — which hid the email, status and buttons
+   * past the edge with nothing saying they were there. Off for a table of
+   * numbers, whose columns mean nothing without their headings.
+   */
+  stackOnPhone?: boolean;
 }) {
+  const stack = stackOnPhone
+    ? "max-sm:[&_thead]:sr-only max-sm:[&_tr]:block max-sm:[&_tr]:py-3 max-sm:[&_td]:block max-sm:[&_td]:py-1 max-sm:[&_tbody_th]:block max-sm:[&_tbody_th]:py-1 max-sm:[&_td_.justify-end]:justify-start"
+    : "";
   return (
     // Scrolls sideways on a narrow screen rather than breaking the page.
     // `relative` so the cells' sr-only spans (absolutely positioned) are
     // contained and clipped with the table instead of widening the page.
     <div className="relative overflow-x-auto">
-      <table className="w-full border-collapse text-left text-xl text-fg">
+      {!stackOnPhone && (
+        <p className="pb-2 text-base text-fg-muted sm:hidden">
+          Scroll sideways to see every column.
+        </p>
+      )}
+      <table className={`w-full border-collapse text-left text-xl text-fg ${stack}`}>
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>

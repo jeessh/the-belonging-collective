@@ -142,7 +142,7 @@ export const FeedFilters = memo(function FeedFilters({
     <div className="flex flex-col gap-4" data-tour="filters">
       <p
         id="feed-filters-label"
-        className="text-xl uppercase tracking-wide text-fg-muted"
+        className="text-xl uppercase tracking-wide text-fg-muted max-sm:sr-only"
       >
         Event filters
       </p>

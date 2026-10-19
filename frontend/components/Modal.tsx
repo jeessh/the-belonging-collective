@@ -125,8 +125,9 @@ export function Modal({
 
   return (
     <AnimatePresence>
-      {/* On a phone the panel is a sheet: 16px in from every edge and at
-          least the height of the screen. From `sm` it floats in the middle.
+      {/* On a phone the panel is 16px in from every edge and as tall as
+          what it holds — stretched to the full screen, a two-field share
+          sheet was mostly empty white. From `sm` it floats in the middle.
           Centred with auto margins rather than `place-items-center`, which
           would push the top of a panel taller than the screen out of reach. */}
       <div
@@ -145,7 +146,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-12`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none sm:p-12`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2

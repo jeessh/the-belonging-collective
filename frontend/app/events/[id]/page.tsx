@@ -128,7 +128,10 @@ export default async function EventPage({ params }: Params) {
           />
 
           <p className="mt-8 text-center text-lg">
-            <Link href="/" className="text-fg underline underline-offset-4">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center text-fg underline underline-offset-4"
+            >
               See more programs
             </Link>
           </p>
