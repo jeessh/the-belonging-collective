@@ -52,7 +52,11 @@ export function UnpublishModal({
           <p className="mt-1 text-2xl font-bold italic text-fg">{event.title}</p>
         </>
       }
-      subtitle="It leaves the member feed right away. Nothing is deleted, attendance still counts, and you can put it back."
+      subtitle={
+        (event.series_total ?? 1) > 1
+          ? "It leaves the member feed right away, with every date in this series. Nothing is deleted, attendance still counts, and you can restore it from Un-published on the events page."
+          : "It leaves the member feed right away. Nothing is deleted, attendance still counts, and you can restore it from Un-published on the events page."
+      }
     >
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">

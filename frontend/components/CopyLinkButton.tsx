@@ -3,6 +3,7 @@
 import { Share2 } from "lucide-react";
 import { Button, type ButtonSize } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { copyText } from "@/lib/clipboard";
 
 /** The public URL of a program, read in the browser so a preview deployment
     copies its own address rather than production's. */
@@ -34,14 +35,7 @@ export function CopyLinkButton({
 
   async function copy() {
     const url = eventUrl(eventId);
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Clipboard access can be refused (permissions, insecure origin). The
-      // prompt keeps the URL reachable — it can still be selected and copied.
-      window.prompt("Copy this link:", url);
-      return;
-    }
+    if (!(await copyText(url, show))) return;
     show({
       title: `Link to '${title}' copied.`,
       description: "Paste it wherever you're sharing.",

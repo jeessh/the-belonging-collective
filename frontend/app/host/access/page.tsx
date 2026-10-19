@@ -19,7 +19,7 @@ import {
   type AdminAccount,
 } from "@/lib/api";
 import { TIME_ZONE } from "@/lib/time";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField } from "@/components/ui/TextField";
@@ -76,7 +76,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
       );
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        router.replace("/host");
+        router.replace(loginAgainHref());
         return;
       }
       setLoadError(true);

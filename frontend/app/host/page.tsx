@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AuthPage } from "@/components/host/AuthPage";
@@ -17,6 +17,14 @@ export default function HostAuthPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Where a 401 elsewhere in the console sent them from (AdminShell's
+  // loginAgainHref). Read once on mount: useSearchParams would need a
+  // Suspense boundary for a page that is otherwise static.
+  const [next, setNext] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNext(new URLSearchParams(window.location.search).get("next"));
+  }, []);
 
   async function submit() {
     setBusy(true);
@@ -26,12 +34,18 @@ export default function HostAuthPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      router.push("/host/events");
+      // Only back into the console — never off to another site.
+      router.push(next?.startsWith("/host") ? next : "/host/events");
     } catch (e) {
-      if (e instanceof ApiError && e.status === 422) {
+      if (!(e instanceof ApiError)) {
+        setError("Couldn't reach the server. Please try again.");
+      } else if (e.status === 401) {
+        setError("Wrong email or password.");
+      } else if (e.status === 422) {
         setError("Enter a valid email and password.");
       } else {
-        setError("Wrong email or password.");
+        // 429 (too many tries) and the like carry their own explanation.
+        setError(apiMessage(e, "Couldn't log in. Please try again."));
       }
     } finally {
       setBusy(false);
@@ -40,8 +54,15 @@ export default function HostAuthPage() {
 
   return (
     <AuthPage title="Login to the admin console">
+      {next && (
+        <p role="status" className="text-lg text-fg">
+          Your session ended. Please log in again.
+        </p>
+      )}
       <form
         className="flex flex-col gap-6"
+        // Our own messages, not the browser's bubbles.
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy && email && password) void submit();

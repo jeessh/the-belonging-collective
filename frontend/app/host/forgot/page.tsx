@@ -21,6 +21,12 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
+    // The form is noValidate, so the address is checked here instead of by
+    // a browser bubble.
+    if (!email.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -64,6 +70,8 @@ export default function ForgotPasswordPage() {
     >
       <form
         className="flex flex-col gap-6"
+        // Our own messages, not the browser's bubbles.
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy && email.trim()) void submit();
