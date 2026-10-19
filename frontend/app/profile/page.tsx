@@ -98,7 +98,7 @@ export default function ProfilePage() {
     setPictureError(null);
     try {
       setMe(await uploadAvatar(file));
-      show({ title: "Photo saved" });
+      show({ title: "Profile picture saved" });
     } catch (err) {
       setPictureError(apiMessage(err, "That didn't upload. Please try again."));
     } finally {
@@ -116,7 +116,8 @@ export default function ProfilePage() {
           slug ? { avatar_emblem: slug } : { avatar_emblem: null, avatar_url: null },
         ),
       );
-      show({ title: slug ? "Emblem saved" : "Picture removed" });
+      // One name for the one picture, whichever kind it is.
+      show({ title: slug ? "Profile picture saved" : "Profile picture removed" });
     } catch (err) {
       setPictureError(apiMessage(err, "That didn't save. Please try again."));
     } finally {
@@ -325,7 +326,9 @@ export default function ProfilePage() {
           title="Share my list"
           subtitle="Anyone with the link can see your upcoming saved events."
         >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Top-aligned: the link wraps onto several lines, and a centred
+              button then floated halfway down beside it. */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             {linkUrl && (
               <p className="flex-1 select-text break-all rounded-control border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
                 {linkUrl}

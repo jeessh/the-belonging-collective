@@ -379,13 +379,10 @@ export const SavedEvents = memo(function SavedEvents({
           title="Share list of events?"
           subject={listTitle}
           body={listShareText(upcoming, window.location.origin)}
-          copy={{
-            label: "List",
-            text: listShareText(upcoming, window.location.origin),
-          }}
-          // A live link to the list, as against the text above, which is a
-          // snapshot. Public by design: it is only a list. The link is the
-          // signed-in account's own, so it is left out of someone else's list.
+          // No copy-the-text row (the audit found no use for it): email, or
+          // a live link to the list. Public by design: it is only a list. The
+          // link is the signed-in account's own, so it is left out of
+          // someone else's list.
           link={
             owner
               ? undefined
