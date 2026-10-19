@@ -744,6 +744,11 @@ export function EventsView({
     setI(0);
   }, []);
 
+  const clearChips = useCallback(() => {
+    setChips(new Set());
+    setI(0);
+  }, []);
+
   // The view sticks: on the profile, or in this browser without one.
   const changeView = useCallback(
     (mode: ViewMode) => {
@@ -814,8 +819,12 @@ export function EventsView({
     [view, cardActionsLive, next, prev, closeSaved, openSaved],
   );
 
+  // Voice and head control drive the one card ("next", "save", the head's
+  // edges), so they pause in list view; the member's setting is kept and they
+  // pick up again on the cards. Read aloud already speaks only the card.
+  const cardMode = viewMode === "card";
   const { supported: voiceSupported, listening, lastHeard } = useSpeechCommands(
-    voiceEnabled,
+    voiceEnabled && cardMode,
     actionHandlers,
     // Mute the mic while the TTS bot is reading, so it doesn't hear itself.
     speaking,
@@ -832,35 +841,48 @@ export function EventsView({
     finishCalibration,
     setPreview,
   } = useHeadTracking(
-    headEnabled,
+    headEnabled && cardMode,
     actionHandlers,
     // Freeze dwell while a panel is open so looking around doesn't fire actions.
     view === "saved" || a11yOpen || tourOpen,
   );
 
   // ---- first-run tour ----
-  // Once the feed is up and nothing else is asking for attention. Checked
-  // once per visit: a signed-in member's profile says whether they have seen
-  // it; a visitor's browser does.
+  // Once the feed is up and nothing else is asking for attention, and only
+  // the first time: a signed-in member's profile says whether they have seen
+  // it, and so does this browser. It counts as seen the moment it opens —
+  // not when Start or Skip is pressed — so closing the tab or clicking away
+  // mid-tour doesn't bring it back on the next visit. "Show me around" in
+  // Accessibility Tools replays it.
+  const markToured = useCallback(() => {
+    writeLocal(TOURED_KEY, "1");
+    const current = meRef.current;
+    if (current && current.onboarded_at === null) {
+      setMe((m) => (m ? { ...m, onboarded_at: new Date().toISOString() } : m));
+      updateMe({ onboarded: true }).catch(() => {});
+    }
+  }, []);
+
   const tourCheckedRef = useRef(false);
   useEffect(() => {
     if (tourCheckedRef.current || status !== "ready") return;
     if (authOpen || calibrating) return;
     tourCheckedRef.current = true;
-    const seen = me ? me.onboarded_at !== null : readLocal(TOURED_KEY) === "1";
-    if (!seen) setTourOpen(true);
-  }, [status, authOpen, calibrating, me]);
+    // Either says so: a visitor who took the tour and then signed up isn't
+    // shown it again because their new profile hasn't caught up.
+    const seen =
+      readLocal(TOURED_KEY) === "1" || (me !== null && me.onboarded_at !== null);
+    if (seen) {
+      if (me && me.onboarded_at === null) markToured();
+      return;
+    }
+    setTourOpen(true);
+    markToured();
+  }, [status, authOpen, calibrating, me, markToured]);
 
   const closeTour = useCallback(() => {
     setTourOpen(false);
     cancelSpeech();
-    if (meRef.current) {
-      if (meRef.current.onboarded_at !== null) return;
-      setMe((m) => (m ? { ...m, onboarded_at: new Date().toISOString() } : m));
-      updateMe({ onboarded: true }).catch(() => {});
-    } else {
-      writeLocal(TOURED_KEY, "1");
-    }
   }, [cancelSpeech]);
 
   const showTour = useCallback(() => {
@@ -1096,6 +1118,7 @@ export function EventsView({
           accessPrefs={me?.accessibility_prefs ?? []}
           onToggleAccessPref={toggleAccessPref}
           signedIn={signedIn}
+          listView={viewMode === "list"}
           onShowTour={showTour}
           onSignIn={() => {
             // The sign-in overlay covers this menu; leaving it open left a
@@ -1179,6 +1202,7 @@ export function EventsView({
               <FeedFilters
                 chips={chips}
                 onToggleChip={toggleChip}
+                onClearChips={clearChips}
                 interests={taste.interests}
               />
             </div>
@@ -1300,6 +1324,7 @@ export function EventsView({
                           recommended={recommendedKeys.has(programKey(current))}
                           onMoreInfo={setDetailFor}
                           onSave={saveFromButton}
+                          onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
                         />
                       </motion.div>
