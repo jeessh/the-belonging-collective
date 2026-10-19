@@ -19,3 +19,9 @@ class CareMemberCreate(BaseModel):
     last_name: str
     email: EmailStr
     password: str = Field(min_length=PASSWORD_MIN_LENGTH)
+
+
+class CaregiverInviteCreate(BaseModel):
+    """A member naming the person they'd like as their caregiver."""
+
+    email: EmailStr

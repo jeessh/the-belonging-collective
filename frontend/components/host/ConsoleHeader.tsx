@@ -159,7 +159,7 @@ export function ConsoleHeader({
             variant="ghost"
             leadingIcon={<LogOut />}
             onClick={() => {
-              void logout()
+              void logout("host")
                 .catch(() => {})
                 .then(() => router.replace("/host"));
             }}

@@ -290,7 +290,12 @@ export async function fetchAllEvents(): Promise<Event[]> {
   return all;
 }
 
-export const logout = () => api("/auth/logout", { method: "POST" });
+/**
+ * Sign out one side: the member app by default, the console with "host".
+ * Members and organizers have separate sessions, so one doesn't end the other.
+ */
+export const logout = (role: "user" | "host" = "user") =>
+  api(`/auth/logout${role === "host" ? "?role=host" : ""}`, { method: "POST" });
 
 /* ---------------- caregivers ---------------- */
 
@@ -304,6 +309,8 @@ export type CarePerson = {
   last_name: string;
   avatar_url?: string | null;
   avatar_emblem?: string | null;
+  /** The member's email, when a caregiver is looking; never the other way. */
+  email?: string | null;
 };
 
 /** "Sam R." — the short form every surface uses for a linked person. */
@@ -352,6 +359,47 @@ export const unattendEventFor = (memberId: string, eventId: string) =>
 
 export const careCalendarUrl = (memberId: string) =>
   `${API}/users/me/care/${memberId}/events/calendar.ics`;
+
+/**
+ * The member's own invitation to a caregiver, still waiting for an answer.
+ * `link` comes back once, when it is made — only its hash is stored.
+ */
+export type CaregiverInvite = {
+  id: string;
+  email: string;
+  created_at: string;
+  expires_at: string;
+  link?: string;
+};
+
+export const fetchCaregiverInvites = () =>
+  api<CaregiverInvite[]>("/users/me/caregivers/invites");
+
+/** Mail an invitation; inviting the same email again replaces the old one. */
+export const inviteCaregiver = (email: string) =>
+  api<CaregiverInvite>("/users/me/caregivers/invites", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+
+export const withdrawCaregiverInvite = (inviteId: string) =>
+  api(`/users/me/caregivers/invites/${inviteId}`, { method: "DELETE" });
+
+/** What the accept page shows: who is asking, and which email must accept. */
+export type CareInvitePreview = {
+  member: string;
+  member_first_name: string;
+  email: string;
+};
+
+export const previewCareInvite = (token: string) =>
+  api<CareInvitePreview>(`/care-invites/${encodeURIComponent(token)}`);
+
+/** Accept as the signed-in account; 403 unless it is the invited email. */
+export const acceptCareInvite = (token: string) =>
+  api<CarePerson>(`/care-invites/${encodeURIComponent(token)}/accept`, {
+    method: "POST",
+  });
 
 /* ---------------- special access ---------------- */
 
@@ -524,7 +572,8 @@ export type Session = {
   caregivers?: CarePerson[];
 };
 
-export const getSession = () => api<Session>("/auth/me");
+/** The console's organizer session (members read /users/me). */
+export const getSession = () => api<Session>("/auth/me?role=host");
 
 export const getHostMe = () => api<HostMe>("/hosts/me");
 

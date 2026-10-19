@@ -10,6 +10,8 @@ import {
 import Link from "next/link";
 import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
+import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
+import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
@@ -96,12 +98,22 @@ export function MemberAuthFlow({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Field-level errors: the email step's address, and the password step's
+  // two boxes. Shown on the field (red edge + message), cleared on typing.
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   // The address already has an account, so "log in instead" is the fix.
   const [emailTaken, setEmailTaken] = useState(false);
   // The account type card chosen on the "who" step.
   const [caregiver, setCaregiver] = useState(false);
   const [careResult, setCareResult] = useState<CareLinkResult | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // "j•••@gmail.com" when this browser has signed in before: sign-up then
+  // asks whether they already have an account. Read after mount, since the
+  // server has no storage to read.
+  const [knownHint, setKnownHint] = useState<string | null>(null);
+  useEffect(() => setKnownHint(knownAccountHint()), []);
 
   // Saying a name instead of typing it.
   const dictation = useDictation();
@@ -168,12 +180,14 @@ export function MemberAuthFlow({
   async function submitPassword(e: FormEvent) {
     e.preventDefault();
     clearFeedback();
+    setPasswordError(null);
+    setConfirmError(null);
     if (password.length < PASSWORD_MIN_LENGTH) {
-      setError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
+      setPasswordError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
       return;
     }
     if (password !== confirm) {
-      setError("The passwords don't match.");
+      setConfirmError("The passwords don't match.");
       return;
     }
     setBusy(true);
@@ -188,17 +202,21 @@ export function MemberAuthFlow({
           is_caregiver: caregiver,
         }),
       });
+      rememberAccount(email);
       // A caregiver's own account is half the job; the other half is the
       // person they support, offered now and again on the profile page.
       if (caregiver) setStep("care-choice");
       else finish("signup");
     } catch (err) {
+      // The address the API refused was typed a step back: return there
+      // with the error on the field rather than under the passwords.
+      if (err instanceof ApiError && err.status === 422) {
+        setStep("email");
+        setEmailError(INVALID_EMAIL);
+        return;
+      }
       if (err instanceof ApiError && err.status === 409) setEmailTaken(true);
-      setError(
-        err instanceof ApiError && err.status === 422
-          ? "Enter a valid email address."
-          : apiMessage(err, GENERIC_ERROR),
-      );
+      setError(apiMessage(err, GENERIC_ERROR));
     } finally {
       setBusy(false);
     }
@@ -213,6 +231,7 @@ export function MemberAuthFlow({
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      rememberAccount(email);
       finish("login");
     } catch (err) {
       setError(apiMessage(err, "Wrong email or password."));
@@ -223,11 +242,11 @@ export function MemberAuthFlow({
 
   function guest() {
     toast.show({
-      title: "You're logged in as a guest!",
-      description: "Login or sign up to save events.",
+      title: "You're browsing as a guest",
+      description: "You cannot save events until you've logged in or signed up.",
       tone: "info",
       cancel: { label: "Later" },
-      action: { label: "Sign up/Login", onClick: onGuestSignIn },
+      action: { label: "Log in or sign up", onClick: onGuestSignIn },
     });
     onGuest();
   }
@@ -297,6 +316,31 @@ export function MemberAuthFlow({
               go("name");
             }}
           >
+            {/* The duplicate-account nudge: this browser has signed in
+                before, so a forgotten account is likelier than a new person. */}
+            {knownHint && (
+              <div
+                role="note"
+                className="mb-8 flex flex-col gap-3 rounded-control border border-primary-border bg-primary-soft p-5"
+              >
+                <p className="text-lg text-fg">
+                  This device has logged in before as{" "}
+                  <span className="font-medium">{knownHint}</span>. Already
+                  have an account?
+                </p>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <Button variant="secondary" onClick={enterLogin}>
+                    Log in instead
+                  </Button>
+                  <Link
+                    href="/forgot"
+                    className="text-lg text-fg underline underline-offset-4"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              </div>
+            )}
             <fieldset className="flex flex-col gap-4">
               <legend className="sr-only">Account type</legend>
               <RoleCard
@@ -388,8 +432,13 @@ export function MemberAuthFlow({
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (!looksLikeEmail(email)) {
+                setEmailError(INVALID_EMAIL);
+                return;
+              }
               go("password");
             }}
+            noValidate
             className="flex flex-col gap-6"
           >
             <TextField
@@ -399,7 +448,11 @@ export function MemberAuthFlow({
               placeholder="Enter your email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={emailError}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
             />
             <FormFooter
               className="mt-6"
@@ -428,7 +481,11 @@ export function MemberAuthFlow({
               placeholder="Enter your password"
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              error={passwordError}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError(null);
+              }}
             />
             <TextField
               label="Confirm password"
@@ -437,7 +494,11 @@ export function MemberAuthFlow({
               placeholder="Re-enter your password"
               autoComplete="new-password"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              error={confirmError}
+              onChange={(e) => {
+                setConfirm(e.target.value);
+                setConfirmError(null);
+              }}
             />
             {errorLine}
             <FormFooter
