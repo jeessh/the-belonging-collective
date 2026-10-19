@@ -12,7 +12,7 @@ import {
   type CategoryRow,
 } from "@/lib/api";
 import { categoryStyle, invalidateCategories, loadCategories } from "@/lib/categories";
-import { AdminShell } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
@@ -60,7 +60,7 @@ function Topics() {
       setLoadError(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        router.replace("/host");
+        router.replace(loginAgainHref());
         return;
       }
       setLoadError(true);

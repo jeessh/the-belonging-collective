@@ -39,6 +39,23 @@ def validate_registration(
         raise ValueError("The registration link must start with http:// or https://")
 
 
+def validate_numbers(
+    capacity: int | None, min_age: int | None, max_age: int | None
+) -> None:
+    """Spaces and ages a member could actually read without wincing.
+
+    Shared like the two above, so a PATCH of one age is checked against the
+    other one already on the row. Blank (None) still means no limit / any age.
+    """
+    if capacity is not None and capacity < 1:
+        raise ValueError("Spaces must be a whole number of at least 1, or blank for no limit.")
+    # 0 is a real youngest age — parent-and-baby programs list "Ages 0 – 2".
+    if (min_age is not None and min_age < 0) or (max_age is not None and max_age < 0):
+        raise ValueError("Ages must be whole numbers of 0 or more.")
+    if min_age is not None and max_age is not None and min_age > max_age:
+        raise ValueError("The youngest age can't be more than the oldest age.")
+
+
 class AccessGroupRef(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -178,6 +195,7 @@ class EventCreate(EventBase):
             self.price_sessions,
             self.price_note,
         )
+        validate_numbers(self.capacity, self.min_age, self.max_age)
         return self
 
 
@@ -219,6 +237,8 @@ class EventUpdate(BaseModel):
         # must not blank the category off the back of an empty default.
         if self.categories is not None:
             self.category = self.categories[0] if self.categories else None
+        # What the patch says on its own; the route re-checks the merged row.
+        validate_numbers(self.capacity, self.min_age, self.max_age)
         return self
 
 

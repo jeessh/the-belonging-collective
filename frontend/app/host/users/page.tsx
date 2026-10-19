@@ -13,7 +13,7 @@ import {
   updateMember,
   type MemberAccount,
 } from "@/lib/api";
-import { AdminShell } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
@@ -53,7 +53,7 @@ function Members() {
       setLoadError(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        router.replace("/host");
+        router.replace(loginAgainHref());
         return;
       }
       setLoadError(true);

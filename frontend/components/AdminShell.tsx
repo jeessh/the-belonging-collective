@@ -38,6 +38,16 @@ export type ConsoleContext = {
   refreshPendingAccess: () => void;
 };
 
+/**
+ * The login page, carrying the page to come back to. Used whenever a console
+ * request answers 401: the session ended, and the login page says so (it
+ * shows the notice whenever `next` is present).
+ */
+export function loginAgainHref(): string {
+  const here = window.location.pathname + window.location.search;
+  return `/host?next=${encodeURIComponent(here)}`;
+}
+
 export function AdminShell({
   requireSuperadmin = false,
   children,
@@ -71,7 +81,7 @@ export function AdminShell({
       .then(([session, me]) => {
         if (!alive) return;
         if (!session.authenticated || session.role !== "host") {
-          router.replace("/host");
+          router.replace(loginAgainHref());
           return;
         }
         setCtx({ session, me, org: me.org, isSuper: me.is_admin });
@@ -80,7 +90,7 @@ export function AdminShell({
         if (!alive) return;
         // A 401 means "not signed in" → front door. A network blip shouldn't
         // eject someone mid-task, so offer a retry instead.
-        if (e instanceof ApiError && e.status === 401) router.replace("/host");
+        if (e instanceof ApiError && e.status === 401) router.replace(loginAgainHref());
         else setFailed(true);
       });
     return () => {

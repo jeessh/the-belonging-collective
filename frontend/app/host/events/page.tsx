@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Printer, SlidersHorizontal } from "lucide-react";
-import { ApiError, api, type Event } from "@/lib/api";
+import { Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
-import { isUpcoming } from "@/lib/time";
+import { isUpcoming, longDate } from "@/lib/time";
 import { useMediaQuery } from "@/lib/useMediaQuery";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Modal } from "@/components/Modal";
 import { SearchField } from "@/components/AdminTable";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -17,7 +17,11 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { useToast } from "@/components/ui/Toast";
 import { PosterSheet, WeeklySheet, printSheet } from "@/components/host/PrintSheets";
 import { AdminEventCard } from "@/components/host/AdminEventCard";
-import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
+import {
+  UnpublishModal,
+  restoreEvent,
+  unpublishedToast,
+} from "@/components/host/UnpublishModal";
 import {
   FilterPanel,
   NO_HOST_FILTERS,
@@ -29,7 +33,7 @@ export default function ProgramsPage() {
   return <AdminShell>{(ctx) => <PostedEvents ctx={ctx} />}</AdminShell>;
 }
 
-type Scope = "mine" | "all";
+type Scope = "mine" | "all" | "unpublished";
 
 function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
@@ -37,7 +41,13 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [scope, setScope] = useState<Scope>("all");
+  // An organization opens on its own programs; a superadmin on everyone's.
+  const [scope, setScope] = useState<Scope>(ctx.isSuper ? "all" : "mine");
+  // Un-published programs (GET /events/archived), read each time the tab
+  // opens; null while loading.
+  const [archived, setArchived] = useState<Event[] | null>(null);
+  const [archivedError, setArchivedError] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   // Below `lg` the filter panel lives in a sheet behind a Filters button.
@@ -74,7 +84,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
       .catch((e) => {
         if (!alive) return;
         if (e instanceof ApiError && e.status === 401) {
-          router.replace("/host");
+          router.replace(loginAgainHref());
           return;
         }
         setLoadError(true);
@@ -84,6 +94,54 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
       alive = false;
     };
   }, [router]);
+
+  useEffect(() => {
+    if (scope !== "unpublished") return;
+    let alive = true;
+    setArchived(null);
+    setArchivedError(false);
+    api<Event[]>("/events/archived")
+      .then((rows) => alive && setArchived(oneCardPerProgram(rows)))
+      .catch((e) => {
+        if (!alive) return;
+        if (e instanceof ApiError && e.status === 401) {
+          router.replace(loginAgainHref());
+          return;
+        }
+        setArchivedError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [scope, router]);
+
+  // The same restore Undo calls: every date of the program comes back. The
+  // calendar is re-read so the program is there under Your Events again.
+  async function restore(program: Event) {
+    setRestoring(program.id);
+    try {
+      await restoreEvent(program.id);
+      setArchived((rows) =>
+        (rows ?? []).filter(
+          (ev) =>
+            ev.id !== program.id &&
+            !(program.series_id && ev.series_id === program.series_id),
+        ),
+      );
+      show({ title: `'${program.title}' is published again.` });
+      load()
+        .then(setEvents)
+        .catch(() => {});
+    } catch (e) {
+      show({
+        title: "Couldn't put that back.",
+        description: apiMessage(e, "Please refresh and try again."),
+        tone: "alert",
+      });
+    } finally {
+      setRestoring(null);
+    }
+  }
 
   // "Your Events" is a client-side cut on host_id: the console already holds
   // the whole calendar for the filters, so there is nothing to refetch.
@@ -151,10 +209,15 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-4xl font-medium text-fg sm:text-5xl">
-          {scope === "mine" ? "Your Events" : "All Events"}
+          {scope === "mine"
+            ? "Your Events"
+            : scope === "unpublished"
+              ? "Un-published"
+              : "All Events"}
         </h1>
         <SegmentedToggle<Scope>
           label="Which events"
+          className="max-w-full overflow-x-auto"
           value={scope}
           onChange={(next) => {
             setScope(next);
@@ -165,10 +228,58 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           segments={[
             { value: "mine", label: "Your Events" },
             { value: "all", label: "All Events" },
+            { value: "unpublished", label: "Un-published" },
           ]}
         />
       </div>
 
+      {scope === "unpublished" ? (
+        <div className="flex flex-col gap-4">
+          <p className="text-lg text-fg-muted">
+            Programs taken off the calendar. Nothing was deleted: restore one
+            and every date of it is back in the member feed.
+          </p>
+          {archivedError ? (
+            <p role="alert" className="text-lg text-danger-fg">
+              Couldn&apos;t load un-published events. Please refresh and try again.
+            </p>
+          ) : archived === null ? (
+            <p className="text-lg text-fg-muted">Loading…</p>
+          ) : archived.length === 0 ? (
+            <p className="text-xl text-fg-muted">Nothing is un-published.</p>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {archived.map((ev) => (
+                <li
+                  key={ev.id}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-4 sm:p-6"
+                >
+                  <div className="min-w-0">
+                    <p className="break-words text-xl font-medium text-fg">{ev.title}</p>
+                    <p className="text-base text-fg-muted">
+                      {[
+                        longDate(ev.starts_at) || "No date",
+                        ev.recurrence,
+                        ctx.isSuper ? ev.host_name : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  <Button
+                    leadingIcon={<RotateCcw />}
+                    disabled={restoring !== null}
+                    onClick={() => void restore(ev)}
+                    aria-label={`Restore ${ev.title}`}
+                  >
+                    {restoring === ev.id ? "Restoring…" : "Restore"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : (
       <div className="flex flex-col items-start gap-8 lg:flex-row">
         <div className="hidden w-[431px] shrink-0 lg:block">
           <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
@@ -253,6 +364,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           )}
         </div>
       </div>
+      )}
 
       <WeeklySheet
         id="weekly-list"

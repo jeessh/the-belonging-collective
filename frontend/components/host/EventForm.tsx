@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
@@ -8,6 +14,8 @@ import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
 import { PosterField } from "@/components/host/PosterField";
@@ -234,35 +242,111 @@ export function payloadFrom(v: EventFormValues) {
   };
 }
 
+/** One thing stopping a save: the field it belongs to (for that field's own
+    error), the phrase for the "Still needed" summary, and the field message. */
+export type Problem = { field: string; text: string; error: string };
+
+const WHOLE = /^\d+$/;
+
 /** Everything marked with a * on the form, plus what can't be sent as typed. */
-export function missingRequired(v: EventFormValues): string[] {
-  const missing: string[] = [];
-  if (!v.title.trim()) missing.push("name");
-  if (!v.date) missing.push("date");
-  if (!v.time) missing.push("start time");
+export function missingRequired(
+  v: EventFormValues,
+  mode: "create" | "edit",
+): Problem[] {
+  const out: Problem[] = [];
+  const need = (field: string, text: string, error = "This is required.") =>
+    out.push({ field, text, error });
+  if (!v.title.trim()) need("title", "name");
+  if (!v.date) need("date", "date");
+  if (!v.time) need("time", "start time");
   if (v.endTime && v.time && v.endTime <= v.time)
-    missing.push("an end time after the start");
-  if (!v.location.trim()) missing.push("location");
-  if (!v.description.trim()) missing.push("description");
+    need("endTime", "an end time after the start", "End after the start time.");
+  // A virtual program happens online; there is no place to give.
+  if (!v.isVirtual && !v.location.trim()) need("location", "location");
+  if (!v.description.trim()) need("description", "description");
   if (v.description.length > DESCRIPTION_MAX)
-    missing.push(`a description under ${DESCRIPTION_MAX} characters`);
-  if (!v.coverImageUrl) missing.push("image");
-  if (v.categories.length === 0) missing.push("activity type");
+    need("description", `a description under ${DESCRIPTION_MAX} characters`);
+  // Only new programs: older ones were posted before an image was required,
+  // and refusing every edit to them until one is found helps nobody.
+  if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
+  if (v.categories.length === 0) need("categories", "activity type");
   if (v.links.some((l) => !!l.label.trim() !== !!l.url.trim()))
-    missing.push("both a label and an address for each link");
+    need("links", "both a label and an address for each link");
   if (v.links.some((l) => checkPostingLink(l.url)?.tone === "error"))
-    missing.push("a valid web address for each link");
+    need("links", "a valid web address for each link");
   const t = templateFor(v.pricingModel);
-  if (t.needsAmount && !centsFrom(v.priceAmount)) missing.push("price");
-  if (t.needsGroup && !v.priceGroupSize.trim()) missing.push("group size");
-  if (t.needsSessions && !v.priceSessions.trim()) missing.push("sessions");
+  if (t.needsAmount && !centsFrom(v.priceAmount)) need("priceAmount", "price");
+  if (t.needsGroup && !v.priceGroupSize.trim())
+    need("priceGroupSize", "group size");
+  if (t.needsSessions && !v.priceSessions.trim())
+    need("priceSessions", "sessions");
   if (v.pricingModel === "custom" && !v.priceNote.trim())
-    missing.push("cost description");
+    need("priceNote", "cost description");
   if (v.frequency !== "once" && !v.repeatForever && !v.occurrenceCount.trim())
-    missing.push("how many times it repeats");
+    need("occurrenceCount", "how many times it repeats");
   if (v.accessMode === "group" && !v.accessGroupId)
-    missing.push("which group can see it");
-  return missing;
+    need("accessGroupId", "which group can see it");
+  // Blank is fine (no limit, any age); what's typed has to make sense.
+  const capacity = v.capacity.trim();
+  if (capacity && (!WHOLE.test(capacity) || Number(capacity) < 1))
+    need("capacity", "spaces as a whole number of at least 1", "Use a whole number of at least 1.");
+  const minAge = v.minAge.trim();
+  const maxAge = v.maxAge.trim();
+  if (minAge && !WHOLE.test(minAge))
+    need("minAge", "the youngest age as a whole number", "Use a whole number.");
+  if (maxAge && !WHOLE.test(maxAge))
+    need("maxAge", "the oldest age as a whole number", "Use a whole number.");
+  if (WHOLE.test(minAge) && WHOLE.test(maxAge) && Number(minAge) > Number(maxAge))
+    need(
+      "maxAge",
+      "an oldest age no younger than the youngest",
+      "Can't be younger than the youngest age.",
+    );
+  return out;
+}
+
+/**
+ * Unsaved-changes protection for the event form: the browser's own warning
+ * on reload or close, and a "Leave without saving?" dialog for the page's
+ * back arrow (pass `onBack` to PageHeader). Render `dialog` somewhere.
+ */
+export function useLeaveGuard(dirty: boolean) {
+  const router = useRouter();
+  const [leaving, setLeaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Older browsers only warn when this is set.
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  const onBack = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!dirty) return;
+    e.preventDefault();
+    setLeaving(e.currentTarget.getAttribute("href"));
+  };
+
+  const dialog = leaving && (
+    <Modal
+      title="Leave without saving?"
+      subtitle="Your changes to this event will be lost."
+      onClose={() => setLeaving(null)}
+    >
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button variant="primary" onClick={() => setLeaving(null)}>
+          Keep editing
+        </Button>
+        <Button onClick={() => router.push(leaving)}>Leave</Button>
+      </div>
+    </Modal>
+  );
+
+  return { onBack, dialog };
 }
 
 /* ---------------- pieces ---------------- */
@@ -279,7 +363,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <fieldset className="flex flex-col gap-3">
+    // min-w-0: a fieldset is min-content wide by default, which pushed the
+    // form past a phone's width.
+    <fieldset className="flex min-w-0 flex-col gap-3">
       <legend className="text-lg font-medium text-fg">
         {title}
         {required && <RequiredMark />}
@@ -296,6 +382,7 @@ export function EventForm({
   id,
   mode,
   hostId,
+  inSeries = false,
   values,
   onChange,
   submitting,
@@ -308,24 +395,42 @@ export function EventForm({
   mode: "create" | "edit";
   /** The organization the program belongs to — whose access groups apply. */
   hostId: string;
+  /** Editing one date of a repeating program — the form says what an edit reaches. */
+  inSeries?: boolean;
   values: EventFormValues;
-  onChange: (next: EventFormValues) => void;
+  /**
+   * Takes an updater, never a whole object: an upload finishing hands its URL
+   * to a callback made before the upload began, and building from that
+   * render's `values` wiped whatever was typed while it ran.
+   */
+  onChange: (update: (prev: EventFormValues) => EventFormValues) => void;
   submitting: boolean;
   onSubmit: () => void;
   error: string | null;
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
-  const missing = missingRequired(values);
+  const problems = missingRequired(values, mode);
+  const missing = problems.map((p) => p.text);
+  /** A field's own message, once the summary is showing. */
+  const fieldError = (field: string) =>
+    showMissing ? (problems.find((p) => p.field === field)?.error ?? null) : null;
   const set = <K extends keyof EventFormValues>(
     key: K,
     v: EventFormValues[K],
-  ) => onChange({ ...values, [key]: v });
+  ) => onChange((prev) => ({ ...prev, [key]: v }));
   const setLink = (i: number, patch: Partial<EventLink>) =>
-    set(
-      "links",
-      values.links.map((l, j) => (j === i ? { ...l, ...patch } : l)),
-    );
+    onChange((prev) => ({
+      ...prev,
+      links: prev.links.map((l, j) => (j === i ? { ...l, ...patch } : l)),
+    }));
+  const toggle = (key: "categories" | "accessibilityTags", slug: string) =>
+    onChange((prev) => ({
+      ...prev,
+      [key]: prev[key].includes(slug)
+        ? prev[key].filter((x) => x !== slug)
+        : [...prev[key], slug],
+    }));
 
   const paid = values.pricingModel !== "free";
   const priceTemplate = templateFor(values.pricingModel);
@@ -337,6 +442,9 @@ export function EventForm({
     <form
       id={id}
       className="flex flex-col gap-10"
+      // The summary and each field's own message say what's wrong; the
+      // browser's bubbles arrived first and said it differently.
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         if (missing.length) {
@@ -354,6 +462,12 @@ export function EventForm({
           Required fields are marked with{" "}
           <span className="text-danger-fg">*</span>.
         </p>
+        {inSeries && (
+          <p className="text-base text-fg-muted">
+            Changes apply to this date and every later date in the series. The
+            date and time change for this date only.
+          </p>
+        )}
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
@@ -367,8 +481,8 @@ export function EventForm({
       </div>
 
       <div className="grid gap-x-9 gap-y-6 lg:grid-cols-[598px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-6">
-          <Section title="Event image" required>
+        <div className="flex min-w-0 flex-col gap-6">
+          <Section title="Event image" required={mode === "create"}>
             <ImageDrop
               label="Event image"
               value={values.coverImageUrl}
@@ -381,6 +495,7 @@ export function EventForm({
             required
             value={values.title}
             onChange={(e) => set("title", e.target.value)}
+            error={fieldError("title")}
             placeholder="Open Space: Coffee & Chats"
             autoComplete="off"
           />
@@ -392,6 +507,7 @@ export function EventForm({
             type="date"
             icon={<CalendarDays />}
             value={values.date}
+            error={fieldError("date")}
             // Chrome's date field takes a six-digit year; min/max bound the
             // spinner and the clamp catches typing.
             min="2000-01-01"
@@ -408,25 +524,27 @@ export function EventForm({
               Time
               <RequiredMark />
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <TextField
                 label="Start time"
                 placeholder="9:00 AM"
-                className="flex-1 [&>label]:sr-only"
+                className="min-w-0 flex-1 [&>label]:sr-only"
                 type="time"
                 icon={<Clock />}
                 required
                 value={values.time}
+                error={fieldError("time")}
                 onChange={(e) => set("time", e.target.value)}
               />
-              <span aria-hidden="true" className="h-px w-[30px] bg-fg-icon" />
+              <span aria-hidden="true" className="mt-6 h-px w-[30px] shrink-0 bg-fg-icon" />
               <TextField
                 label="End time"
                 placeholder="11:00 AM"
-                className="flex-1 [&>label]:sr-only"
+                className="min-w-0 flex-1 [&>label]:sr-only"
                 type="time"
                 icon={<Clock />}
                 value={values.endTime}
+                error={fieldError("endTime")}
                 onChange={(e) => set("endTime", e.target.value)}
               />
             </div>
@@ -434,15 +552,16 @@ export function EventForm({
 
           <TextField
             label="Location"
-            required
+            required={!values.isVirtual}
             icon={<MapPin />}
             value={values.location}
+            error={fieldError("location")}
             onChange={(e) => set("location", e.target.value)}
             placeholder="Enter Location Here"
           />
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Field
             label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
             required
@@ -582,6 +701,7 @@ export function EventForm({
                     inputMode="decimal"
                     value={values.priceAmount}
                     onChange={(e) => set("priceAmount", e.target.value)}
+                    error={fieldError("priceAmount")}
                     placeholder="$12.50"
                   />
                 )}
@@ -594,6 +714,7 @@ export function EventForm({
                     min={2}
                     value={values.priceGroupSize}
                     onChange={(e) => set("priceGroupSize", e.target.value)}
+                    error={fieldError("priceGroupSize")}
                     placeholder="4"
                   />
                 )}
@@ -606,6 +727,7 @@ export function EventForm({
                     min={2}
                     value={values.priceSessions}
                     onChange={(e) => set("priceSessions", e.target.value)}
+                    error={fieldError("priceSessions")}
                     placeholder="8"
                   />
                 )}
@@ -616,6 +738,7 @@ export function EventForm({
                     className="min-w-[280px] flex-1"
                     value={values.priceNote}
                     onChange={(e) => set("priceNote", e.target.value)}
+                    error={fieldError("priceNote")}
                     placeholder="$5 suggested, pay what you can"
                   />
                 )}
@@ -679,14 +802,7 @@ export function EventForm({
                 <FilterChip
                   key={c.slug}
                   selected={on}
-                  onClick={() =>
-                    set(
-                      "categories",
-                      on
-                        ? values.categories.filter((x) => x !== c.slug)
-                        : [...values.categories, c.slug],
-                    )
-                  }
+                  onClick={() => toggle("categories", c.slug)}
                 >
                   <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
                   &nbsp;{c.label}
@@ -721,6 +837,7 @@ export function EventForm({
                   max={104}
                   value={values.occurrenceCount}
                   onChange={(e) => set("occurrenceCount", e.target.value)}
+                  error={fieldError("occurrenceCount")}
                   placeholder="8"
                 />
               )}
@@ -754,6 +871,7 @@ export function EventForm({
             min={1}
             value={values.capacity}
             onChange={(e) => set("capacity", e.target.value)}
+            error={fieldError("capacity")}
             placeholder="20"
           />
           <TextField
@@ -763,6 +881,7 @@ export function EventForm({
             min={0}
             value={values.minAge}
             onChange={(e) => set("minAge", e.target.value)}
+            error={fieldError("minAge")}
             placeholder="Any"
           />
           <TextField
@@ -772,6 +891,7 @@ export function EventForm({
             min={0}
             value={values.maxAge}
             onChange={(e) => set("maxAge", e.target.value)}
+            error={fieldError("maxAge")}
             placeholder="Any"
           />
         </div>
@@ -807,7 +927,7 @@ export function EventForm({
             mode={values.accessMode}
             groupId={values.accessGroupId}
             onChange={(accessMode, accessGroupId) =>
-              onChange({ ...values, accessMode, accessGroupId })
+              onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
             }
           />
         </Section>
@@ -833,14 +953,7 @@ export function EventForm({
                 <FilterChip
                   key={slug}
                   selected={on}
-                  onClick={() =>
-                    set(
-                      "accessibilityTags",
-                      on
-                        ? values.accessibilityTags.filter((t) => t !== slug)
-                        : [...values.accessibilityTags, slug],
-                    )
-                  }
+                  onClick={() => toggle("accessibilityTags", slug)}
                 >
                   <span aria-hidden="true">{emoji}</span>
                   &nbsp;{label}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ApiError, api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
@@ -89,6 +90,10 @@ export default function AcceptInvitePage() {
         <p className="text-lg text-fg-muted">
           Ask whoever invited you to send a new one.
         </p>
+        {/* Used already means the account may well exist — they can just log in. */}
+        <Link href="/host" className="w-fit text-lg text-fg underline underline-offset-4">
+          Already set up your account? Log in
+        </Link>
       </AuthPage>
     );
   }
@@ -106,6 +111,8 @@ export default function AcceptInvitePage() {
     >
       <form
         className="flex flex-col gap-6"
+        // Our own messages, not the browser's bubbles.
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) void submit();
@@ -128,7 +135,11 @@ export default function AcceptInvitePage() {
           placeholder="Enter password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          aria-describedby="invite-password-hint"
         />
+        <p id="invite-password-hint" className="-mt-4 text-base text-fg-muted">
+          At least {PASSWORD_MIN_LENGTH} characters.
+        </p>
         <TextField
           label="Confirm password"
           required

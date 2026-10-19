@@ -11,13 +11,13 @@ import {
   Pencil,
   Printer,
 } from "lucide-react";
-import { ApiError, api, type Event } from "@/lib/api";
+import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
 import { longDate, timeRange } from "@/lib/time";
 import { repeatLabel } from "@/lib/recurrence";
 import { isDerivedTag, tagLabel } from "@/lib/accessibility";
 import { eventImage } from "@/lib/eventImage";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { Tag, eventTags } from "@/components/ui/Tag";
@@ -42,6 +42,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const router = useRouter();
   const { show } = useToast();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
+  const [missing, setMissing] = useState("");
   const [unpublishing, setUnpublishing] = useState(false);
   const { label: topicLabel } = useCategories();
 
@@ -49,8 +50,20 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
     api<Event>(`/events/${id}`)
       .then(setEvent)
       .catch((e) => {
-        if (e instanceof ApiError && e.status === 401) router.replace("/host");
-        else setEvent(null);
+        if (e instanceof ApiError && e.status === 401) router.replace(loginAgainHref());
+        else {
+          // The API says which: "That event isn't published any more." for
+          // an archived one, "We couldn't find that event." for a bad link
+          // (a non-UUID id is a 422 with no sentence to show).
+          setMissing(
+            e instanceof ApiError && e.status === 404
+              ? apiMessage(e, "We couldn't find that event.")
+              : e instanceof ApiError && e.status === 422
+                ? "We couldn't find that event."
+                : "Couldn't load that event. Please refresh and try again.",
+          );
+          setEvent(null);
+        }
       });
   }, [id, router]);
 
@@ -59,7 +72,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <>
         <PageHeader title="Event Details" backHref="/host/events" />
         <p className="mt-6 text-xl text-fg-muted">
-          That event isn&apos;t published any more.
+          {missing}
         </p>
       </>
     );
