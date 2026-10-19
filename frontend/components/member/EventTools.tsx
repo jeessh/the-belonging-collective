@@ -20,7 +20,7 @@ export function EventTools({ event }: { event: Event }) {
 
   return (
     <>
-      <div className="flex flex-wrap justify-end gap-3">
+      <div className="flex flex-wrap gap-3 sm:justify-end">
         {dated && (
           <Button
             onClick={() => openGoogleCalendar(event)}

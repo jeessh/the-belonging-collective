@@ -242,7 +242,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                           title="Remove"
                           disabled={busy}
                           onClick={() => setRemoving(a)}
-                          style={{ color: "#CC0000" }}
+                          className="text-danger-fg"
                           leadingIcon={<Trash2 />}
                         />
                       )}

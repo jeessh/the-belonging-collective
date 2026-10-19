@@ -195,7 +195,7 @@ export function EventActions({ event }: { event: Event }) {
           disabled={busy || saved}
           trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
         >
-          {saved ? "Event Saved" : "Save Event"}
+          {saved ? "Event saved" : "Save event"}
         </Button>
       ) : (
         <AccessAction

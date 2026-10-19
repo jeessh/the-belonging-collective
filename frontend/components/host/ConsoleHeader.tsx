@@ -141,7 +141,9 @@ export function ConsoleHeader({
             ) : (
               <Avatar name={org.name} size={36} />
             )}
-            <span className="flex min-w-0 flex-col leading-tight text-fg-muted">
+            {/* On a phone the picture alone: the name squeezed to nothing
+                and the picture slid under Sign out. */}
+            <span className="flex min-w-0 flex-col leading-tight text-fg-muted max-sm:sr-only">
               {/* A staff login is a person at the organization: their name
                   first, the organization under it. The shared login is the
                   organization itself. */}
@@ -164,7 +166,7 @@ export function ConsoleHeader({
                 .then(() => router.replace("/host"));
             }}
           >
-            Sign out
+            <span className="max-sm:sr-only">Sign out</span>
           </Button>
         </div>
       </div>

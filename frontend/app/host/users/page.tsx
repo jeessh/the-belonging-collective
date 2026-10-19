@@ -1,5 +1,6 @@
 "use client";
 
+import { longDate } from "@/lib/time";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
@@ -144,7 +145,7 @@ function Members() {
           ) : (
             shown.map((m) => (
               <tr key={m.id} className="align-middle">
-                <th scope="row" className="px-3 py-3 font-normal">
+                <th scope="row" className="max-w-[24rem] break-words px-3 py-3 font-normal">
                   <span className="inline-flex flex-wrap items-center gap-2">
                     {m.first_name} {m.last_name}
                     {m.is_caregiver && (
@@ -168,7 +169,7 @@ function Members() {
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 text-fg-muted">
-                  {m.created_at ? new Date(m.created_at).toLocaleDateString() : "—"}
+                  {m.created_at ? longDate(m.created_at) : "—"}
                 </td>
                 <td className="px-3 py-3">
                   <span className="flex justify-end gap-2">
@@ -191,7 +192,7 @@ function Members() {
                       variant="ghost"
                       aria-label={`Remove ${m.first_name}`}
                       title="Remove"
-                      style={{ color: "#CC0000" }}
+                      className="text-danger-fg"
                       onClick={() => setRemoving(m)}
                       leadingIcon={<Trash2 />}
                     />

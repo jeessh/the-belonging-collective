@@ -275,7 +275,7 @@ function Topics() {
                         title="Archive"
                         disabled={isBusy}
                         onClick={() => setArchiving(c)}
-                        style={{ color: "#CC0000" }}
+                        className="text-danger-fg"
                         leadingIcon={<Trash2 />}
                       />
                     </span>

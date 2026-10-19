@@ -60,7 +60,7 @@ export default async function SharedListPage({ params }: Params) {
                   <EventSummary event={ev} layout="row" fixedDates />
                   {/* Under the row rather than in its third column, which
                       squeezed the title and facts into a narrow strip. */}
-                  <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-line-card pt-6">
+                  <div className="mt-6 flex flex-col gap-3 border-t border-line-card pt-6 sm:flex-row sm:justify-end">
                     {calendar && (
                       <a
                         href={calendar}

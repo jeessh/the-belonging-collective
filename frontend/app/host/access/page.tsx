@@ -409,7 +409,7 @@ function GroupPanel({
                         <Button
                           variant="ghost"
                           disabled={busy}
-                          style={{ color: "#CC0000" }}
+                          className="text-danger-fg"
                           onClick={() => setRevoking(m)}
                         >
                           Revoke

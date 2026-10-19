@@ -72,12 +72,8 @@ export function EventDetailModal({
           titleAs="h2"
           titleId={TITLE_ID}
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
-          // Room for the dialog's own close button while it sits inside.
-          tools={
-            <div className="pr-12 xl:pr-0">
-              <EventTools event={event} />
-            </div>
-          }
+          insetForClose
+          tools={<EventTools event={event} />}
           hint={external ? hostnameOf(event.registration_url) : undefined}
           actions={
             <>

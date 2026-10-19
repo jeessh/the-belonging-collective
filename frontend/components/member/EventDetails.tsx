@@ -52,6 +52,7 @@ export function EventDetails({
   titleAs = "h2",
   titleId,
   fixedDates = false,
+  insetForClose = false,
 }: {
   event: Event;
   going?: ReactNode;
@@ -65,6 +66,12 @@ export function EventDetails({
   titleId?: string;
   /** For paper: "Monday", not "Tomorrow". */
   fixedDates?: boolean;
+  /**
+   * Inside a dialog whose × sits in the top-right corner (until `xl`, where
+   * it moves outside): keep the top row clear of it. On a phone the tags
+   * are what sit there, so the room goes on the row, not on the tools.
+   */
+  insetForClose?: boolean;
 }) {
   const links = [
     ...(event.links ?? []),
@@ -84,7 +91,9 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-4 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
+      >
         <div className="flex flex-wrap gap-3">
           <EventTags event={event} />
         </div>

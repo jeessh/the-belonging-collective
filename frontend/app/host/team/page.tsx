@@ -161,7 +161,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                           aria-label={`Remove ${s.name}`}
                           title="Remove"
                           onClick={() => setRemoving(s)}
-                          style={{ color: "#CC0000" }}
+                          className="text-danger-fg"
                           leadingIcon={<Trash2 />}
                         />
                       </span>

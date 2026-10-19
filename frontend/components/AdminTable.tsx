@@ -1,5 +1,5 @@
 import type { ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { TextField } from "@/components/ui/TextField";
 
 /**
@@ -133,7 +133,17 @@ export function Select({
   className = "",
   ...rest
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={`${controlClass} ${className}`} {...rest} />;
+  // The browser's own arrow was a tiny glyph jammed against the edge; this
+  // draws the chevron the rest of the app uses, at the same size.
+  return (
+    <span className={`relative block ${className}`}>
+      <select className={`${controlClass} appearance-none pr-12`} {...rest} />
+      <ChevronDown
+        aria-hidden="true"
+        className="pointer-events-none absolute right-4 top-1/2 size-6 -translate-y-1/2 text-fg-icon"
+      />
+    </span>
+  );
 }
 
 export function TextArea({
