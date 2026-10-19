@@ -234,36 +234,26 @@ def _cell(text: str | None) -> str:
     return "'" + text if text[:1] in ("=", "+", "-", "@") else text
 
 
-@router.get("/analytics.csv")
-def analytics_csv(
-    from_: date | None = Query(None, alias="from"),
-    to: date | None = None,
-    host_id: uuid.UUID | None = None,
-    host: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    """The same numbers as a spreadsheet, for pasting into an application."""
-    from_, to = _range(from_, to)
-    out = _compute(db, _scope(db, host, host_id), from_, to)
-
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow(["The Belonging Collective — program analytics"])
-    w.writerow(["From", from_.isoformat()])
-    w.writerow(["To", to.isoformat()])
-    w.writerow(["Organization", out.host_name or "All organizations"])
-    w.writerow([])
-    w.writerow(["Totals"])
-    w.writerow(["Saves (including later un-saved)", out.totals.saves])
-    w.writerow(["Unique members who saved", out.totals.unique_savers])
-    w.writerow(["Registration-link clicks", out.totals.clicks])
-    w.writerow(["Programs posted", out.totals.postings])
-    w.writerow([])
-    w.writerow(["Week starting", "Saves", "Registration-link clicks", "Programs posted"])
-    for wk in out.weekly:
-        w.writerow([wk.week.isoformat(), wk.saves, wk.clicks, wk.postings])
-    w.writerow([])
-    w.writerow(
+def _rows(out, from_: date, to: date) -> list[list]:
+    """The export, row by row — shared by the CSV and the Excel file so the
+    two never disagree. Dates stay `date` objects; each writer formats them."""
+    rows: list[list] = [
+        ["The Belonging Collective — program analytics"],
+        ["From", from_],
+        ["To", to],
+        ["Organization", out.host_name or "All organizations"],
+        [],
+        ["Totals"],
+        ["Saves (including later un-saved)", out.totals.saves],
+        ["Unique members who saved", out.totals.unique_savers],
+        ["Registration-link clicks", out.totals.clicks],
+        ["Programs posted", out.totals.postings],
+        [],
+        ["Week starting", "Saves", "Registration-link clicks", "Programs posted"],
+    ]
+    rows += [[wk.week, wk.saves, wk.clicks, wk.postings] for wk in out.weekly]
+    rows += [
+        [],
         [
             "Program",
             "First date",
@@ -272,24 +262,97 @@ def analytics_csv(
             "Currently going",
             "Registration-link clicks",
             "Status",
+        ],
+    ]
+    rows += [
+        [
+            _cell(p.title),
+            p.starts_at.astimezone(TZ).date() if p.starts_at else "",
+            _cell(p.host_name),
+            p.saves,
+            p.going,
+            p.clicks,
+            "Archived" if p.archived else "Live",
         ]
-    )
-    for p in out.programs:
-        w.writerow(
-            [
-                _cell(p.title),
-                p.starts_at.astimezone(TZ).date().isoformat() if p.starts_at else "",
-                _cell(p.host_name),
-                p.saves,
-                p.going,
-                p.clicks,
-                "Archived" if p.archived else "Live",
-            ]
-        )
+        for p in out.programs
+    ]
+    return rows
+
+
+@router.get("/analytics.csv")
+def analytics_csv(
+    from_: date | None = Query(None, alias="from"),
+    to: date | None = None,
+    host_id: uuid.UUID | None = None,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """The same numbers as plain CSV, for anything that reads data. Opened
+    straight in Excel its date columns can show as ##### (a CSV can't set a
+    column width) — the .xlsx below is the one for people."""
+    from_, to = _range(from_, to)
+    out = _compute(db, _scope(db, host, host_id), from_, to)
+
+    buf = io.StringIO()
+    # A byte-order mark, or Excel reads the file as ANSI and garbles the
+    # dash in the title and any accented organizer text.
+    buf.write("\ufeff")
+    w = csv.writer(buf)
+    for row in _rows(out, from_, to):
+        w.writerow([v.isoformat() if isinstance(v, date) else v for v in row])
 
     filename = f"analytics-{from_.isoformat()}-to-{to.isoformat()}.csv"
     return Response(
         buf.getvalue(),
         media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# Column widths in characters: wide enough for the labels in column A and
+# for a date anywhere, so nothing opens as #####.
+_XLSX_WIDTHS = {"A": 40, "B": 14, "C": 28, "D": 18, "E": 16, "F": 24, "G": 10}
+
+
+@router.get("/analytics.xlsx")
+def analytics_xlsx(
+    from_: date | None = Query(None, alias="from"),
+    to: date | None = None,
+    host_id: uuid.UUID | None = None,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """The same rows as an Excel file: real date cells, columns already wide
+    enough, headings in bold — what an organizer opens to copy numbers into
+    a grant application."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    from_, to = _range(from_, to)
+    out = _compute(db, _scope(db, host, host_id), from_, to)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Analytics"
+    bold = Font(bold=True)
+    headings = {"Totals", "Week starting", "Program"}
+    for row in _rows(out, from_, to):
+        ws.append(row)
+        r = ws.max_row
+        for cell in ws[r]:
+            if isinstance(cell.value, date):
+                cell.number_format = "yyyy-mm-dd"
+        if row and (r == 1 or row[0] in headings):
+            for cell in ws[r]:
+                cell.font = bold
+    for col, width in _XLSX_WIDTHS.items():
+        ws.column_dimensions[col].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    filename = f"analytics-{from_.isoformat()}-to-{to.isoformat()}.xlsx"
+    return Response(
+        buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

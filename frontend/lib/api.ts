@@ -666,6 +666,10 @@ export const fetchAnalytics = (params: AnalyticsParams) =>
 export const analyticsCsvUrl = (params: AnalyticsParams) =>
   `${API}/analytics.csv${analyticsQuery(params)}`;
 
+/** The same export as an Excel file: real dates, columns already sized. */
+export const analyticsXlsxUrl = (params: AnalyticsParams) =>
+  `${API}/analytics.xlsx${analyticsQuery(params)}`;
+
 export const listAdmins = () => api<AdminAccount[]>("/hosts");
 
 export const createAdmin = (body: {
