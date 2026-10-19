@@ -22,6 +22,10 @@ class CarePerson(BaseModel):
     last_name: str
     avatar_url: str | None = None
     avatar_emblem: str | None = None
+    # The member's email, for the caregiver who supports them. Never filled
+    # the other way: `User.caregivers` builds its rows without one, so a
+    # member sees a first name and an initial, nothing more.
+    email: str | None = None
 
 
 class UserOut(BaseModel):

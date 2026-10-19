@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Camera,
   Link2,
+  Mail,
   Trash2,
   UserPlus,
   UserRoundX,
@@ -17,12 +18,16 @@ import {
   apiMessage,
   createShareLink,
   disconnectGoogleCalendar,
+  fetchCaregiverInvites,
+  inviteCaregiver,
   removeCaregiver,
   sharedListUrl,
   shortName,
   unlinkCareMember,
   updateMe,
   uploadAvatar,
+  withdrawCaregiverInvite,
+  type CaregiverInvite,
   type CarePerson,
   type Me,
 } from "@/lib/api";
@@ -36,6 +41,7 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
+import { FormFooter } from "@/components/member/FormFooter";
 
 /**
  * The member's own settings: email, picture, list link, and the people on
@@ -55,6 +61,14 @@ export default function ProfilePage() {
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   // The caregiver's add / link sheet, and the key it hands back.
   const [careForm, setCareForm] = useState<"create" | "link" | null>(null);
+  // The member's side: invitations to caregivers still waiting, and the
+  // invite sheet — its email, and the invitation once it is sent (the one
+  // time its link is shown).
+  const [invites, setInvites] = useState<CaregiverInvite[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [sent, setSent] = useState<CaregiverInvite | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -64,6 +78,9 @@ export default function ProfilePage() {
         if (!alive) return;
         setMe(res);
         setEmail(res.email ?? "");
+        fetchCaregiverInvites()
+          .then((list) => alive && setInvites(list))
+          .catch(() => {});
       })
       .catch((e) => {
         if (!alive) return;
@@ -180,6 +197,54 @@ export default function ProfilePage() {
       await reload();
     } catch (err) {
       show({ title: apiMessage(err, "Couldn't unlink."), tone: "alert" });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openInvite() {
+    setInviteEmail("");
+    setInviteError(null);
+    setSent(null);
+    setInviteOpen(true);
+  }
+
+  async function sendInvite(e: FormEvent) {
+    e.preventDefault();
+    setBusy("care");
+    setInviteError(null);
+    try {
+      const invite = await inviteCaregiver(inviteEmail.trim());
+      setSent(invite);
+      setInvites(await fetchCaregiverInvites());
+    } catch (err) {
+      setInviteError(
+        err instanceof ApiError && err.status === 422
+          ? "Enter a valid email address."
+          : apiMessage(err, "Couldn't send the invitation. Please try again."),
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function copyInvite(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      show({ title: "Invitation link copied" });
+    } catch {
+      // The link is on screen; they can select it.
+    }
+  }
+
+  async function withdraw(invite: CaregiverInvite) {
+    setBusy("care");
+    try {
+      await withdrawCaregiverInvite(invite.id);
+      setInvites((all) => all.filter((i) => i.id !== invite.id));
+      show({ title: `Invitation to ${invite.email} withdrawn`, tone: "info" });
+    } catch (err) {
+      show({ title: apiMessage(err, "Couldn't withdraw it."), tone: "alert" });
     } finally {
       setBusy(null);
     }
@@ -431,25 +496,133 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {me.caregivers.length > 0 && (
+        {/* A community member's: invite someone to support them, see who
+            does, and take that back at any time. A caregiver account can't
+            invite one — it only sees this card if people were linked to it
+            before it became a caregiver, so it can still remove them. */}
+        {(!me.is_caregiver || me.caregivers.length > 0 || invites.length > 0) && (
           <Card
             title="People who support me"
-            subtitle="They can see your saved events and save programs for you."
+            subtitle="Caregivers can see your saved events and save programs for you. You can remove them at any time."
           >
-            <ul className="flex flex-col divide-y divide-line-card">
-              {me.caregivers.map((person) => (
-                <PersonRow
-                  key={person.id}
-                  person={person}
-                  action="Remove"
-                  disabled={busy === "care"}
-                  onAction={() => void dropCaregiver(person)}
-                />
-              ))}
-            </ul>
+            {me.caregivers.length === 0 && invites.length === 0 ? (
+              <p className="text-base text-fg-muted">Nobody yet.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-line-card">
+                {me.caregivers.map((person) => (
+                  <PersonRow
+                    key={person.id}
+                    person={person}
+                    action="Remove"
+                    disabled={busy === "care"}
+                    onAction={() => void dropCaregiver(person)}
+                  />
+                ))}
+                {invites.map((invite) => (
+                  <li key={invite.id} className="flex items-center gap-4 py-3">
+                    <span
+                      aria-hidden="true"
+                      className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-subtle text-fg-icon"
+                    >
+                      <Mail className="size-5" />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-lg text-fg">{invite.email}</span>
+                      <span className="text-base text-fg-muted">Invitation sent</span>
+                    </span>
+                    <Button
+                      variant="ghost"
+                      leadingIcon={<UserRoundX />}
+                      disabled={busy === "care"}
+                      onClick={() => void withdraw(invite)}
+                      aria-label={`Withdraw the invitation to ${invite.email}`}
+                    >
+                      Withdraw
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!me.is_caregiver && (
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  size="lg"
+                  variant="primary"
+                  leadingIcon={<UserPlus />}
+                  onClick={openInvite}
+                >
+                  Invite a caregiver
+                </Button>
+              </div>
+            )}
           </Card>
         )}
       </div>
+
+      {inviteOpen && (
+        <Modal
+          size="form"
+          title={sent ? "Invitation sent" : "Invite a caregiver"}
+          subtitle={
+            sent
+              ? `We emailed ${sent.email}. Once they accept, they'll appear under "People who support me".`
+              : "Enter their email. They'll get a link to accept, and can then see and save events for you."
+          }
+          onClose={() => setInviteOpen(false)}
+        >
+          <div className="mt-10">
+            {sent ? (
+              <div className="flex flex-col gap-6">
+                {sent.link && (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-base text-fg-muted">
+                      Or send them this link yourself. It works for{" "}
+                      {sent.email} for 14 days.
+                    </p>
+                    <p className="break-all rounded-control bg-surface-subtle p-4 text-base text-fg">
+                      {sent.link}
+                    </p>
+                  </div>
+                )}
+                <FormFooter
+                  secondary={
+                    sent.link
+                      ? { label: "Copy link", onClick: () => void copyInvite(sent.link!) }
+                      : undefined
+                  }
+                  primary={{ label: "Done", onClick: () => setInviteOpen(false) }}
+                />
+              </div>
+            ) : (
+              <form onSubmit={sendInvite} noValidate className="flex flex-col gap-6">
+                <TextField
+                  label="Their email"
+                  type="email"
+                  required
+                  autoFocus
+                  autoComplete="off"
+                  placeholder="Enter their email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+                {inviteError && (
+                  <p role="alert" className="text-lg text-danger-fg">
+                    {inviteError}
+                  </p>
+                )}
+                <FormFooter
+                  className="mt-6"
+                  secondary={{ label: "Cancel", onClick: () => setInviteOpen(false) }}
+                  primary={{
+                    label: busy === "care" ? "Sending…" : "Send invitation",
+                    disabled: busy === "care" || inviteEmail.trim() === "",
+                  }}
+                />
+              </form>
+            )}
+          </div>
+        </Modal>
+      )}
 
       {careForm && (
         <Modal
@@ -530,7 +703,14 @@ function PersonRow({
   return (
     <li className="flex items-center gap-4 py-3">
       <Avatar name={label} src={person.avatar_url} emblem={person.avatar_emblem} size={40} />
-      <span className="min-w-0 flex-1 truncate text-lg text-fg">{label}</span>
+      {/* A supported member's email sits under their name; a caregiver
+          seen by their member comes without one. */}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-lg text-fg">{label}</span>
+        {person.email && (
+          <span className="truncate text-base text-fg-muted">{person.email}</span>
+        )}
+      </span>
       <Button
         variant="ghost"
         leadingIcon={<UserRoundX />}
