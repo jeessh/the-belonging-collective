@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin
+from app.api.routes.invites import email_taken
 from app.core.security import hash_password
 from app.models.access import AccessGroup
 from app.models.event import Event
@@ -229,18 +230,16 @@ def list_hosts(_: Host = Depends(require_admin), db: Session = Depends(get_db)):
 @router.post("", response_model=HostOut, status_code=status.HTTP_201_CREATED)
 def create_host(
     body: HostCreate,
-    _: Host = Depends(require_admin),
+    current: Host = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     email = body.email.strip().lower()
     # Live accounts only — an archived one releases its address (see the
     # uq_hosts_email_live partial index), so an agency can be set up again.
-    if (
-        db.query(Host)
-        .filter(Host.email == email, Host.deleted_at.is_(None))
-        .first()
-    ):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+    # Same message as an invitation's, naming the login it belongs to.
+    reason = email_taken(db, email, current)
+    if reason:
+        raise HTTPException(status.HTTP_409_CONFLICT, reason)
     host = Host(
         name=body.name,  # already trimmed and non-blank by the schema
         email=email,
@@ -254,7 +253,10 @@ def create_host(
     except IntegrityError:
         # Race with a concurrent create for the same email.
         db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            email_taken(db, email, current) or "That email already has an account.",
+        )
     db.refresh(host)
     return host
 

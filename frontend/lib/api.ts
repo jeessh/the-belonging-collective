@@ -599,7 +599,7 @@ export const fetchTeam = (orgId?: string) =>
 
 /** Invite a person to join an organization as a staff login. */
 export const inviteStaff = (body: { org_id: string; name: string; email: string }) =>
-  api<{ id: string; token: string; name: string; email: string }>("/invites", {
+  api<{ id: string; token: string; name: string; email: string; emailed: boolean }>("/invites", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -719,7 +719,8 @@ export const createInvite = (body: {
   email: string;
   is_admin: boolean;
 }) =>
-  api<{ id: string; token: string; organization: string; email: string }>(
+  /** `emailed`: false when the mail didn't go out — the link still works. */
+  api<{ id: string; token: string; organization: string; email: string; emailed: boolean }>(
     "/invites",
     { method: "POST", body: JSON.stringify(body) },
   );

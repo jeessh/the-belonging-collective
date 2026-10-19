@@ -55,17 +55,37 @@ class InviteAccept(BaseModel):
     password: str = Field(min_length=PASSWORD_MIN_LENGTH)
 
 
-def _email_free(db: Session, email: str) -> None:
-    # Live accounts only. An archived one has released its address, which is
-    # what lets an agency that was removed be invited back under it.
-    if (
+def email_taken(db: Session, email: str, viewer: Host | None) -> str | None:
+    """Why `email` can't be used for a new organizer login, or None if it can.
+
+    Live accounts only — an archived one has released its address, which is
+    what lets an agency that was removed be invited back under it. The
+    message says what to do instead (the person already has a login), and to
+    a superadmin also whose login it is; anyone else isn't told another
+    organization's name.
+    """
+    existing = (
         db.query(Host)
         .filter(Host.email == email, Host.deleted_at.is_(None))
         .first()
-    ):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "That email already has an account."
-        )
+    )
+    if existing is None:
+        return None
+    if viewer is not None and viewer.is_superadmin:
+        org = existing.org.name if existing.org is not None else existing.name
+        whose = f"{email} is already an organizer login for {org}."
+    else:
+        whose = f"{email} already has an organizer login."
+    return (
+        f"{whose} They can sign in at /host — or use \u201cForgot your "
+        "password?\u201d there — instead of a new account."
+    )
+
+
+def _email_free(db: Session, email: str, viewer: Host) -> None:
+    reason = email_taken(db, email, viewer)
+    if reason:
+        raise HTTPException(status.HTTP_409_CONFLICT, reason)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -80,7 +100,7 @@ def create_invite(
     be shown again — so the sender can pass the link on by hand if the mail
     doesn't arrive."""
     email = body.email.strip().lower()
-    _email_free(db, email)
+    _email_free(db, email, current)
 
     if body.org_id is not None:
         # Staff invitation. Your own organization, or any for a superadmin.
@@ -134,7 +154,10 @@ def create_invite(
     db.commit()
     db.refresh(invite)
     link = f"{settings.FRONTEND_ORIGIN}/host/invite/{token}"
-    send_mail(
+    # Whether the mail actually went out: unset SMTP, or a server that
+    # refused it, used to leave the console saying "Invitation sent" over a
+    # message nobody would receive.
+    emailed = send_mail(
         email,
         "You're invited to The Belonging Collective",
         f"""Hello,
@@ -157,6 +180,7 @@ If you weren't expecting this, you can ignore it.
         "org_id": str(invite.org_id) if invite.org_id else None,
         "email": invite.email,
         "expires_at": invite.expires_at,
+        "emailed": emailed,
     }
 
 
