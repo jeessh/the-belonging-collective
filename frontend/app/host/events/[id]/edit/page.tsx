@@ -113,6 +113,25 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         onSubmit={() => void save()}
         error={error}
       />
+      {/* As on the create page: the save is at the foot of the form too. */}
+      <div className="flex flex-wrap items-center justify-end gap-4 border-t border-line pt-6">
+        {error && (
+          // Shown again by the button; the form already announced it.
+          <p className="mr-auto text-lg text-danger-fg">
+            {error}
+          </p>
+        )}
+        <Button
+          type="submit"
+          form={FORM_ID}
+          variant="primary"
+          size="lg"
+          disabled={busy}
+          trailingIcon={<Upload />}
+        >
+          {busy ? "Saving…" : "Save Edits"}
+        </Button>
+      </div>
     </div>
   );
 }

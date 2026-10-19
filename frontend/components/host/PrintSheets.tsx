@@ -56,14 +56,21 @@ function OrgLine({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
   );
 }
 
+/**
+ * The foot of every printout: KWHab's logo beside the platform's name, so a
+ * sheet pinned to a noticeboard says where it came from. The same file the
+ * site header loads, so it is already cached when the page prints.
+ */
 function Footer() {
   return (
-    <p
+    <div
       style={{ fontSize: "14pt" }}
-      className="mt-auto border-t border-line pt-3 text-center text-fg-muted"
+      className="mt-auto flex items-center justify-center gap-4 border-t border-line pt-3 text-fg-muted"
     >
-      The Belonging Collective
-    </p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/kwhab-logo.png" alt="KW Habilitation" className="h-[0.45in] w-auto" />
+      <span>The Belonging Collective</span>
+    </div>
   );
 }
 
@@ -223,19 +230,37 @@ export function WeeklySheet({
               <col />
             </colgroup>
             <tbody>
-              {byDay(events).map(([day, rows]) => (
+              {byDay(events).map(([day, rows], d) => (
                 <Fragment key={day}>
+                  {d > 0 && (
+                    <tr aria-hidden="true">
+                      <td colSpan={3} className="h-[0.18in]" />
+                    </tr>
+                  )}
+                  {/* Each day a shaded band with space above it, so the week
+                      reads as days at a glance. Printers drop backgrounds
+                      unless told otherwise, hence print-color-adjust. */}
                   <tr>
                     <th
                       scope="rowgroup"
                       colSpan={3}
-                      className="border-b border-fg pb-0.5 pt-2 font-medium"
+                      style={{
+                        fontSize: "16pt",
+                        printColorAdjust: "exact",
+                        WebkitPrintColorAdjust: "exact",
+                      }}
+                      className="border-y-2 border-fg bg-surface-subtle px-2 py-1.5 font-medium"
                     >
                       {day}
                     </th>
                   </tr>
-                  {rows.map((ev) => (
-                    <tr key={ev.id} className="border-b border-line align-top">
+                  {rows.map((ev, n) => (
+                    <tr
+                      key={ev.id}
+                      className={`align-top ${
+                        n === rows.length - 1 ? "" : "border-b border-line"
+                      }`}
+                    >
                       <td className="whitespace-nowrap py-1 pr-3">
                         {timeRange(ev.starts_at, ev.ends_at) || "TBA"}
                       </td>

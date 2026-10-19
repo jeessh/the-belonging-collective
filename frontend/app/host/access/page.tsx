@@ -27,6 +27,9 @@ import { useToast } from "@/components/ui/Toast";
 import { EmptyRow, Field, Pill, Select, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 
+/** Groups listed before "Show all". */
+const GROUP_LIMIT = 8;
+
 /**
  * Special access: the organization's groups, and who is in, waiting, or out.
  *
@@ -61,6 +64,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [allGroups, setAllGroups] = useState(false);
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<AccessGroup | null>(null);
   const [archiving, setArchiving] = useState<AccessGroup | null>(null);
@@ -96,6 +100,15 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
   }
 
   const selected = groups.find((g) => g.id === selectedId) ?? null;
+  // A long list stops at GROUP_LIMIT behind "Show all"; the open group is
+  // always in it, wherever it sits.
+  const shownGroups =
+    allGroups || groups.length <= GROUP_LIMIT
+      ? groups
+      : [
+          ...groups.slice(0, GROUP_LIMIT),
+          ...(selected && groups.indexOf(selected) >= GROUP_LIMIT ? [selected] : []),
+        ];
 
   return (
     <div className="flex flex-col gap-8">
@@ -149,7 +162,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             className="w-full rounded-control border border-line bg-surface p-2.5 lg:w-[320px] lg:shrink-0"
           >
             <ul className="flex flex-col gap-1">
-              {groups.map((g) => {
+              {shownGroups.map((g) => {
                 const on = g.id === selectedId;
                 return (
                   <li key={g.id}>
@@ -178,6 +191,16 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
                 );
               })}
             </ul>
+            {groups.length > GROUP_LIMIT && (
+              <button
+                type="button"
+                onClick={() => setAllGroups((v) => !v)}
+                aria-expanded={allGroups}
+                className="mt-1 flex min-h-11 w-full items-center justify-center gap-2 rounded-control px-4 text-lg text-fg underline underline-offset-4 hover:bg-surface-subtle"
+              >
+                {allGroups ? "Show fewer" : `Show all ${groups.length} groups`}
+              </button>
+            )}
           </nav>
 
           {selected && (
