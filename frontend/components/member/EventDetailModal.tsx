@@ -51,7 +51,8 @@ export function EventDetailModal({
     event.requires_signup &&
     event.registration_mode === "external" &&
     !!event.registration_url;
-  const maps = mapsUrl(event.location);
+  // A virtual event's "location" is a meeting app, not a place to map.
+  const maps = event.is_virtual ? null : mapsUrl(event.location);
   // Save is for approved members only; everyone else gets the access control.
   const access = accessStateOf(event);
   const canSave = access === null || access === "approved";
