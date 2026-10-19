@@ -40,6 +40,7 @@ from app.schemas.event import (
     EventCreate,
     EventOut,
     EventUpdate,
+    validate_numbers,
     validate_pricing,
     validate_registration,
 )
@@ -214,7 +215,16 @@ def _live_event(db: Session, event_id: uuid.UUID) -> Event:
         .first()
     )
     if not event:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+        # Said differently, so the console can tell "un-published" from a
+        # link that never pointed anywhere. Still a 404 for both: the public
+        # page treats either as gone.
+        archived = db.query(Event.id).filter(Event.id == event_id).first()
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "That event isn't published any more."
+            if archived
+            else "We couldn't find that event.",
+        )
     return event
 
 
@@ -260,6 +270,33 @@ def list_events(
         .all()
     )
     return _public_view(db, rows, viewer, organizer)
+
+
+@router.get("/archived", response_model=list[EventOut])
+def list_archived_events(
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """The console's "Un-published" list: what can still be restored.
+
+    Your own organization's archived programs; every organization's for a
+    superadmin, who can un-publish anyone's. Programs archived along with a
+    removed organizer are left out — restore refuses those (409).
+    """
+    query = (
+        db.query(Event)
+        .options(*_EVENT_OUT_OPTIONS)
+        .join(Host, Event.host_id == Host.id)
+        .filter(Event.deleted_at.is_not(None), Host.deleted_at.is_(None))
+    )
+    if not host.is_superadmin:
+        query = query.filter(Event.host_id == org_id_of(host))
+    rows = (
+        query.order_by(Event.deleted_at.desc(), Event.starts_at.asc().nullslast())
+        .limit(1000)
+        .all()
+    )
+    return _public_view(db, rows, None, host)
 
 
 @router.get("/{event_id}", response_model=EventOut)
@@ -377,6 +414,11 @@ def create_event(
     return created[0]
 
 
+# Moved on the edited date only. Everything else about a repeating program is
+# the program's, so it is written to every date still to come (see below).
+_SCHEDULE_FIELDS = frozenset({"starts_at", "ends_at"})
+
+
 @router.patch("/{event_id}", response_model=EventOut)
 def update_event(
     event_id: uuid.UUID,
@@ -385,17 +427,44 @@ def update_event(
     host: Host = Depends(get_current_host),
     db: Session = Depends(get_db),
 ):
+    """Edit a program.
+
+    The console shows a repeating program as one card, so an edit to its
+    title, place, price or anything else but the schedule is an edit to the
+    program: it lands on this date and every later one still to come (not
+    past dates — those are history — and not archived ones). The date and
+    time move this date only.
+    """
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
     if not _owns_or_admin(host, event):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
     fields = body.model_dump(exclude_unset=True)
+    shared = {f: v for f, v in fields.items() if f not in _SCHEDULE_FIELDS}
+    # Queried before any row is touched (see the autoflush note below).
+    later: list[Event] = []
+    if shared and event.series_id:
+        q = db.query(Event).filter(
+            Event.series_id == event.series_id,
+            Event.id != event.id,
+            Event.deleted_at.is_(None),
+            Event.starts_at >= func.now(),
+        )
+        if event.starts_at is not None:
+            q = q.filter(Event.starts_at > event.starts_at)
+        later = q.all()
+    targets = [event, *later]
     # Compared after the commit: a moved time or place is mailed to everyone
-    # who saved the program (member_mail.send_change_notice).
-    before = {f: getattr(event, f) for f in member_mail.NOTICE_FIELDS}
+    # who saved that date (member_mail.send_change_notice) — once per date,
+    # since a member's save is one row per date.
+    before = {
+        t.id: {f: getattr(t, f) for f in member_mail.NOTICE_FIELDS} for t in targets
+    }
     # And anything a connected Google Calendar shows is re-synced (core/gcal).
-    shown_before = {f: getattr(event, f) for f in _CALENDAR_FIELDS}
+    shown_before = {
+        t.id: {f: getattr(t, f) for f in _CALENDAR_FIELDS} for t in targets
+    }
     # Checked against the event's own organization, not the caller's — a
     # superadmin editing another agency's program may only use that agency's
     # groups. Queried here, before the row is touched (see the note below).
@@ -412,35 +481,45 @@ def update_event(
                 status.HTTP_400_BAD_REQUEST, f"{field} cannot be null"
             )
         setattr(event, field, value)
-    # Validate the merged row, not the patch: switching only `requires_signup`
+    for row in later:
+        for field, value in shared.items():
+            setattr(row, field, value)
+    # Validate the merged rows, not the patch: switching only `requires_signup`
     # on an external program is what leaves it needing a link it doesn't have.
     # Nothing may touch the database between the loop above and this check —
     # a query here would autoflush the unvalidated row into the transaction.
     try:
-        validate_registration(
-            event.registration_mode, event.requires_signup, event.registration_url
-        )
-        validate_pricing(
-            event.pricing_model,
-            event.price_cents,
-            event.price_group_size,
-            event.price_sessions,
-            event.price_note,
-        )
+        for row in targets:
+            validate_registration(
+                row.registration_mode, row.requires_signup, row.registration_url
+            )
+            validate_pricing(
+                row.pricing_model,
+                row.price_cents,
+                row.price_group_size,
+                row.price_sessions,
+                row.price_note,
+            )
+            validate_numbers(row.capacity, row.min_age, row.max_age)
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     db.commit()
     db.refresh(event)
-    changed = [f for f in member_mail.NOTICE_FIELDS if getattr(event, f) != before[f]]
-    if changed:
-        # After the response: an SMTP round trip per member is not something
-        # the organizer's save should wait on.
-        background.add_task(member_mail.send_change_notice, event.id, changed)
-    if any(getattr(event, f) != shown_before[f] for f in _CALENDAR_FIELDS):
-        background.add_task(gcal.sync_event_savers, [event.id])
+    resync: list[uuid.UUID] = []
+    for row in targets:
+        changed = [
+            f for f in member_mail.NOTICE_FIELDS if getattr(row, f) != before[row.id][f]
+        ]
+        if changed:
+            # After the response: an SMTP round trip per member is not
+            # something the organizer's save should wait on.
+            background.add_task(member_mail.send_change_notice, row.id, changed)
+        if any(getattr(row, f) != shown_before[row.id][f] for f in _CALENDAR_FIELDS):
+            resync.append(row.id)
+    if resync:
+        background.add_task(gcal.sync_event_savers, resync)
     return event
-
 
 
 def _series_targets(
