@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
+import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
@@ -102,6 +103,11 @@ export function MemberAuthFlow({
   const [caregiver, setCaregiver] = useState(false);
   const [careResult, setCareResult] = useState<CareLinkResult | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // "j•••@gmail.com" when this browser has signed in before: sign-up then
+  // asks whether they already have an account. Read after mount, since the
+  // server has no storage to read.
+  const [knownHint, setKnownHint] = useState<string | null>(null);
+  useEffect(() => setKnownHint(knownAccountHint()), []);
 
   // Saying a name instead of typing it.
   const dictation = useDictation();
@@ -188,6 +194,7 @@ export function MemberAuthFlow({
           is_caregiver: caregiver,
         }),
       });
+      rememberAccount(email);
       // A caregiver's own account is half the job; the other half is the
       // person they support, offered now and again on the profile page.
       if (caregiver) setStep("care-choice");
@@ -213,6 +220,7 @@ export function MemberAuthFlow({
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      rememberAccount(email);
       finish("login");
     } catch (err) {
       setError(apiMessage(err, "Wrong email or password."));
@@ -297,6 +305,31 @@ export function MemberAuthFlow({
               go("name");
             }}
           >
+            {/* The duplicate-account nudge: this browser has signed in
+                before, so a forgotten account is likelier than a new person. */}
+            {knownHint && (
+              <div
+                role="note"
+                className="mb-8 flex flex-col gap-3 rounded-control border border-primary-border bg-primary-soft p-5"
+              >
+                <p className="text-lg text-fg">
+                  This device has logged in before as{" "}
+                  <span className="font-medium">{knownHint}</span>. Already
+                  have an account?
+                </p>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <Button variant="secondary" onClick={enterLogin}>
+                    Log in instead
+                  </Button>
+                  <Link
+                    href="/forgot"
+                    className="text-lg text-fg underline underline-offset-4"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              </div>
+            )}
             <fieldset className="flex flex-col gap-4">
               <legend className="sr-only">Account type</legend>
               <RoleCard
