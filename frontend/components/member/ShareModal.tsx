@@ -25,8 +25,11 @@ export function ShareModal({
   title: string;
   subject: string;
   body: string;
-  /** What Copy copies, and how the row is labelled. */
-  copy: { label: string; text: string };
+  /**
+   * What Copy copies, and how the row is labelled. Left out, there is no copy
+   * row — the saved list shares by email or by its link instead.
+   */
+  copy?: { label: string; text: string };
   /**
    * A second thing to copy that has to be fetched first — the member's list
    * link. Shown as one button; the URL appears in the row once it is known.
@@ -74,6 +77,7 @@ export function ShareModal({
   }
 
   async function copyText() {
+    if (!copy) return;
     try {
       await navigator.clipboard.writeText(copy.text);
     } catch {
@@ -114,26 +118,28 @@ export function ShareModal({
             </Button>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <p className="text-lg font-medium text-fg">{copy.label}</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                {copy.text}
-              </p>
-              <Button
-                size="lg"
-                onClick={() => void copyText()}
-                trailingIcon={<Copy />}
-              >
-                Copy
-              </Button>
+          {copy && (
+            <div className="flex flex-col gap-1">
+              <p className="text-lg font-medium text-fg">{copy.label}</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
+                  {copy.text}
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() => void copyText()}
+                  trailingIcon={<Copy />}
+                >
+                  Copy
+                </Button>
+              </div>
+              {copyFailed && (
+                <p role="alert" className="text-base text-danger-fg">
+                  Copy didn&apos;t work here — select the text and copy it.
+                </p>
+              )}
             </div>
-            {copyFailed && (
-              <p role="alert" className="text-base text-danger-fg">
-                Copy didn&apos;t work here — select the text and copy it.
-              </p>
-            )}
-          </div>
+          )}
 
           {link && (
             <div className="flex flex-col gap-1">
@@ -156,6 +162,11 @@ export function ShareModal({
               {linkError && (
                 <p role="alert" className="text-base text-danger-fg">
                   {linkError}
+                </p>
+              )}
+              {!copy && copyFailed && (
+                <p role="alert" className="text-base text-danger-fg">
+                  Copy didn&apos;t work here — select the link and copy it.
                 </p>
               )}
             </div>
