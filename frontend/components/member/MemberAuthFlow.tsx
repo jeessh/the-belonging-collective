@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
+import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
@@ -96,6 +97,11 @@ export function MemberAuthFlow({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Field-level errors: the email step's address, and the password step's
+  // two boxes. Shown on the field (red edge + message), cleared on typing.
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   // The address already has an account, so "log in instead" is the fix.
   const [emailTaken, setEmailTaken] = useState(false);
   // The account type card chosen on the "who" step.
@@ -168,12 +174,14 @@ export function MemberAuthFlow({
   async function submitPassword(e: FormEvent) {
     e.preventDefault();
     clearFeedback();
+    setPasswordError(null);
+    setConfirmError(null);
     if (password.length < PASSWORD_MIN_LENGTH) {
-      setError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
+      setPasswordError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
       return;
     }
     if (password !== confirm) {
-      setError("The passwords don't match.");
+      setConfirmError("The passwords don't match.");
       return;
     }
     setBusy(true);
@@ -193,12 +201,15 @@ export function MemberAuthFlow({
       if (caregiver) setStep("care-choice");
       else finish("signup");
     } catch (err) {
+      // The address the API refused was typed a step back: return there
+      // with the error on the field rather than under the passwords.
+      if (err instanceof ApiError && err.status === 422) {
+        setStep("email");
+        setEmailError(INVALID_EMAIL);
+        return;
+      }
       if (err instanceof ApiError && err.status === 409) setEmailTaken(true);
-      setError(
-        err instanceof ApiError && err.status === 422
-          ? "Enter a valid email address."
-          : apiMessage(err, GENERIC_ERROR),
-      );
+      setError(apiMessage(err, GENERIC_ERROR));
     } finally {
       setBusy(false);
     }
@@ -388,8 +399,13 @@ export function MemberAuthFlow({
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (!looksLikeEmail(email)) {
+                setEmailError(INVALID_EMAIL);
+                return;
+              }
               go("password");
             }}
+            noValidate
             className="flex flex-col gap-6"
           >
             <TextField
@@ -399,7 +415,11 @@ export function MemberAuthFlow({
               placeholder="Enter your email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={emailError}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
             />
             <FormFooter
               className="mt-6"
@@ -428,7 +448,11 @@ export function MemberAuthFlow({
               placeholder="Enter your password"
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              error={passwordError}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError(null);
+              }}
             />
             <TextField
               label="Confirm password"
@@ -437,7 +461,11 @@ export function MemberAuthFlow({
               placeholder="Re-enter your password"
               autoComplete="new-password"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              error={confirmError}
+              onChange={(e) => {
+                setConfirm(e.target.value);
+                setConfirmError(null);
+              }}
             />
             {errorLine}
             <FormFooter

@@ -18,9 +18,21 @@ def get_db():
         db.close()
 
 
+# Members and organizers each have their own session cookie. They used to
+# share one, so signing in on one side quietly signed you out of the other in
+# the same browser — a member signing up while an organizer was signed in
+# (or the reverse) was then told to sign in again on the next request.
+# The member cookie keeps the old name; the organizer one is derived from it,
+# so there is no new setting.
+def cookie_name(role: str) -> str:
+    return f"{settings.COOKIE_NAME}_host" if role == "host" else settings.COOKIE_NAME
+
+
 def set_auth_cookie(response: Response, token: str) -> None:
+    """Store a session in the cookie for the role the token was issued to."""
+    role = (decode_token(token) or {}).get("role", "user")
     response.set_cookie(
-        key=settings.COOKIE_NAME,
+        key=cookie_name(role),
         value=token,
         httponly=True,
         samesite="lax",
@@ -30,13 +42,27 @@ def set_auth_cookie(response: Response, token: str) -> None:
     )
 
 
-def clear_auth_cookie(response: Response) -> None:
-    response.delete_cookie(key=settings.COOKIE_NAME, path="/")
+def clear_auth_cookie(response: Response, request: Request, role: str) -> None:
+    """Sign one side out, leaving the other's session alone."""
+    response.delete_cookie(key=cookie_name(role), path="/")
+    # An organizer session from before the split lives in the shared cookie;
+    # clear that too, but only if it is theirs.
+    if role == "host":
+        legacy = request.cookies.get(settings.COOKIE_NAME)
+        if legacy and (decode_token(legacy) or {}).get("role") == "host":
+            response.delete_cookie(key=settings.COOKIE_NAME, path="/")
 
 
-def _payload(request: Request) -> dict | None:
-    token = request.cookies.get(settings.COOKIE_NAME)
-    return decode_token(token) if token else None
+def _payload(request: Request, role: str) -> dict | None:
+    """The live token for `role`, from its own cookie — or, for organizers
+    signed in before the split, from the shared one, so the deploy that
+    split them didn't sign anybody out."""
+    for name in dict.fromkeys((cookie_name(role), settings.COOKIE_NAME)):
+        token = request.cookies.get(name)
+        payload = decode_token(token) if token else None
+        if payload and payload.get("role") == role:
+            return payload
+    return None
 
 
 def payload_cv(payload: dict) -> str | None:
@@ -59,8 +85,8 @@ def _key_still_current(payload: dict, user: User) -> bool:
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    p = _payload(request)
-    if not p or p.get("role") != "user":
+    p = _payload(request, "user")
+    if not p:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in as a member")
     user = db.get(User, uuid.UUID(p["sub"]))
     # Tokens last a week, so an archived member could otherwise keep using the
@@ -77,8 +103,8 @@ def get_optional_user(
 ) -> User | None:
     """The signed-in member, or None. For endpoints on public pages, where a
     signed-out visitor is a normal caller rather than an error."""
-    p = _payload(request)
-    if not p or p.get("role") != "user":
+    p = _payload(request, "user")
+    if not p:
         return None
     user = db.get(User, uuid.UUID(p["sub"]))
     if not user or user.deleted_at is not None:
@@ -112,8 +138,8 @@ def get_optional_host(
     request: Request, db: Session = Depends(get_db)
 ) -> Host | None:
     """The signed-in organizer, or None — get_optional_user for hosts."""
-    p = _payload(request)
-    if not p or p.get("role") != "host":
+    p = _payload(request, "host")
+    if not p:
         return None
     host = load_live_host(db, uuid.UUID(p["sub"]))
     if not host:
@@ -126,8 +152,8 @@ def get_optional_host(
 
 
 def get_current_host(request: Request, db: Session = Depends(get_db)) -> Host:
-    p = _payload(request)
-    if not p or p.get("role") != "host":
+    p = _payload(request, "host")
+    if not p:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in as a host")
     # Same reason as get_current_user: tokens last a week, so an archived
     # organizer would otherwise keep publishing until theirs expired.

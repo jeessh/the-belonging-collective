@@ -290,7 +290,12 @@ export async function fetchAllEvents(): Promise<Event[]> {
   return all;
 }
 
-export const logout = () => api("/auth/logout", { method: "POST" });
+/**
+ * Sign out one side: the member app by default, the console with "host".
+ * Members and organizers have separate sessions, so one doesn't end the other.
+ */
+export const logout = (role: "user" | "host" = "user") =>
+  api(`/auth/logout${role === "host" ? "?role=host" : ""}`, { method: "POST" });
 
 /* ---------------- caregivers ---------------- */
 
@@ -524,7 +529,8 @@ export type Session = {
   caregivers?: CarePerson[];
 };
 
-export const getSession = () => api<Session>("/auth/me");
+/** The console's organizer session (members read /users/me). */
+export const getSession = () => api<Session>("/auth/me?role=host");
 
 export const getHostMe = () => api<HostMe>("/hosts/me");
 

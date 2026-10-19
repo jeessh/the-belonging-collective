@@ -67,7 +67,13 @@ KWHab deploys production from **release tags** on its own server + Postgres
 
 ## Same-origin deploy (why it matters)
 Auth cookie is `SameSite=Lax`, frontend fetches with `credentials:"include"`, so FE
-and BE **must share one origin**. In prod set `NEXT_PUBLIC_API_URL=/api`; FastAPI
+and BE **must share one origin**.
+**Members and organizers have separate session cookies**: `COOKIE_NAME`
+(`kwcc_session`) for members, `COOKIE_NAME` + `_host` for organizers
+(`deps.cookie_name`). `set_auth_cookie` picks one from the token's role, so
+both can be signed in in one browser; `POST /auth/logout?role=host` ends only
+the console's, `GET /auth/me?role=host` reads only it. An organizer token
+still sitting in the shared cookie (from before the split) is honoured. In prod set `NEXT_PUBLIC_API_URL=/api`; FastAPI
 uses `settings.ROOT_PATH` (`""` local, `/api` prod).
 
 Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,

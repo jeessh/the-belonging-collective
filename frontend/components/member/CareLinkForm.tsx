@@ -8,6 +8,7 @@ import {
   linkCareMember,
   type CarePerson,
 } from "@/lib/api";
+import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { TextField } from "@/components/ui/TextField";
 import { FormFooter } from "@/components/member/FormFooter";
@@ -41,6 +42,10 @@ export function CareLinkForm({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // On the fields themselves, as on the sign-up form.
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const create = mode === "create";
   const ready =
@@ -53,13 +58,17 @@ export function CareLinkForm({
     e.preventDefault();
     if (!ready || busy) return;
     setError(null);
+    if (!looksLikeEmail(email)) {
+      setEmailError(INVALID_EMAIL);
+      return;
+    }
     if (create) {
       if (password.length < PASSWORD_MIN_LENGTH) {
-        setError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
+        setPasswordError(`Use at least ${PASSWORD_MIN_LENGTH} characters.`);
         return;
       }
       if (password !== confirm) {
-        setError("The passwords don't match.");
+        setConfirmError("The passwords don't match.");
         return;
       }
     }
@@ -75,11 +84,11 @@ export function CareLinkForm({
         : await linkCareMember({ email, password });
       onDone({ person });
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 422
-          ? "Enter a valid email address."
-          : apiMessage(err, "Something went wrong. Please try again."),
-      );
+      if (err instanceof ApiError && err.status === 422) {
+        setEmailError(INVALID_EMAIL);
+      } else {
+        setError(apiMessage(err, "Something went wrong. Please try again."));
+      }
     } finally {
       setBusy(false);
     }
@@ -111,7 +120,11 @@ export function CareLinkForm({
         type="email"
         autoComplete="off"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        error={emailError}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setEmailError(null);
+        }}
       />
       <TextField
         label="Their password"
@@ -119,7 +132,11 @@ export function CareLinkForm({
         type="password"
         autoComplete={create ? "new-password" : "off"}
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        error={passwordError}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          setPasswordError(null);
+        }}
       />
       {create && (
         <TextField
@@ -128,7 +145,11 @@ export function CareLinkForm({
           type="password"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          error={confirmError}
+          onChange={(e) => {
+            setConfirm(e.target.value);
+            setConfirmError(null);
+          }}
         />
       )}
 
