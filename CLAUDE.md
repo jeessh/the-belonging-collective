@@ -120,8 +120,11 @@ can open.
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
-  PATCHes it) and `Me.onboarded_at` (the tour is shown once, then stamped by
-  `PATCH /users/me {onboarded: true}` on Start or Skip). Signed out, both
+  PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
+  seen the moment it **opens** — `PATCH /users/me {onboarded: true}` plus the
+  `tbc.toured` flag — not on Start or Skip, so closing the tab mid-tour
+  doesn't bring it back; either the profile or the browser having seen it
+  is enough). Signed out, both
   live in `localStorage` (`tbc.preferred_view`, `tbc.toured`), every read and
   write wrapped in try/catch. The tour spotlights `data-tour="…"` targets
   (`arrows`, `save`, `more`, `filters`, `view`, `foryou`, `a11y`) — keep those
@@ -142,7 +145,8 @@ can open.
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
-  call) — the card's own "Event saved" and the live region say it; only
+  call) — the card's button turning to "Unsave event" (which un-saves,
+  with the usual Undo toast) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.

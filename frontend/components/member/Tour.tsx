@@ -40,7 +40,7 @@ function stepsFor(): Step[] {
     {
       icon: <Bookmark />,
       title: "Save what you like",
-      body: "Drag it left, or tap Save.",
+      body: "Drag the event left, or tap \u201cSave event\u201d.",
       targets: ["save"],
     },
     {
@@ -52,7 +52,7 @@ function stepsFor(): Step[] {
     {
       icon: <SlidersHorizontal />,
       title: "Filter and view",
-      body: "Pick topics. Switch between cards and a list.",
+      body: "Filter through events by topic. Switch between card mode and list mode.",
       targets: ["filters", "view"],
     },
     {

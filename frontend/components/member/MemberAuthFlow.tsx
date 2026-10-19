@@ -242,11 +242,11 @@ export function MemberAuthFlow({
 
   function guest() {
     toast.show({
-      title: "You're logged in as a guest!",
-      description: "Login or sign up to save events.",
+      title: "You're browsing as a guest",
+      description: "You cannot save events until you've logged in or signed up.",
       tone: "info",
       cancel: { label: "Later" },
-      action: { label: "Sign up/Login", onClick: onGuestSignIn },
+      action: { label: "Log in or sign up", onClick: onGuestSignIn },
     });
     onGuest();
   }
