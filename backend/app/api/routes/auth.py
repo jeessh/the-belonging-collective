@@ -2,6 +2,7 @@ import hashlib
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from fastapi import (
     APIRouter,
@@ -16,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
+    _payload,
     clear_auth_cookie,
     get_db,
     load_live_host,
@@ -38,7 +40,6 @@ from app.core.security import (
 )
 from app.core.categories import require_live_slugs
 from app.core.config import settings
-from app.core.security import decode_token
 from app.core.mail import send as send_mail
 from app.db.session import SessionLocal
 from app.models.host import Host, org_id_of
@@ -561,15 +562,31 @@ def reset_user_password(
 
 
 @router.post("/logout")
-def logout(response: Response):
-    clear_auth_cookie(response)
+def logout(
+    request: Request,
+    response: Response,
+    role: Literal["user", "host"] = "user",
+):
+    """Sign one side out: the member app by default, the console with
+    `?role=host`. The other side's session, if any, is left alone."""
+    clear_auth_cookie(response, request, role)
     return {"ok": True}
 
 
 @router.get("/me")
-def me(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get(settings.COOKIE_NAME)
-    payload = decode_token(token) if token else None
+def me(
+    request: Request,
+    role: Literal["user", "host"] | None = None,
+    db: Session = Depends(get_db),
+):
+    """The session for `role` (the console asks for `host`). Without one,
+    an organizer session is reported before a member one, as when there was
+    a single cookie."""
+    payload = (
+        _payload(request, role)
+        if role
+        else _payload(request, "host") or _payload(request, "user")
+    )
     if not payload:
         return {"authenticated": False}
     role = payload.get("role")
