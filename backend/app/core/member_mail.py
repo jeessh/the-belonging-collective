@@ -49,14 +49,13 @@ def ics_url(event: Event) -> str:
 
 
 def _picture(event: Event) -> str:
-    """The program's picture for the mail's card: its own, else the same
-    branded card its link previews use (/events/{id}/og), so every row has
-    one."""
+    """The program's picture for the mail's card: its own, else the stock
+    photo the site shows for it, cropped for email (/events/{id}/photo)."""
     if event.cover_image_url:
         return event.cover_image_url
     if event.images:
         return event.images[0].url
-    return f"{program_url(event)}/og"
+    return f"{program_url(event)}/photo"
 
 
 def _where(event: Event) -> str:
@@ -241,3 +240,41 @@ Add to calendar: {ics_url(event)}
         log.info("Change notice for %s sent to %d member(s)", event_id, len(members))
     finally:
         db.close()
+
+
+# ---------- sharing ----------
+
+
+def send_share(
+    sender: User, to: str, events: list[Event], list_url: str | None
+) -> bool:
+    """A member's programs, mailed to someone they chose.
+
+    From the site's address under the member's name, with replies going to
+    the member when they have an email. One program gets "See the program";
+    a list gets its live page when there is one, else the feed.
+    """
+    if len(events) == 1:
+        intro = f"{sender.first_name} thought you might like this program on {mail.BRAND}."
+        subject = f"{sender.first_name} shared {events[0].title}"
+        button = ("See the program", program_url(events[0]))
+    else:
+        intro = f"{sender.first_name} shared {len(events)} programs from {mail.BRAND} with you."
+        subject = f"{sender.first_name} shared {len(events)} programs with you"
+        button = (
+            ("See the full list", list_url)
+            if list_url
+            else ("Browse programs", settings.FRONTEND_ORIGIN)
+        )
+    lines = ["Hi,", "", intro]
+    for event in events:
+        lines += _program_lines(event)
+    return mail.send(
+        to,
+        subject,
+        "\n".join(lines) + "\n",
+        button=button,
+        pictures=[_picture(e) for e in events],
+        from_name=f"{sender.first_name} via {mail.BRAND}",
+        reply_to=sender.email,
+    )

@@ -185,8 +185,13 @@ can open.
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
-  and bottom `actions`. Share and Print need no backend: `ShareModal` opens a
-  `mailto:` or copies text (`lib/share.ts`), `PrintPreview` is `window.print()`
+  and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email`
+  (`routes/share.py`): the site mails the designed cards (logo, photo,
+  button) from MAIL_FROM under "{first name} via …", Reply-To the member,
+  signed-in members only, 20 a day. Never a `mailto:` — a mail app only gets
+  plain text. No SMTP → a 503 the sheet shows; Copy Link still works. Card
+  photos come from `/events/[id]/photo` (stock photos pre-cropped 2:1 in
+  `public/placeholders/email/`; re-crop there if you add one). `PrintPreview` is `window.print()`
   over the `.print-target` CSS. The paper is a second copy portalled straight
   under `<body>` (`.print-sheet`, with the logo and title) — printing the
   dialog's own scroll box started the sheet half way down and cut it off
@@ -198,8 +203,8 @@ can open.
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".
-- "Share list" is the design's two rows: Share by Email (a `mailto:` of the
-  titles, dates and per-event URLs, with the list link on top) and Share by
+- "Share list" is the design's two rows: Share by Email (the server-sent
+  cards above, its button the live list page) and Share by
   Link (the public `/shared/[token]` page, minted when the sheet opens; see
   "Holds, member email, sharing"). A caregiver viewing someone else's list
   gets email only. Jesse's call: no privacy gate, it's only a list. The

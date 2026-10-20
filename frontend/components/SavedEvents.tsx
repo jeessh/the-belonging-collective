@@ -27,7 +27,6 @@ import { googleCalendarButton } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
 import { isUpcoming } from "@/lib/time";
-import { listShareText } from "@/lib/share";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -380,8 +379,8 @@ export const SavedEvents = memo(function SavedEvents({
       {sub === "share" && (
         <ShareModal
           title="Share list of events?"
-          subject={listTitle}
-          body={listShareText(upcoming, window.location.origin)}
+          eventIds={upcoming.map((ev) => ev.id)}
+          withListLink={!owner}
           // No copy-the-text row (the audit found no use for it): email, or
           // a live link to the list. Public by design: it is only a list. The
           // link is the signed-in account's own, so it is left out of
@@ -390,7 +389,6 @@ export const SavedEvents = memo(function SavedEvents({
             owner
               ? undefined
               : {
-                  intro: "My saved programs, kept up to date:",
                   getUrl: async () =>
                     sharedListUrl((await createShareLink()).token),
                 }

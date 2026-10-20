@@ -8,38 +8,39 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
-import { mailtoUrl } from "@/lib/share";
+import { ApiError, apiMessage, shareByEmail } from "@/lib/api";
 
 /**
- * Share by email or by link, as the design draws it. Nothing leaves through
- * the server: Send hands a `mailto:` to the member's own mail app, and Copy
- * Link puts the link on the clipboard. Rendered into `document.body` so it
- * can sit over another dialog.
+ * Share by email or by link, as the design draws it. Send has the site mail
+ * the programs as designed cards (routes/share.py) — never a `mailto:`, whose
+ * plain text is all a mail app would get. Copy Link puts the link on the
+ * clipboard. Rendered into `document.body` so it can sit over another dialog.
  *
  * Without `link` it is the design's email-only sheet — a caregiver sharing
  * someone else's list, whose list link isn't theirs to hand out.
  */
 export function ShareModal({
   title,
-  subject,
-  body,
+  eventIds,
+  withListLink = false,
   link,
   onClose,
 }: {
   title: string;
-  subject: string;
-  body: string;
+  /** The programs the email shows, one card each. */
+  eventIds: string[];
+  /** The email's button opens the member's live list page. */
+  withListLink?: boolean;
   link?: {
     /** Fetched once when the sheet opens: the list link has to be minted. */
     getUrl: () => Promise<string>;
-    /** The line above the link at the top of the email, if it goes there. */
-    intro?: string;
   };
   onClose: () => void;
 }) {
   const { show } = useToast();
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
@@ -56,24 +57,34 @@ export function ShareModal({
     };
   }, [getUrl]);
 
-  function send(e: FormEvent) {
+  async function send(e: FormEvent) {
     e.preventDefault();
+    if (sending) return;
     if (!looksLikeEmail(email)) {
       setEmailError(INVALID_EMAIL);
       return;
     }
-    // A list goes out with its live link on top, so the message stays useful
-    // after the programs in it change.
-    const text =
-      link?.intro && linkUrl ? `${link.intro}\n${linkUrl}\n\n${body}` : body;
-    window.location.href = mailtoUrl(email, subject, text);
-    // Nothing on this page can tell whether a mail app answered; say what
-    // should have happened, so a member without one isn't left guessing.
-    show({
-      title: "Opening your email app",
-      description: "The message is ready for you to send.",
-      tone: "info",
-    });
+    setSending(true);
+    try {
+      await shareByEmail({
+        to: email.trim(),
+        event_ids: eventIds,
+        with_list_link: withListLink,
+      });
+    } catch (err) {
+      setSending(false);
+      setEmailError(
+        err instanceof ApiError && err.status === 401
+          ? "Log in to share by email."
+          : err instanceof ApiError && err.status === 422
+            ? INVALID_EMAIL
+            : err instanceof ApiError
+              ? apiMessage(err, "Couldn't send that email. Please try again.")
+              : "Couldn't reach the server. Please try again.",
+      );
+      return;
+    }
+    show({ title: "Email sent", description: `Sent to ${email.trim()}.` });
     onClose();
   }
 
@@ -121,9 +132,10 @@ export function ShareModal({
               variant="primary"
               size="lg"
               trailingIcon={<Send />}
+              disabled={sending}
               className="sm:mt-9"
             >
-              Send
+              {sending ? "Sending…" : "Send"}
             </Button>
           </form>
 

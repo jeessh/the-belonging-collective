@@ -75,31 +75,32 @@ def _button(label: str, url: str) -> str:
 
 
 def _card(lines: list[str], picture: str | None) -> str:
-    """A program: its picture beside the title and facts, as the design's
-    event list email draws it. Without a picture, the text alone."""
+    """A program: its picture across the top, then the title and facts, in
+    the card hairline. Without a picture, the text alone."""
     title, rest = lines[0], lines[1:]
     text = (
-        f'<p style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:{INK}">'
+        f'<p style="margin:0;font-size:20px;font-weight:600;line-height:1.3;color:{INK}">'
         f"{html.escape(title)}</p>"
         + "".join(
-            f'<p style="margin:6px 0 0;font-size:16px;line-height:1.45;color:{MUTED}">'
+            f'<p style="margin:8px 0 0;font-size:16px;line-height:1.45;color:{MUTED}">'
             f"{_line(line)}</p>"
             for line in rest
         )
     )
+    # Width only: mail apps ignore object-fit, so the picture is cropped
+    # before it gets here (the site's /events/{id}/photo) rather than by CSS.
     image = (
-        f'<td width="120" style="width:120px;padding:0 16px 0 0;vertical-align:top">'
-        # Width only: mail apps ignore object-fit, so a fixed height would
-        # squash any picture that isn't square.
-        f'<img src="{html.escape(picture, quote=True)}" alt="" width="120" '
-        f'style="display:block;width:120px;height:auto;border-radius:12px;border:0"></td>'
+        f'<tr><td style="padding:0;line-height:0">'
+        f'<img src="{html.escape(picture, quote=True)}" alt="" width="542" '
+        f'style="display:block;width:100%;max-width:542px;height:auto;border:0"></td></tr>'
         if picture
         else ""
     )
     return (
         '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" '
-        'style="margin:0 0 20px;border-collapse:collapse">'
-        f'<tr>{image}<td style="vertical-align:top">{text}</td></tr></table>'
+        f'style="margin:0 0 20px;border-collapse:separate;border:1px solid {LINE};'
+        'border-radius:16px;overflow:hidden">'
+        f'{image}<tr><td style="padding:20px">{text}</td></tr></table>'
     )
 
 
@@ -171,11 +172,16 @@ def send(
     body: str,
     button: tuple[str, str] | None = None,
     pictures: list[str | None] | None = None,
+    from_name: str | None = None,
+    reply_to: str | None = None,
 ) -> bool:
     """Send one message, text plus HTML. True if it was handed to the server.
 
     `button` is (label, url) — the one action the mail exists for.
     `pictures` are the programs' images, in the order the body lists them.
+    `from_name` replaces the display name (the address stays MAIL_FROM, so
+    the mail still passes the domain's checks); `reply_to` sends answers to
+    a member rather than to the site.
 
     Never raises. The password-reset endpoint deliberately answers the same
     way whether or not the address exists — so it has to answer the same way
@@ -195,8 +201,10 @@ def send(
 
     message = EmailMessage()
     message["Subject"] = subject
-    message["From"] = formataddr((settings.MAIL_FROM_NAME, settings.MAIL_FROM))
+    message["From"] = formataddr((from_name or settings.MAIL_FROM_NAME, settings.MAIL_FROM))
     message["To"] = to
+    if reply_to:
+        message["Reply-To"] = reply_to
     message.set_content(body)
     message.add_alternative(render_html(body, button, pictures), subtype="html")
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Printer, Send } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
-import { eventShareText, publicEventUrl } from "@/lib/share";
+import { publicEventUrl } from "@/lib/share";
 import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
@@ -40,8 +40,7 @@ export function EventTools({ event }: { event: Event }) {
       {open === "share" && (
         <ShareModal
           title="Share this event?"
-          subject={event.title}
-          body={eventShareText(event, url)}
+          eventIds={[event.id]}
           link={{ getUrl: async () => url }}
           onClose={() => setOpen(null)}
         />

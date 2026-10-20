@@ -88,7 +88,9 @@ def client_key(request: Request) -> str:
     return f"ip:{ip}"
 
 
-def enforce(db: Session, keys: dict[str, int]) -> None:
+def enforce(
+    db: Session, keys: dict[str, int], window: int = WINDOW_SECONDS
+) -> None:
     """Reject the request if any `{key: limit}` is already spent.
 
     Checked before the credential work so a spent budget costs a lookup rather
@@ -96,7 +98,7 @@ def enforce(db: Session, keys: dict[str, int]) -> None:
     """
     for key, limit in keys.items():
         used = db.execute(
-            _COUNT, {"key": key, "window": WINDOW_SECONDS}
+            _COUNT, {"key": key, "window": window}
         ).scalar()
         if used is not None and used >= limit:
             raise HTTPException(
@@ -104,14 +106,14 @@ def enforce(db: Session, keys: dict[str, int]) -> None:
             )
 
 
-def record(db: Session, *keys: str) -> None:
+def record(db: Session, *keys: str, window: int = WINDOW_SECONDS) -> None:
     """Count one attempt against each key.
 
     Commits on its own: the request it belongs to is about to raise, and the
     attempt has to be recorded anyway or the limit never fills.
     """
     for key in keys:
-        db.execute(_RECORD, {"key": key, "window": WINDOW_SECONDS})
+        db.execute(_RECORD, {"key": key, "window": window})
     db.commit()
 
 
