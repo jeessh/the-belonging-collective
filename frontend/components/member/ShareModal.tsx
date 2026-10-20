@@ -7,10 +7,8 @@ import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
+import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { mailtoUrl } from "@/lib/share";
-
-// Enough to catch a typo; the mail app has the last word.
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Share by email or by link, as the design draws it. Nothing leaves through
@@ -60,8 +58,8 @@ export function ShareModal({
 
   function send(e: FormEvent) {
     e.preventDefault();
-    if (!EMAIL_SHAPE.test(email.trim())) {
-      setEmailError("Enter a valid email address, like name@example.com.");
+    if (!looksLikeEmail(email)) {
+      setEmailError(INVALID_EMAIL);
       return;
     }
     // A list goes out with its live link on top, so the message stays useful

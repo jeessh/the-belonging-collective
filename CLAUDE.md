@@ -67,7 +67,13 @@ KWHab deploys production from **release tags** on its own server + Postgres
 
 ## Same-origin deploy (why it matters)
 Auth cookie is `SameSite=Lax`, frontend fetches with `credentials:"include"`, so FE
-and BE **must share one origin**. In prod set `NEXT_PUBLIC_API_URL=/api`; FastAPI
+and BE **must share one origin**.
+**Members and organizers have separate session cookies**: `COOKIE_NAME`
+(`kwcc_session`) for members, `COOKIE_NAME` + `_host` for organizers
+(`deps.cookie_name`). `set_auth_cookie` picks one from the token's role, so
+both can be signed in in one browser; `POST /auth/logout?role=host` ends only
+the console's, `GET /auth/me?role=host` reads only it. An organizer token
+still sitting in the shared cookie (from before the split) is honoured. In prod set `NEXT_PUBLIC_API_URL=/api`; FastAPI
 uses `settings.ROOT_PATH` (`""` local, `/api` prod).
 
 Required prod env: `DATABASE_URL` (:6543), `JWT_SECRET`, `COOKIE_SECURE=true`,
@@ -114,8 +120,11 @@ can open.
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
-  PATCHes it) and `Me.onboarded_at` (the tour is shown once, then stamped by
-  `PATCH /users/me {onboarded: true}` on Start or Skip). Signed out, both
+  PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
+  seen the moment it **opens** — `PATCH /users/me {onboarded: true}` plus the
+  `tbc.toured` flag — not on Start or Skip, so closing the tab mid-tour
+  doesn't bring it back; either the profile or the browser having seen it
+  is enough). Signed out, both
   live in `localStorage` (`tbc.preferred_view`, `tbc.toured`), every read and
   write wrapped in try/catch. The tour spotlights `data-tour="…"` targets
   (`arrows`, `save`, `more`, `filters`, `view`, `foryou`, `a11y`) — keep those
@@ -136,7 +145,8 @@ can open.
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
-  call) — the card's own "Event saved" and the live region say it; only
+  call) — the card's button turning to "Unsave event" (which un-saves,
+  with the usual Undo toast) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
@@ -434,6 +444,24 @@ can open.
   Both are rate-limited like sign-in, on the same identity keys
   (`auth.credential_identity`), so guessing a member's password here costs
   what guessing it at the door does.
+- **The member can start it too: caregiver invitations** (`care_invites`,
+  migration `0027`). **Community members only** — a caregiver account gets
+  a 403, and its profile shows "People who support me" only if people were
+  linked to it before it became a caregiver (Remove / Withdraw, no Invite).
+  Profile → "People who support me" → Invite a caregiver: `POST /users/me/caregivers/invites {email}`
+  mails `/care/invite/{token}` and returns the link once (token stored as a
+  hash, 14 days, re-inviting an address replaces its waiting invite).
+  `GET /care-invites/{token}` previews it ("Sam R." + the invited email);
+  `POST /care-invites/{token}/accept` links the signed-in account **only if
+  its email is the invited one**, and turns it into a caregiver account.
+  The member withdraws an unanswered invite with
+  `DELETE /users/me/caregivers/invites/{id}` (`revoked_at`, never deleted).
+  Ending a link is the same two routes as above, whichever door made it.
+- **Duplicate-account nudge** (`lib/knownDevice.ts`): a successful member
+  sign-in or sign-up stores a masked hint (`j•••@gmail.com`) in
+  `localStorage` (`tbc.known_account`); the sign-up flow's account-type step
+  then offers "Log in instead" / "Forgot your password?" first. Browser-only,
+  never the full address.
 - **Saving for a member is the member's row.** `routes/care.py` calls the
   same `attendance.save_event` / `unsave_event` the member's own routes use,
   with the member as the user — so the hold is the member's spot and special

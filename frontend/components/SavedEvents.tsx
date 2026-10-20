@@ -382,9 +382,10 @@ export const SavedEvents = memo(function SavedEvents({
           title="Share list of events?"
           subject={listTitle}
           body={listShareText(upcoming, window.location.origin)}
-          // The live list. Public by design: it is only a list. It is the
-          // signed-in account's own, so someone else's list (a caregiver's
-          // view) gets the email-only sheet.
+          // No copy-the-text row (the audit found no use for it): email, or
+          // a live link to the list. Public by design: it is only a list. The
+          // link is the signed-in account's own, so it is left out of
+          // someone else's list.
           link={
             owner
               ? undefined

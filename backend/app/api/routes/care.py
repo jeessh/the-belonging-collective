@@ -10,9 +10,17 @@ Linking takes the member's own email and password, or the caregiver creates
 the member's account on the spot. Both are rate-limited like sign-in: a link
 attempt with a wrong credential is exactly what a brute-force sweep looks
 like, and it counts against the same keys the sign-in door uses.
+
+The member can also start it: they invite a caregiver by email
+(`/users/me/caregivers/invites`), and whoever signs in with that email and
+accepts (`/care-invites/{token}`) becomes linked. Either side ends a link the
+same way, whichever door made it.
 """
 
+import hashlib
+import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import (
     APIRouter,
@@ -35,6 +43,8 @@ from app.api.routes.auth import (
     new_member,
 )
 from app.core import gcal, holds, ical
+from app.core.config import settings
+from app.core.mail import send as send_mail
 from app.core.rate_limit import (
     IDENTITY_LIMIT,
     IP_LIMIT,
@@ -43,15 +53,23 @@ from app.core.rate_limit import (
     enforce,
     record,
 )
-from app.models.care import CareLink
+from app.models.care import CareInvite, CareLink
 from app.models.user import User
-from app.schemas.care import CareMemberCreate, MemberCredential
+from app.schemas.care import (
+    CaregiverInviteCreate,
+    CareMemberCreate,
+    MemberCredential,
+)
 from app.schemas.event import EventOut
 from app.schemas.user import CarePerson
 
 router = APIRouter(prefix="/users/me", tags=["care"])
+# The invitee's side of a member's invitation: preview it, accept it.
+invite_router = APIRouter(prefix="/care-invites", tags=["care"])
 
 NOT_LINKED = "You are not linked to that member."
+INVITE_DAYS = 14
+INVITE_GONE = "That invitation is no longer valid."
 
 
 def _require_caregiver(user: User) -> None:
@@ -239,3 +257,198 @@ def care_unattend(
     member = _member_for(db, user, member_id)
     unsave_event(db, member, event_id)
     gcal.after_save(background, member)
+
+
+# --- The member invites a caregiver ------------------------------------------
+
+
+def _invite_hash(token: str) -> str:
+    # 32 random bytes: a plain SHA-256 is right, as for host invitations.
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _short_name(user: User) -> str:
+    """"Sam R." — what the invitee sees of the member before accepting."""
+    return f"{user.first_name} {user.last_name[:1]}.".strip()
+
+
+def _invite_out(invite: CareInvite) -> dict:
+    return {
+        "id": str(invite.id),
+        "email": invite.email,
+        "created_at": invite.created_at,
+        "expires_at": invite.expires_at,
+    }
+
+
+def _pending(db: Session, member: User) -> list[CareInvite]:
+    now = datetime.now(timezone.utc)
+    return (
+        db.query(CareInvite)
+        .filter(
+            CareInvite.member_id == member.id,
+            CareInvite.accepted_at.is_(None),
+            CareInvite.revoked_at.is_(None),
+            CareInvite.expires_at > now,
+        )
+        .order_by(CareInvite.created_at.desc())
+        .all()
+    )
+
+
+@router.get("/caregivers/invites")
+def list_caregiver_invites(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """The member's invitations still waiting for an answer."""
+    return [_invite_out(i) for i in _pending(db, user)]
+
+
+@router.post("/caregivers/invites", status_code=status.HTTP_201_CREATED)
+def invite_caregiver(
+    body: CaregiverInviteCreate,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mail an invitation to be this member's caregiver.
+
+    Returns the link once as well (only its hash is stored), so the member
+    can pass it on by hand — read it out, text it — if the mail doesn't
+    arrive. Inviting the same address again replaces the waiting one, so
+    there is only ever one live link per person.
+
+    Community members only: a caregiver account supports others, it doesn't
+    invite people to support it."""
+    if user.is_caregiver:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Caregiver accounts can't invite a caregiver.",
+        )
+    ip_key = client_key(request)
+    id_key = f"care-invite:{user.id}"
+    enforce(db, {id_key: IDENTITY_LIMIT, ip_key: IP_LIMIT})
+    record(db, id_key, ip_key)
+
+    email = body.email.strip().lower()
+    if user.email and email == user.email.lower():
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "That's your own email. Enter the email of the person who supports you.",
+        )
+    if any(
+        link.active and (link.caregiver.email or "").lower() == email
+        for link in user.caregiver_links
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "That person already supports you."
+        )
+    now = datetime.now(timezone.utc)
+    for old in _pending(db, user):
+        if old.email == email:
+            old.revoked_at = now
+
+    token = secrets.token_urlsafe(32)
+    invite = CareInvite(
+        token_hash=_invite_hash(token),
+        member_id=user.id,
+        email=email,
+        expires_at=now + timedelta(days=INVITE_DAYS),
+    )
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
+
+    link = f"{settings.FRONTEND_ORIGIN}/care/invite/{token}"
+    name = f"{user.first_name} {user.last_name}".strip()
+    send_mail(
+        email,
+        f"{name} invited you to be their caregiver",
+        f"""Hello,
+
+{name} invited you to be their caregiver on The Belonging Collective.
+
+As their caregiver you can see the programs they have saved and save programs for them. They keep their own account, and either of you can end the link at any time.
+
+Open this link to accept. Sign in, or create an account, with this email address ({email}). The link stops working after {INVITE_DAYS} days:
+
+{link}
+
+If you weren't expecting this, you can ignore it.
+""",
+        button=("See the invitation", link),
+    )
+    return {**_invite_out(invite), "link": link}
+
+
+@router.delete("/caregivers/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
+def withdraw_caregiver_invite(
+    invite_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The member takes an invitation back before it is answered."""
+    invite = db.get(CareInvite, invite_id)
+    if invite is None or invite.member_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, INVITE_GONE)
+    if invite.accepted_at is None and invite.revoked_at is None:
+        invite.revoked_at = func.now()
+        db.commit()
+
+
+def _usable_invite(db: Session, token: str) -> CareInvite:
+    invite = (
+        db.query(CareInvite)
+        .filter(CareInvite.token_hash == _invite_hash(token))
+        .first()
+    )
+    if (
+        invite is None
+        or invite.accepted_at is not None
+        or invite.revoked_at is not None
+        or invite.member.deleted_at is not None
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, INVITE_GONE)
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status.HTTP_410_GONE, "That invitation has expired. Ask for a new one."
+        )
+    return invite
+
+
+@invite_router.get("/{token}")
+def preview_care_invite(token: str, db: Session = Depends(get_db)):
+    """What the accept page shows before anyone signs in: who is asking, and
+    which email has to accept. The member's surname is an initial only."""
+    invite = _usable_invite(db, token)
+    return {
+        "member": _short_name(invite.member),
+        "member_first_name": invite.member.first_name,
+        "email": invite.email,
+    }
+
+
+@invite_router.post("/{token}/accept", response_model=CarePerson)
+def accept_care_invite(
+    token: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Become the member's caregiver. Only the account signed in with the
+    invited email may accept, so a forwarded link can't link a stranger.
+    Accepting turns the account into a caregiver account if it wasn't."""
+    invite = _usable_invite(db, token)
+    if (user.email or "").lower() != invite.email:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"This invitation is for {invite.email}. Sign in with that email to accept it.",
+        )
+    if user.id == invite.member_id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "You can't be your own caregiver."
+        )
+    user.is_caregiver = True
+    invite.accepted_at = func.now()
+    invite.accepted_by = user.id
+    _link(db, user, invite.member)
+    return invite.member

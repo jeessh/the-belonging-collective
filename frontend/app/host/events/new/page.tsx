@@ -106,18 +106,27 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
         onSubmit={() => void publish()}
         error={error}
       />
-      {/* Again at the end, where a phone user finishes filling it in. */}
-      <Button
-        type="submit"
-        form={FORM_ID}
-        variant="primary"
-        size="lg"
-        className="self-start max-sm:w-full"
-        disabled={busy}
-        trailingIcon={<Upload />}
-      >
-        {busy ? "Publishing…" : "Publish Event"}
-      </Button>
+      {/* The same Publish at the foot: the form is long once its extra
+          sections open, and nobody should have to scroll back up to post. */}
+      <div className="flex flex-wrap items-center justify-end gap-4 border-t border-line pt-6">
+        {error && (
+          // Shown again by the button; the form already announced it.
+          <p className="mr-auto text-lg text-danger-fg">
+            {error}
+          </p>
+        )}
+        <Button
+          type="submit"
+          form={FORM_ID}
+          variant="primary"
+          size="lg"
+          className="max-sm:w-full"
+          disabled={busy}
+          trailingIcon={<Upload />}
+        >
+          {busy ? "Publishing…" : "Publish Event"}
+        </Button>
+      </div>
       {dialog}
     </div>
   );

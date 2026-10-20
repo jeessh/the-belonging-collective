@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
 import { FilterChip } from "@/components/ui/FilterChip";
@@ -73,10 +73,13 @@ function ScrollArrow({
 export const FeedFilters = memo(function FeedFilters({
   chips,
   onToggleChip,
+  onClearChips,
   interests = [],
 }: {
   chips: Set<string>;
   onToggleChip: (chip: string) => void;
+  /** "Clear all": every chip off at once. */
+  onClearChips: () => void;
   /** The member's interest slugs; their topics come first. */
   interests?: string[];
 }) {
@@ -138,14 +141,37 @@ export const FeedFilters = memo(function FeedFilters({
     }
   };
 
+  // Topics add up rather than narrow (passesFilters): say so once more
+  // than one is on, since a longer list after a second pick can read as a
+  // mistake.
+  const topicCount = [...chips].filter((c) => c !== FREE_CHIP).length;
+
   return (
     <div className="flex flex-col gap-4" data-tour="filters">
-      <p
-        id="feed-filters-label"
-        className="text-xl uppercase tracking-wide text-fg-muted max-sm:sr-only"
-      >
-        Event filters
-      </p>
+      <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1">
+        <p
+          id="feed-filters-label"
+          className="text-xl uppercase tracking-wide text-fg-muted max-sm:sr-only"
+        >
+          Event filters
+        </p>
+        {topicCount > 1 && (
+          <p className="text-base text-fg-muted">
+            Showing events in any selected topic
+          </p>
+        )}
+        {chips.size > 0 && (
+          <button
+            type="button"
+            onClick={onClearChips}
+            className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-lg text-fg underline underline-offset-4 hover:bg-surface-subtle"
+          >
+            <X aria-hidden="true" className="size-5" />
+            Clear all
+            <span className="sr-only"> filters ({chips.size} selected)</span>
+          </button>
+        )}
+      </div>
       <div className="flex items-center gap-3">
         {more.prev && <ScrollArrow dir="prev" onClick={() => scroll(-1)} />}
         {/* One row at every width, as drawn: the topics outnumber the

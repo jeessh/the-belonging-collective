@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Bookmark, BookmarkCheck, MoveRight } from "lucide-react";
+import { Bookmark, BookmarkX, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -18,6 +18,7 @@ export const FeedCard = memo(function FeedCard({
   recommended = false,
   onMoreInfo,
   onSave,
+  onUnsave,
   onSignIn,
 }: {
   event: Event;
@@ -26,6 +27,8 @@ export const FeedCard = memo(function FeedCard({
   recommended?: boolean;
   onMoreInfo: (event: Event) => void;
   onSave: () => void;
+  /** Saved already: take it back off the list, right here on the card. */
+  onUnsave: () => void;
   onSignIn: () => void;
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
@@ -58,16 +61,20 @@ export const FeedCard = memo(function FeedCard({
               <span className="max-sm:hidden">More information</span>
             </Button>
             {saved ? (
+              // Saved: the button undoes it, rather than sitting disabled —
+              // a member shouldn't have to open the listing to change their
+              // mind. The un-save toast offers Undo.
               <Button
-                variant="primary"
+                variant="secondary"
                 size="lg"
                 className={size}
-                disabled
+                onClick={onUnsave}
                 onPointerDown={stop}
-                trailingIcon={<BookmarkCheck />}
+                trailingIcon={<BookmarkX />}
                 data-tour="save"
+                aria-label={`Event saved. Unsave ${event.title}`}
               >
-                Event saved
+                Unsave event
               </Button>
             ) : (
               <Button

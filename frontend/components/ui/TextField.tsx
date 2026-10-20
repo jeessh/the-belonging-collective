@@ -1,9 +1,11 @@
 import {
   forwardRef,
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
 } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -26,6 +28,10 @@ export type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 /**
  * The design's text field. `required` both marks the label with an asterisk
  * and reaches the input, so the browser's own validation still runs.
+ *
+ * A `type="password"` field gets a Show / Hide button in its box, so a
+ * password can be checked while it is typed — every password box on the
+ * platform goes through here, so they all have it.
  */
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
   function TextField(
@@ -37,11 +43,14 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       icon,
       variant = "header",
       className = "",
+      type,
       ...rest
     },
     ref,
   ) {
     const generated = useId();
+    const password = type === "password";
+    const [shown, setShown] = useState(false);
     const inputId = id ?? generated;
     const errorId = `${inputId}-error`;
     const border = error ? "border-danger-border" : "border-line";
@@ -63,11 +72,31 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         // the box; the focus-visible variant outranks it.
         className={
           variant === "floating"
-            ? "w-full bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
+            ? "w-full min-w-0 flex-1 bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
             : "min-w-0 flex-1 bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
         }
+        type={password && shown ? "text" : type}
         {...rest}
       />
+    );
+    // The visible word says what pressing it does; the pressed state says
+    // what is showing now.
+    const reveal = password && (
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-pressed={shown}
+        aria-controls={inputId}
+        className="-mr-2 inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-2 text-base text-fg hover:bg-surface-subtle"
+      >
+        {shown ? (
+          <EyeOff aria-hidden="true" className="size-5" />
+        ) : (
+          <Eye aria-hidden="true" className="size-5" />
+        )}
+        {shown ? "Hide" : "Show"}
+        <span className="sr-only"> password</span>
+      </button>
     );
 
     return (
@@ -81,7 +110,14 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
               {label}
               {mark}
             </span>
-            {input}
+            {reveal ? (
+              <span className="flex items-center gap-2">
+                {input}
+                {reveal}
+              </span>
+            ) : (
+              input
+            )}
           </label>
         ) : (
           <>
@@ -101,6 +137,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
                 </span>
               )}
               {input}
+              {reveal}
             </div>
           </>
         )}

@@ -32,6 +32,9 @@ import {
 } from "@/lib/pricing";
 import { FREQUENCIES, type Frequency } from "@/lib/recurrence";
 
+/** A location that is a meeting app or plainly online, not a place. */
+const ONLINE_PLACE = /\b(online|virtual|zoom|teams|google meet|meet\.google|webex|skype)\b/i;
+
 /** Mirrors DESCRIPTION_MAX and LINKS_MAX in app/schemas/event.py. */
 export const DESCRIPTION_MAX = 1000;
 export const LINKS_MAX = 3;
@@ -419,6 +422,32 @@ export function EventForm({
     key: K,
     v: EventFormValues[K],
   ) => onChange((prev) => ({ ...prev, [key]: v }));
+  // Venue and location answer the same question, so each nudges the other:
+  // choosing Virtual with no location fills in "Online" (and choosing
+  // In-Person clears that again), and typing a meeting app or "online"
+  // switches the venue to Virtual. An address can't be told apart reliably,
+  // so typing one never flips it back.
+  const setVenue = (virtual: boolean) => {
+    onChange((prev) => {
+      const loc = prev.location.trim();
+      return {
+        ...prev,
+        isVirtual: virtual,
+        location:
+          virtual && loc === ""
+            ? "Online"
+            : !virtual && loc === "Online"
+              ? ""
+              : prev.location,
+      };
+    });
+  };
+  const setLocation = (text: string) =>
+    onChange((prev) => ({
+      ...prev,
+      location: text,
+      isVirtual: prev.isVirtual || ONLINE_PLACE.test(text),
+    }));
   const setLink = (i: number, patch: Partial<EventLink>) =>
     onChange((prev) => ({
       ...prev,
@@ -551,13 +580,17 @@ export function EventForm({
           </div>
 
           <TextField
-            label="Location"
+            label={values.isVirtual ? "Location (online)" : "Location"}
             required={!values.isVirtual}
             icon={<MapPin />}
             value={values.location}
             error={fieldError("location")}
-            onChange={(e) => set("location", e.target.value)}
-            placeholder="Enter Location Here"
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder={
+              values.isVirtual
+                ? "e.g. Zoom — link sent after sign-up"
+                : "Street address or building"
+            }
           />
         </div>
 
@@ -597,12 +630,14 @@ export function EventForm({
                   key={i}
                   className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
                 >
+                  {/* The placeholder says which box is the label: "Link 1"
+                      read as "put link 1 here", so addresses ended up in it. */}
                   <TextField
                     label={`Link ${i + 1} label`}
                     className="[&>label]:sr-only"
                     value={link.label}
                     onChange={(e) => setLink(i, { label: e.target.value })}
-                    placeholder={`Link ${i + 1}`}
+                    placeholder="Link label, e.g. Flyer"
                   />
                   <TextField
                     label={`Link ${i + 1} address`}
@@ -613,7 +648,7 @@ export function EventForm({
                     inputMode="url"
                     value={link.url}
                     onChange={(e) => setLink(i, { url: e.target.value })}
-                    placeholder="yourorg.ca/page"
+                    placeholder="Web address, e.g. yourorg.ca/page"
                     error={
                       checkPostingLink(link.url)?.tone === "error"
                         ? "That doesn't look like a web address."
@@ -651,7 +686,7 @@ export function EventForm({
               <SegmentedToggle<"virtual" | "inperson">
                 label="Venue"
                 value={values.isVirtual ? "virtual" : "inperson"}
-                onChange={(v) => set("isVirtual", v === "virtual")}
+                onChange={(v) => setVenue(v === "virtual")}
                 segments={[
                   { value: "virtual", label: "Virtual" },
                   { value: "inperson", label: "In-Person" },
@@ -865,7 +900,7 @@ export function EventForm({
 
         <div className="flex flex-wrap gap-4">
           <TextField
-            label="Spaces (blank for no limit)"
+            label="Spots available (blank for no limit)"
             className="min-w-[220px] flex-1"
             type="number"
             min={1}

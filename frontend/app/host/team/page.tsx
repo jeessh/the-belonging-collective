@@ -248,14 +248,20 @@ function InviteStaffForm({
   onSent: () => void;
 }) {
   const { show } = useToast();
-  const [name, setName] = useState("");
+  // First and last apart, so every agency's staff come out "First Last" —
+  // stored as the one name a login has.
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
+  const name = `${first.trim()} ${last.trim()}`.trim();
+  const ready = first.trim() !== "" && last.trim() !== "" && email.trim() !== "";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{
     name: string;
     email: string;
     url: string;
+    emailed: boolean;
   } | null>(null);
 
   async function send() {
@@ -264,21 +270,23 @@ function InviteStaffForm({
     try {
       const inv = await inviteStaff({
         org_id: orgId,
-        name: name.trim(),
+        name,
         email: email.trim(),
       });
       setSent({
         name: inv.name,
         email: inv.email,
         url: `${window.location.origin}/host/invite/${inv.token}`,
+        emailed: inv.emailed,
       });
-      setName("");
+      setFirst("");
+      setLast("");
       setEmail("");
       onSent();
     } catch (e) {
       setError(
         e instanceof ApiError && e.status === 422
-          ? "Check the name and email address."
+          ? "Check the first name, last name and email address."
           : apiMessage(e, "Couldn't send that invitation."),
       );
     } finally {
@@ -302,8 +310,18 @@ function InviteStaffForm({
           className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-control border-[3px] border-toast-success bg-tag-free-bg px-5 py-3 text-lg text-fg"
         >
           <span className="flex-1">
-            Invitation sent to <strong>{sent.email}</strong> for {sent.name}. It
-            works once and expires in 14 days.
+            {sent.emailed ? (
+              <>
+                Invitation sent to <strong>{sent.email}</strong> for {sent.name}.
+              </>
+            ) : (
+              <>
+                Invitation created for {sent.name}, but the email to{" "}
+                <strong>{sent.email}</strong> couldn&apos;t be sent. Copy the
+                link and send it to them yourself.
+              </>
+            )}{" "}
+            It works once and expires in 14 days.
           </span>
           <Button
             leadingIcon={<Copy />}
@@ -325,15 +343,23 @@ function InviteStaffForm({
         className="flex flex-col gap-4 sm:flex-row sm:items-start"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!busy && name.trim() && email.trim()) void send();
+          if (!busy && ready) void send();
         }}
       >
         <TextField
-          label="Name"
+          label="First name"
           className="flex-1 [&>label]:sr-only"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Their name"
+          value={first}
+          onChange={(e) => setFirst(e.target.value)}
+          placeholder="First name"
+          autoComplete="off"
+        />
+        <TextField
+          label="Last name"
+          className="flex-1 [&>label]:sr-only"
+          value={last}
+          onChange={(e) => setLast(e.target.value)}
+          placeholder="Last name"
           autoComplete="off"
         />
         <TextField
@@ -349,7 +375,7 @@ function InviteStaffForm({
           type="submit"
           variant="secondary"
           className="min-h-12"
-          disabled={busy || !name.trim() || !email.trim()}
+          disabled={busy || !ready}
           trailingIcon={<SendHorizontal />}
         >
           {busy ? "Sending…" : "Send invite"}

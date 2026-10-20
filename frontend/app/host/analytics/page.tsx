@@ -7,6 +7,7 @@ import { ArrowDown, CalendarDays, Download } from "lucide-react";
 import {
   ApiError,
   analyticsCsvUrl,
+  analyticsXlsxUrl,
   apiMessage,
   fetchAnalytics,
   listAdmins,
@@ -179,19 +180,37 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
             applications.
           </p>
         </div>
+        {/* Excel first: that's what an application gets pasted from, and
+            a CSV opened in Excel shows its dates as #####. The CSV stays for
+            anything that reads data. */}
         {badRange ? (
-          <Button variant="primary" disabled trailingIcon={<Download />}>
-            Download CSV
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="primary" disabled trailingIcon={<Download />}>
+              Download Excel
+            </Button>
+            <Button disabled trailingIcon={<Download />}>
+              CSV
+            </Button>
+          </div>
         ) : (
-          <a
-            href={analyticsCsvUrl(params)}
-            download
-            className={buttonClass("primary")}
-          >
-            Download CSV
-            <Download aria-hidden="true" className="size-6" />
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={analyticsXlsxUrl(params)}
+              download
+              className={buttonClass("primary")}
+            >
+              Download Excel
+              <Download aria-hidden="true" className="size-6" />
+            </a>
+            <a
+              href={analyticsCsvUrl(params)}
+              download
+              className={buttonClass("secondary")}
+            >
+              CSV
+              <Download aria-hidden="true" className="size-6" />
+            </a>
+          </div>
         )}
       </div>
 

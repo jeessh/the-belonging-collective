@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ExternalLink, FileText, Paperclip } from "lucide-react";
+import { isDerivedTag, tagEmoji, tagLabel } from "@/lib/accessibility";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
 import { EventSummary, EventTags } from "@/components/ui/EventSummary";
@@ -88,6 +89,10 @@ export function EventDetails({
 
   // The "saving holds your spot" tip, only while there is a spot to hold.
   const hold = event.capacity != null && event.spots_left !== 0;
+  // The same vocabulary as the member's "What you need": what this program
+  // offers, so someone who needs it can see it on the listing itself. Cost
+  // and drop-in are already the tags on top, so the derived ones stay off.
+  const access = (event.accessibility_tags ?? []).filter((t) => !isDerivedTag(t));
 
   return (
     <div className="flex flex-col gap-8">
@@ -127,6 +132,23 @@ export function EventDetails({
               {event.notes}
             </p>
           )}
+        </section>
+      )}
+
+      {access.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className={HEADING}>Accessibility</h3>
+          <ul className="flex flex-wrap gap-3">
+            {access.map((slug) => (
+              <li
+                key={slug}
+                className="inline-flex items-center gap-2 rounded-control border border-line bg-surface-subtle px-3 py-1.5 text-lg text-fg"
+              >
+                <span aria-hidden="true">{tagEmoji(slug)}</span>
+                {tagLabel(slug)}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

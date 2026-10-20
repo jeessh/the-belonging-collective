@@ -270,6 +270,9 @@ function AccountButton({
 
 /* ---------------- accessibility tools ---------------- */
 
+/** Why a card-driven tool is greyed out while the list is showing. */
+const CARD_ONLY = "Works in card view. Switch to Card View to use it.";
+
 export const AccessibilityMenu = memo(function AccessibilityMenu({
   open,
   onOpenChange,
@@ -289,6 +292,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   accessPrefs,
   onToggleAccessPref,
   signedIn,
+  listView = false,
   onSignIn,
   onShowTour,
 }: {
@@ -312,6 +316,12 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   accessPrefs: string[];
   onToggleAccessPref: (slug: string, label: string) => void;
   signedIn: boolean;
+  /**
+   * The feed is showing the list. Read aloud, voice and head control work on
+   * the one card, so here they say so instead of being switches that do
+   * nothing; the member's settings are kept for card view.
+   */
+  listView?: boolean;
   onSignIn: () => void;
   /** Replays the first-run tour. */
   onShowTour: () => void;
@@ -380,8 +390,10 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               label="Read aloud"
               hint="Speaks each event as you browse."
               checked={ttsEnabled}
-              disabled={!ttsSupported}
-              disabledHint="Not supported in this browser."
+              disabled={!ttsSupported || listView}
+              disabledHint={
+                !ttsSupported ? "Not supported in this browser." : CARD_ONLY
+              }
               onChange={onToggleTts}
             />
             <MenuToggle
@@ -394,16 +406,20 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
                   : 'Say “next”, “back”, “save”, or “list”.'
               }
               checked={voiceEnabled}
-              disabled={!voiceSupported}
-              disabledHint="Not supported here (try Chrome or Edge)."
+              disabled={!voiceSupported || listView}
+              disabledHint={
+                !voiceSupported ? "Not supported here (try Chrome or Edge)." : CARD_ONLY
+              }
               onChange={onToggleVoice}
             />
             <MenuToggle
               label="Head tracking"
               hint="Turn your head to an edge: up and down move, left saves, right opens your list."
               checked={headEnabled}
-              disabled={!headSupported}
-              disabledHint="Needs a webcam, and Chrome or Edge."
+              disabled={!headSupported || listView}
+              disabledHint={
+                !headSupported ? "Needs a webcam, and Chrome or Edge." : CARD_ONLY
+              }
               onChange={onToggleHead}
             />
           </div>

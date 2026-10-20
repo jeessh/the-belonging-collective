@@ -77,7 +77,8 @@ export function EventActions({ event }: { event: Event }) {
     event.requires_signup &&
     event.registration_mode === "external" &&
     !!event.registration_url;
-  const maps = mapsUrl(event.location);
+  // A virtual event's "location" is a meeting app, not a place to map.
+  const maps = event.is_virtual ? null : mapsUrl(event.location);
 
   // Not signed in: keep where they were and what they wanted, so coming back
   // doesn't mean finding the program again and pressing twice. While resuming
