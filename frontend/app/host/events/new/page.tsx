@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import {
@@ -79,21 +77,11 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
         title="Create a New Event"
         backHref="/host/events"
         onBack={onBack}
+        // Publish is the last step's button now, after the review.
         actions={
-          <>
-            <span className="text-base text-fg-muted">
-              Posting under {ctx.org.name}
-            </span>
-            <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
-              disabled={busy}
-              trailingIcon={<Upload />}
-            >
-              {busy ? "Publishing…" : "Publish Event"}
-            </Button>
-          </>
+          <span className="text-base text-fg-muted">
+            Posting under {ctx.org.name}
+          </span>
         }
       />
       <EventForm
@@ -105,28 +93,9 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
         submitting={busy}
         onSubmit={() => void publish()}
         error={error}
+        submitLabel="Publish Event"
+        submittingLabel="Publishing…"
       />
-      {/* The same Publish at the foot: the form is long once its extra
-          sections open, and nobody should have to scroll back up to post. */}
-      <div className="flex flex-wrap items-center justify-end gap-4 border-t border-line pt-6">
-        {error && (
-          // Shown again by the button; the form already announced it.
-          <p className="mr-auto text-lg text-danger-fg">
-            {error}
-          </p>
-        )}
-        <Button
-          type="submit"
-          form={FORM_ID}
-          variant="primary"
-          size="lg"
-          className="max-sm:w-full"
-          disabled={busy}
-          trailingIcon={<Upload />}
-        >
-          {busy ? "Publishing…" : "Publish Event"}
-        </Button>
-      </div>
       {dialog}
     </div>
   );

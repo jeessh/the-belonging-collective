@@ -266,6 +266,14 @@ can open.
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
   link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
+  **`EventForm` is a five-step flow** (`STEPS`): The basics → When & where →
+  Cost & sign-up → Extras (all optional) → Review. Next checks only that
+  step's problems (`FIELD_STEP` maps a `missingRequired` field to its step —
+  add a new required field there too) and names what's missing; Enter moves
+  on rather than publishing. A new event opens steps in order; an edit opens
+  all of them and can Save from any step. Every step stays mounted (only
+  the current one shows), so uploads and the access picker survive moving
+  between steps. Publish lives on the Review step, not the page header.
   Accounts stay table-first — `components/AdminTable.tsx` backs
   `/host/admins` (Organizations) and `/host/users` (Community Members),
   switched by `components/host/AccountsNav.tsx`. `AdminTable` also holds the
