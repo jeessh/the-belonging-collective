@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 
 from app.core.security import PASSWORD_MIN_LENGTH
+from app.schemas.auth import PersonName
 
 
 class MemberCredential(BaseModel):
@@ -15,8 +16,8 @@ class CareMemberCreate(BaseModel):
     """A caregiver setting up the person they support. The account is the
     member's: an email and password of their own."""
 
-    first_name: str
-    last_name: str
+    first_name: PersonName
+    last_name: PersonName
     email: EmailStr
     password: str = Field(min_length=PASSWORD_MIN_LENGTH)
 

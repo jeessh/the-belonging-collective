@@ -23,6 +23,7 @@ export function ShareModal({
   title,
   eventIds,
   withListLink = false,
+  forMember = null,
   link,
   onClose,
 }: {
@@ -31,6 +32,8 @@ export function ShareModal({
   eventIds: string[];
   /** The email's button opens the member's live list page. */
   withListLink?: boolean;
+  /** A caregiver sharing the list of someone they support. */
+  forMember?: string | null;
   link?: {
     /** Fetched once when the sheet opens: the list link has to be minted. */
     getUrl: () => Promise<string>;
@@ -70,6 +73,7 @@ export function ShareModal({
         to: email.trim(),
         event_ids: eventIds,
         with_list_link: withListLink,
+        for_member: forMember,
       });
     } catch (err) {
       setSending(false);

@@ -60,6 +60,8 @@ type Props = {
   events: Event[];
   /** "Sam R." when a caregiver is looking at someone else's list. */
   owner?: string | null;
+  /** That person's id: a share of their list is filtered by their access. */
+  ownerId?: string | null;
   /** The `.ics` for whichever list is showing. */
   calendarUrl: string;
   onClose: () => void;
@@ -77,6 +79,7 @@ export const SavedEvents = memo(function SavedEvents({
   open,
   events,
   owner = null,
+  ownerId = null,
   calendarUrl,
   onClose,
   onSignIn,
@@ -381,6 +384,7 @@ export const SavedEvents = memo(function SavedEvents({
           title="Share list of events?"
           eventIds={upcoming.map((ev) => ev.id)}
           withListLink={!owner}
+          forMember={ownerId}
           // No copy-the-text row (the audit found no use for it): email, or
           // a live link to the list. Public by design: it is only a list. The
           // link is the signed-in account's own, so it is left out of

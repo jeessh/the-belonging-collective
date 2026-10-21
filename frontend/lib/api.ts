@@ -267,6 +267,7 @@ export const shareByEmail = (body: {
   to: string;
   event_ids: string[];
   with_list_link?: boolean;
+  for_member?: string | null;
 }) => api<null>("/share/email", { method: "POST", body: JSON.stringify(body) });
 
 /** The member's private calendar-feed handle; the same token every time. */

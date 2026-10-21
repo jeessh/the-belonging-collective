@@ -1,11 +1,21 @@
-from pydantic import BaseModel, EmailStr, Field
+from typing import Annotated
+
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
 from app.core.security import PASSWORD_MIN_LENGTH
 
+# A person's first or last name as a form takes it. Capped because the first
+# name goes out in mail the site sends (a share's From name and subject), so
+# an uncapped one could carry a whole message under the site's address.
+NAME_MAX = 50
+PersonName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=NAME_MAX)
+]
+
 
 class UserSignup(BaseModel):
-    first_name: str
-    last_name: str
+    first_name: PersonName
+    last_name: PersonName
     email: EmailStr
     password: str = Field(min_length=PASSWORD_MIN_LENGTH)
     # Onboarding prefs (free-form slugs from the FE chip taxonomy). Default to

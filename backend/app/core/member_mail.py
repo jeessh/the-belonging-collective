@@ -19,6 +19,7 @@ from app.models.attendance import SAVED, Attendance
 from app.models.care import CareLink
 from app.models.event import Event
 from app.models.user import User
+from app.schemas.auth import NAME_MAX
 
 log = logging.getLogger(__name__)
 
@@ -254,13 +255,16 @@ def send_share(
     the member when they have an email. One program gets "See the program";
     a list gets its live page when there is one, else the feed.
     """
+    # Names from before sign-up capped them could be any length; the From
+    # name and subject only ever carry a name's worth.
+    name = " ".join(sender.first_name.split())[:NAME_MAX] or "A member"
     if len(events) == 1:
-        intro = f"{sender.first_name} thought you might like this program on {mail.BRAND}."
-        subject = f"{sender.first_name} shared {events[0].title}"
+        intro = f"{name} thought you might like this program on {mail.BRAND}."
+        subject = f"{name} shared {events[0].title}"
         button = ("See the program", program_url(events[0]))
     else:
-        intro = f"{sender.first_name} shared {len(events)} programs from {mail.BRAND} with you."
-        subject = f"{sender.first_name} shared {len(events)} programs with you"
+        intro = f"{name} shared {len(events)} programs from {mail.BRAND} with you."
+        subject = f"{name} shared {len(events)} programs with you"
         button = (
             ("See the full list", list_url)
             if list_url
@@ -275,6 +279,6 @@ def send_share(
         "\n".join(lines) + "\n",
         button=button,
         pictures=[_picture(e) for e in events],
-        from_name=f"{sender.first_name} via {mail.BRAND}",
+        from_name=f"{name} via {mail.BRAND}",
         reply_to=sender.email,
     )

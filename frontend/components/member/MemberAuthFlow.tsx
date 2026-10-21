@@ -12,6 +12,7 @@ import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
+import { NAME_MAX } from "@/lib/names";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
@@ -392,6 +393,7 @@ export function MemberAuthFlow({
               label="First name"
               placeholder="Enter your first name"
               autoComplete="given-name"
+              maxLength={NAME_MAX}
               value={first}
               onChange={(e) => setFirst(e.target.value)}
               mic={
@@ -408,6 +410,7 @@ export function MemberAuthFlow({
               label="Last name"
               placeholder="Enter your last name"
               autoComplete="family-name"
+              maxLength={NAME_MAX}
               value={last}
               onChange={(e) => setLast(e.target.value)}
               mic={

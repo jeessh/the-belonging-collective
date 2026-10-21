@@ -188,7 +188,10 @@ can open.
   and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email`
   (`routes/share.py`): the site mails the designed cards (logo, photo,
   button) from MAIL_FROM under "{first name} via …", Reply-To the member,
-  signed-in members only, 20 a day. Never a `mailto:` — a mail app only gets
+  signed-in members only, 20 a day. A caregiver sharing a member's list
+  passes `for_member`, so it is filtered by the member's access. The
+  sender's first name is in the From name and subject, which is why
+  member names are capped (`schemas/auth.PersonName`, 50). Never a `mailto:` — a mail app only gets
   plain text. No SMTP → a 503 the sheet shows; Copy Link still works. Card
   photos come from `/events/[id]/photo` (stock photos pre-cropped 2:1 in
   `public/placeholders/email/`; re-crop there if you add one). `PrintPreview` is `window.print()`

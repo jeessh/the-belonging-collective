@@ -1195,6 +1195,7 @@ export function EventsView({
             open={view === "saved"}
             events={savedEvents}
             owner={listOwner}
+            ownerId={careFor?.id ?? null}
             calendarUrl={calendarUrl}
             onClose={closeSaved}
             onSignIn={() => {

@@ -16,6 +16,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user, get_db
+from app.api.routes.care import _member_for
 from app.core import mail, member_mail
 from app.core.access import visible_to_member
 from app.core.config import settings
@@ -36,6 +37,9 @@ class ShareIn(BaseModel):
     event_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
     # Include the member's live list page (their share link) as the button.
     with_list_link: bool = False
+    # A caregiver sharing the list of someone they support: the programs are
+    # filtered by that member's access, not the caregiver's, as saving is.
+    for_member: uuid.UUID | None = None
 
 
 @router.post("/share/email", status_code=status.HTTP_204_NO_CONTENT)
@@ -51,6 +55,7 @@ def share_by_email(
         )
     key = f"user:{user.id}:share"
     enforce(db, {key: SHARE_LIMIT}, window=SHARE_WINDOW)
+    viewer = _member_for(db, user, body.for_member) if body.for_member else user
 
     events = (
         db.query(Event)
@@ -58,7 +63,7 @@ def share_by_email(
         .filter(
             Event.id.in_(body.event_ids),
             Event.deleted_at.is_(None),
-            visible_to_member(user.id),
+            visible_to_member(viewer.id),
         )
         .order_by(Event.starts_at.asc().nullslast(), Event.id.asc())
         .all()
