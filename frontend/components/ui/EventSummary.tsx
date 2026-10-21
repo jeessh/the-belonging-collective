@@ -80,6 +80,7 @@ export function EventSummary({
   titleAs: Title = "h3",
   titleId,
   recommended = false,
+  fixedDates = false,
   className = "",
 }: {
   event: Event;
@@ -91,6 +92,8 @@ export function EventSummary({
   /** The page's own heading where the summary is the page (or the dialog). */
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
+  /** "Monday" for "Tomorrow": paper and shared lists outlive today. */
+  fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
   className?: string;
@@ -100,7 +103,7 @@ export function EventSummary({
   // window too short for the frame (see tailwind.config.ts).
   const feed = layout === "card";
   const tile = layout === "tile";
-  const when = whenLine(event);
+  const when = whenLine(event, { fixed: fixedDates });
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = eventImage(event);
@@ -234,14 +237,18 @@ export function EventSummary({
     const detail = layout === "detail";
     return (
       <div
-        className={`flex flex-col gap-6 ${feed ? "lg:gap-8 short:!gap-5" : ""} ${className}`}
+        className={`flex flex-col ${feed ? "gap-4 sm:gap-6 lg:gap-8 short:!gap-5" : "gap-6"} ${className}`}
       >
         {/* Image beside the text from `sm`; on a phone it sits on top. The
             box keeps its shape (the feed card's is the frame's 324:292), and
             stretches taller when the text beside it is. */}
-        <div className="flex flex-col gap-6 sm:flex-row">
+        <div className={`flex flex-col sm:flex-row ${feed ? "gap-4 sm:gap-6" : "gap-6"}`}>
           <div
-            className={`relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
+            className={`relative w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
+              // A wider, shorter picture on a phone feed card keeps its
+              // buttons on the first screen.
+              feed ? "aspect-[3/1]" : "aspect-[2/1]"
+            } ${
               detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
             }`}
           >
@@ -254,7 +261,11 @@ export function EventSummary({
           </div>
         </div>
         {actions && (
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap [&>*]:flex-1">
+          // The feed card's two buttons share a row on a phone too: stacked,
+          // Save started below the first screen, behind the saved bar.
+          <div
+            className={`flex gap-4 [&>*]:flex-1 ${feed ? "flex-row flex-wrap gap-3 sm:gap-4" : "flex-col sm:flex-row sm:flex-wrap"}`}
+          >
             {actions}
           </div>
         )}

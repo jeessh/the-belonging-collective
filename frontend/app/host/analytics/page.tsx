@@ -16,7 +16,7 @@ import {
   type AnalyticsProgram,
 } from "@/lib/api";
 import { TIME_ZONE } from "@/lib/time";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField } from "@/components/ui/TextField";
@@ -86,6 +86,10 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
 
   const range = presetRange(preset) ?? custom;
   const params = { ...range, host_id: orgId || undefined };
+  // From after To (or a cleared date). Nothing is fetched for it, so the
+  // numbers on screen are the last good range's — say so, and don't offer a
+  // CSV the API would answer with an error.
+  const badRange = !range.from || !range.to || range.from > range.to;
 
   useEffect(() => {
     if (ctx.isSuper)
@@ -97,7 +101,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
   useEffect(() => {
     let alive = true;
     // A bad custom range (from after to) is left alone until it makes sense.
-    if (range.from > range.to) return;
+    if (badRange) return;
     setLoading(true);
     fetchAnalytics(params)
       .then((d) => {
@@ -108,7 +112,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
       .catch((e) => {
         if (!alive) return;
         if (e instanceof ApiError && e.status === 401) {
-          router.replace("/host");
+          router.replace(loginAgainHref());
           return;
         }
         setError(apiMessage(e, "Couldn't load the numbers. Please try again."));
@@ -179,24 +183,35 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
         {/* Excel first: that's what an application gets pasted from, and
             a CSV opened in Excel shows its dates as #####. The CSV stays for
             anything that reads data. */}
-        <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={analyticsXlsxUrl(params)}
-            download
-            className={buttonClass("primary")}
-          >
-            Download Excel
-            <Download aria-hidden="true" className="size-6" />
-          </a>
-          <a
-            href={analyticsCsvUrl(params)}
-            download
-            className={buttonClass("secondary")}
-          >
-            CSV
-            <Download aria-hidden="true" className="size-6" />
-          </a>
-        </div>
+        {badRange ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="primary" disabled trailingIcon={<Download />}>
+              Download Excel
+            </Button>
+            <Button disabled trailingIcon={<Download />}>
+              CSV
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={analyticsXlsxUrl(params)}
+              download
+              className={buttonClass("primary")}
+            >
+              Download Excel
+              <Download aria-hidden="true" className="size-6" />
+            </a>
+            <a
+              href={analyticsCsvUrl(params)}
+              download
+              className={buttonClass("secondary")}
+            >
+              CSV
+              <Download aria-hidden="true" className="size-6" />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* One filter row; everything below reads the same slice. */}
@@ -212,8 +227,9 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
               setPreset(next);
             }}
             segments={[
-              { value: "30", label: "Last 30 days" },
-              { value: "90", label: "Last 90 days" },
+              // Short enough that all four fit across a phone.
+              { value: "30", label: "30 days" },
+              { value: "90", label: "90 days" },
               { value: "year", label: "This year" },
               { value: "custom", label: "Custom" },
             ]}
@@ -238,6 +254,9 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
               value={custom.to}
               min={custom.from}
               onChange={(e) => setCustom({ ...custom, to: e.target.value })}
+              error={
+                badRange ? "Pick a To date on or after the From date." : null
+              }
             />
           </div>
         )}
@@ -264,7 +283,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
       {/* While a new range loads the last render stays, dimmed — no jump. */}
       <div
         aria-busy={loading}
-        className={`flex flex-col gap-8 transition-opacity ${loading ? "opacity-50" : ""}`}
+        className={`flex flex-col gap-8 transition-opacity ${loading || badRange ? "opacity-50" : ""}`}
       >
         {!data ? (
           <p className="text-lg text-fg-muted">Loading…</p>
@@ -315,6 +334,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
                 </p>
               </div>
               <TableCard
+                stackOnPhone={false}
                 caption="Each program with its saves, current attendance and registration clicks in the chosen range. Sortable by column."
                 head={[]}
               >

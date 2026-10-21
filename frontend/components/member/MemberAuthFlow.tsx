@@ -12,6 +12,7 @@ import { CircleCheck, Mic } from "lucide-react";
 import { ApiError, api, apiMessage, shortName } from "@/lib/api";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
+import { NAME_MAX } from "@/lib/names";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { useDictation } from "@/lib/useDictation";
 import { Button } from "@/components/ui/Button";
@@ -68,6 +69,7 @@ export type AuthView = {
  * but the member goes back to what they were looking at instead of on to
  * the feed.
  */
+
 export function MemberAuthFlow({
   initial = "chooser",
   onSignedIn,
@@ -216,7 +218,11 @@ export function MemberAuthFlow({
         return;
       }
       if (err instanceof ApiError && err.status === 409) setEmailTaken(true);
-      setError(apiMessage(err, GENERIC_ERROR));
+      setError(
+        err instanceof ApiError
+          ? apiMessage(err, GENERIC_ERROR)
+          : "Couldn't reach the server. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -234,7 +240,11 @@ export function MemberAuthFlow({
       rememberAccount(email);
       finish("login");
     } catch (err) {
-      setError(apiMessage(err, "Wrong email or password."));
+      setError(
+        err instanceof ApiError
+          ? apiMessage(err, "Wrong email or password.")
+          : "Couldn't reach the server. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -295,7 +305,8 @@ export function MemberAuthFlow({
               Organizer?{" "}
               <Link
                 href="/host"
-                className="font-medium text-fg underline underline-offset-2"
+                // A finger-sized target, not just the line of text.
+                className="inline-flex min-h-11 items-center font-medium text-fg underline underline-offset-2"
               >
                 Staff sign-in
               </Link>
@@ -382,6 +393,7 @@ export function MemberAuthFlow({
               label="First name"
               placeholder="Enter your first name"
               autoComplete="given-name"
+              maxLength={NAME_MAX}
               value={first}
               onChange={(e) => setFirst(e.target.value)}
               mic={
@@ -398,6 +410,7 @@ export function MemberAuthFlow({
               label="Last name"
               placeholder="Enter your last name"
               autoComplete="family-name"
+              maxLength={NAME_MAX}
               value={last}
               onChange={(e) => setLast(e.target.value)}
               mic={
@@ -519,7 +532,11 @@ export function MemberAuthFlow({
         title: "Login to your account",
         subtitle: "Please login with your email and password.",
         body: (
-          <form onSubmit={submitCredentials} className="flex flex-col gap-6">
+          <form
+            onSubmit={submitCredentials}
+            noValidate
+            className="flex flex-col gap-6"
+          >
             <TextField
               label="Email"
               type="email"

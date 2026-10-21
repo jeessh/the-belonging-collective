@@ -1,92 +1,107 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { Copy, Link2, Send } from "lucide-react";
+import { Copy, Send } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { mailtoUrl } from "@/lib/share";
+import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
+import { ApiError, apiMessage, shareByEmail } from "@/lib/api";
 
 /**
- * Share by email or by copying. Nothing leaves through the server: Send hands
- * a `mailto:` to the member's own mail app, and Copy puts the text on the
+ * Share by email or by link, as the design draws it. Send has the site mail
+ * the programs as designed cards (routes/share.py) — never a `mailto:`, whose
+ * plain text is all a mail app would get. Copy Link puts the link on the
  * clipboard. Rendered into `document.body` so it can sit over another dialog.
+ *
+ * Without `link` it is the design's email-only sheet — a caregiver sharing
+ * someone else's list, whose list link isn't theirs to hand out.
  */
 export function ShareModal({
   title,
-  subject,
-  body,
-  copy,
+  eventIds,
+  withListLink = false,
+  forMember = null,
   link,
   onClose,
 }: {
   title: string;
-  subject: string;
-  body: string;
-  /**
-   * What Copy copies, and how the row is labelled. Left out, there is no copy
-   * row — the saved list shares by email or by its link instead.
-   */
-  copy?: { label: string; text: string };
-  /**
-   * A second thing to copy that has to be fetched first — the member's list
-   * link. Shown as one button; the URL appears in the row once it is known.
-   */
-  link?: { label: string; getUrl: () => Promise<string> };
+  /** The programs the email shows, one card each. */
+  eventIds: string[];
+  /** The email's button opens the member's live list page. */
+  withListLink?: boolean;
+  /** A caregiver sharing the list of someone they support. */
+  forMember?: string | null;
+  link?: {
+    /** Fetched once when the sheet opens: the list link has to be minted. */
+    getUrl: () => Promise<string>;
+  };
   onClose: () => void;
 }) {
   const { show } = useToast();
   const [email, setEmail] = useState("");
-  const [copyFailed, setCopyFailed] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  async function copyLink() {
-    if (!link) return;
-    setLinkError(null);
-    let url: string;
-    try {
-      url = await getLinkUrl();
-    } catch {
-      setLinkError("Couldn't make the link. Please try again.");
+  // Once, on opening: the caller's object is new on every render.
+  const [getUrl] = useState(() => link?.getUrl);
+  useEffect(() => {
+    if (!getUrl) return;
+    let alive = true;
+    getUrl()
+      .then((url) => alive && setLinkUrl(url))
+      .catch(() => alive && setLinkError("Couldn't make the link. Please try again."));
+    return () => {
+      alive = false;
+    };
+  }, [getUrl]);
+
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    if (sending) return;
+    if (!looksLikeEmail(email)) {
+      setEmailError(INVALID_EMAIL);
       return;
     }
+    setSending(true);
     try {
-      await navigator.clipboard.writeText(url);
+      await shareByEmail({
+        to: email.trim(),
+        event_ids: eventIds,
+        with_list_link: withListLink,
+        for_member: forMember,
+      });
+    } catch (err) {
+      setSending(false);
+      setEmailError(
+        err instanceof ApiError && err.status === 401
+          ? "Log in to share by email."
+          : err instanceof ApiError && err.status === 422
+            ? INVALID_EMAIL
+            : err instanceof ApiError
+              ? apiMessage(err, "Couldn't send that email. Please try again.")
+              : "Couldn't reach the server. Please try again.",
+      );
+      return;
+    }
+    show({ title: "Email sent", description: `Sent to ${email.trim()}.` });
+    onClose();
+  }
+
+  async function copyLink() {
+    if (!linkUrl) return;
+    try {
+      await navigator.clipboard.writeText(linkUrl);
     } catch {
-      setCopyFailed(true);
+      // Clipboard access can be refused; the link is on screen to select.
+      setLinkError("Copy didn't work here — select the link and copy it.");
       return;
     }
     show({ title: "Link copied" });
-    onClose();
-  }
-
-  async function getLinkUrl(): Promise<string> {
-    if (linkUrl) return linkUrl;
-    const url = await link!.getUrl();
-    setLinkUrl(url);
-    return url;
-  }
-
-  function send(e: FormEvent) {
-    e.preventDefault();
-    window.location.href = mailtoUrl(email, subject, body);
-    onClose();
-  }
-
-  async function copyText() {
-    if (!copy) return;
-    try {
-      await navigator.clipboard.writeText(copy.text);
-    } catch {
-      // Clipboard access can be refused (permissions, insecure origin). The
-      // text is on screen already; say so rather than opening a prompt.
-      setCopyFailed(true);
-      return;
-    }
-    show({ title: `${copy.label} copied` });
     onClose();
   }
 
@@ -95,68 +110,54 @@ export function ShareModal({
   // behind it, and Share looked like it did nothing.
   return createPortal(
     <div className="relative z-[70]">
-      <Modal title={title} onClose={onClose}>
-        <form onSubmit={send} className="mt-6 flex flex-col gap-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <Modal title={title} size="form" onClose={onClose}>
+        <div className="mt-6 flex flex-col gap-6">
+          <form
+            onSubmit={send}
+            noValidate
+            className="flex flex-col gap-3 sm:flex-row sm:items-start"
+          >
             <TextField
               label="Share by Email"
               type="email"
-              required
               autoComplete="email"
               placeholder="Enter Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={emailError}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
               className="flex-1"
             />
+            {/* Level with the field, below its label. */}
             <Button
               type="submit"
               variant="primary"
               size="lg"
               trailingIcon={<Send />}
+              disabled={sending}
+              className="sm:mt-9"
             >
-              Send
+              {sending ? "Sending…" : "Send"}
             </Button>
-          </div>
-
-          {copy && (
-            <div className="flex flex-col gap-1">
-              <p className="text-lg font-medium text-fg">{copy.label}</p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                <p className="line-clamp-2 flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                  {copy.text}
-                </p>
-                <Button
-                  size="lg"
-                  onClick={() => void copyText()}
-                  trailingIcon={<Copy />}
-                >
-                  Copy
-                </Button>
-              </div>
-              {copyFailed && (
-                <p role="alert" className="text-base text-danger-fg">
-                  Copy didn&apos;t work here — select the text and copy it.
-                </p>
-              )}
-            </div>
-          )}
+          </form>
 
           {link && (
-            <div className="flex flex-col gap-1">
-              <p className="text-lg font-medium text-fg">{link.label}</p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                {linkUrl && (
-                  <p className="flex-1 select-text break-all rounded-field border border-line bg-surface-subtle px-4 py-3 text-lg text-fg-muted">
-                    {linkUrl}
-                  </p>
-                )}
+            <div className="flex flex-col gap-2">
+              <p className="text-lg font-medium text-fg">Share by Link</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <p className="min-h-14 min-w-0 flex-1 select-all break-all rounded-field border border-line bg-surface px-4 py-3 text-lg text-tag-paid-fg">
+                  {linkUrl ?? (linkError ? "" : "Making your link…")}
+                </p>
                 <Button
                   size="lg"
                   onClick={() => void copyLink()}
-                  trailingIcon={<Link2 />}
-                  className={linkUrl ? "" : "sm:self-start"}
+                  disabled={!linkUrl}
+                  trailingIcon={<Copy />}
+                  className="shrink-0"
                 >
-                  Copy link to my list
+                  Copy Link
                 </Button>
               </div>
               {linkError && (
@@ -164,14 +165,9 @@ export function ShareModal({
                   {linkError}
                 </p>
               )}
-              {!copy && copyFailed && (
-                <p role="alert" className="text-base text-danger-fg">
-                  Copy didn&apos;t work here — select the link and copy it.
-                </p>
-              )}
             </div>
           )}
-        </form>
+        </div>
       </Modal>
     </div>,
     document.body,

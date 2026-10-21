@@ -9,6 +9,7 @@ import {
   type CarePerson,
 } from "@/lib/api";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
+import { NAME_MAX } from "@/lib/names";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { TextField } from "@/components/ui/TextField";
 import { FormFooter } from "@/components/member/FormFooter";
@@ -103,6 +104,7 @@ export function CareLinkForm({
             placeholder="Enter their first name"
             autoComplete="off"
             value={first}
+            maxLength={NAME_MAX}
             onChange={(e) => setFirst(e.target.value)}
           />
           <TextField
@@ -110,6 +112,7 @@ export function CareLinkForm({
             placeholder="Enter their last name"
             autoComplete="off"
             value={last}
+            maxLength={NAME_MAX}
             onChange={(e) => setLast(e.target.value)}
           />
         </div>

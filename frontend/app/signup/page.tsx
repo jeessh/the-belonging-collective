@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiMessage, updateMe } from "@/lib/api";
+import { api, apiMessage, updateMe } from "@/lib/api";
 import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { FormFooter } from "@/components/member/FormFooter";
@@ -66,6 +66,17 @@ function SignupFlow() {
   function leave(dropPending = false) {
     router.replace(safeNext(params.get("next"), { dropPending }));
   }
+
+  // Already signed in — sent here by a link that couldn't know that, such as
+  // "See who else is going" on a program page: carry on to where it was
+  // going instead of offering to log in.
+  useEffect(() => {
+    api("/users/me")
+      .then(() => leave())
+      .catch(() => {});
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { categories, label: topicLabel } = useCategories();
 

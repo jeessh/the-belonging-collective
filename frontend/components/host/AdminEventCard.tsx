@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
+import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { useToast } from "@/components/ui/Toast";
@@ -50,13 +51,7 @@ export const AdminEventCard = memo(function AdminEventCard({
 
   async function share() {
     const url = eventUrl(event.id);
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Clipboard access can be refused; the prompt keeps the URL reachable.
-      window.prompt("Copy this link:", url);
-      return;
-    }
+    if (!(await copyText(url, show))) return;
     show({
       title: `Link to '${event.title}' copied.`,
       description: "Paste it wherever you're sharing.",

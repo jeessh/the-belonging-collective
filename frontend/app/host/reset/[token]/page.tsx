@@ -89,6 +89,8 @@ export default function ResetPasswordPage() {
     >
       <form
         className="flex flex-col gap-6"
+        // Our own messages, not the browser's bubbles.
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) void submit();

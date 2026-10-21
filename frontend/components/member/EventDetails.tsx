@@ -52,6 +52,8 @@ export function EventDetails({
   hint,
   titleAs = "h2",
   titleId,
+  fixedDates = false,
+  insetForClose = false,
 }: {
   event: Event;
   going?: ReactNode;
@@ -63,6 +65,14 @@ export function EventDetails({
   hint?: string;
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
+  /** For paper: "Monday", not "Tomorrow". */
+  fixedDates?: boolean;
+  /**
+   * Inside a dialog whose × sits in the top-right corner (until `xl`, where
+   * it moves outside): keep the top row clear of it. On a phone the tags
+   * are what sit there, so the room goes on the row, not on the tools.
+   */
+  insetForClose?: boolean;
 }) {
   const links = [
     ...(event.links ?? []),
@@ -77,7 +87,8 @@ export function EventDetails({
       : []),
   ];
 
-  const hold = event.capacity != null;
+  // The "saving holds your spot" tip, only while there is a spot to hold.
+  const hold = event.capacity != null && event.spots_left !== 0;
   // The same vocabulary as the member's "What you need": what this program
   // offers, so someone who needs it can see it on the listing itself. Cost
   // and drop-in are already the tags on top, so the derived ones stay off.
@@ -85,7 +96,9 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-4 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
+      >
         <div className="flex flex-wrap gap-3">
           <EventTags event={event} />
         </div>
@@ -103,6 +116,7 @@ export function EventDetails({
         going={going}
         titleAs={titleAs}
         titleId={titleId}
+        fixedDates={fixedDates}
       />
 
       {(event.description || event.notes) && (

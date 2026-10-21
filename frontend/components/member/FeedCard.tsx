@@ -33,9 +33,9 @@ export const FeedCard = memo(function FeedCard({
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
   // A phone-width column is narrower than the design's 20px labels.
-  const size = "max-sm:px-4 max-sm:text-base short:!min-h-12 short:!py-2";
+  const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    <div className="relative rounded-card border-2 border-line-card bg-surface p-5 sm:p-6 lg:p-8 short:!p-6">
+    <div className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
       {event.capacity != null && (
         <HoldInfo className="absolute right-2 top-2 sm:right-3 sm:top-3" />
       )}
@@ -54,8 +54,11 @@ export const FeedCard = memo(function FeedCard({
               onPointerDown={stop}
               trailingIcon={<MoveRight />}
               data-tour="more"
+              aria-label="More information"
             >
-              More information
+              {/* Short on a phone, so it shares a row with Save. */}
+              <span className="sm:hidden">More info</span>
+              <span className="max-sm:hidden">More information</span>
             </Button>
             {saved ? (
               // Saved: the button undoes it, rather than sitting disabled —

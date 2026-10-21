@@ -55,10 +55,31 @@ const PALETTE = [
   "#E86A4C",
   "#2FA36B",
 ];
-export function hashColor(key: string): string {
+// The same hues, deep enough for white initials on them (4.5:1 or better);
+// the bright ones above read at 2.3:1 on an avatar.
+const AVATAR_PALETTE = [
+  "#B8216A",
+  "#15803D",
+  "#7C3AED",
+  "#1D4ED8",
+  "#B45309",
+  "#C2410C",
+  "#1F7A52",
+];
+
+function hashIndex(key: string): number {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return PALETTE[h % PALETTE.length];
+  return h % PALETTE.length;
+}
+
+export function hashColor(key: string): string {
+  return PALETTE[hashIndex(key)];
+}
+
+/** `hashColor`'s hue, darkened to carry white text. */
+export function avatarColor(key: string): string {
+  return AVATAR_PALETTE[hashIndex(key)];
 }
 
 export const DIMENSIONS: Dimension[] = [

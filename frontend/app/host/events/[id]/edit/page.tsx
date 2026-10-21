@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import {
   EventForm,
   payloadFrom,
+  useLeaveGuard,
   valuesFromEvent,
   type EventFormValues,
 } from "@/components/host/EventForm";
@@ -31,9 +32,15 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const router = useRouter();
   const { show } = useToast();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
+  const [missing, setMissing] = useState("");
   const [values, setValues] = useState<EventFormValues | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { onBack, dialog } = useLeaveGuard(
+    !!event &&
+      !!values &&
+      JSON.stringify(values) !== JSON.stringify(valuesFromEvent(event)),
+  );
 
   useEffect(() => {
     api<Event>(`/events/${id}`)
@@ -49,8 +56,20 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         setValues(valuesFromEvent(ev));
       })
       .catch((e) => {
-        if (e instanceof ApiError && e.status === 401) router.replace("/host");
-        else setEvent(null);
+        if (e instanceof ApiError && e.status === 401) router.replace(loginAgainHref());
+        else {
+          // The API says which: "That event isn't published any more." for
+          // an archived one, "We couldn't find that event." for a bad link
+          // (a non-UUID id is a 422 with no sentence to show).
+          setMissing(
+            e instanceof ApiError && e.status === 404
+              ? apiMessage(e, "We couldn't find that event.")
+              : e instanceof ApiError && e.status === 422
+                ? "We couldn't find that event."
+                : "Couldn't load that event. Please refresh and try again.",
+          );
+          setEvent(null);
+        }
       });
   }, [id, ctx, router]);
 
@@ -76,7 +95,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <>
         <PageHeader title="Edit Event Details" backHref="/host/events" />
         <p className="mt-6 text-xl text-fg-muted">
-          That event isn&apos;t published any more.
+          {missing}
         </p>
       </>
     );
@@ -91,6 +110,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         title="Edit Event Details"
         backHref={`/host/events/${event.id}`}
         backLabel="Back to event details"
+        onBack={onBack}
         actions={
           <Button
             type="submit"
@@ -107,8 +127,9 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         id={FORM_ID}
         mode="edit"
         hostId={event.host_id}
+        inSeries={(event.series_total ?? 1) > 1}
         values={values}
-        onChange={setValues}
+        onChange={(update) => setValues((v) => (v ? update(v) : v))}
         submitting={busy}
         onSubmit={() => void save()}
         error={error}
@@ -126,12 +147,14 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           form={FORM_ID}
           variant="primary"
           size="lg"
+          className="max-sm:w-full"
           disabled={busy}
           trailingIcon={<Upload />}
         >
           {busy ? "Saving…" : "Save Edits"}
         </Button>
       </div>
+      {dialog}
     </div>
   );
 }

@@ -259,6 +259,17 @@ export async function uploadAvatar(file: File): Promise<Me> {
 export const createShareLink = () =>
   api<{ token: string }>("/users/me/share-link", { method: "POST" });
 
+/**
+ * POST /share/email: the site mails these programs to `to`, as designed
+ * cards under the member's name. `withListLink` adds their live list page.
+ */
+export const shareByEmail = (body: {
+  to: string;
+  event_ids: string[];
+  with_list_link?: boolean;
+  for_member?: string | null;
+}) => api<null>("/share/email", { method: "POST", body: JSON.stringify(body) });
+
 /** The member's private calendar-feed handle; the same token every time. */
 /** The feed's token, and whether a calendar has fetched it lately. */
 export const createCalendarFeed = () =>

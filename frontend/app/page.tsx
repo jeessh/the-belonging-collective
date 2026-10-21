@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { EventsView } from "@/components/EventsView";
 import { FeedLoading } from "@/components/member/FeedLoading";
 import { ApiError, api, fetchAllEvents, type Event, type Me } from "@/lib/api";
@@ -59,17 +60,16 @@ export default function HomePage() {
 
   if (failed) {
     return (
-      <main className="grid h-dvh place-items-center bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff,#EEEBF5_60%,#E6E1F2)] px-6 text-center">
-        <div>
-          <p className="font-display text-2xl text-ink">
-            Couldn&apos;t reach the server.
-          </p>
-          <button
+      <main className="grid h-dvh place-items-center bg-surface-subtle px-6 text-center text-fg">
+        <div className="flex flex-col items-center gap-5">
+          <p className="text-2xl font-medium">Couldn&apos;t reach the server.</p>
+          <Button
+            variant="primary"
+            size="lg"
             onClick={() => setAttempt((n) => n + 1)}
-            className="mt-5 rounded-2xl bg-accent px-8 py-3 text-lg font-semibold text-white shadow-card transition-transform hover:scale-[1.02]"
           >
             Try again
-          </button>
+          </Button>
         </div>
       </main>
     );

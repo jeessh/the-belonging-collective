@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+import { toastControls } from "@/components/ui/Toast";
 
 export const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -89,9 +90,12 @@ export function Modal({
         return;
       }
       if (e.key !== "Tab" || !panel) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      const items = [
+        ...Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+          (el) => el.offsetParent !== null || el === document.activeElement,
+        ),
+        ...toastControls(),
+      ];
       if (items.length === 0) {
         e.preventDefault();
         panel.focus();
@@ -121,8 +125,9 @@ export function Modal({
 
   return (
     <AnimatePresence>
-      {/* On a phone the panel is a sheet: 16px in from every edge and at
-          least the height of the screen. From `sm` it floats in the middle.
+      {/* On a phone the panel is 16px in from every edge and as tall as
+          what it holds — stretched to the full screen, a two-field share
+          sheet was mostly empty white. From `sm` it floats in the middle.
           Centred with auto margins rather than `place-items-center`, which
           would push the top of a panel taller than the screen out of reach. */}
       <div
@@ -141,7 +146,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none max-sm:min-h-full sm:p-12`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none sm:p-12`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2

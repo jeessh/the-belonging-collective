@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -7,11 +7,14 @@ export function PageHeader({
   title,
   backHref,
   backLabel = "Back to events",
+  onBack,
   actions,
 }: {
   title: string;
   backHref?: string;
   backLabel?: string;
+  /** May preventDefault — the event form asks before dropping unsaved edits. */
+  onBack?: (e: MouseEvent<HTMLAnchorElement>) => void;
   actions?: ReactNode;
 }) {
   return (
@@ -21,6 +24,7 @@ export function PageHeader({
           <Link
             href={backHref}
             aria-label={backLabel}
+            onClick={onBack}
             className="grid size-12 place-items-center rounded-control text-fg hover:bg-surface-subtle"
           >
             <ArrowLeft aria-hidden="true" className="size-12" />

@@ -19,6 +19,7 @@ from app.models.attendance import SAVED, Attendance
 from app.models.care import CareLink
 from app.models.event import Event
 from app.models.user import User
+from app.schemas.auth import NAME_MAX
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +47,16 @@ def program_url(event: Event) -> str:
 def ics_url(event: Event) -> str:
     # The API's public path: under /api in production, bare locally.
     return f"{settings.FRONTEND_ORIGIN}{settings.ROOT_PATH}/events/{event.id}/calendar.ics"
+
+
+def _picture(event: Event) -> str:
+    """The program's picture for the mail's card: its own, else the stock
+    photo the site shows for it, cropped for email (/events/{id}/photo)."""
+    if event.cover_image_url:
+        return event.cover_image_url
+    if event.images:
+        return event.images[0].url
+    return f"{program_url(event)}/photo"
 
 
 def _where(event: Event) -> str:
@@ -138,6 +149,7 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
                 "Tomorrow: " + ", ".join(e.title for e in events),
                 "\n".join(lines),
                 button=("Open my saved programs", settings.FRONTEND_ORIGIN),
+                pictures=[_picture(e) for e in events],
             )
         # Marked whether or not the SMTP hand-off succeeded: a retry tomorrow
         # would be about a different day, so a failed send is logged and gone
@@ -163,6 +175,7 @@ def send_reminders(db: Session, now: datetime | None = None) -> dict:
             f"Tomorrow for {names}",
             "\n".join(lines).rstrip() + "\n",
             button=("Open saved programs", settings.FRONTEND_ORIGIN),
+            pictures=[_picture(e) for _, evs in members for e in evs],
         )
     return {
         "members": len(by_member),
@@ -220,11 +233,52 @@ The {what} of a program you saved has changed.
 {event.title}
 {when_text(event)}
 {_where(event)}
-
 Add to calendar: {ics_url(event)}
 """,
                 button=("See the program", program_url(event)),
+                pictures=[_picture(event)],
             )
         log.info("Change notice for %s sent to %d member(s)", event_id, len(members))
     finally:
         db.close()
+
+
+# ---------- sharing ----------
+
+
+def send_share(
+    sender: User, to: str, events: list[Event], list_url: str | None
+) -> bool:
+    """A member's programs, mailed to someone they chose.
+
+    From the site's address under the member's name, with replies going to
+    the member when they have an email. One program gets "See the program";
+    a list gets its live page when there is one, else the feed.
+    """
+    # Names from before sign-up capped them could be any length; the From
+    # name and subject only ever carry a name's worth.
+    name = " ".join(sender.first_name.split())[:NAME_MAX] or "A member"
+    if len(events) == 1:
+        intro = f"{name} thought you might like this program on {mail.BRAND}."
+        subject = f"{name} shared {events[0].title}"
+        button = ("See the program", program_url(events[0]))
+    else:
+        intro = f"{name} shared {len(events)} programs from {mail.BRAND} with you."
+        subject = f"{name} shared {len(events)} programs with you"
+        button = (
+            ("See the full list", list_url)
+            if list_url
+            else ("Browse programs", settings.FRONTEND_ORIGIN)
+        )
+    lines = ["Hi,", "", intro]
+    for event in events:
+        lines += _program_lines(event)
+    return mail.send(
+        to,
+        subject,
+        "\n".join(lines) + "\n",
+        button=button,
+        pictures=[_picture(e) for e in events],
+        from_name=f"{name} via {mail.BRAND}",
+        reply_to=sender.email,
+    )

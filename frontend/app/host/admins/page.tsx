@@ -16,12 +16,13 @@ import {
   type AdminAccount,
   type HostInvite,
 } from "@/lib/api";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
+import { copyText } from "@/lib/clipboard";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
@@ -67,7 +68,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       setLoadError(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        router.replace("/host");
+        router.replace(loginAgainHref());
         return;
       }
       setLoadError(true);
@@ -241,7 +242,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                           title="Remove"
                           disabled={busy}
                           onClick={() => setRemoving(a)}
-                          style={{ color: "#CC0000" }}
+                          className="text-danger-fg"
                           leadingIcon={<Trash2 />}
                         />
                       )}
@@ -382,10 +383,9 @@ function InviteForm({
           <Button
             leadingIcon={<Copy />}
             onClick={() => {
-              void navigator.clipboard
-                ?.writeText(sent.url)
-                .then(() => show({ title: "Invite link copied." }))
-                .catch(() => window.prompt("Copy this link:", sent.url));
+              void copyText(sent.url, show).then(
+                (ok) => ok && show({ title: "Invite link copied." }),
+              );
             }}
           >
             Copy link

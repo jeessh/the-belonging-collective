@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { api, apiMessage } from "@/lib/api";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ApiError, api, apiMessage } from "@/lib/api";
 import { TextField } from "@/components/ui/TextField";
 import { FormFooter } from "@/components/member/FormFooter";
 import { MemberAuthPage } from "@/components/member/MemberAuthPage";
@@ -12,8 +12,17 @@ import { MemberAuthPage } from "@/components/member/MemberAuthPage";
  * not the address has an account — the endpoint answers identically too.
  */
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPassword />
+    </Suspense>
+  );
+}
+
+function ForgotPassword() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  // The profile's "Change password" sends the member's own address along.
+  const [email, setEmail] = useState(useSearchParams().get("email") ?? "");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +37,11 @@ export default function ForgotPasswordPage() {
       });
       setSent(true);
     } catch (e) {
-      setError(apiMessage(e, "Couldn't send a reset link. Please try again."));
+      setError(
+        e instanceof ApiError
+          ? apiMessage(e, "Couldn't send a reset link. Please try again.")
+          : "Couldn't reach the server. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -59,6 +72,7 @@ export default function ForgotPasswordPage() {
       subtitle="Enter your email and we'll send you a link to choose a new one."
     >
       <form
+        noValidate
         className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault();

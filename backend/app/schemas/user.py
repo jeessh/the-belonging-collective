@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.auth import PersonName
+
 # Dismissed recommendations are the only member-writable list without a fixed
 # vocabulary, so it gets a hard cap: enough for years of waving programs away,
 # small enough that nobody can use the column as storage.
@@ -64,8 +66,8 @@ class UserCreate(BaseModel):
     """A superadmin setting up a member account for someone. The server
     generates a temporary password and returns it once, to be read out."""
 
-    first_name: str
-    last_name: str
+    first_name: PersonName
+    last_name: PersonName
     email: EmailStr
 
 
@@ -79,8 +81,8 @@ class UserSetPassword(BaseModel):
 class UserUpdate(BaseModel):
     """Admin-editable fields on a user account."""
 
-    first_name: str | None = None
-    last_name: str | None = None
+    first_name: PersonName | None = None
+    last_name: PersonName | None = None
 
 
 class UserPrefsUpdate(BaseModel):

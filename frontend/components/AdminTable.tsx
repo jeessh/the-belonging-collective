@@ -1,5 +1,5 @@
 import type { ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { TextField } from "@/components/ui/TextField";
 
 /**
@@ -18,17 +18,33 @@ export function TableCard({
   caption,
   head,
   children,
+  stackOnPhone = true,
 }: {
   caption: string;
   head: string[];
   children: ReactNode;
+  /**
+   * On a phone, each row's cells stack as a little card instead of the
+   * table scrolling sideways — which hid the email, status and buttons
+   * past the edge with nothing saying they were there. Off for a table of
+   * numbers, whose columns mean nothing without their headings.
+   */
+  stackOnPhone?: boolean;
 }) {
+  const stack = stackOnPhone
+    ? "max-sm:[&_thead]:sr-only max-sm:[&_tr]:block max-sm:[&_tr]:py-3 max-sm:[&_td]:block max-sm:[&_td]:py-1 max-sm:[&_tbody_th]:block max-sm:[&_tbody_th]:py-1 max-sm:[&_td_.justify-end]:justify-start"
+    : "";
   return (
     // Scrolls sideways on a narrow screen rather than breaking the page.
     // `relative` so the cells' sr-only spans (absolutely positioned) are
     // contained and clipped with the table instead of widening the page.
     <div className="relative overflow-x-auto">
-      <table className="w-full border-collapse text-left text-xl text-fg">
+      {!stackOnPhone && (
+        <p className="pb-2 text-base text-fg-muted sm:hidden">
+          Scroll sideways to see every column.
+        </p>
+      )}
+      <table className={`w-full border-collapse text-left text-xl text-fg ${stack}`}>
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
@@ -133,7 +149,17 @@ export function Select({
   className = "",
   ...rest
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={`${controlClass} ${className}`} {...rest} />;
+  // The browser's own arrow was a tiny glyph jammed against the edge; this
+  // draws the chevron the rest of the app uses, at the same size.
+  return (
+    <span className={`relative block ${className}`}>
+      <select className={`${controlClass} appearance-none pr-12`} {...rest} />
+      <ChevronDown
+        aria-hidden="true"
+        className="pointer-events-none absolute right-4 top-1/2 size-6 -translate-y-1/2 text-fg-icon"
+      />
+    </span>
+  );
 }
 
 export function TextArea({

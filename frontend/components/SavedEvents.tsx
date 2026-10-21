@@ -27,7 +27,6 @@ import { googleCalendarButton } from "@/lib/calendar";
 import { oneCardPerProgram } from "@/lib/feed";
 import { useCategories } from "@/lib/useCategories";
 import { isUpcoming } from "@/lib/time";
-import { listShareText } from "@/lib/share";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -36,7 +35,7 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { useToast } from "@/components/ui/Toast";
+import { toastControls, useToast } from "@/components/ui/Toast";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
@@ -61,6 +60,8 @@ type Props = {
   events: Event[];
   /** "Sam R." when a caregiver is looking at someone else's list. */
   owner?: string | null;
+  /** That person's id: a share of their list is filtered by their access. */
+  ownerId?: string | null;
   /** The `.ics` for whichever list is showing. */
   calendarUrl: string;
   onClose: () => void;
@@ -78,6 +79,7 @@ export const SavedEvents = memo(function SavedEvents({
   open,
   events,
   owner = null,
+  ownerId = null,
   calendarUrl,
   onClose,
   onSignIn,
@@ -114,9 +116,12 @@ export const SavedEvents = memo(function SavedEvents({
       if (e.key !== "Tab" || !panel) return;
       // A share sheet or print preview on top owns the keyboard while it's up.
       if (!isTopmostDialog(panel)) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      const items = [
+        ...Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+          (el) => el.offsetParent !== null || el === document.activeElement,
+        ),
+        ...toastControls(),
+      ];
       if (items.length === 0) {
         e.preventDefault();
         panel.focus();
@@ -377,8 +382,9 @@ export const SavedEvents = memo(function SavedEvents({
       {sub === "share" && (
         <ShareModal
           title="Share list of events?"
-          subject={listTitle}
-          body={listShareText(upcoming, window.location.origin)}
+          eventIds={upcoming.map((ev) => ev.id)}
+          withListLink={!owner}
+          forMember={ownerId}
           // No copy-the-text row (the audit found no use for it): email, or
           // a live link to the list. Public by design: it is only a list. The
           // link is the signed-in account's own, so it is left out of
@@ -387,7 +393,6 @@ export const SavedEvents = memo(function SavedEvents({
             owner
               ? undefined
               : {
-                  label: "Link to my list",
                   getUrl: async () =>
                     sharedListUrl((await createShareLink()).token),
                 }
@@ -407,6 +412,7 @@ export const SavedEvents = memo(function SavedEvents({
                 <EventSummary
                   event={ev}
                   layout="row"
+                  fixedDates
                   going={<GoingCount count={ev.saved_count} />}
                 />
               </li>

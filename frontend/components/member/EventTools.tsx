@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Printer, Send } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
-import { eventShareText, publicEventUrl } from "@/lib/share";
+import { publicEventUrl } from "@/lib/share";
 import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
@@ -20,7 +20,7 @@ export function EventTools({ event }: { event: Event }) {
 
   return (
     <>
-      <div className="flex flex-wrap justify-end gap-3">
+      <div className="flex flex-wrap gap-3 sm:justify-end">
         {dated && (
           <Button
             onClick={() => openGoogleCalendar(event)}
@@ -40,9 +40,8 @@ export function EventTools({ event }: { event: Event }) {
       {open === "share" && (
         <ShareModal
           title="Share this event?"
-          subject={event.title}
-          body={eventShareText(event, url)}
-          copy={{ label: "Link", text: url }}
+          eventIds={[event.id]}
+          link={{ getUrl: async () => url }}
           onClose={() => setOpen(null)}
         />
       )}
@@ -50,11 +49,13 @@ export function EventTools({ event }: { event: Event }) {
         <PrintPreview
           title={event.title}
           printLabel="Print Event"
+          titleOnPaper={false}
           onClose={() => setOpen(null)}
         >
           <EventDetails
             event={event}
             titleAs="h3"
+            fixedDates
             // On paper only a number means anything; the anonymous
             // "See who else is going" has nothing to open.
             going={

@@ -22,6 +22,7 @@ from app.api.routes import (
     hosts,
     internal,
     invites,
+    share,
     users,
 )
 
@@ -72,6 +73,7 @@ app.include_router(care.invite_router)
 app.include_router(invites.router)
 app.include_router(access.router)
 app.include_router(analytics.router)
+app.include_router(share.router)
 app.include_router(internal.router)
 
 # STORAGE_BACKEND=local: serve the upload folder. A route rather than a

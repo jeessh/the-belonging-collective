@@ -44,7 +44,9 @@ export async function fetchEvent(id: string): Promise<Event | null> {
   const res = await fetch(`${serverApiBase()}/events/${id}`, {
     next: { revalidate: 60 },
   });
-  if (res.status === 404) return null;
+  // 422 is FastAPI refusing an id that isn't a UUID at all — a truncated or
+  // mangled link. It is as absent as a 404, not a server failure.
+  if (res.status === 404 || res.status === 422) return null;
   if (!res.ok) {
     throw new Error(`Event fetch failed: ${res.status}`);
   }

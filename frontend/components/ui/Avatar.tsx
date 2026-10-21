@@ -1,5 +1,5 @@
 import { User } from "lucide-react";
-import { hashColor } from "@/lib/dimensions";
+import { avatarColor } from "@/lib/dimensions";
 import { emblemEmoji } from "@/lib/emblems";
 
 /** "Sophie L." → "SL"; "Sophie" → "S". */
@@ -68,7 +68,7 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      style={{ ...style, backgroundColor: hashColor(name) }}
+      style={{ ...style, backgroundColor: avatarColor(name) }}
       className={`${base} font-semibold leading-none text-white`}
     >
       {initials(name)}

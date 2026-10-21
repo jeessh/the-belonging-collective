@@ -63,7 +63,7 @@ export function SegmentedToggle<T extends string>({
   // transparent one was winning over the selected cyan.
   const segmentBase = pill
     ? "rounded-full border px-4 py-2"
-    : "rounded-control border px-4 py-2 sm:px-6";
+    : "rounded-control border px-3 py-2 sm:px-6";
   const selected = pill
     ? "border-transparent bg-primary-active"
     : "border-primary-border bg-primary-soft";

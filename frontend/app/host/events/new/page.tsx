@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
-import { AdminShell, type ConsoleContext } from "@/components/AdminShell";
+import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
@@ -12,6 +12,7 @@ import {
   EMPTY_FORM,
   EventForm,
   payloadFrom,
+  useLeaveGuard,
   type EventFormValues,
 } from "@/components/host/EventForm";
 
@@ -27,6 +28,9 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   const [values, setValues] = useState<EventFormValues>(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { onBack, dialog } = useLeaveGuard(
+    JSON.stringify(values) !== JSON.stringify(EMPTY_FORM),
+  );
 
   async function publish() {
     setBusy(true);
@@ -59,7 +63,7 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
       router.push(`/host/events/${created.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        router.replace("/host");
+        router.replace(loginAgainHref());
         return;
       }
       setError(
@@ -74,6 +78,7 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
       <PageHeader
         title="Create a New Event"
         backHref="/host/events"
+        onBack={onBack}
         actions={
           <>
             <span className="text-base text-fg-muted">
@@ -115,12 +120,14 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
           form={FORM_ID}
           variant="primary"
           size="lg"
+          className="max-sm:w-full"
           disabled={busy}
           trailingIcon={<Upload />}
         >
           {busy ? "Publishing…" : "Publish Event"}
         </Button>
       </div>
+      {dialog}
     </div>
   );
 }

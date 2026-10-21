@@ -14,6 +14,7 @@ mailbox instead of signing up for a sending service.
 
 import html
 import logging
+import re
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -30,50 +31,157 @@ def configured() -> bool:
     return bool(settings.SMTP_HOST and settings.MAIL_FROM)
 
 
-def render_html(body: str, button: tuple[str, str] | None = None) -> str:
-    """The HTML half of a message. `body` is the plain text: blank lines split
-    paragraphs, and a line that is only a URL is dropped when it is the
-    button's — the button already carries it."""
-    paragraphs = []
+# The app's own palette (frontend/tailwind.config.ts): ink on white, the
+# cyan button, the card hairline.
+INK = "#1a1a1a"
+MUTED = "#6d6d6d"
+LINE = "#dcdcdc"
+PAGE = "#f1f1f1"
+BUTTON = "#94eaff"
+BUTTON_EDGE = "#00cdff"
+BAND = "#e5faff"
+LINK = "#004bde"
+
+# "Add to calendar: https://…" — a line that is a label and a link.
+LABELLED_URL = re.compile(r"^(?P<label>[^:]+):\s+(?P<url>https?://\S+)$")
+URL = re.compile(r"^https?://\S+$")
+
+
+def _link(label: str, url: str) -> str:
+    return (
+        f'<a href="{html.escape(url, quote=True)}" style="color:{LINK};'
+        f'text-decoration:underline">{html.escape(label)}</a>'
+    )
+
+
+def _line(text: str) -> str:
+    """One line of the plain text, with its link made clickable."""
+    m = LABELLED_URL.match(text)
+    if m:
+        return _link(m["label"], m["url"])
+    if URL.match(text):
+        return _link(text, text)
+    return html.escape(text)
+
+
+def _button(label: str, url: str) -> str:
+    # Full width, the design's email button.
+    return (
+        f'<p style="margin:8px 0 24px"><a href="{html.escape(url, quote=True)}" '
+        f'style="display:block;padding:14px 20px;border-radius:12px;text-align:center;'
+        f"border:2px solid {BUTTON_EDGE};background:{BUTTON};color:{INK};"
+        f'font-size:17px;font-weight:600;text-decoration:none">{html.escape(label)}</a></p>'
+    )
+
+
+def _card(lines: list[str], picture: str | None) -> str:
+    """A program: its picture across the top, then the title and facts, in
+    the card hairline. Without a picture, the text alone."""
+    title, rest = lines[0], lines[1:]
+    text = (
+        f'<p style="margin:0;font-size:20px;font-weight:600;line-height:1.3;color:{INK}">'
+        f"{html.escape(title)}</p>"
+        + "".join(
+            f'<p style="margin:8px 0 0;font-size:16px;line-height:1.45;color:{MUTED}">'
+            f"{_line(line)}</p>"
+            for line in rest
+        )
+    )
+    # Width only: mail apps ignore object-fit, so the picture is cropped
+    # before it gets here (the site's /events/{id}/photo) rather than by CSS.
+    image = (
+        f'<tr><td style="padding:0;line-height:0">'
+        f'<img src="{html.escape(picture, quote=True)}" alt="" width="542" '
+        f'style="display:block;width:100%;max-width:542px;height:auto;border:0"></td></tr>'
+        if picture
+        else ""
+    )
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" '
+        f'style="margin:0 0 20px;border-collapse:separate;border:1px solid {LINE};'
+        'border-radius:16px;overflow:hidden">'
+        f'{image}<tr><td style="padding:20px">{text}</td></tr></table>'
+    )
+
+
+def render_html(
+    body: str,
+    button: tuple[str, str] | None = None,
+    pictures: list[str | None] | None = None,
+) -> str:
+    """The HTML half of a message, from the plain text.
+
+    Blank lines split blocks. A one-line block is a paragraph; a block of
+    several lines is a program (title, when, where, calendar link) and is
+    drawn as a card with its first line as the title. "Label: https://…"
+    lines become a link named by the label, so nobody reads a raw `.ics`
+    address. The button goes where its URL stood on its own — "open this
+    link:" is followed by the button, not by the sign-off — or at the end.
+    `pictures` go with the program cards in order, one per card.
+    """
+    blocks = []
+    placed = False
+    cards = iter(pictures or [])
     for block in body.strip().split("\n\n"):
-        block = block.strip()
-        if not block or (button and block == button[1]):
+        lines = [line.strip() for line in block.strip().split("\n") if line.strip()]
+        if not lines:
             continue
-        paragraphs.append(
-            f'<p style="margin:0 0 16px;font-size:17px;line-height:1.5;color:#1f1b2e">'
-            f"{html.escape(block).replace(chr(10), '<br>')}</p>"
-        )
-    cta = ""
-    if button:
-        label, url = button
-        cta = (
-            f'<p style="margin:24px 0 8px"><a href="{html.escape(url, quote=True)}" '
-            'style="display:inline-block;padding:14px 28px;border-radius:12px;'
-            'background:#5b4b9a;color:#ffffff;font-size:17px;font-weight:600;'
-            f'text-decoration:none">{html.escape(label)}</a></p>'
-            f'<p style="margin:0;font-size:13px;color:#6b6480;word-break:break-all">'
-            f"{html.escape(url)}</p>"
-        )
+        if button and lines == [button[1]]:
+            # The text said "open this link", so the link itself stays too,
+            # small, for a mail app that won't draw the button.
+            blocks.append(
+                _button(*button).replace("margin:8px 0 24px", "margin:8px 0")
+                + f'<p style="margin:0 0 24px;font-size:13px;line-height:1.4;'
+                f'color:{MUTED};word-break:break-all">{html.escape(button[1])}</p>'
+            )
+            placed = True
+        elif len(lines) == 1:
+            blocks.append(
+                f'<p style="margin:0 0 16px;font-size:17px;line-height:1.5;color:{INK}">'
+                f"{_line(lines[0])}</p>"
+            )
+        else:
+            blocks.append(_card(lines, next(cards, None)))
+    if button and not placed:
+        blocks.append(_button(*button))
+
+    logo = html.escape(f"{settings.FRONTEND_ORIGIN}/kwhab-logo.png", quote=True)
+    home = html.escape(settings.FRONTEND_ORIGIN, quote=True)
     return f"""<!doctype html>
 <html lang="en">
-<body style="margin:0;padding:24px 12px;background:#eeebf5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:32px 28px">
-    <p style="margin:0 0 24px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#5b4b9a">{BRAND}</p>
-    {''.join(paragraphs)}
-    {cta}
+<body style="margin:0;padding:24px 12px;background:{PAGE};font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid {LINE};border-radius:20px;overflow:hidden">
+    <div style="background:{BAND};border-bottom:1px solid {BUTTON_EDGE};padding:16px;text-align:center">
+      <img src="{logo}" alt="KW Habilitation" height="40" style="display:inline-block;height:40px;width:auto;border:0">
+    </div>
+    <div style="padding:28px">
+      {''.join(blocks)}
+    </div>
   </div>
-  <p style="max-width:560px;margin:16px auto 0;text-align:center;font-size:13px;color:#6b6480">{BRAND} · Kitchener-Waterloo</p>
+  <p style="max-width:600px;margin:16px auto 0;text-align:center;font-size:13px;line-height:1.5;color:{MUTED}">
+    <a href="{home}" style="color:{MUTED};text-decoration:underline">{BRAND}</a> · Kitchener-Waterloo
+  </p>
 </body>
 </html>
 """
 
 
 def send(
-    to: str, subject: str, body: str, button: tuple[str, str] | None = None
+    to: str,
+    subject: str,
+    body: str,
+    button: tuple[str, str] | None = None,
+    pictures: list[str | None] | None = None,
+    from_name: str | None = None,
+    reply_to: str | None = None,
 ) -> bool:
     """Send one message, text plus HTML. True if it was handed to the server.
 
     `button` is (label, url) — the one action the mail exists for.
+    `pictures` are the programs' images, in the order the body lists them.
+    `from_name` replaces the display name (the address stays MAIL_FROM, so
+    the mail still passes the domain's checks); `reply_to` sends answers to
+    a member rather than to the site.
 
     Never raises. The password-reset endpoint deliberately answers the same
     way whether or not the address exists — so it has to answer the same way
@@ -93,10 +201,12 @@ def send(
 
     message = EmailMessage()
     message["Subject"] = subject
-    message["From"] = formataddr((settings.MAIL_FROM_NAME, settings.MAIL_FROM))
+    message["From"] = formataddr((from_name or settings.MAIL_FROM_NAME, settings.MAIL_FROM))
     message["To"] = to
+    if reply_to:
+        message["Reply-To"] = reply_to
     message.set_content(body)
-    message.add_alternative(render_html(body, button), subtype="html")
+    message.add_alternative(render_html(body, button, pictures), subtype="html")
 
     try:
         if settings.SMTP_SSL:
