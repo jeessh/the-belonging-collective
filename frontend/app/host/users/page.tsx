@@ -20,7 +20,6 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyRow, Pill, SearchField, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
-import { AccountsNav } from "@/components/host/AccountsNav";
 
 /**
  * Community member accounts. Members reset their own password by email;
@@ -91,7 +90,6 @@ function Members() {
 
   return (
     <div className="flex flex-col gap-8">
-      <AccountsNav />
 
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">

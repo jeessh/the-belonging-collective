@@ -223,8 +223,16 @@ can open.
   (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
   links under the top bar below that, scrolled to the current one): Event
   Management (first — every sign-in, reset and invite lands there), Analytics,
-  Team, Special Access (pending-request badge) and Organization Management
-  (superadmins only; current on `/host/admins`, `/users`, `/topics`). `ConsoleContext` carries `me` (the login) and `org` (the
+  Team, Special Access (pending-request badge), and three superadmin-only
+  items: Organization Management (`/host/admins`), Community Member
+  Management (`/host/users`) and Topics (`/host/topics`). There is no
+  in-page switch between those three any more — the side panel is it.
+- **Superadmins are added on purpose, never by a checkbox.** The
+  organization invite and create forms always make an ordinary agency
+  (`is_admin: false`); "Add a KWHab superadmin" on Organization Management
+  is its own form (what a superadmin can do, a pointer to KWHab's Team page
+  — the usual way to give a KWHab person access — then an emailed invite
+  with `is_admin: true`). "Make superadmin" on a row still promotes one. `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
@@ -287,8 +295,7 @@ can open.
   the current one shows), so uploads and the access picker survive moving
   between steps. Publish lives on the Review step, not the page header.
   Accounts stay table-first — `components/AdminTable.tsx` backs
-  `/host/admins` (Organizations) and `/host/users` (Community Members),
-  switched by `components/host/AccountsNav.tsx`. `AdminTable` also holds the
+  `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.

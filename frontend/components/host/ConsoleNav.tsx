@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Building2,
   CalendarDays,
   Lock,
+  Tags,
   UserCog,
   Users,
   type LucideIcon,
@@ -15,8 +17,10 @@ import {
 /**
  * The console's sections, Event Management first — it is where every
  * organizer lands after signing in. A side panel from `lg`; under it, the same links
- * as one scrolling row beneath the top bar. Account Management is a
- * superadmin's only — those pages refuse anyone else, so the link would only
+ * as one scrolling row beneath the top bar.
+ *
+ * The last three (organizations, community members, topics) are a
+ * superadmin's only — those pages refuse anyone else, so the links would only
  * lead to "Not available".
  */
 
@@ -34,13 +38,22 @@ const ITEMS: Item[] = [
   { href: "/host/analytics", label: "Analytics", icon: BarChart3, match: ["/host/analytics"] },
   { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
   { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
+  // The platform-wide pages: superadmins only.
   {
     href: "/host/admins",
     label: "Organization Management",
-    icon: UserCog,
-    match: ["/host/admins", "/host/users", "/host/topics"],
+    icon: Building2,
+    match: ["/host/admins"],
     superOnly: true,
   },
+  {
+    href: "/host/users",
+    label: "Community Member Management",
+    icon: UserCog,
+    match: ["/host/users", "/host/members"],
+    superOnly: true,
+  },
+  { href: "/host/topics", label: "Topics", icon: Tags, match: ["/host/topics"], superOnly: true },
 ];
 
 export function ConsoleNav({

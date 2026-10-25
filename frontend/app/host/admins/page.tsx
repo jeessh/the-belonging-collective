@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ImageIcon, Plus, SendHorizontal, Trash2 } from "lucide-react";
+import { Copy, ImageIcon, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -19,14 +19,12 @@ import {
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { copyText } from "@/lib/clipboard";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
-import { AccountsNav } from "@/components/host/AccountsNav";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
@@ -54,6 +52,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
   const [logoFor, setLogoFor] = useState<AdminAccount | null>(null);
 
@@ -102,7 +101,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <AccountsNav />
 
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
@@ -115,7 +113,11 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </p>
       </div>
 
-      <InviteForm onSent={() => void load()} onAddDirectly={() => setAdding(true)} />
+      <InviteForm
+        onSent={() => void load()}
+        onAddDirectly={() => setAdding(true)}
+        onAddSuperadmin={() => setAddingSuper(true)}
+      />
 
       {invites.length > 0 && (
         <section className="flex flex-col gap-3">
@@ -257,6 +259,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </TableCard>
       )}
 
+      {addingSuper && (
+        <SuperadminModal
+          onClose={() => setAddingSuper(false)}
+          onSent={() => void load()}
+        />
+      )}
       {adding && (
         <AddAdminModal
           onClose={() => setAdding(false)}
@@ -308,14 +316,15 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 function InviteForm({
   onSent,
   onAddDirectly,
+  onAddSuperadmin,
 }: {
   onSent: () => void;
   onAddDirectly: () => void;
+  onAddSuperadmin: () => void;
 }) {
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
-  const [isSuper, setIsSuper] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{
@@ -332,7 +341,8 @@ function InviteForm({
       const inv = await createInvite({
         organization: organization.trim(),
         email: email.trim(),
-        is_admin: isSuper,
+        // An agency, always: superadmins have their own button and form.
+        is_admin: false,
       });
       setSent({
         org: inv.organization,
@@ -342,7 +352,6 @@ function InviteForm({
       });
       setOrganization("");
       setEmail("");
-      setIsSuper(false);
       onSent();
     } catch (e) {
       setError(apiMessage(e, "Couldn't send that invitation."));
@@ -434,11 +443,6 @@ function InviteForm({
             {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
-        <Checkbox
-          label="Superadmin: can manage every organization (KW Habilitation only)"
-          checked={isSuper}
-          onChange={(e) => setIsSuper(e.target.checked)}
-        />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
@@ -452,13 +456,16 @@ function InviteForm({
         or
         <span className="h-px flex-1 bg-line" />
       </div>
-      <Button
-        className="self-center"
-        leadingIcon={<Plus />}
-        onClick={onAddDirectly}
-      >
-        Create an organization
-      </Button>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button leadingIcon={<Plus />} onClick={onAddDirectly}>
+          Create an organization
+        </Button>
+        {/* Rare and powerful, so its own button and form rather than a box
+            to tick on every agency's invitation. */}
+        <Button variant="ghost" leadingIcon={<ShieldCheck />} onClick={onAddSuperadmin}>
+          Add a KWHab superadmin
+        </Button>
+      </div>
     </section>
   );
 }
@@ -529,7 +536,6 @@ function AddAdminModal({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSuper, setIsSuper] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -543,7 +549,7 @@ function AddAdminModal({
         name: name.trim(),
         email: email.trim(),
         password,
-        is_admin: isSuper,
+        is_admin: false,
       });
       onCreated(name.trim());
     } catch (e) {
@@ -595,11 +601,6 @@ function AddAdminModal({
           autoComplete="off"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-        />
-        <Checkbox
-          label="Superadmin: can manage every organization"
-          checked={isSuper}
-          onChange={(e) => setIsSuper(e.target.checked)}
         />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
@@ -683,6 +684,141 @@ function RemoveAdminModal({
           {busy ? "Removing…" : "Yes, remove"}
         </Button>
       </div>
+    </Modal>
+  );
+}
+
+
+/**
+ * Inviting a superadmin — someone who runs the whole platform, which is
+ * KW Habilitation. Its own form, so it can never be ticked by accident on an
+ * ordinary agency's invitation, and it says plainly what it grants. Most
+ * KWHab staff belong on KWHab's own Team instead, where they get the same
+ * access without a separate organization.
+ */
+function SuperadminModal({
+  onClose,
+  onSent,
+}: {
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const { show } = useToast();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ email: string; url: string; emailed: boolean } | null>(
+    null,
+  );
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+    try {
+      const inv = await createInvite({
+        organization: name.trim(),
+        email: email.trim(),
+        is_admin: true,
+      });
+      setSent({
+        email: inv.email,
+        url: `${window.location.origin}/host/invite/${inv.token}`,
+        emailed: inv.emailed,
+      });
+      onSent();
+    } catch (e) {
+      setError(apiMessage(e, "Couldn't send that invitation."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Add a KWHab superadmin" onClose={onClose}>
+      {sent ? (
+        <div className="mt-4 flex flex-col gap-4">
+          <p className="text-lg text-fg">
+            {sent.emailed
+              ? `Invitation sent to ${sent.email}.`
+              : `Invitation created, but the email to ${sent.email} couldn't be sent. Copy the link and send it to them yourself.`}{" "}
+            It works once and expires in 14 days.
+          </p>
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              leadingIcon={<Copy />}
+              onClick={() => {
+                void copyText(sent.url, show).then(
+                  (ok) => ok && show({ title: "Invite link copied." }),
+                );
+              }}
+            >
+              Copy link
+            </Button>
+            <Button variant="primary" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="mt-4 flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!busy && name.trim() && email.trim()) void submit();
+          }}
+        >
+          <div className="rounded-control border border-danger-border bg-danger/40 p-4">
+            <p className="text-base font-medium text-fg">A superadmin can:</p>
+            <ul className="mt-1 list-disc pl-5 text-base text-fg">
+              <li>add, remove and promote any organization</li>
+              <li>edit and un-publish any organization&apos;s programs</li>
+              <li>manage community member accounts and topics</li>
+              <li>see every organization&apos;s analytics and special access</li>
+            </ul>
+            <p className="mt-2 text-base text-fg">
+              Only for KW Habilitation, which runs the platform.
+            </p>
+          </div>
+          <p className="text-base text-fg-muted">
+            Adding someone who works at KW Habilitation? Add them on KW
+            Habilitation&apos;s <a href="/host/team" className="underline underline-offset-2">Team page</a>{" "}
+            instead. They become a superadmin automatically, without a
+            separate organization.
+          </p>
+          <TextField
+            label="Name"
+            placeholder="e.g. KW Habilitation – Programs"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+          <TextField
+            label="Email"
+            placeholder="Their email"
+            type="email"
+            autoComplete="off"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {error && (
+            <p role="alert" className="text-base text-danger-fg">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button onClick={onClose}>Cancel</Button>
+            <Button
+              type="submit"
+              variant="primary"
+              leadingIcon={<SendHorizontal />}
+              disabled={busy || !name.trim() || !email.trim()}
+            >
+              {busy ? "Sending…" : "Send superadmin invitation"}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }
