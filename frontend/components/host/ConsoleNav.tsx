@@ -19,7 +19,7 @@ import {
  * organizer lands after signing in. A side panel from `lg`; under it, the same links
  * as one scrolling row beneath the top bar.
  *
- * The last three (organizations, community members, topics) are a
+ * Organization Management, Member Management and Topics are a
  * superadmin's only — those pages refuse anyone else, so the links would only
  * lead to "Not available".
  */
@@ -35,10 +35,8 @@ type Item = {
 
 const ITEMS: Item[] = [
   { href: "/host/events", label: "Event Management", icon: CalendarDays, match: ["/host/events"] },
-  { href: "/host/analytics", label: "Analytics", icon: BarChart3, match: ["/host/analytics"] },
-  { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
-  { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
-  // The platform-wide pages: superadmins only.
+  // The platform-wide pages are superadmins' only; the two managing ones sit
+  // straight under Event Management.
   {
     href: "/host/admins",
     label: "Organization Management",
@@ -53,6 +51,9 @@ const ITEMS: Item[] = [
     match: ["/host/users", "/host/members"],
     superOnly: true,
   },
+  { href: "/host/analytics", label: "Analytics", icon: BarChart3, match: ["/host/analytics"] },
+  { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
+  { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
   { href: "/host/topics", label: "Topics", icon: Tags, match: ["/host/topics"], superOnly: true },
 ];
 
