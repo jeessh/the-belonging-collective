@@ -82,24 +82,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function setAccess(admin: AdminAccount, makeSuper: boolean) {
-    setBusyId(admin.id);
-    try {
-      await updateAdmin(admin.id, { is_admin: makeSuper });
-      show({
-        title: `${admin.name} is now ${makeSuper ? "a superadmin" : "an admin"}.`,
-      });
-      await load();
-    } catch (e) {
-      show({
-        title: apiMessage(e, "Couldn't change that account. Please try again."),
-        tone: "alert",
-      });
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   async function setInShared(admin: AdminAccount, shared: boolean) {
     setBusyId(admin.id);
     try {
@@ -231,23 +213,11 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex flex-wrap items-center gap-3">
-                      <Pill tone={a.is_admin ? "warn" : "neutral"}>
-                        {a.is_admin ? "Superadmin" : "Admin"}
-                      </Pill>
-                      {/* The API refuses self-demotion — that refusal is what
-                          keeps at least one superadmin in the system. */}
-                      {!isMe && (
-                        <Button
-                          variant="ghost"
-                          disabled={busy}
-                          onClick={() => void setAccess(a, !a.is_admin)}
-                        >
-                          {a.is_admin ? "Make admin" : "Make superadmin"}
-                          <span className="sr-only"> — {a.name}</span>
-                        </Button>
-                      )}
-                    </span>
+                    {/* Shown, not changed here: a superadmin is added on
+                        purpose, with "Add a KWHab superadmin". */}
+                    <Pill tone={a.is_admin ? "warn" : "neutral"}>
+                      {a.is_admin ? "Superadmin" : "Admin"}
+                    </Pill>
                   </td>
                   <td className="px-3 py-3">
                     {a.slug && (

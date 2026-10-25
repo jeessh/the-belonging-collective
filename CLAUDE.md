@@ -232,7 +232,8 @@ can open.
   (`is_admin: false`); "Add a KWHab superadmin" on Organization Management
   is its own form (what a superadmin can do, a pointer to KWHab's Team page
   — the usual way to give a KWHab person access — then an emailed invite
-  with `is_admin: true`). "Make superadmin" on a row still promotes one. `ConsoleContext` carries `me` (the login) and `org` (the
+  with `is_admin: true`). The Organizations table only shows each tier — there is no
+  promote / demote button (the API's `PATCH /hosts/{id} {is_admin}` remains). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
