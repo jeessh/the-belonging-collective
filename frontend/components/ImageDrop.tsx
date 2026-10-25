@@ -22,6 +22,7 @@ export function ImageDrop({
   value,
   onChange,
   sizing = "cover",
+  compact = false,
 }: {
   label: string;
   /** The current URL, "" for none. */
@@ -29,6 +30,8 @@ export function ImageDrop({
   onChange: (url: string) => void;
   /** What the image is for — decides the size asked for. Covers by default. */
   sizing?: SizingKey;
+  /** A shorter box, for a form that has to fit on one screen. */
+  compact?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -107,22 +110,29 @@ export function ImageDrop({
             setDragOver(false);
             void handleFiles(e.dataTransfer.files);
           }}
-          className={`flex flex-col items-center justify-center gap-3 rounded-control border border-dashed px-6 py-9 text-center transition-colors ${
+          className={`flex flex-col items-center justify-center rounded-control border border-dashed px-6 text-center transition-colors ${
+            compact ? "gap-2 py-5" : "gap-3 py-9"
+          } ${
             dragOver
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
-          } ${logo ? "" : "min-h-[278px]"}`}
+          } ${logo ? "" : compact ? "min-h-[160px]" : "min-h-[278px]"}`}
         >
-          <ArrowUpFromLine aria-hidden="true" className="size-12 text-fg" />
+          <ArrowUpFromLine
+            aria-hidden="true"
+            className={`${compact ? "size-8" : "size-12"} text-fg`}
+          />
           <p className="text-xl text-fg">Drag an image here</p>
           <p className="text-base text-fg">
             Supported file types: {ACCEPTED_LABEL}
           </p>
-          <div className="flex w-full max-w-sm items-center gap-6 text-xl text-fg">
-            <span aria-hidden="true" className="h-px flex-1 bg-fg-icon-muted" />
-            Or
-            <span aria-hidden="true" className="h-px flex-1 bg-fg-icon-muted" />
-          </div>
+          {!compact && (
+            <div className="flex w-full max-w-sm items-center gap-6 text-xl text-fg">
+              <span aria-hidden="true" className="h-px flex-1 bg-fg-icon-muted" />
+              Or
+              <span aria-hidden="true" className="h-px flex-1 bg-fg-icon-muted" />
+            </div>
+          )}
           <Button
             disabled={busy}
             onClick={() => inputRef.current?.click()}

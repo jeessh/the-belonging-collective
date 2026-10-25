@@ -266,8 +266,11 @@ can open.
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
   link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
-  **`EventForm` is a five-step flow** (`STEPS`): The basics → When & where →
-  Cost & sign-up → Extras (all optional) → Review. Next checks only that
+  **`EventForm` is a six-step flow** (`STEPS`): The basics → When & where →
+  Cost & sign-up → Who it's for → Details & links (both optional) → Review.
+  Each step is laid out in two columns from `lg` so it fits a 1440×900
+  screen without scrolling (the image drop is `compact` here); keep a new
+  field from pushing a step past that. Next checks only that
   step's problems (`FIELD_STEP` maps a `missingRequired` field to its step —
   add a new required field there too) and names what's missing; Enter moves
   on rather than publishing. A new event opens steps in order; an edit opens
