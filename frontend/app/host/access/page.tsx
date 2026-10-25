@@ -114,7 +114,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-[840px] flex-col gap-3">
-          <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+          <h1 className="text-3xl font-medium text-fg sm:text-4xl">
             Special Access
           </h1>
           <p className="text-xl text-fg">
@@ -364,6 +364,7 @@ function GroupPanel({
       </div>
 
       <SegmentedToggle<Tab>
+        size="sm"
         label="Members by status"
         className="self-start max-sm:w-full [&>button]:flex-1"
         value={tab}

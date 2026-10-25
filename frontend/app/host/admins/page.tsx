@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ImageIcon, SendHorizontal, Trash2 } from "lucide-react";
+import { Copy, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
-  createAdmin,
   createInvite,
   deleteAdmin,
   listAdmins,
@@ -19,15 +18,11 @@ import {
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { copyText } from "@/lib/clipboard";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
-import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
-import { AccountsNav } from "@/components/host/AccountsNav";
-import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
  * Account Management: every organization with access, and the way to add one.
@@ -53,9 +48,8 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
-  const [logoFor, setLogoFor] = useState<AdminAccount | null>(null);
 
   async function load() {
     try {
@@ -82,42 +76,26 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function setAccess(admin: AdminAccount, makeSuper: boolean) {
-    setBusyId(admin.id);
-    try {
-      await updateAdmin(admin.id, { is_admin: makeSuper });
-      show({
-        title: `${admin.name} is now ${makeSuper ? "a superadmin" : "an admin"}.`,
-      });
-      await load();
-    } catch (e) {
-      show({
-        title: apiMessage(e, "Couldn't change that account. Please try again."),
-        tone: "alert",
-      });
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-8">
-      <AccountsNav />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-4xl font-medium text-fg sm:text-5xl">
-          All Administrative Members
+        <h1 className="text-3xl font-medium text-fg sm:text-4xl">
+          Organizations
         </h1>
         <p className="text-xl text-fg">
-          Every organization that can post events, and its staff logins.
+          Every organization that posts programs on the platform. Each one
+          manages its own events and special access.
         </p>
       </div>
 
-      <InviteForm onSent={() => void load()} onAddDirectly={() => setAdding(true)} />
+      <InviteForm
+        onSent={() => void load()}
+      />
 
       {invites.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-fg">Invitations waiting</h2>
+          <h2 className="text-xl font-medium text-fg">Organization invitations waiting</h2>
           <ul className="flex flex-col divide-y divide-line-active border-t border-line-active">
             {invites.map((inv) => (
               <li
@@ -148,19 +126,31 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </section>
       )}
 
+      <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-medium text-fg">Organization Admins</h2>
+        {/* Rare and powerful, so its own button and form rather than a box
+            to tick on every agency's invitation. */}
+        <Button
+          variant="ghost"
+          leadingIcon={<ShieldCheck />}
+          onClick={() => setAddingSuper(true)}
+        >
+          Add a KWHab superadmin
+        </Button>
+      </div>
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load accounts. Please refresh and try again.
         </p>
       ) : (
         <TableCard
-          caption="Non-profits, their staff logins, their access level, and how many programs each owns."
-          head={["Non-Profit", "Email", "Access", "Programs", ""]}
+          caption="Organizations, their staff logins, their access level, and how many programs each owns."
+          head={["Organization", "Login email", "Access", "Programs", ""]}
         >
           {loading ? (
             <EmptyRow colSpan={5} text="Loading…" />
           ) : admins.length === 0 ? (
-            <EmptyRow colSpan={5} text="No accounts yet." />
+            <EmptyRow colSpan={5} text="No organizations yet." />
           ) : (
             admins.map((a) => {
               // "You" is your organization — the login you hold may be
@@ -206,35 +196,15 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex flex-wrap items-center gap-3">
-                      <Pill tone={a.is_admin ? "warn" : "neutral"}>
-                        {a.is_admin ? "Superadmin" : "Admin"}
-                      </Pill>
-                      {/* The API refuses self-demotion — that refusal is what
-                          keeps at least one superadmin in the system. */}
-                      {!isMe && (
-                        <Button
-                          variant="ghost"
-                          disabled={busy}
-                          onClick={() => void setAccess(a, !a.is_admin)}
-                        >
-                          {a.is_admin ? "Make admin" : "Make superadmin"}
-                          <span className="sr-only"> — {a.name}</span>
-                        </Button>
-                      )}
-                    </span>
+                    {/* Shown, not changed here: a superadmin is added on
+                        purpose, with "Add a KWHab superadmin". */}
+                    <Pill tone={a.is_admin ? "warn" : "neutral"}>
+                      {a.is_admin ? "Superadmin" : "Admin"}
+                    </Pill>
                   </td>
                   <td className="px-3 py-3">{a.event_count}</td>
                   <td className="px-3 py-3">
                     <span className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        aria-label={`Logo for ${a.name}`}
-                        title="Logo"
-                        disabled={busy}
-                        onClick={() => setLogoFor(a)}
-                        leadingIcon={<ImageIcon />}
-                      />
                       {!isMe && (
                         <Button
                           variant="ghost"
@@ -255,25 +225,10 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </TableCard>
       )}
 
-      {adding && (
-        <AddAdminModal
-          onClose={() => setAdding(false)}
-          onCreated={(name) => {
-            setAdding(false);
-            show({ title: `Added ${name}.` });
-            void load();
-          }}
-        />
-      )}
-      {logoFor && (
-        <LogoModal
-          admin={logoFor}
-          onClose={() => setLogoFor(null)}
-          onSaved={(name) => {
-            setLogoFor(null);
-            show({ title: `Updated the logo for ${name}.` });
-            void load();
-          }}
+      {addingSuper && (
+        <SuperadminModal
+          onClose={() => setAddingSuper(false)}
+          onSent={() => void load()}
         />
       )}
       {removing && (
@@ -305,15 +260,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
  */
 function InviteForm({
   onSent,
-  onAddDirectly,
 }: {
   onSent: () => void;
-  onAddDirectly: () => void;
 }) {
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
-  const [isSuper, setIsSuper] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{
@@ -330,7 +282,8 @@ function InviteForm({
       const inv = await createInvite({
         organization: organization.trim(),
         email: email.trim(),
-        is_admin: isSuper,
+        // An agency, always: superadmins have their own button and form.
+        is_admin: false,
       });
       setSent({
         org: inv.organization,
@@ -340,7 +293,6 @@ function InviteForm({
       });
       setOrganization("");
       setEmail("");
-      setIsSuper(false);
       onSent();
     } catch (e) {
       setError(apiMessage(e, "Couldn't send that invitation."));
@@ -350,12 +302,15 @@ function InviteForm({
   }
 
   return (
-    <section className="flex max-w-[1026px] flex-col gap-3">
+    // Boxed: adding an organization is its own task on this page.
+    <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
       <div>
-        <h2 className="text-xl font-medium text-fg">Invite New Members</h2>
+        <h2 className="text-xl font-medium text-fg">
+          Invite Organization to the Belonging Collective
+        </h2>
         <p className="text-xl text-fg">
-          Email a new organization an invite link. They choose their own
-          password when they open it.
+          For a new agency joining the platform. We email them a link to set
+          up their organization&apos;s login and choose a password.
         </p>
       </div>
 
@@ -418,7 +373,7 @@ function InviteForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email"
+            placeholder="Organization's email"
             autoComplete="off"
           />
           <Button
@@ -428,17 +383,7 @@ function InviteForm({
             disabled={busy || !organization.trim() || !email.trim()}
             trailingIcon={<SendHorizontal />}
           >
-            {busy ? "Sending…" : "Send Email"}
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Checkbox
-            label="Can manage other organizations (KW Habilitation staff only)"
-            checked={isSuper}
-            onChange={(e) => setIsSuper(e.target.checked)}
-          />
-          <Button variant="ghost" onClick={onAddDirectly}>
-            Create an account directly instead
+            {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
         {error && (
@@ -448,160 +393,6 @@ function InviteForm({
         )}
       </form>
     </section>
-  );
-}
-
-function LogoModal({
-  admin,
-  onClose,
-  onSaved,
-}: {
-  admin: AdminAccount;
-  onClose: () => void;
-  onSaved: (name: string) => void;
-}) {
-  const [logoUrl, setLogoUrl] = useState(admin.logo_url ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      // "" clears it — the API reads null as "leave alone".
-      await updateAdmin(admin.id, { logo_url: logoUrl });
-      onSaved(admin.name);
-    } catch (e) {
-      setError(apiMessage(e, "Couldn't save that logo. Please try again."));
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title={`Logo for ${admin.name}`} onClose={onClose}>
-      <p className="mt-2 text-lg text-fg-muted">
-        Members recognise organizations by their logo in the feed.
-      </p>
-      <div className="mt-4">
-        <ImageDrop
-          label="Organization logo"
-          sizing="logo"
-          value={logoUrl}
-          onChange={setLogoUrl}
-        />
-      </div>
-      {error && (
-        <p role="alert" className="mt-3 text-base text-danger-fg">
-          {error}
-        </p>
-      )}
-      <div className="mt-6 flex flex-wrap justify-end gap-3">
-        <Button disabled={busy} onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="primary" disabled={busy} onClick={() => void submit()}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
-function AddAdminModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (name: string) => void;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSuper, setIsSuper] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const valid = name.trim() && email.trim() && password.length >= PASSWORD_MIN_LENGTH;
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      await createAdmin({
-        name: name.trim(),
-        email: email.trim(),
-        password,
-        is_admin: isSuper,
-      });
-      onCreated(name.trim());
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
-        setError("That email already has an account.");
-      } else if (e instanceof ApiError && e.status === 422) {
-        setError(
-          `Check the email address and use at least ${PASSWORD_MIN_LENGTH} characters.`,
-        );
-      } else {
-        setError("Couldn't create that account. Please try again.");
-      }
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title="Create an account" onClose={onClose}>
-      <p className="mt-2 text-lg text-fg-muted">
-        For setting up an organization in person. Give them the temporary
-        password and ask them to change it.
-      </p>
-      <form
-        className="mt-5 flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (valid && !busy) void submit();
-        }}
-      >
-        <TextField
-          label="Organization"
-          placeholder="Enter the organization's name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-        />
-        <TextField
-          label="Email"
-          placeholder="Enter their email"
-          type="email"
-          autoComplete="off"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          label={`Temporary password (at least ${PASSWORD_MIN_LENGTH} characters)`}
-          placeholder="Enter a temporary password"
-          type="text"
-          autoComplete="off"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Checkbox
-          label="Can manage other organizations"
-          checked={isSuper}
-          onChange={(e) => setIsSuper(e.target.checked)}
-        />
-        {error && (
-          <p role="alert" className="text-base text-danger-fg">
-            {error}
-          </p>
-        )}
-        <div className="flex flex-wrap justify-end gap-3">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={!valid || busy}>
-            {busy ? "Creating…" : "Create account"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
   );
 }
 
@@ -624,7 +415,7 @@ function RemoveAdminModal({
       await deleteAdmin(admin.id);
       onRemoved(admin.name, admin.event_count);
     } catch (e) {
-      setError(apiMessage(e, "Couldn't remove that account. Please try again."));
+      setError(apiMessage(e, "Couldn't remove that organization. Please try again."));
       setBusy(false);
     }
   }
@@ -636,7 +427,7 @@ function RemoveAdminModal({
       title={
         <>
           <p className="text-2xl text-fg">
-            Are you sure you want to remove this account?
+            Are you sure you want to remove this organization?
           </p>
           <p className="mt-1 text-2xl font-medium italic text-fg">{admin.name}</p>
         </>
@@ -671,6 +462,135 @@ function RemoveAdminModal({
           {busy ? "Removing…" : "Yes, remove"}
         </Button>
       </div>
+    </Modal>
+  );
+}
+
+
+/**
+ * Inviting a superadmin — someone who runs the whole platform, which is
+ * KW Habilitation. Its own form, so it can never be ticked by accident on an
+ * ordinary agency's invitation, and it says plainly what it grants. Most
+ * KWHab staff belong on KWHab's own Team instead, where they get the same
+ * access without a separate organization.
+ */
+function SuperadminModal({
+  onClose,
+  onSent,
+}: {
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const { show } = useToast();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ email: string; url: string; emailed: boolean } | null>(
+    null,
+  );
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+    try {
+      const inv = await createInvite({
+        organization: name.trim(),
+        email: email.trim(),
+        is_admin: true,
+      });
+      setSent({
+        email: inv.email,
+        url: `${window.location.origin}/host/invite/${inv.token}`,
+        emailed: inv.emailed,
+      });
+      onSent();
+    } catch (e) {
+      setError(apiMessage(e, "Couldn't send that invitation."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Add a KWHab superadmin" onClose={onClose}>
+      {sent ? (
+        <div className="mt-4 flex flex-col gap-4">
+          <p className="text-lg text-fg">
+            {sent.emailed
+              ? `Invitation sent to ${sent.email}.`
+              : `Invitation created, but the email to ${sent.email} couldn't be sent. Copy the link and send it to them yourself.`}{" "}
+            It works once and expires in 14 days.
+          </p>
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              leadingIcon={<Copy />}
+              onClick={() => {
+                void copyText(sent.url, show).then(
+                  (ok) => ok && show({ title: "Invite link copied." }),
+                );
+              }}
+            >
+              Copy link
+            </Button>
+            <Button variant="primary" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="mt-4 flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!busy && name.trim() && email.trim()) void submit();
+          }}
+        >
+          <div className="rounded-control border border-danger-border bg-danger/40 p-4">
+            <p className="text-base font-medium text-fg">A superadmin can:</p>
+            <ul className="mt-1 list-disc pl-5 text-base text-fg">
+              <li>add, remove and promote any organization</li>
+              <li>edit and un-publish any organization&apos;s programs</li>
+              <li>manage community member accounts and topics</li>
+              <li>see every organization&apos;s analytics and special access</li>
+            </ul>
+            <p className="mt-2 text-base text-fg">
+              Only for KW Habilitation, which runs the platform.
+            </p>
+          </div>
+          <TextField
+            label="Name"
+            placeholder="e.g. KW Habilitation – Programs"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+          <TextField
+            label="Email"
+            placeholder="Their email"
+            type="email"
+            autoComplete="off"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {error && (
+            <p role="alert" className="text-base text-danger-fg">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button onClick={onClose}>Cancel</Button>
+            <Button
+              type="submit"
+              variant="primary"
+              leadingIcon={<SendHorizontal />}
+              disabled={busy || !name.trim() || !email.trim()}
+            >
+              {busy ? "Sending…" : "Send superadmin invitation"}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }

@@ -12,7 +12,6 @@ from app.core.security import hash_password
 from app.models.access import AccessGroup
 from app.models.event import Event
 from app.models.host import Host, org_id_of
-from app.models.invite import HostInvite
 from app.schemas.host import (
     HostCreate,
     HostMeOut,
@@ -20,8 +19,6 @@ from app.schemas.host import (
     HostSelfUpdate,
     HostUpdate,
     HostWithCountsOut,
-    StaffInviteOut,
-    TeamOut,
 )
 
 router = APIRouter(prefix="/hosts", tags=["hosts"])
@@ -78,27 +75,6 @@ def update_me(
     return _me_out(host)
 
 
-# ---------- Team: an organization's own logins ----------
-#
-# An agency may keep using one shared login, add individual logins for its
-# staff, or both. Everyone in the organization sees the same list and may add
-# to it — a staff member inviting a colleague is the normal case, not a
-# privilege worth a second tier.
-
-
-def _team_org(db: Session, host: Host, org_id: uuid.UUID | None) -> Host:
-    """The organization whose team is being managed: your own, or — for a
-    superadmin — any live one."""
-    if org_id is None or org_id == org_id_of(host):
-        return _org_of(host)
-    if not host.is_superadmin:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
-    org = db.get(Host, org_id)
-    if not org or org.deleted_at is not None or org.org_id is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
-    return org
-
-
 def _staff_of(db: Session, org_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[Host]]:
     """Live staff logins per organization, in one query."""
     if not org_ids:
@@ -113,57 +89,6 @@ def _staff_of(db: Session, org_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[Hos
     for row in rows:
         out.setdefault(row.org_id, []).append(row)
     return out
-
-
-@router.get("/team", response_model=TeamOut)
-def get_team(
-    org_id: uuid.UUID | None = None,
-    host: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    org = _team_org(db, host, org_id)
-    now = datetime.now(timezone.utc)
-    invites = (
-        db.query(HostInvite)
-        .filter(HostInvite.org_id == org.id, HostInvite.accepted_at.is_(None))
-        .order_by(HostInvite.created_at.desc())
-        .all()
-    )
-    return TeamOut(
-        org=HostOut.model_validate(org),
-        staff=_staff_of(db, [org.id]).get(org.id, []),
-        invites=[
-            StaffInviteOut(
-                id=i.id,
-                name=i.name or "",
-                email=i.email,
-                expires_at=i.expires_at,
-                expired=i.expires_at < now,
-            )
-            for i in invites
-        ],
-    )
-
-
-@router.delete("/team/{staff_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_staff(
-    staff_id: uuid.UUID,
-    current: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    """Archive one staff login. The organization, its programs and its other
-    logins are untouched — this is a person leaving, not an agency."""
-    staff = db.get(Host, staff_id)
-    if not staff or staff.deleted_at is not None or staff.org_id is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Staff login not found")
-    if staff.id == current.id:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "You can't remove your own login."
-        )
-    if not current.is_superadmin and staff.org_id != org_id_of(current):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
-    staff.deleted_at = datetime.now(timezone.utc)
-    db.commit()
 
 
 # ---------- Superadmin-only account management ----------

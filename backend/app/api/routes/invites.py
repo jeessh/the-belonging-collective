@@ -34,20 +34,15 @@ def _hash(token: str) -> str:
 
 
 class InviteCreate(BaseModel):
-    """Two kinds of invitation share this:
+    """An invitation for a new organization; superadmins only.
 
-    • an organization (`org_id` null): `organization` names the new agency;
-      superadmins only.
-    • a staff login (`org_id` set): `name` is the person; the login joins that
-      organization. Anyone signed in for the organization may send one — a
-      superadmin for any organization.
+    (Staff invitations — a person joining an existing organization — are no
+    longer issued. Ones already sent can still be accepted; see accept.)
     """
 
-    organization: str | None = None
-    name: str | None = None
+    organization: str
     email: EmailStr
     is_admin: bool = False
-    org_id: uuid.UUID | None = None
 
 
 class InviteAccept(BaseModel):
@@ -102,50 +97,26 @@ def create_invite(
     email = body.email.strip().lower()
     _email_free(db, email, current)
 
-    if body.org_id is not None:
-        # Staff invitation. Your own organization, or any for a superadmin.
-        if body.org_id != org_id_of(current) and not current.is_superadmin:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
-        org = db.get(Host, body.org_id)
-        if not org or org.deleted_at is not None or org.org_id is not None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
-        name = (body.name or "").strip()
-        if not name:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Name can't be blank")
-        invite = HostInvite(
-            token_hash="",
-            organization=org.name,
-            name=name,
-            org_id=org.id,
-            email=email,
-            is_admin=False,
-            invited_by=current.id,
+    # A new organization: superadmins only. There is no host signup route,
+    # and this is the door that replaced it.
+    if not current.is_superadmin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+    organization = (body.organization or "").strip()
+    if not organization:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Organization can't be blank"
         )
-        intro = (
-            f"{current.name} invited you to join {org.name}'s team on The "
-            "Belonging Collective, where you can post and manage its programs."
-        )
-    else:
-        # A new organization: superadmins only. There is no host signup route,
-        # and this is the door that replaced it.
-        if not current.is_superadmin:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
-        organization = (body.organization or "").strip()
-        if not organization:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY, "Organization can't be blank"
-            )
-        invite = HostInvite(
-            token_hash="",
-            organization=organization,
-            email=email,
-            is_admin=body.is_admin,
-            invited_by=current.id,
-        )
-        intro = (
-            f"{current.name} invited {organization} to post programs on The "
-            "Belonging Collective."
-        )
+    invite = HostInvite(
+        token_hash="",
+        organization=organization,
+        email=email,
+        is_admin=body.is_admin,
+        invited_by=current.id,
+    )
+    intro = (
+        f"{current.name} invited {organization} to post programs on The "
+        "Belonging Collective."
+    )
 
     token = secrets.token_urlsafe(32)
     invite.token_hash = _hash(token)
@@ -189,8 +160,7 @@ def list_invites(
     _: Host = Depends(require_admin), db: Session = Depends(get_db)
 ):
     """Outstanding invitations to found an organization, so nobody is invited
-    twice by accident. Staff invitations are listed with their team
-    (GET /hosts/team)."""
+    twice by accident. Staff invitations (no longer issued) aren't listed."""
     rows = (
         db.query(HostInvite)
         .filter(HostInvite.accepted_at.is_(None), HostInvite.org_id.is_(None))

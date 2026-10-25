@@ -25,7 +25,6 @@ import {
   controlClass,
 } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
-import { AccountsNav } from "@/components/host/AccountsNav";
 
 /**
  * The topic list — what members pick as interests and hosts file programs
@@ -134,10 +133,9 @@ function Topics() {
 
   return (
     <div className="flex flex-col gap-8">
-      <AccountsNav />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-4xl font-medium text-fg sm:text-5xl">Topics</h1>
+        <h1 className="text-3xl font-medium text-fg sm:text-4xl">Topics</h1>
         <p className="text-xl text-fg">
           Members pick these as interests, and organizations sort programs by
           them. Renaming a topic keeps every match. Archiving one moves its

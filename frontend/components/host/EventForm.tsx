@@ -2,12 +2,18 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   type MouseEvent,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Clock, MapPin } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  Upload,
+} from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
@@ -356,12 +362,10 @@ export function useLeaveGuard(dirty: boolean) {
 
 function Section({
   title,
-  lead,
   required,
   children,
 }: {
   title: string;
-  lead?: string;
   required?: boolean;
   children: ReactNode;
 }) {
@@ -373,9 +377,18 @@ function Section({
         {title}
         {required && <RequiredMark />}
       </legend>
-      {lead && <p className="text-base text-fg-muted">{lead}</p>}
       {children}
     </fieldset>
+  );
+}
+
+/** One titled part of the form: a heading over its fields, a rule above. */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex min-w-0 flex-col gap-4 border-t border-line pt-5 first:border-t-0 first:pt-0">
+      <h2 className="text-xl font-medium text-fg">{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -391,6 +404,8 @@ export function EventForm({
   submitting,
   onSubmit,
   error,
+  submitLabel,
+  submittingLabel,
 }: {
   /** The page's submit button points at this with `form={id}`. */
   id: string;
@@ -410,6 +425,9 @@ export function EventForm({
   submitting: boolean;
   onSubmit: () => void;
   error: string | null;
+  /** The last step's button: "Publish Event" / "Save Edits". */
+  submitLabel: string;
+  submittingLabel: string;
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
@@ -417,7 +435,9 @@ export function EventForm({
   const missing = problems.map((p) => p.text);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
-    showMissing ? (problems.find((p) => p.field === field)?.error ?? null) : null;
+    showMissing
+      ? (problems.find((p) => p.field === field)?.error ?? null)
+      : null;
   const set = <K extends keyof EventFormValues>(
     key: K,
     v: EventFormValues[K],
@@ -467,36 +487,44 @@ export function EventForm({
     ? checkPostingLink(values.registrationUrl)
     : null;
 
+  const summaryRef = useRef<HTMLDivElement>(null);
+
   return (
     <form
       id={id}
-      className="flex flex-col gap-10"
+      className="form-dense flex flex-col gap-5"
       // The summary and each field's own message say what's wrong; the
       // browser's bubbles arrived first and said it differently.
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (missing.length) {
+        if (problems.length) {
           setShowMissing(true);
-          document.getElementById(`${id}-missing`)?.scrollIntoView({
-            block: "center",
+          // The summary names everything still needed; take people to it.
+          requestAnimationFrame(() => {
+            summaryRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+            summaryRef.current?.focus({ preventScroll: true });
           });
           return;
         }
         if (!submitting) onSubmit();
       }}
     >
-      <div id={`${id}-missing`} className="flex flex-col gap-2">
-        <p className="text-base text-fg-muted">
-          Required fields are marked with{" "}
-          <span className="text-danger-fg">*</span>.
-        </p>
+      <div
+        id={`${id}-missing`}
+        ref={summaryRef}
+        tabIndex={-1}
+        className="flex flex-col gap-2 outline-none"
+      >
         {inSeries && (
           <p className="text-base text-fg-muted">
             Changes apply to this date and every later date in the series. The
             date and time change for this date only.
           </p>
         )}
+        <p className="text-base text-fg-muted">
+          <span className="text-danger-fg">*</span> Required
+        </p>
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
@@ -509,16 +537,19 @@ export function EventForm({
         )}
       </div>
 
-      <div className="grid gap-x-9 gap-y-6 lg:grid-cols-[598px_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-6">
+      {/* Two columns from lg: the event itself and when it is on the left,
+          everything that describes it on the right. One column, in that
+          order, below lg. */}
+      <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div className="flex min-w-0 flex-col gap-5">
           <Section title="Event image" required={mode === "create"}>
             <ImageDrop
+              compact
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
             />
           </Section>
-
           <TextField
             label="Name of Event"
             required
@@ -528,7 +559,6 @@ export function EventForm({
             placeholder="Open Space: Coffee & Chats"
             autoComplete="off"
           />
-
           <TextField
             label="Date"
             placeholder="DD/MM/YYYY"
@@ -547,7 +577,6 @@ export function EventForm({
               set("date", v);
             }}
           />
-
           <div className="flex flex-col gap-2">
             <p className="text-lg font-medium text-fg">
               Time
@@ -578,7 +607,20 @@ export function EventForm({
               />
             </div>
           </div>
-
+          <Section title="Where">
+            <div className="flex flex-col items-start gap-4">
+              <SegmentedToggle<"virtual" | "inperson">
+                size="sm"
+                label="Venue"
+                value={values.isVirtual ? "virtual" : "inperson"}
+                onChange={(v) => setVenue(v === "virtual")}
+                segments={[
+                  { value: "virtual", label: "Virtual" },
+                  { value: "inperson", label: "In-Person" },
+                ]}
+              />
+            </div>
+          </Section>
           <TextField
             label={values.isVirtual ? "Location (online)" : "Location"}
             required={!values.isVirtual}
@@ -592,411 +634,387 @@ export function EventForm({
                 : "Street address or building"
             }
           />
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-6">
-          <Field
-            label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
-            required
-            aside={
-              <span
-                className={`text-base ${
-                  values.description.length >= DESCRIPTION_MAX
-                    ? "text-danger-fg"
-                    : "text-fg-muted"
-                }`}
-                aria-live="polite"
-              >
-                {values.description.length}/{DESCRIPTION_MAX}
-              </span>
-            }
-          >
-            <TextArea
-              rows={6}
-              maxLength={DESCRIPTION_MAX}
-              value={values.description}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="Type out your description here…"
-            />
-          </Field>
-
-          <Section
-            title="Important Links"
-            lead="Up to three, like a flyer, a map or your own page. Each needs a label and a web address."
-          >
-            <div className="flex flex-col gap-3">
-              {values.links.map((link, i) => (
-                <div
-                  key={i}
-                  className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
-                >
-                  {/* The placeholder says which box is the label: "Link 1"
-                      read as "put link 1 here", so addresses ended up in it. */}
+          {mode === "create" && (
+            <Section title="Does it repeat?">
+              <div className="flex flex-wrap items-end gap-4">
+                <Field label="How often" className="min-w-[200px]">
+                  <Select
+                    value={values.frequency}
+                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {values.frequency !== "once" && !values.repeatForever && (
                   <TextField
-                    label={`Link ${i + 1} label`}
-                    className="[&>label]:sr-only"
-                    value={link.label}
-                    onChange={(e) => setLink(i, { label: e.target.value })}
-                    placeholder="Link label, e.g. Flyer"
-                  />
-                  <TextField
-                    label={`Link ${i + 1} address`}
-                    className="[&>label]:sr-only"
-                    // type="text": the browser's url validation rejects
-                    // "yourorg.ca"; the API adds https:// when it's missing.
-                    type="text"
-                    inputMode="url"
-                    value={link.url}
-                    onChange={(e) => setLink(i, { url: e.target.value })}
-                    placeholder="Web address, e.g. yourorg.ca/page"
-                    error={
-                      checkPostingLink(link.url)?.tone === "error"
-                        ? "That doesn't look like a web address."
-                        : null
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          <Section title="Event Tags">
-            <div className="flex flex-col items-start gap-4">
-              <SegmentedToggle<"free" | "paid">
-                label="Cost"
-                value={paid ? "paid" : "free"}
-                onChange={(v) =>
-                  // Coming back to paid lands on the commonest shape.
-                  set("pricingModel", v === "free" ? "free" : "per_session")
-                }
-                segments={[
-                  { value: "free", label: "Free" },
-                  { value: "paid", label: "Paid" },
-                ]}
-              />
-              <SegmentedToggle<"dropin" | "registration">
-                label="Registration"
-                value={values.requiresSignup ? "registration" : "dropin"}
-                onChange={(v) => set("requiresSignup", v === "registration")}
-                segments={[
-                  { value: "dropin", label: "Drop-in" },
-                  { value: "registration", label: "Registration" },
-                ]}
-              />
-              <SegmentedToggle<"virtual" | "inperson">
-                label="Venue"
-                value={values.isVirtual ? "virtual" : "inperson"}
-                onChange={(v) => setVenue(v === "virtual")}
-                segments={[
-                  { value: "virtual", label: "Virtual" },
-                  { value: "inperson", label: "In-Person" },
-                ]}
-              />
-            </div>
-          </Section>
-
-          {paid && (
-            <Section title="How is it paid?" required>
-              <div className="flex flex-col gap-2">
-                {PAID_MODELS.map((m) => {
-                  const t = templateFor(m);
-                  const on = values.pricingModel === m;
-                  return (
-                    <label
-                      key={m}
-                      className={`flex cursor-pointer items-start gap-3 rounded-control border p-3 ${
-                        on
-                          ? "border-primary-border bg-primary-soft"
-                          : "border-line hover:bg-surface-subtle"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`${id}-pricing`}
-                        checked={on}
-                        onChange={() => set("pricingModel", m)}
-                        className="mt-1.5 size-4 accent-primary-border"
-                      />
-                      <span>
-                        <span className="block text-lg text-fg">{t.label}</span>
-                        <span className="block text-base text-fg-muted">
-                          {t.hint}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-4">
-                {priceTemplate.needsAmount && (
-                  <TextField
-                    label="Price"
+                    label="How many times"
                     required
-                    className="min-w-[150px]"
-                    inputMode="decimal"
-                    value={values.priceAmount}
-                    onChange={(e) => set("priceAmount", e.target.value)}
-                    error={fieldError("priceAmount")}
-                    placeholder="$12.50"
-                  />
-                )}
-                {priceTemplate.needsGroup && (
-                  <TextField
-                    label="People it covers"
-                    required
-                    className="min-w-[180px]"
+                    className="min-w-[170px]"
                     type="number"
                     min={2}
-                    value={values.priceGroupSize}
-                    onChange={(e) => set("priceGroupSize", e.target.value)}
-                    error={fieldError("priceGroupSize")}
-                    placeholder="4"
-                  />
-                )}
-                {priceTemplate.needsSessions && (
-                  <TextField
-                    label="Dates it covers"
-                    required
-                    className="min-w-[180px]"
-                    type="number"
-                    min={2}
-                    value={values.priceSessions}
-                    onChange={(e) => set("priceSessions", e.target.value)}
-                    error={fieldError("priceSessions")}
+                    max={104}
+                    value={values.occurrenceCount}
+                    onChange={(e) => set("occurrenceCount", e.target.value)}
+                    error={fieldError("occurrenceCount")}
                     placeholder="8"
                   />
                 )}
-                {values.pricingModel === "custom" && (
-                  <TextField
-                    label="Describe the cost"
-                    required
-                    className="min-w-[280px] flex-1"
-                    value={values.priceNote}
-                    onChange={(e) => set("priceNote", e.target.value)}
-                    error={fieldError("priceNote")}
-                    placeholder="$5 suggested, pay what you can"
+                {values.frequency !== "once" && (
+                  // A drop-in that has run every Friday for nine years has no
+                  // session count to give.
+                  <Checkbox
+                    label="It keeps going"
+                    className="min-h-12"
+                    checked={values.repeatForever}
+                    onChange={(e) => set("repeatForever", e.target.checked)}
                   />
                 )}
               </div>
-              {values.pricingModel === "series" && (
-                <p className="text-base text-fg-muted">
-                  Signing up once enrols the member in every date in this series.
-                </p>
-              )}
             </Section>
           )}
+        </div>
 
-          {/* Shown for drop-ins too: many carry a posting link, and hiding
-              the field would blank it on the next save. */}
-          <div className="flex flex-col gap-2">
-            <TextField
-              label={values.requiresSignup ? "Sign-up link" : "Posting link"}
-              type="text"
-              inputMode="url"
-              value={values.registrationUrl}
-              onChange={(e) => set("registrationUrl", e.target.value)}
-              placeholder="yourorg.ca/register"
-              error={
-                signupHint?.tone === "error" ? signupHint.message : null
+        <div className="flex min-w-0 flex-col gap-6">
+          <Group title="Description">
+            <Field
+              label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
+              required
+              aside={
+                <span
+                  className={`text-base ${
+                    values.description.length >= DESCRIPTION_MAX
+                      ? "text-danger-fg"
+                      : "text-fg-muted"
+                  }`}
+                  aria-live="polite"
+                >
+                  {values.description.length}/{DESCRIPTION_MAX}
+                </span>
               }
-            />
-            {/* A caution, not a refusal: some agencies really do have one
-                page, and blocking that gets the link left out entirely. */}
-            <p
-              role="status"
-              className={`text-base ${
-                signupHint?.tone === "warn"
-                  ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-tag-dropin-fg"
-                  : "text-fg-muted"
-              }`}
             >
-              {signupHint?.tone === "warn"
-                ? signupHint.message
-                : values.requiresSignup
-                  ? "Where people register on your own site. Leave it blank if they sign up here instead."
-                  : "The program's page on your own site, if it has one."}
-            </p>
-          </div>
+              <TextArea
+                rows={3}
+                maxLength={DESCRIPTION_MAX}
+                value={values.description}
+                onChange={(e) => set("description", e.target.value)}
+                placeholder="Type out your description here…"
+              />
+            </Field>
+          </Group>
+          <Group title="Cost & sign-up">
+            <Section title="Cost">
+              <div className="flex flex-col items-start gap-4">
+                <SegmentedToggle<"free" | "paid">
+                  size="sm"
+                  label="Cost"
+                  value={paid ? "paid" : "free"}
+                  onChange={(v) =>
+                    // Coming back to paid lands on the commonest shape.
+                    set("pricingModel", v === "free" ? "free" : "per_session")
+                  }
+                  segments={[
+                    { value: "free", label: "Free" },
+                    { value: "paid", label: "Paid" },
+                  ]}
+                />
+              </div>
+            </Section>
+            {paid && (
+              <Section title="How is it paid?" required>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {PAID_MODELS.map((m) => {
+                    const t = templateFor(m);
+                    const on = values.pricingModel === m;
+                    return (
+                      <label
+                        key={m}
+                        className={`flex cursor-pointer items-center gap-3 rounded-control border px-3 py-2 ${
+                          on
+                            ? "border-primary-border bg-primary-soft"
+                            : "border-line hover:bg-surface-subtle"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`${id}-pricing`}
+                          checked={on}
+                          onChange={() => set("pricingModel", m)}
+                          className="size-4 accent-primary-border"
+                        />
+                        <span className="text-lg text-fg">{t.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {priceTemplate.needsAmount && (
+                    <TextField
+                      label="Price"
+                      required
+                      className="min-w-[150px]"
+                      inputMode="decimal"
+                      value={values.priceAmount}
+                      onChange={(e) => set("priceAmount", e.target.value)}
+                      error={fieldError("priceAmount")}
+                      placeholder="$12.50"
+                    />
+                  )}
+                  {priceTemplate.needsGroup && (
+                    <TextField
+                      label="People it covers"
+                      required
+                      className="min-w-[180px]"
+                      type="number"
+                      min={2}
+                      value={values.priceGroupSize}
+                      onChange={(e) => set("priceGroupSize", e.target.value)}
+                      error={fieldError("priceGroupSize")}
+                      placeholder="4"
+                    />
+                  )}
+                  {priceTemplate.needsSessions && (
+                    <TextField
+                      label="Dates it covers"
+                      required
+                      className="min-w-[180px]"
+                      type="number"
+                      min={2}
+                      value={values.priceSessions}
+                      onChange={(e) => set("priceSessions", e.target.value)}
+                      error={fieldError("priceSessions")}
+                      placeholder="8"
+                    />
+                  )}
+                  {values.pricingModel === "custom" && (
+                    <TextField
+                      label="Describe the cost"
+                      required
+                      className="min-w-[280px] flex-1"
+                      value={values.priceNote}
+                      onChange={(e) => set("priceNote", e.target.value)}
+                      error={fieldError("priceNote")}
+                      placeholder="$5 suggested, pay what you can"
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
+            <Section title="How people join">
+              <div className="flex flex-col items-start gap-4">
+                <SegmentedToggle<"dropin" | "registration">
+                  size="sm"
+                  label="Registration"
+                  value={values.requiresSignup ? "registration" : "dropin"}
+                  onChange={(v) => set("requiresSignup", v === "registration")}
+                  segments={[
+                    { value: "dropin", label: "Drop-in" },
+                    { value: "registration", label: "Registration" },
+                  ]}
+                />
+              </div>
+            </Section>
+            {/* Shown for drop-ins too: many carry a posting link, and hiding
+                the field would blank it on the next save. */}
+            <div className="flex flex-col gap-2">
+              <TextField
+                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+                type="text"
+                inputMode="url"
+                value={values.registrationUrl}
+                onChange={(e) => set("registrationUrl", e.target.value)}
+                placeholder="yourorg.ca/register"
+                error={
+                  signupHint?.tone === "error" ? signupHint.message : null
+                }
+              />
+              {/* A caution, not a refusal: some agencies really do have one
+                  page, and blocking that gets the link left out entirely. */}
+              <p
+                role="status"
+                className={
+                  signupHint?.tone === "warn"
+                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                    : "sr-only"
+                }
+              >
+                {signupHint?.tone === "warn" ? signupHint.message : ""}
+              </p>
+            </div>
+          </Group>
+          <Group title="Who it's for">
+            <div className="flex flex-wrap gap-4">
+              <TextField
+                label="Spots available (blank for no limit)"
+                className="min-w-[220px] flex-1"
+                type="number"
+                min={1}
+                value={values.capacity}
+                onChange={(e) => set("capacity", e.target.value)}
+                error={fieldError("capacity")}
+                placeholder="20"
+              />
+              <TextField
+                label="Youngest age"
+                className="min-w-[140px]"
+                type="number"
+                min={0}
+                value={values.minAge}
+                onChange={(e) => set("minAge", e.target.value)}
+                error={fieldError("minAge")}
+                placeholder="Any"
+              />
+              <TextField
+                label="Oldest age"
+                className="min-w-[140px]"
+                type="number"
+                min={0}
+                value={values.maxAge}
+                onChange={(e) => set("maxAge", e.target.value)}
+                error={fieldError("maxAge")}
+                placeholder="Any"
+              />
+            </div>
+            <Section title="Who is it for?">
+              <SegmentedToggle<"youth" | "everyone">
+                size="sm"
+                className="self-start"
+                label="Audience"
+                value={values.isYouth ? "youth" : "everyone"}
+                onChange={(v) => set("isYouth", v === "youth")}
+                segments={[
+                  { value: "everyone", label: "Everyone" },
+                  { value: "youth", label: "Youth" },
+                ]}
+              />
+            </Section>
+            <Section
+              title="What does it offer?"
+            >
+              <div className="flex flex-wrap gap-2">
+                {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
+                  const on = values.accessibilityTags.includes(slug);
+                  return (
+                    <FilterChip
+                      key={slug}
+                      selected={on}
+                      onClick={() => toggle("accessibilityTags", slug)}
+                    >
+                      <span aria-hidden="true">{emoji}</span>
+                      &nbsp;{label}
+                    </FilterChip>
+                  );
+                })}
+              </div>
+            </Section>
+            <Section
+              title="Who can see this"
+            >
+              <AccessPicker
+                hostId={hostId}
+                mode={values.accessMode}
+                groupId={values.accessGroupId}
+                onChange={(accessMode, accessGroupId) =>
+                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
+                }
+              />
+            </Section>
+          </Group>
+          <Group title="Activity type">
+            <Section
+              title="Activity Type"
+              required
+            >
+              <div className="flex flex-wrap gap-2">
+                {categories.map((c) => {
+                  const on = values.categories.includes(c.slug);
+                  return (
+                    <FilterChip
+                      key={c.slug}
+                      selected={on}
+                      onClick={() => toggle("categories", c.slug)}
+                    >
+                      <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
+                      &nbsp;{c.label}
+                    </FilterChip>
+                  );
+                })}
+              </div>
+            </Section>
+          </Group>
+          <Group title="Details & links">
+            <Section
+              title="Important Links"
+            >
+              <div className="flex flex-col gap-3">
+                {values.links.map((link, i) => (
+                  <div
+                    key={i}
+                    className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
+                  >
+                    {/* The placeholder says which box is the label: "Link 1"
+                        read as "put link 1 here", so addresses ended up in it. */}
+                    <TextField
+                      label={`Link ${i + 1} label`}
+                      className="[&>label]:sr-only"
+                      value={link.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Link label, e.g. Flyer"
+                    />
+                    <TextField
+                      label={`Link ${i + 1} address`}
+                      className="[&>label]:sr-only"
+                      // type="text": the browser's url validation rejects
+                      // "yourorg.ca"; the API adds https:// when it's missing.
+                      type="text"
+                      inputMode="url"
+                      value={link.url}
+                      onChange={(e) => setLink(i, { url: e.target.value })}
+                      placeholder="Web address, e.g. yourorg.ca/page"
+                      error={
+                        checkPostingLink(link.url)?.tone === "error"
+                          ? "That doesn't look like a web address."
+                          : null
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </Section>
+            <Field label="Extra details">
+              <TextArea
+                rows={3}
+                value={values.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="What to bring, who to ask for, anything that varies week to week."
+              />
+            </Field>
+            <Section
+              title="Printable poster"
+            >
+              <PosterField
+                value={values.posterUrl}
+                onChange={(v) => set("posterUrl", v)}
+              />
+            </Section>
+          </Group>
         </div>
       </div>
 
-      {/* Not on the mockup, but the member feed sorts and filters on these —
-          a program without a topic can't match anyone. */}
-      <div className="flex flex-col gap-8 border-t border-line pt-8">
-        <h2 className="text-2xl font-medium text-fg">More details</h2>
-
-        <Section
-          title="Activity Type"
-          required
-          lead="Members pick these topics as interests, so this helps the right people find your event. Choose all that fit."
+      <div className="flex max-w-[1200px] flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="max-sm:w-full"
+          disabled={submitting}
+          trailingIcon={<Upload />}
         >
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => {
-              const on = values.categories.includes(c.slug);
-              return (
-                <FilterChip
-                  key={c.slug}
-                  selected={on}
-                  onClick={() => toggle("categories", c.slug)}
-                >
-                  <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
-                  &nbsp;{c.label}
-                </FilterChip>
-              );
-            })}
-          </div>
-        </Section>
-
-        {mode === "create" && (
-          <Section title="Does it repeat?">
-            <div className="flex flex-wrap items-end gap-4">
-              <Field label="How often" className="min-w-[200px]">
-                <Select
-                  value={values.frequency}
-                  onChange={(e) => set("frequency", e.target.value as Frequency)}
-                >
-                  {FREQUENCIES.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              {values.frequency !== "once" && !values.repeatForever && (
-                <TextField
-                  label="How many times"
-                  required
-                  className="min-w-[170px]"
-                  type="number"
-                  min={2}
-                  max={104}
-                  value={values.occurrenceCount}
-                  onChange={(e) => set("occurrenceCount", e.target.value)}
-                  error={fieldError("occurrenceCount")}
-                  placeholder="8"
-                />
-              )}
-              {values.frequency !== "once" && (
-                // A drop-in that has run every Friday for nine years has no
-                // session count to give.
-                <Checkbox
-                  label="It keeps going"
-                  className="min-h-12"
-                  checked={values.repeatForever}
-                  onChange={(e) => set("repeatForever", e.target.checked)}
-                />
-              )}
-            </div>
-            {values.frequency !== "once" && (
-              <p className="text-base text-fg-muted">
-                Each date is posted separately, so people can save the ones they
-                can make.
-                {values.repeatForever &&
-                  " We'll post dates about two years ahead and keep adding more."}
-              </p>
-            )}
-          </Section>
-        )}
-
-        <div className="flex flex-wrap gap-4">
-          <TextField
-            label="Spots available (blank for no limit)"
-            className="min-w-[220px] flex-1"
-            type="number"
-            min={1}
-            value={values.capacity}
-            onChange={(e) => set("capacity", e.target.value)}
-            error={fieldError("capacity")}
-            placeholder="20"
-          />
-          <TextField
-            label="Youngest age"
-            className="min-w-[140px]"
-            type="number"
-            min={0}
-            value={values.minAge}
-            onChange={(e) => set("minAge", e.target.value)}
-            error={fieldError("minAge")}
-            placeholder="Any"
-          />
-          <TextField
-            label="Oldest age"
-            className="min-w-[140px]"
-            type="number"
-            min={0}
-            value={values.maxAge}
-            onChange={(e) => set("maxAge", e.target.value)}
-            error={fieldError("maxAge")}
-            placeholder="Any"
-          />
-        </div>
-
-        <Field label="Extra details">
-          <TextArea
-            rows={3}
-            value={values.notes}
-            onChange={(e) => set("notes", e.target.value)}
-            placeholder="What to bring, who to ask for, anything that varies week to week."
-          />
-        </Field>
-
-        <Section title="Who is it for?">
-          <SegmentedToggle<"youth" | "everyone">
-            className="self-start"
-            label="Audience"
-            value={values.isYouth ? "youth" : "everyone"}
-            onChange={(v) => set("isYouth", v === "youth")}
-            segments={[
-              { value: "everyone", label: "Everyone" },
-              { value: "youth", label: "Youth" },
-            ]}
-          />
-        </Section>
-
-        <Section
-          title="Who can see this"
-          lead="Everyone, or only people you've approved into a special-access group."
-        >
-          <AccessPicker
-            hostId={hostId}
-            mode={values.accessMode}
-            groupId={values.accessGroupId}
-            onChange={(accessMode, accessGroupId) =>
-              onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
-            }
-          />
-        </Section>
-
-        <Section
-          title="Printable poster"
-          lead="Your own flyer: a PDF, PNG or JPEG up to 4 MB. Members can open it from the program's page. The details page has a QR code for that page."
-        >
-          <PosterField
-            value={values.posterUrl}
-            onChange={(v) => set("posterUrl", v)}
-          />
-        </Section>
-
-        <Section
-          title="What does it offer?"
-          lead="Only tick what you're sure of. Leaving one unticked doesn't mean no."
-        >
-          <div className="flex flex-wrap gap-2">
-            {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
-              const on = values.accessibilityTags.includes(slug);
-              return (
-                <FilterChip
-                  key={slug}
-                  selected={on}
-                  onClick={() => toggle("accessibilityTags", slug)}
-                >
-                  <span aria-hidden="true">{emoji}</span>
-                  &nbsp;{label}
-                </FilterChip>
-              );
-            })}
-          </div>
-        </Section>
+          {submitting ? submittingLabel : submitLabel}
+        </Button>
       </div>
     </form>
   );

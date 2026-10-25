@@ -1,173 +1,133 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Lock, LogOut, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Image as ImageIcon, LogOut } from "lucide-react";
 import { apiMessage, logout, updateMyOrg, type HostMe } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { Button } from "@/components/ui/Button";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
 import { Brand } from "@/components/Brand";
 
 /**
- * The bar every console page shares: who you are, the way out, and — for
- * superadmins — the switch between managing events and managing accounts.
+ * The bar across the top of every console page: the brand on the left, the
+ * signed-in account on the right. The sections live in the side panel
+ * (`ConsoleNav`); the account button opens a small menu with the
+ * organization's logo and Sign out.
  */
-
-type Area = "events" | "accounts";
-
-const AREA_HOME: Record<Area, string> = {
-  events: "/host/events",
-  accounts: "/host/admins",
-};
-
 export function ConsoleHeader({
   me,
   isSuper,
-  pendingAccess = 0,
   onLogoChanged,
 }: {
   me: HostMe;
   isSuper: boolean;
-  /** Special-access requests waiting — the badge on that entry. */
-  pendingAccess?: number;
   onLogoChanged: (url: string | null) => void;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [editingLogo, setEditingLogo] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const org = me.org;
+  const role = me.is_staff
+    ? `${org.name}${isSuper ? " · Super admin" : ""}`
+    : isSuper
+      ? "Super admin"
+      : "Admin";
 
-  const area: Area =
-    pathname.startsWith("/host/admins") ||
-    pathname.startsWith("/host/users") ||
-    pathname.startsWith("/host/topics")
-      ? "accounts"
-      : "events";
-  const onAccess = pathname.startsWith("/host/access");
-  const onTeam = pathname.startsWith("/host/team");
-  const onAnalytics = pathname.startsWith("/host/analytics");
-  // The three per-organization pages share one look; the label goes when
-  // there's no room for it, the icon and any badge stay.
-  const navClass = (on: boolean) =>
-    buttonClass("ghost", "md", on ? "bg-surface-subtle" : "");
-  const labelClass = isSuper ? "max-2xl:sr-only" : "max-md:sr-only";
+  // Closes on a click elsewhere or Escape, and Escape hands focus back.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   return (
-    <header className="no-print border-b border-line bg-surface">
-      <div className="mx-auto flex min-h-[92px] w-full max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-9">
+    <header className="no-print sticky top-0 z-30 border-b border-line bg-surface">
+      <div className="flex h-[72px] items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/host/events"
-          className="inline-flex items-center gap-3 rounded-control py-1 text-fg"
+          className="inline-flex min-w-0 items-center gap-3 rounded-control py-1 text-fg [&_img]:h-8 [&>span:last-child]:truncate [&>span:last-child]:text-lg"
         >
           <Brand />
         </Link>
 
-        {/* Below `lg` the switch takes its own row under the name and the
-            way out, which fit together on one; the design's single row needs
-            the desktop width. */}
-        {isSuper && (
-          <SegmentedToggle<Area>
-            label="Console area"
-            className="order-last w-full justify-center sm:w-auto lg:order-none"
-            value={area}
-            onChange={(next) => {
-              if (next !== area) router.push(AREA_HOME[next]);
-            }}
-            segments={[
-              { value: "accounts", label: "Account Management" },
-              { value: "events", label: "Event Management" },
-            ]}
-          />
-        )}
-
-        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
-          <Link
-            href="/host/analytics"
-            title="Analytics"
-            aria-current={onAnalytics ? "page" : undefined}
-            className={navClass(onAnalytics)}
-          >
-            <BarChart3 aria-hidden="true" className="size-6 shrink-0" />
-            <span className={labelClass}>Analytics</span>
-          </Link>
-          <Link
-            href="/host/team"
-            title="Team"
-            aria-current={onTeam ? "page" : undefined}
-            className={navClass(onTeam)}
-          >
-            <Users aria-hidden="true" className="size-6 shrink-0" />
-            <span className={labelClass}>Team</span>
-          </Link>
-          {/* Every organizer has this: it is where requests to join their
-              special-access groups wait. The badge is the count waiting. */}
-          <Link
-            href="/host/access"
-            title="Special access"
-            aria-current={onAccess ? "page" : undefined}
-            className={navClass(onAccess)}
-          >
-            <Lock aria-hidden="true" className="size-6 shrink-0" />
-            <span className={labelClass}>Special access</span>
-            {pendingAccess > 0 && (
-              <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-base font-medium text-fg">
-                {pendingAccess}
-                <span className="sr-only">
-                  {" "}
-                  {pendingAccess === 1 ? "request" : "requests"} waiting
-                </span>
-              </span>
-            )}
-          </Link>
-          {/* The logo is the organization's own to set — members recognise
-              them by it in the feed. */}
+        <div ref={menuRef} className="relative shrink-0">
           <button
+            ref={buttonRef}
             type="button"
-            onClick={() => setEditingLogo(true)}
-            title="Change your organization's logo"
-            className="inline-flex min-h-11 min-w-0 items-center gap-3 rounded-control px-1 text-left hover:bg-surface-subtle"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className="inline-flex min-h-11 items-center gap-3 rounded-control px-2 text-left hover:bg-surface-subtle"
           >
             {org.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={org.logo_url}
                 alt=""
-                className="size-9 shrink-0 rounded-full object-cover"
+                className="size-8 shrink-0 rounded-full object-cover"
               />
             ) : (
-              <Avatar name={org.name} size={36} />
+              <Avatar name={org.name} size={32} />
             )}
-            {/* On a phone the picture alone: the name squeezed to nothing
-                and the picture slid under Sign out. */}
-            <span className="flex min-w-0 flex-col leading-tight text-fg-muted max-sm:sr-only">
-              {/* A staff login is a person at the organization: their name
-                  first, the organization under it. The shared login is the
-                  organization itself. */}
-              <span className="truncate text-lg font-bold">{me.name}</span>
-              <span className="hidden truncate text-base sm:block">
-                {me.is_staff
-                  ? `${org.name}${isSuper ? " · Super admin" : ""}`
-                  : isSuper
-                    ? "Super admin"
-                    : "Admin"}
-              </span>
+            {/* A staff login is a person at the organization: their name
+                first, the organization under it. */}
+            <span className="flex min-w-0 flex-col leading-tight max-sm:sr-only">
+              <span className="truncate text-sm font-medium text-fg">{me.name}</span>
+              <span className="truncate text-xs text-fg-muted">{role}</span>
             </span>
+            <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-fg-icon" />
           </button>
-          <Button
-            variant="ghost"
-            leadingIcon={<LogOut />}
-            onClick={() => {
-              void logout("host")
-                .catch(() => {})
-                .then(() => router.replace("/host"));
-            }}
-          >
-            <span className="max-sm:sr-only">Sign out</span>
-          </Button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              aria-label="Account"
+              className="absolute right-0 top-full z-40 mt-2 w-56 rounded-control border border-line bg-surface p-1 shadow-lift"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setEditingLogo(true);
+                }}
+                className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+              >
+                <ImageIcon aria-hidden="true" className="size-4" />
+                Change logo
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  void logout("host")
+                    .catch(() => {})
+                    .then(() => router.replace("/host"));
+                }}
+                className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+              >
+                <LogOut aria-hidden="true" className="size-4" />
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

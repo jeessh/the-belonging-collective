@@ -72,6 +72,7 @@ export function AccessPicker({
   return (
     <div className="flex flex-col items-start gap-4">
       <SegmentedToggle<AccessMode>
+        size="sm"
         label="Who can see this"
         value={mode}
         onChange={(next) => onChange(next, next === "group" ? groupId : null)}

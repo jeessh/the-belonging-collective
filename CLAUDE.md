@@ -216,21 +216,36 @@ can open.
 
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session and
-  `GET /hosts/me`, then renders `components/host/ConsoleHeader.tsx` — a
-  header bar (logo; Analytics, Team and Special access entries, the last
-  with a pending-request badge; the person's name over the org's when a
-  staff login is signed in; sign out; and for superadmins a segmented Event
-  Management / Account Management switch) — over the page. **No sidebar any
-  more.** `ConsoleContext` carries `me` (the login) and `org` (the
+  `GET /hosts/me`, then renders a slim top bar
+  (`components/host/ConsoleHeader.tsx`: the brand, and the account button —
+  the person's name over the org's when a staff login is signed in — whose
+  menu has Change logo and Sign out) and **a side panel**
+  (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
+  links under the top bar below that, scrolled to the current one): for a
+  superadmin, Organization Management first; then Event
+  Management (first — every sign-in, reset and invite lands there) with two
+  sub tabs indented under it, Analytics and (superadmins only) Topics
+  (`/host/topics`) — `children` on the item; below `lg` they join the
+  scrolling row as equals — then for superadmins Member Management
+  (`/host/users`) with Special Access
+  (pending-request badge) as its sub tab. (There is no Team page any more.)
+  A sub tab whose parent
+  is hidden (Special Access, for an ordinary organization) takes the
+  parent's place at the top level. There is no
+  in-page switch between those three any more — the side panel is it.
+- **Superadmins are added on purpose, never by a checkbox.** The
+  organization invite always makes an ordinary agency (`is_admin: false`),
+  and inviting is the console's only way to add one — the "Create an
+  organization" form (set a temporary password in person) was removed;
+  `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
+  is its own form (what a superadmin can do, then an emailed invite with
+  `is_admin: true`). The Organizations table only shows each tier — there is no
+  promote / demote button (the API's `PATCH /hosts/{id} {is_admin}` remains). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
-- `/host/team` is the organization's logins: the shared one, each staff
-  login, and staff invitations waiting (name + email → `POST /invites` with
-  `org_id`; the accept page at `/host/invite/[token]` reads `staff` from the
-  preview and creates the login under that org). A superadmin can pick any
-  organization. `/host/analytics` is the grant-application numbers: KPI
+- `/host/analytics` is the grant-application numbers: KPI
   tiles, `components/host/WeeklyChart.tsx` (inline SVG, three validated
   categorical hues, crosshair tooltip, a table twin under a `<details>`),
   the per-program table (sortable), a date range (presets + custom; default
@@ -253,9 +268,13 @@ can open.
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
-  the component sheet's "Admin – Listed Event" (square image, the round
-  edit / share / print / un-publish tools under it, facts beside, a chevron
-  to the details page) beside `components/host/PostedEvents.tsx`'s accordion
+  the component sheet's "Admin – Listed Event" (square image, facts beside,
+  the round edit / share / print / un-publish tools at the top right — over
+  the picture's corner on a phone — each with a `ui/Tooltip` saying what it
+  does, and **View more →** at the bottom right, the card's one way to the
+  details page; the card itself isn't clickable). `ui/Tooltip` shows on
+  hover and keyboard focus, is the control's `aria-describedby`, and closes
+  on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion
   `FilterPanel` (`ui/Checkbox` rows), with a Your Events / All Events toggle.
   Edit and un-publish show only for the owning organization or a superadmin;
   share and print for everyone. Un-publishing from the list or the details
@@ -266,12 +285,30 @@ can open.
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
   link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
+  **`EventForm` is one page in two columns** (from `lg`; one column, same
+  order, below): on the left the event image, name, date and time, where,
+  and repeats; on the right `Group`s for Description, Cost & sign-up, Who
+  it's for, Activity type and Details & links. (It was a six-step flow; the
+  steps, the Review step and `FIELD_STEP` are gone.) Publish / Save is at the
+  bottom; submitting with something missing shows "Still needed: …" at the
+  top (scrolled to) and each field's own message. The form carries
+  `.form-dense` (`globals.css`): 14px text and 36px controls inside it only,
+  so the shared TextField / Button / FilterChip keep the member app's large
+  sizes.
   Accounts stay table-first — `components/AdminTable.tsx` backs
-  `/host/admins` (Organizations) and `/host/users` (Community Members),
-  switched by `components/host/AccountsNav.tsx`. `AdminTable` also holds the
+  `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.
+- **One smaller type and control scale for the whole console.** `AdminShell`
+  puts `.console` on every console page, and `globals.css` maps the shared
+  components' member-app sizes onto it: 12px small, 14px body (and tables),
+  16px card/section titles and page leads, 20/24px headings, 30/36px page
+  titles (`h1`), 36px controls, 12px card corners; printouts
+  (`.print-target`) are exempt. Write console markup with the normal
+  Tailwind classes — the remap does the rest — and check a new page with
+  the sizes in mind rather than adding one-off overrides. The member app
+  has no `.console`, so its large accessible sizes are untouched.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;
   don't "harmonize" the two surfaces just because the sidebar went.
@@ -529,12 +566,15 @@ Everything a staff login does is done *as the organization*:
   org alongside the login (and treats a login whose org is archived as
   archived). Use `is_superadmin`, not the `is_admin` column, when deciding
   what a caller may do — the column is meaningless on staff rows.
-- Staff join by **invitation**: `POST /invites` with `org_id` + `name` (any
-  login of that org may send one, a superadmin for any org; the mail and the
-  accept flow are the same as an organization invite), `GET /hosts/team`
-  lists the org's logins and pending staff invites, `DELETE /hosts/team/{id}`
-  archives one staff login. `GET /hosts` (superadmin) nests `staff` under
-  each organization. Staff reset passwords by email like any organizer.
+- **Staff logins are no longer added.** The Team page (`/host/team`), its
+  routes (`GET /hosts/team`, `DELETE /hosts/team/{id}`) and staff
+  invitations (`POST /invites` with `org_id`) were removed as unnecessary;
+  `POST /invites` now only invites an organization. Everything else stays so
+  existing staff logins keep working: they sign in, act as their
+  organization and reset passwords by email; a staff invitation already
+  sent can still be accepted (`/host/invite/[token]` reads `staff` from the
+  preview); and `GET /hosts` (superadmin) still nests `staff` under each
+  organization.
 
 **There is no host signup route.** It existed and was open to the internet;
 superadmins now create organizer accounts via `POST /hosts` or by issuing an
@@ -581,8 +621,7 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   visible but filed one agency's work under another's name — so both now get
   `deleted_at` and the programs stay attributed to the organization that ran
   them; the org's staff logins are archived in the same statement, since a
-  person can't act for an agency that has left. Removing a staff login
-  (`DELETE /hosts/team/{id}`) archives just that row. `hosts.email` is unique
+  person can't act for an agency that has left. `hosts.email` is unique
   over live rows only (`uq_hosts_email_live`), so an archived account
   releases its address and an agency that left can be invited back under it.
 - **A superadmin can't demote or delete themselves — or their own

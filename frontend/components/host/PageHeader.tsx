@@ -19,18 +19,18 @@ export function PageHeader({
 }) {
   return (
     <div className="no-print flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         {backHref && (
           <Link
             href={backHref}
             aria-label={backLabel}
             onClick={onBack}
-            className="grid size-12 place-items-center rounded-control text-fg hover:bg-surface-subtle"
+            className="grid size-11 place-items-center rounded-control text-fg hover:bg-surface-subtle"
           >
-            <ArrowLeft aria-hidden="true" className="size-12" />
+            <ArrowLeft aria-hidden="true" className="size-9" />
           </Link>
         )}
-        <h1 className="text-4xl font-medium text-fg sm:text-5xl">{title}</h1>
+        <h1 className="text-3xl font-medium text-fg sm:text-4xl">{title}</h1>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
     </div>

@@ -175,3 +175,76 @@ body {
 .glyph-centred {
   display: block;
 }
+
+/*
+ * The admin console's type and control scale. AdminShell puts `.console` on
+ * every console page, and inside it the shared components' large member-app
+ * sizes map onto one smaller desktop scale:
+ *
+ *   12px small · 14px body · 16px card/section titles · 20px sub-headings ·
+ *   24px headings · 30/36px page titles · 36px controls · 12px card corners
+ *
+ * Done here, once, rather than per component, so the member app keeps its
+ * large accessible sizes and every console page shares one scale. Each rule
+ * is one class deeper than the utilities it remaps (responsive variants
+ * included), so it wins. Printouts are left alone (`.print-target`): paper
+ * sets its own sizes in points.
+ */
+.console .text-xs:not(.print-target *) { font-size: 12px; line-height: 1.4; }
+.console :is(.text-sm, .text-base, .text-lg, .sm\:text-base, .sm\:text-lg, .lg\:text-lg):not(.print-target *) {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.console :is(.text-xl, .sm\:text-xl, .lg\:text-xl):not(.print-target *) {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.console :is(.text-2xl, .sm\:text-2xl):not(.print-target *) { font-size: 20px; line-height: 1.3; }
+.console :is(.text-3xl, .sm\:text-3xl):not(.print-target *) { font-size: 24px; line-height: 1.25; }
+.console :is(.text-4xl, .sm\:text-4xl):not(.print-target *) { font-size: 28px; line-height: 1.2; }
+.console :is(.text-5xl, .sm\:text-5xl):not(.print-target *) { font-size: 32px; line-height: 1.15; }
+
+/* Page titles: 30px on a phone, 36px from sm — the one size every console
+   page uses. */
+/* `:is(h1, h1.text-3xl)` carries a class's weight, so this outranks the
+   text-size remaps above for a title that also has text classes. */
+.console :is(h1, h1.text-3xl):not(.print-target *) { font-size: 30px; line-height: 1.2; }
+@media (min-width: 640px) {
+  .console :is(h1, h1.text-3xl):not(.print-target *) { font-size: 36px; }
+}
+
+/* Tables are body text, rows and headers alike (cells inherit the table's
+   size). */
+.console :is(table, table.text-lg, table.text-xl, table.text-base):not(.print-target *) {
+  font-size: 14px;
+}
+
+/* Buttons and links styled as buttons read as body text, whatever size the
+   shared Button was given. */
+.console :is(button, a):is(.text-xl, .sm\:text-xl, .text-lg, .sm\:text-lg):not(.print-target *) {
+  font-size: 14px;
+}
+
+/* Controls: one height for buttons, fields, chips and toggles. */
+.console :is(.min-h-11, .min-h-12, .min-h-14):not(.print-target *) { min-height: 36px; }
+.console .py-3:not(.print-target *) { padding-top: 6px; padding-bottom: 6px; }
+.console .px-6:not(.print-target *) { padding-left: 16px; padding-right: 16px; }
+.console svg.size-6:not(.print-target *) { width: 20px; height: 20px; }
+.console :is(button, a).py-2:not(.print-target *) { padding-top: 6px; padding-bottom: 6px; }
+/* Round icon buttons (the event cards' edit / share / print / un-publish). */
+.console :is(button, a).size-11:not(.print-target *) { width: 36px; height: 36px; }
+
+/* Cards: less rounded. */
+.console .rounded-card:not(.print-target *) { border-radius: 12px; }
+
+/*
+ * The event form on top of that (`.form-dense`): every label, hint and
+ * help line is body text, and its step heading is 20px.
+ */
+.console .form-dense :is(input, textarea, select, label, legend, p, li, dt, dd, button, span, a) {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.console .form-dense :is(h2, h2.text-2xl) { font-size: 20px; line-height: 1.3; }
+.console .form-dense :is(h2 span, h3) { font-size: 16px; }
+.console .form-dense .gap-5 { gap: 16px; }
