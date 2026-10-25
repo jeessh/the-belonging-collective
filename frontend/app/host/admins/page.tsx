@@ -96,7 +96,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       <InviteForm
         onSent={() => void load()}
         onAddDirectly={() => setAdding(true)}
-        onAddSuperadmin={() => setAddingSuper(true)}
       />
 
       {invites.length > 0 && (
@@ -132,7 +131,18 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </section>
       )}
 
-      <h2 className="-mb-5 text-xl font-medium text-fg">Organization Admins</h2>
+      <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-medium text-fg">Organization Admins</h2>
+        {/* Rare and powerful, so its own button and form rather than a box
+            to tick on every agency's invitation. */}
+        <Button
+          variant="ghost"
+          leadingIcon={<ShieldCheck />}
+          onClick={() => setAddingSuper(true)}
+        >
+          Add a KWHab superadmin
+        </Button>
+      </div>
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load accounts. Please refresh and try again.
@@ -266,11 +276,9 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 function InviteForm({
   onSent,
   onAddDirectly,
-  onAddSuperadmin,
 }: {
   onSent: () => void;
   onAddDirectly: () => void;
-  onAddSuperadmin: () => void;
 }) {
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
@@ -411,11 +419,6 @@ function InviteForm({
       <div className="flex flex-wrap justify-center gap-3">
         <Button leadingIcon={<Plus />} onClick={onAddDirectly}>
           Create an organization
-        </Button>
-        {/* Rare and powerful, so its own button and form rather than a box
-            to tick on every agency's invitation. */}
-        <Button variant="ghost" leadingIcon={<ShieldCheck />} onClick={onAddSuperadmin}>
-          Add a KWHab superadmin
         </Button>
       </div>
     </section>

@@ -229,7 +229,7 @@ can open.
   in-page switch between those three any more — the side panel is it.
 - **Superadmins are added on purpose, never by a checkbox.** The
   organization invite and create forms always make an ordinary agency
-  (`is_admin: false`); "Add a KWHab superadmin" on Organization Management
+  (`is_admin: false`); "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
   is its own form (what a superadmin can do, a pointer to KWHab's Team page
   — the usual way to give a KWHab person access — then an emailed invite
   with `is_admin: true`). The Organizations table only shows each tier — there is no
