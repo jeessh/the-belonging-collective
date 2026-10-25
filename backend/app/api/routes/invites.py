@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin, set_auth_cookie
 from app.core.config import settings
+from app.core.org_space import unique_slug
 from app.core.mail import send as send_mail
 from app.core.rate_limit import IP_LIMIT, client_key, enforce, record
 from app.core.security import (
@@ -43,6 +44,9 @@ class InviteCreate(BaseModel):
     organization: str
     email: EmailStr
     is_admin: bool = False
+    # A new organization's programs in the shared feed too, or only in its
+    # own space.
+    in_shared_feed: bool = True
 
 
 class InviteAccept(BaseModel):
@@ -111,6 +115,7 @@ def create_invite(
         organization=organization,
         email=email,
         is_admin=body.is_admin,
+        in_shared_feed=body.in_shared_feed,
         invited_by=current.id,
     )
     intro = (
@@ -273,6 +278,8 @@ def accept_invite(
             email=invite.email,
             password_hash=hash_password(body.password),
             is_admin=invite.is_admin,
+            slug=unique_slug(db, invite.organization),
+            in_shared_feed=invite.in_shared_feed,
         )
     db.add(host)
     invite.accepted_at = datetime.now(timezone.utc)

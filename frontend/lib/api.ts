@@ -290,11 +290,12 @@ export type SharedList = { first_name: string; events: Event[] };
  * stops being true. Signed in, the rows carry `saved_count`; signed out they
  * carry null, so the feed re-reads this on sign-in.
  */
-export async function fetchAllEvents(): Promise<Event[]> {
+export async function fetchAllEvents(org?: string | null): Promise<Event[]> {
   const PAGE = 200;
   const all: Event[] = [];
+  const only = org ? `&org=${encodeURIComponent(org)}` : "";
   for (let offset = 0; offset < 5000; offset += PAGE) {
-    const page = await api<Event[]>(`/events?limit=${PAGE}&offset=${offset}`);
+    const page = await api<Event[]>(`/events?limit=${PAGE}&offset=${offset}${only}`);
     all.push(...page);
     if (page.length < PAGE) break;
   }
@@ -531,6 +532,31 @@ export const decideAccess = (
     method: "POST",
   });
 
+/** What happened to each address added to a group (no approval step). */
+export type AddPeopleResult = {
+  /** Had an account: in the group now. */
+  added: { email: string; name: string }[];
+  /** Already in the group, or already invited. */
+  already: string[];
+  /** No account yet: invited, and in as soon as they sign up. */
+  invited: string[];
+  invalid: string[];
+};
+
+export const addPeopleToGroup = (groupId: string, emails: string[]) =>
+  api<AddPeopleResult>(`/access-groups/${groupId}/people`, {
+    method: "POST",
+    body: JSON.stringify({ emails }),
+  });
+
+export type GroupInvite = { id: string; email: string; created_at: string };
+
+export const fetchGroupInvites = (groupId: string) =>
+  api<GroupInvite[]>(`/access-groups/${groupId}/invites`);
+
+export const withdrawGroupInvite = (groupId: string, inviteId: string) =>
+  api(`/access-groups/${groupId}/invites/${inviteId}`, { method: "DELETE" });
+
 /* ---------------- admin console ---------------- */
 
 /** A member account, as the superadmin-only `GET /users` returns it. */
@@ -552,6 +578,10 @@ export type AdminAccount = {
   logo_url?: string | null;
   /** Set on a staff login: the organization it belongs to. */
   org_id?: string | null;
+  /** The organization's own page, `/o/{slug}` — its programs and nobody else's. */
+  slug?: string | null;
+  /** False: its programs are on its own page only, not the shared feed. */
+  in_shared_feed?: boolean;
   created_at: string;
   /** Programs this account owns — shown before a removal retires them. */
   event_count: number;
@@ -650,6 +680,16 @@ export const analyticsCsvUrl = (params: AnalyticsParams) =>
 export const analyticsXlsxUrl = (params: AnalyticsParams) =>
   `${API}/analytics.xlsx${analyticsQuery(params)}`;
 
+/** An organization's own page: `GET /hosts/spaces/{slug}` (public). */
+export type OrgSpace = { name: string; slug: string; logo_url: string | null };
+
+export const fetchOrgSpace = (slug: string) =>
+  api<OrgSpace>(`/hosts/spaces/${encodeURIComponent(slug)}`);
+
+/** The full address of an organization's own page, for copying. */
+export const orgSpaceUrl = (slug: string) =>
+  `${typeof window === "undefined" ? "" : window.location.origin}/o/${slug}`;
+
 export const listAdmins = () => api<AdminAccount[]>("/hosts");
 
 export const createAdmin = (body: {
@@ -658,6 +698,7 @@ export const createAdmin = (body: {
   password: string;
   is_admin: boolean;
   logo_url?: string | null;
+  in_shared_feed?: boolean;
 }) => api<AdminAccount>("/hosts", { method: "POST", body: JSON.stringify(body) });
 
 /** An organization changing its own logo — every account may do this. */
@@ -675,6 +716,7 @@ export const updateAdmin = (
     password?: string;
     /** "" clears the logo; omitting leaves it alone. */
     logo_url?: string;
+    in_shared_feed?: boolean;
   },
 ) =>
   api<AdminAccount>(`/hosts/${id}`, {
@@ -698,6 +740,8 @@ export const createInvite = (body: {
   organization: string;
   email: string;
   is_admin: boolean;
+  /** Where the new organization's programs appear; true is the shared feed too. */
+  in_shared_feed?: boolean;
 }) =>
   /** `emailed`: false when the mail didn't go out — the link still works. */
   api<{ id: string; token: string; organization: string; email: string; emailed: boolean }>(

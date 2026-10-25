@@ -11,7 +11,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import (
@@ -23,6 +23,7 @@ from app.api.deps import (
 from app.core import gcal, holds, ical, member_mail
 from app.core.categories import require_live_slugs
 from app.core.storage import StorageError, upload_image
+from app.core.org_space import org_by_slug
 from app.core.access import (
     NONE,
     membership_statuses,
@@ -234,16 +235,29 @@ def list_events(
     tag: str | None = None,
     free: bool | None = None,
     q: str | None = None,
+    org: str | None = None,
     limit: int = Query(100, ge=1, le=200),
     offset: int = Query(0, ge=0),
     viewer: User | None = Depends(get_optional_user),
     organizer: Host | None = Depends(get_optional_host),
     db: Session = Depends(get_db),
 ):
-    """Public discovery feed with needs + accessibility filters."""
+    """Public discovery feed with needs + accessibility filters.
+
+    `org` (a slug) is an organization's own space: only its programs. Without
+    it, the shared feed — every organization that shows there
+    (`in_shared_feed`)."""
     query = db.query(Event).options(*_EVENT_OUT_OPTIONS).filter(
         Event.deleted_at.is_(None)
     )
+    if org:
+        space = org_by_slug(db, org)
+        if space is None:
+            return []
+        query = query.filter(Event.host_id == space.id)
+    else:
+        own_space_only = select(Host.id).where(Host.in_shared_feed.is_(False))
+        query = query.filter(Event.host_id.not_in(own_space_only))
     # Special-access programs are listed only to who may see them; every by-id
     # route below still serves them, so a link or QR code on a flyer works.
     query = scope_to_viewer(query, viewer, organizer)
