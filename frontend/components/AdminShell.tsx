@@ -127,7 +127,9 @@ export function AdminShell({
   const full: ConsoleContext = { ...ctx, pendingAccess, refreshPendingAccess };
 
   return (
-    <div className="min-h-dvh bg-surface text-fg">
+    // `.console` (globals.css): the console's smaller type and control
+    // scale, for everything on the page and nowhere else.
+    <div className="console min-h-dvh bg-surface text-fg">
       <ConsoleHeader
         me={ctx.me}
         isSuper={ctx.isSuper}

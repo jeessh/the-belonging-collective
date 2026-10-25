@@ -221,9 +221,10 @@ can open.
   the person's name over the org's when a staff login is signed in — whose
   menu has Change logo and Sign out) and **a side panel**
   (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
-  links under the top bar below that, scrolled to the current one): Analytics, Team, Special
-  Access (pending-request badge), Account Management (superadmins only;
-  current on `/host/admins`, `/users`, `/topics`) and Event Management. `ConsoleContext` carries `me` (the login) and `org` (the
+  links under the top bar below that, scrolled to the current one): Event
+  Management (first — every sign-in, reset and invite lands there), Analytics,
+  Team, Special Access (pending-request badge) and Account Management
+  (superadmins only; current on `/host/admins`, `/users`, `/topics`). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
@@ -287,6 +288,15 @@ can open.
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.
+- **One smaller type and control scale for the whole console.** `AdminShell`
+  puts `.console` on every console page, and `globals.css` maps the shared
+  components' member-app sizes onto it: 12px small, 14px body (and tables),
+  16px card/section titles and page leads, 20/24px headings, 30/36px page
+  titles (`h1`), 36px controls, 12px card corners; printouts
+  (`.print-target`) are exempt. Write console markup with the normal
+  Tailwind classes — the remap does the rest — and check a new page with
+  the sizes in mind rather than adding one-off overrides. The member app
+  has no `.console`, so its large accessible sizes are untouched.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;
   don't "harmonize" the two surfaces just because the sidebar went.

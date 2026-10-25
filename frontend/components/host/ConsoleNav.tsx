@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 
 /**
- * The console's sections. A side panel from `lg`; under it, the same links
+ * The console's sections, Event Management first — it is where every
+ * organizer lands after signing in. A side panel from `lg`; under it, the same links
  * as one scrolling row beneath the top bar. Account Management is a
  * superadmin's only — those pages refuse anyone else, so the link would only
  * lead to "Not available".
@@ -29,6 +30,7 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
+  { href: "/host/events", label: "Event Management", icon: CalendarDays, match: ["/host/events"] },
   { href: "/host/analytics", label: "Analytics", icon: BarChart3, match: ["/host/analytics"] },
   { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
   { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
@@ -39,7 +41,6 @@ const ITEMS: Item[] = [
     match: ["/host/admins", "/host/users", "/host/topics"],
     superOnly: true,
   },
-  { href: "/host/events", label: "Event Management", icon: CalendarDays, match: ["/host/events"] },
 ];
 
 export function ConsoleNav({
