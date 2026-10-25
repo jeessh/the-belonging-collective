@@ -282,19 +282,16 @@ can open.
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
   link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
-  **`EventForm` is a six-step flow** (`STEPS`): The basics → When & where →
-  Cost & sign-up → Who it's for → Details & links (both optional) → Review.
-  Each step is laid out in two columns from `lg` so it fits a 1440×900
-  screen without scrolling (the image drop is `compact` here); keep a new
-  field from pushing a step past that. The form carries `.form-dense`
-  (`globals.css`): 14px text and 36px controls inside it only, so the
-  shared TextField / Button / FilterChip keep the member app's large sizes. Next checks only that
-  step's problems (`FIELD_STEP` maps a `missingRequired` field to its step —
-  add a new required field there too) and names what's missing; Enter moves
-  on rather than publishing. A new event opens steps in order; an edit opens
-  all of them and can Save from any step. Every step stays mounted (only
-  the current one shows), so uploads and the access picker survive moving
-  between steps. Publish lives on the Review step, not the page header.
+  **`EventForm` is one page in two columns** (from `lg`; one column, same
+  order, below): on the left the event image, name, date and time, where,
+  and repeats; on the right `Group`s for Description, Cost & sign-up, Who
+  it's for, Activity type and Details & links. (It was a six-step flow; the
+  steps, the Review step and `FIELD_STEP` are gone.) Publish / Save is at the
+  bottom; submitting with something missing shows "Still needed: …" at the
+  top (scrolled to) and each field's own message. The form carries
+  `.form-dense` (`globals.css`): 14px text and 36px controls inside it only,
+  so the shared TextField / Button / FilterChip keep the member app's large
+  sizes.
   Accounts stay table-first — `components/AdminTable.tsx` backs
   `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
