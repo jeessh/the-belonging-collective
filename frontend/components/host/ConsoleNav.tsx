@@ -48,7 +48,7 @@ const ITEMS: Item[] = [
   },
   {
     href: "/host/users",
-    label: "Community Member Management",
+    label: "Member Management",
     icon: UserCog,
     match: ["/host/users", "/host/members"],
     superOnly: true,

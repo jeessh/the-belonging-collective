@@ -224,7 +224,7 @@ can open.
   links under the top bar below that, scrolled to the current one): Event
   Management (first — every sign-in, reset and invite lands there), Analytics,
   Team, Special Access (pending-request badge), and three superadmin-only
-  items: Organization Management (`/host/admins`), Community Member
+  items: Organization Management (`/host/admins`), Member
   Management (`/host/users`) and Topics (`/host/topics`). There is no
   in-page switch between those three any more — the side panel is it.
 - **Superadmins are added on purpose, never by a checkbox.** The
