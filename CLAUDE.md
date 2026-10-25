@@ -226,8 +226,10 @@ can open.
   sub tabs indented under it, Analytics and (superadmins only) Topics
   (`/host/topics`) — `children` on the item; below `lg` they join the
   scrolling row as equals — then for superadmins Organization Management
-  (`/host/admins`) and Member Management (`/host/users`), then Team and
-  Special Access (pending-request badge). There is no
+  (`/host/admins`) and Member Management (`/host/users`) with Special Access
+  (pending-request badge) as its sub tab, then Team. A sub tab whose parent
+  is hidden (Special Access, for an ordinary organization) takes the
+  parent's place at the top level. There is no
   in-page switch between those three any more — the side panel is it.
 - **Superadmins are added on purpose, never by a checkbox.** The
   organization invite and create forms always make an ordinary agency

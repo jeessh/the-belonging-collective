@@ -17,7 +17,7 @@ import {
 /**
  * The console's sections, Event Management first — it is where every
  * organizer lands after signing in — with Analytics and Topics as its sub
- * tabs. A side panel from `lg`, the sub tabs indented under their parent;
+ * tabs, and Special Access under Member Management. A side panel from `lg`, the sub tabs indented under their parent;
  * under `lg`, the same links (sub tabs included) as one scrolling row
  * beneath the top bar.
  *
@@ -67,9 +67,11 @@ const ITEMS: Item[] = [
     icon: UserCog,
     match: ["/host/users", "/host/members"],
     superOnly: true,
+    children: [
+      { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
+    ],
   },
   { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
-  { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
 ];
 
 export function ConsoleNav({
@@ -82,7 +84,11 @@ export function ConsoleNav({
 }) {
   const pathname = usePathname();
   const visible = (i: Item) => isSuper || !i.superOnly;
-  const items = ITEMS.filter(visible);
+  // A sub tab whose parent this person can't see (Special Access, for an
+  // ordinary organization) stands on its own in the parent's place.
+  const items = ITEMS.flatMap((i) =>
+    visible(i) ? [i] : (i.children ?? []).filter(visible),
+  );
   // On a narrow screen the row scrolls sideways: bring the current section
   // into view, or the last one in the list opens off the edge.
   const currentRef = useRef<HTMLAnchorElement>(null);
