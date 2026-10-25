@@ -234,8 +234,10 @@ can open.
   parent's place at the top level. There is no
   in-page switch between those three any more — the side panel is it.
 - **Superadmins are added on purpose, never by a checkbox.** The
-  organization invite and create forms always make an ordinary agency
-  (`is_admin: false`); "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
+  organization invite always makes an ordinary agency (`is_admin: false`),
+  and inviting is the console's only way to add one — the "Create an
+  organization" form (set a temporary password in person) was removed;
+  `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
   is its own form (what a superadmin can do, then an emailed invite with
   `is_admin: true`). The Organizations table only shows each tier — there is no
   promote / demote button (the API's `PATCH /hosts/{id} {is_admin}` remains). `ConsoleContext` carries `me` (the login) and `org` (the

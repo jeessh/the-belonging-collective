@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
-  createAdmin,
   createInvite,
   deleteAdmin,
   listAdmins,
@@ -24,7 +23,6 @@ import { useToast } from "@/components/ui/Toast";
 import { copyText } from "@/lib/clipboard";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
-import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 /**
  * Account Management: every organization with access, and the way to add one.
@@ -50,7 +48,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
 
@@ -94,7 +91,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 
       <InviteForm
         onSent={() => void load()}
-        onAddDirectly={() => setAdding(true)}
       />
 
       {invites.length > 0 && (
@@ -235,16 +231,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           onSent={() => void load()}
         />
       )}
-      {adding && (
-        <AddAdminModal
-          onClose={() => setAdding(false)}
-          onCreated={(name) => {
-            setAdding(false);
-            show({ title: `Added ${name}.` });
-            void load();
-          }}
-        />
-      )}
       {removing && (
         <RemoveAdminModal
           admin={removing}
@@ -274,10 +260,8 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
  */
 function InviteForm({
   onSent,
-  onAddDirectly,
 }: {
   onSent: () => void;
-  onAddDirectly: () => void;
 }) {
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
@@ -318,7 +302,7 @@ function InviteForm({
   }
 
   return (
-    // Boxed, so the two ways to add an organization read as one task.
+    // Boxed: adding an organization is its own task on this page.
     <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
       <div>
         <h2 className="text-xl font-medium text-fg">
@@ -408,111 +392,7 @@ function InviteForm({
           </p>
         )}
       </form>
-
-      {/* The other way in: set the organization up here, in person. */}
-      <div aria-hidden="true" className="flex items-center gap-4 text-sm text-fg-muted">
-        <span className="h-px flex-1 bg-line" />
-        or
-        <span className="h-px flex-1 bg-line" />
-      </div>
-      <div className="flex flex-wrap justify-center gap-3">
-        <Button leadingIcon={<Plus />} onClick={onAddDirectly}>
-          Create an organization
-        </Button>
-      </div>
     </section>
-  );
-}
-
-function AddAdminModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (name: string) => void;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const valid = name.trim() && email.trim() && password.length >= PASSWORD_MIN_LENGTH;
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      await createAdmin({
-        name: name.trim(),
-        email: email.trim(),
-        password,
-        is_admin: false,
-      });
-      onCreated(name.trim());
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
-        setError("That email already has an account.");
-      } else if (e instanceof ApiError && e.status === 422) {
-        setError(
-          `Check the email address and use at least ${PASSWORD_MIN_LENGTH} characters.`,
-        );
-      } else {
-        setError("Couldn't create that organization. Please try again.");
-      }
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title="Create an organization" onClose={onClose}>
-      <p className="mt-2 text-lg text-fg-muted">
-        For setting up an organization in person. Give them the temporary
-        password and ask them to change it.
-      </p>
-      <form
-        className="mt-5 flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (valid && !busy) void submit();
-        }}
-      >
-        <TextField
-          label="Organization"
-          placeholder="Enter the organization's name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-        />
-        <TextField
-          label="Email"
-          placeholder="Enter their email"
-          type="email"
-          autoComplete="off"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          label={`Temporary password (at least ${PASSWORD_MIN_LENGTH} characters)`}
-          placeholder="Enter a temporary password"
-          type="text"
-          autoComplete="off"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && (
-          <p role="alert" className="text-base text-danger-fg">
-            {error}
-          </p>
-        )}
-        <div className="flex flex-wrap justify-end gap-3">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={!valid || busy}>
-            {busy ? "Creating…" : "Create organization"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
   );
 }
 
