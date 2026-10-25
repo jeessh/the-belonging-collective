@@ -12,9 +12,11 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { ConsoleHeader } from "@/components/host/ConsoleHeader";
+import { ConsoleNav } from "@/components/host/ConsoleNav";
 
 /**
- * Chrome for the admin console: the header bar, over a page.
+ * Chrome for the admin console: a slim top bar (brand, account), the
+ * sections in a side panel (a scrolling row on narrow screens), and the page.
  *
  * Resolves the session and the organizer's own account before rendering
  * anything, so a page never flashes superadmin-only content at a plain admin
@@ -129,7 +131,6 @@ export function AdminShell({
       <ConsoleHeader
         me={ctx.me}
         isSuper={ctx.isSuper}
-        pendingAccess={pendingAccess}
         onLogoChanged={(logo_url) =>
           setCtx({
             ...ctx,
@@ -138,7 +139,9 @@ export function AdminShell({
           })
         }
       />
-      <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-9">
+      <div className="lg:flex">
+      <ConsoleNav isSuper={ctx.isSuper} pendingAccess={pendingAccess} />
+      <main className="min-w-0 flex-1 px-4 py-6 sm:px-9">
         {requireSuperadmin && !ctx.isSuper ? (
           <div className="py-16 text-center">
             <h1 className="text-3xl font-medium text-fg">Not available</h1>
@@ -151,6 +154,7 @@ export function AdminShell({
           children(full)
         )}
       </main>
+      </div>
     </div>
   );
 }

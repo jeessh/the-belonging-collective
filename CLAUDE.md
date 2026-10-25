@@ -216,12 +216,14 @@ can open.
 
 ### Admin console (`/host/*`)
 - `components/AdminShell.tsx` is the chrome: resolves the session and
-  `GET /hosts/me`, then renders `components/host/ConsoleHeader.tsx` — a
-  header bar (logo; Analytics, Team and Special access entries, the last
-  with a pending-request badge; the person's name over the org's when a
-  staff login is signed in; sign out; and for superadmins a segmented Event
-  Management / Account Management switch) — over the page. **No sidebar any
-  more.** `ConsoleContext` carries `me` (the login) and `org` (the
+  `GET /hosts/me`, then renders a slim top bar
+  (`components/host/ConsoleHeader.tsx`: the brand, and the account button —
+  the person's name over the org's when a staff login is signed in — whose
+  menu has Change logo and Sign out) and **a side panel**
+  (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
+  links under the top bar below that, scrolled to the current one): Analytics, Team, Special
+  Access (pending-request badge), Account Management (superadmins only;
+  current on `/host/admins`, `/users`, `/topics`) and Event Management. `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
