@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin
 from app.api.routes.invites import email_taken
+from app.core.org_space import org_by_slug, unique_slug
 from app.core.security import hash_password
 from app.models.access import AccessGroup
 from app.models.event import Event
@@ -219,6 +220,8 @@ def list_hosts(_: Host = Depends(require_admin), db: Session = Depends(get_db)):
             email=h.email,
             is_admin=h.is_admin,
             logo_url=h.logo_url,
+            slug=h.slug,
+            in_shared_feed=h.in_shared_feed,
             created_at=h.created_at,
             event_count=counts.get(h.id, 0),
             staff=[HostOut.model_validate(s) for s in staff.get(h.id, [])],
@@ -246,6 +249,8 @@ def create_host(
         password_hash=hash_password(body.password),
         is_admin=body.is_admin,
         logo_url=body.logo_url,
+        slug=unique_slug(db, body.name),
+        in_shared_feed=body.in_shared_feed,
     )
     db.add(host)
     try:
@@ -314,6 +319,8 @@ def update_host(
     # is how a logo gets removed.
     if "logo_url" in fields:
         host.logo_url = fields["logo_url"] or None
+    if "in_shared_feed" in fields and host.org_id is None:
+        host.in_shared_feed = fields["in_shared_feed"]
 
     db.commit()
     db.refresh(host)
@@ -370,3 +377,13 @@ def delete_host(
     ).update({Host.deleted_at: now}, synchronize_session=False)
     host.deleted_at = now
     db.commit()
+
+
+@router.get("/spaces/{slug}")
+def org_space(slug: str, db: Session = Depends(get_db)):
+    """Public: the organization behind /o/{slug} — what its space shows at the
+    top. 404 for an unknown or archived organization."""
+    org = org_by_slug(db, slug)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such organization")
+    return {"name": org.name, "slug": org.slug, "logo_url": org.logo_url}

@@ -418,6 +418,25 @@ can open.
   **`useHeadTracking`** (head pose, not gaze — webgazer was replaced). The column
   name is legacy; don't rename it expecting the hook to follow.
 
+## Organization pages (`/o/{slug}`)
+- **Every organization has its own page**: the member feed holding only its
+  programs (`frontend/app/o/[slug]/page.tsx` → `EventsView space={…}`, which
+  names the organization over the heading and passes `space.slug` to every
+  `fetchAllEvents`). `GET /events?org={slug}` filters to that organization
+  (`[]` for an unknown slug); `GET /hosts/spaces/{slug}` (public) is its name
+  and logo, 404 if none. `hosts.slug` is minted once from the name
+  (`core/org_space.unique_slug`, migration `0029_org_spaces`), organizations
+  only — a staff login has none.
+- **`hosts.in_shared_feed`** decides whether its programs also reach the
+  shared feed at `/` — the unfiltered `GET /events` drops organizations with
+  it false. Chosen when the organization is onboarded ("Where their programs
+  appear" on both the invite and Create an organization; the invite carries
+  it as `host_invites.in_shared_feed`), switchable later by a superadmin in
+  the Organizations table. "Own page only" is how an agency tries the
+  platform without the other agencies' programs. By-id routes are untouched,
+  so a program's own link opens either way. The console's account menu links
+  to the organization's page.
+
 ## Holds, member email, sharing
 - **Saving a program with a `capacity` holds a spot for one hour**
   (`event_attendees.held_until`, `core/holds.py`). Capacity never refuses a

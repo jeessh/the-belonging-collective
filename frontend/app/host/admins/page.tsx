@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, ImageIcon, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
   deleteAdmin,
   listAdmins,
   listInvites,
+  orgSpaceUrl,
   revokeInvite,
   updateAdmin,
   type AdminAccount,
@@ -99,6 +100,26 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     }
   }
 
+  async function setInShared(admin: AdminAccount, shared: boolean) {
+    setBusyId(admin.id);
+    try {
+      await updateAdmin(admin.id, { in_shared_feed: shared });
+      show({
+        title: shared
+          ? `${admin.name}'s programs now show in the shared feed too.`
+          : `${admin.name}'s programs now show on their own page only.`,
+      });
+      await load();
+    } catch (e) {
+      show({
+        title: apiMessage(e, "Couldn't change that. Please try again."),
+        tone: "alert",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
 
@@ -159,12 +180,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       ) : (
         <TableCard
           caption="Organizations, their staff logins, their access level, and how many programs each owns."
-          head={["Organization", "Login email", "Access", "Programs", ""]}
+          head={["Organization", "Login email", "Access", "Their page", "Programs", ""]}
         >
           {loading ? (
-            <EmptyRow colSpan={5} text="Loading…" />
+            <EmptyRow colSpan={6} text="Loading…" />
           ) : admins.length === 0 ? (
-            <EmptyRow colSpan={5} text="No organizations yet." />
+            <EmptyRow colSpan={6} text="No organizations yet." />
           ) : (
             admins.map((a) => {
               // "You" is your organization — the login you hold may be
@@ -227,6 +248,46 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                         </Button>
                       )}
                     </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    {a.slug && (
+                      <span className="flex flex-col items-start gap-1">
+                        <span className="inline-flex items-center gap-1">
+                          <a
+                            href={`/o/${a.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="whitespace-nowrap underline underline-offset-2"
+                          >
+                            /o/{a.slug}
+                          </a>
+                          <Button
+                            variant="ghost"
+                            aria-label={`Copy the link to ${a.name}'s page`}
+                            title="Copy link"
+                            onClick={() => {
+                              void copyText(orgSpaceUrl(a.slug!), show).then(
+                                (ok) => ok && show({ title: "Link copied." }),
+                              );
+                            }}
+                            leadingIcon={<Copy />}
+                          />
+                        </span>
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <Pill tone={a.in_shared_feed === false ? "warn" : "neutral"}>
+                            {a.in_shared_feed === false ? "Own page only" : "Also in shared feed"}
+                          </Pill>
+                          <Button
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => void setInShared(a, a.in_shared_feed === false)}
+                          >
+                            {a.in_shared_feed === false ? "Add to shared feed" : "Make own page only"}
+                            <span className="sr-only"> — {a.name}</span>
+                          </Button>
+                        </span>
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-3">{a.event_count}</td>
                   <td className="px-3 py-3">
@@ -325,6 +386,7 @@ function InviteForm({
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
+  const [shared, setShared] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{
@@ -343,6 +405,7 @@ function InviteForm({
         email: email.trim(),
         // An agency, always: superadmins have their own button and form.
         is_admin: false,
+        in_shared_feed: shared,
       });
       setSent({
         org: inv.organization,
@@ -352,6 +415,7 @@ function InviteForm({
       });
       setOrganization("");
       setEmail("");
+      setShared(true);
       onSent();
     } catch (e) {
       setError(apiMessage(e, "Couldn't send that invitation."));
@@ -443,6 +507,7 @@ function InviteForm({
             {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
+        <VisibilityChoice value={shared} onChange={setShared} />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
@@ -467,6 +532,68 @@ function InviteForm({
         </Button>
       </div>
     </section>
+  );
+}
+
+/**
+ * Where a new organization's programs appear. Every organization gets its own
+ * page (`/o/{slug}`) holding only its programs; this is whether they also
+ * join the shared feed everyone sees. "Own page only" is for an agency trying
+ * the platform out, or one that wants it for its own members without the
+ * other agencies' programs. A superadmin can change it later in the table.
+ */
+function VisibilityChoice({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (shared: boolean) => void;
+}) {
+  // Both forms can be on screen at once; each needs its own radio group.
+  const name = useId();
+  const options = [
+    {
+      shared: true,
+      label: "Their own page and the shared feed",
+      hint: "Their programs are listed alongside every other organization's.",
+    },
+    {
+      shared: false,
+      label: "Their own page only",
+      hint: "An empty space of their own, without other organizations' programs.",
+    },
+  ];
+  return (
+    <fieldset className="flex flex-col">
+      <legend className="mb-2 text-base font-medium text-fg">
+        Where their programs appear
+      </legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map((o) => {
+          const on = value === o.shared;
+          return (
+            <label
+              key={String(o.shared)}
+              className={`flex cursor-pointer items-start gap-3 rounded-control border px-3 py-2 ${
+                on ? "border-primary-border bg-primary-soft" : "border-line hover:bg-surface-subtle"
+              }`}
+            >
+              <input
+                type="radio"
+                name={name}
+                checked={on}
+                onChange={() => onChange(o.shared)}
+                className="mt-1.5 size-4 accent-primary-border"
+              />
+              <span>
+                <span className="block text-base text-fg">{o.label}</span>
+                <span className="block text-sm text-fg-muted">{o.hint}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
@@ -536,6 +663,7 @@ function AddAdminModal({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [shared, setShared] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -550,6 +678,7 @@ function AddAdminModal({
         email: email.trim(),
         password,
         is_admin: false,
+        in_shared_feed: shared,
       });
       onCreated(name.trim());
     } catch (e) {
@@ -602,6 +731,7 @@ function AddAdminModal({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <VisibilityChoice value={shared} onChange={setShared} />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
