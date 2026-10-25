@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
@@ -335,7 +335,6 @@ function InviteForm({
   const { show } = useToast();
   const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
-  const [shared, setShared] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{
@@ -354,7 +353,6 @@ function InviteForm({
         email: email.trim(),
         // An agency, always: superadmins have their own button and form.
         is_admin: false,
-        in_shared_feed: shared,
       });
       setSent({
         org: inv.organization,
@@ -364,7 +362,6 @@ function InviteForm({
       });
       setOrganization("");
       setEmail("");
-      setShared(true);
       onSent();
     } catch (e) {
       setError(apiMessage(e, "Couldn't send that invitation."));
@@ -377,7 +374,9 @@ function InviteForm({
     // Boxed, so the two ways to add an organization read as one task.
     <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
       <div>
-        <h2 className="text-xl font-medium text-fg">Invite an organization</h2>
+        <h2 className="text-xl font-medium text-fg">
+          Invite Organization to the Belonging Collective
+        </h2>
         <p className="text-xl text-fg">
           For a new agency joining the platform. We email them a link to set
           up their organization&apos;s login and choose a password.
@@ -456,7 +455,6 @@ function InviteForm({
             {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
-        <VisibilityChoice value={shared} onChange={setShared} />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
@@ -484,68 +482,6 @@ function InviteForm({
   );
 }
 
-/**
- * Where a new organization's programs appear. Every organization gets its own
- * page (`/o/{slug}`) holding only its programs; this is whether they also
- * join the shared feed everyone sees. "Own page only" is for an agency trying
- * the platform out, or one that wants it for its own members without the
- * other agencies' programs. A superadmin can change it later in the table.
- */
-function VisibilityChoice({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (shared: boolean) => void;
-}) {
-  // Both forms can be on screen at once; each needs its own radio group.
-  const name = useId();
-  const options = [
-    {
-      shared: true,
-      label: "Their own page and the shared feed",
-      hint: "Their programs are listed alongside every other organization's.",
-    },
-    {
-      shared: false,
-      label: "Their own page only",
-      hint: "An empty space of their own, without other organizations' programs.",
-    },
-  ];
-  return (
-    <fieldset className="flex flex-col">
-      <legend className="mb-2 text-base font-medium text-fg">
-        Where their programs appear
-      </legend>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {options.map((o) => {
-          const on = value === o.shared;
-          return (
-            <label
-              key={String(o.shared)}
-              className={`flex cursor-pointer items-start gap-3 rounded-control border px-3 py-2 ${
-                on ? "border-primary-border bg-primary-soft" : "border-line hover:bg-surface-subtle"
-              }`}
-            >
-              <input
-                type="radio"
-                name={name}
-                checked={on}
-                onChange={() => onChange(o.shared)}
-                className="mt-1.5 size-4 accent-primary-border"
-              />
-              <span>
-                <span className="block text-base text-fg">{o.label}</span>
-                <span className="block text-sm text-fg-muted">{o.hint}</span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}
-
 function AddAdminModal({
   onClose,
   onCreated,
@@ -556,7 +492,6 @@ function AddAdminModal({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [shared, setShared] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -571,7 +506,6 @@ function AddAdminModal({
         email: email.trim(),
         password,
         is_admin: false,
-        in_shared_feed: shared,
       });
       onCreated(name.trim());
     } catch (e) {
@@ -624,7 +558,6 @@ function AddAdminModal({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <VisibilityChoice value={shared} onChange={setShared} />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
