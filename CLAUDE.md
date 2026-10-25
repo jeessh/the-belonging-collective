@@ -360,6 +360,15 @@ can open.
   between `requested | approved | declined | revoked`; a declined/revoked
   member re-requesting gets 409 and only the console can let them back in.
   Groups archive (`deleted_at`) and refuse to while live programs use them.
+  **Organizations can also add people by email, with no approval step**
+  (`POST /access-groups/{id}/people {emails}`, up to 50; `core/access_invites.py`):
+  an address with a live member account is approved at once (whatever its
+  earlier status); one without gets an `access_invites` row (migration
+  `0028`) and is approved the moment an account is made with that email —
+  `auth.new_member` calls `apply_pending`, so every way of creating a member
+  picks it up. Both are emailed. `GET …/invites` lists the ones waiting to
+  sign up, `DELETE …/invites/{id}` withdraws one (`revoked_at`). Console:
+  "Add people" on a group, and a "Waiting to sign up" list under it.
   Member side: `ui/Tag kind="access"` (lock + group name) is drawn by
   `EventSummary`, so every surface carries it; `member/AccessAction` is the
   one control that stands in for Save until `access_status` is `approved`

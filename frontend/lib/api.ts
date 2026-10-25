@@ -531,6 +531,31 @@ export const decideAccess = (
     method: "POST",
   });
 
+/** What happened to each address added to a group (no approval step). */
+export type AddPeopleResult = {
+  /** Had an account: in the group now. */
+  added: { email: string; name: string }[];
+  /** Already in the group, or already invited. */
+  already: string[];
+  /** No account yet: invited, and in as soon as they sign up. */
+  invited: string[];
+  invalid: string[];
+};
+
+export const addPeopleToGroup = (groupId: string, emails: string[]) =>
+  api<AddPeopleResult>(`/access-groups/${groupId}/people`, {
+    method: "POST",
+    body: JSON.stringify({ emails }),
+  });
+
+export type GroupInvite = { id: string; email: string; created_at: string };
+
+export const fetchGroupInvites = (groupId: string) =>
+  api<GroupInvite[]>(`/access-groups/${groupId}/invites`);
+
+export const withdrawGroupInvite = (groupId: string, inviteId: string) =>
+  api(`/access-groups/${groupId}/invites/${inviteId}`, { method: "DELETE" });
+
 /* ---------------- admin console ---------------- */
 
 /** A member account, as the superadmin-only `GET /users` returns it. */
