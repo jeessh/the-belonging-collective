@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ImageIcon, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -24,7 +24,6 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { copyText } from "@/lib/clipboard";
 import { EmptyRow, Pill, TableCard } from "@/components/AdminTable";
-import { ImageDrop } from "@/components/ImageDrop";
 import { Modal } from "@/components/Modal";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
@@ -55,7 +54,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [adding, setAdding] = useState(false);
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
-  const [logoFor, setLogoFor] = useState<AdminAccount | null>(null);
 
   async function load() {
     try {
@@ -262,14 +260,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                   <td className="px-3 py-3">{a.event_count}</td>
                   <td className="px-3 py-3">
                     <span className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        aria-label={`Logo for ${a.name}`}
-                        title="Logo"
-                        disabled={busy}
-                        onClick={() => setLogoFor(a)}
-                        leadingIcon={<ImageIcon />}
-                      />
                       {!isMe && (
                         <Button
                           variant="ghost"
@@ -302,17 +292,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           onCreated={(name) => {
             setAdding(false);
             show({ title: `Added ${name}.` });
-            void load();
-          }}
-        />
-      )}
-      {logoFor && (
-        <LogoModal
-          admin={logoFor}
-          onClose={() => setLogoFor(null)}
-          onSaved={(name) => {
-            setLogoFor(null);
-            show({ title: `Updated the logo for ${name}.` });
             void load();
           }}
         />
@@ -564,62 +543,6 @@ function VisibilityChoice({
         })}
       </div>
     </fieldset>
-  );
-}
-
-function LogoModal({
-  admin,
-  onClose,
-  onSaved,
-}: {
-  admin: AdminAccount;
-  onClose: () => void;
-  onSaved: (name: string) => void;
-}) {
-  const [logoUrl, setLogoUrl] = useState(admin.logo_url ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      // "" clears it — the API reads null as "leave alone".
-      await updateAdmin(admin.id, { logo_url: logoUrl });
-      onSaved(admin.name);
-    } catch (e) {
-      setError(apiMessage(e, "Couldn't save that logo. Please try again."));
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title={`Logo for ${admin.name}`} onClose={onClose}>
-      <p className="mt-2 text-lg text-fg-muted">
-        Members recognise organizations by their logo in the feed.
-      </p>
-      <div className="mt-4">
-        <ImageDrop
-          label="Organization logo"
-          sizing="logo"
-          value={logoUrl}
-          onChange={setLogoUrl}
-        />
-      </div>
-      {error && (
-        <p role="alert" className="mt-3 text-base text-danger-fg">
-          {error}
-        </p>
-      )}
-      <div className="mt-6 flex flex-wrap justify-end gap-3">
-        <Button disabled={busy} onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="primary" disabled={busy} onClick={() => void submit()}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </Modal>
   );
 }
 
