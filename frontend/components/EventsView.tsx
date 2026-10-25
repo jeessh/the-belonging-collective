@@ -31,7 +31,6 @@ import {
   type CarePerson,
   type Event,
   type Me,
-  type OrgSpace,
   attendEvent,
   type MePrefs,
   type PreferredView,
@@ -112,14 +111,11 @@ export function EventsView({
   initialMe,
   eventsPromise,
   attendedPromise,
-  space = null,
 }: {
   /** Null when nobody is signed in — browsing is open, saving is not. */
   initialMe: Me | null;
   eventsPromise: Promise<Event[]>;
   attendedPromise: Promise<Event[]>;
-  /** An organization's own page (`/o/{slug}`): only its programs, named above. */
-  space?: OrgSpace | null;
 }) {
   const reduceMotion = useReducedMotion();
   const toast = useToast();
@@ -260,7 +256,7 @@ export function EventsView({
     Promise.all([
       // null, not [], when both tries fail: "No programs yet" would tell
       // someone nothing is on when the list simply didn't arrive.
-      (reload ? fetchAllEvents(space?.slug) : eventsPromise.catch(() => fetchAllEvents(space?.slug)))
+      (reload ? fetchAllEvents() : eventsPromise.catch(() => fetchAllEvents()))
         .catch(() => null),
       attendedPromise.catch(() => [] as Event[]),
     ]).then(([evRes, attended]) => {
@@ -613,7 +609,7 @@ export function EventsView({
         api<Event[]>("/users/me/events").catch(() => [] as Event[]),
         // "N going" is withheld from anonymous viewers, so the rows fetched
         // before sign-in carry null counts.
-        fetchAllEvents(space?.slug).catch(() => null),
+        fetchAllEvents().catch(() => null),
       ]);
       setMe(profile);
       setSavedEvents(attended);
@@ -1216,19 +1212,6 @@ export function EventsView({
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
             <div className="flex flex-col gap-3 sm:gap-4">
-              {space && (
-                <p className="flex items-center gap-3 text-lg font-medium text-fg">
-                  {space.logo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={space.logo_url}
-                      alt=""
-                      className="size-10 rounded-full border border-line object-contain"
-                    />
-                  )}
-                  Programs from {space.name}
-                </p>
-              )}
               {/* One row on a phone too, the switch as icons: stacked, the
                   heading, switch and filter label pushed the card's Save
                   below the fold, behind the saved bar. */}
@@ -1284,9 +1267,7 @@ export function EventsView({
               </div>
             ) : status === "empty" ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
-                {space
-                  ? `${space.name} hasn't posted any programs yet. Check back soon.`
-                  : "No programs yet. Check back soon."}
+                No programs yet. Check back soon.
               </p>
             ) : viewMode === "list" ? (
               <ListFeed

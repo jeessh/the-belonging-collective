@@ -29,10 +29,6 @@ class HostOut(BaseModel):
     email: str
     is_admin: bool
     logo_url: str | None = None
-    # The organization's own space, /o/{slug} (organizations only).
-    slug: str | None = None
-    # Whether its programs also show in the shared feed.
-    in_shared_feed: bool = True
     # Set on a staff login: the organization it belongs to.
     org_id: uuid.UUID | None = None
     created_at: datetime
@@ -75,8 +71,6 @@ class HostCreate(BaseModel):
     is_admin: bool = False
     # Shown in the member feed's organization stepper.
     logo_url: str | None = None
-    # Its programs in the shared feed too, or only in its own space.
-    in_shared_feed: bool = True
 
     _strip_name = field_validator("name")(_clean_name)
 
@@ -98,6 +92,5 @@ class HostUpdate(BaseModel):
     # Setting this resets the account's password; omitted leaves it alone.
     password: str | None = Field(None, min_length=PASSWORD_MIN_LENGTH)
     logo_url: str | None = None
-    in_shared_feed: bool | None = None
 
     _strip_name = field_validator("name")(_clean_name)

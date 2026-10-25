@@ -368,15 +368,6 @@ can open.
   between `requested | approved | declined | revoked`; a declined/revoked
   member re-requesting gets 409 and only the console can let them back in.
   Groups archive (`deleted_at`) and refuse to while live programs use them.
-  **Organizations can also add people by email, with no approval step**
-  (`POST /access-groups/{id}/people {emails}`, up to 50; `core/access_invites.py`):
-  an address with a live member account is approved at once (whatever its
-  earlier status); one without gets an `access_invites` row (migration
-  `0028`) and is approved the moment an account is made with that email —
-  `auth.new_member` calls `apply_pending`, so every way of creating a member
-  picks it up. Both are emailed. `GET …/invites` lists the ones waiting to
-  sign up, `DELETE …/invites/{id}` withdraws one (`revoked_at`). Console:
-  "Add people" on a group, and a "Waiting to sign up" list under it.
   Member side: `ui/Tag kind="access"` (lock + group name) is drawn by
   `EventSummary`, so every surface carries it; `member/AccessAction` is the
   one control that stands in for Save until `access_status` is `approved`
@@ -418,26 +409,6 @@ can open.
 - The persisted field is `eye_tracking_enabled` but the hook is
   **`useHeadTracking`** (head pose, not gaze — webgazer was replaced). The column
   name is legacy; don't rename it expecting the hook to follow.
-
-## Organization pages (`/o/{slug}`)
-- **Every organization has its own page**: the member feed holding only its
-  programs (`frontend/app/o/[slug]/page.tsx` → `EventsView space={…}`, which
-  names the organization over the heading and passes `space.slug` to every
-  `fetchAllEvents`). `GET /events?org={slug}` filters to that organization
-  (`[]` for an unknown slug); `GET /hosts/spaces/{slug}` (public) is its name
-  and logo, 404 if none. `hosts.slug` is minted once from the name
-  (`core/org_space.unique_slug`, migration `0029_org_spaces`), organizations
-  only — a staff login has none.
-- **`hosts.in_shared_feed`** decides whether its programs also reach the
-  shared feed at `/` — the unfiltered `GET /events` drops organizations with
-  it false. New organizations start in the shared feed, and **the console
-  has no control for it any more** (the onboarding choice and the
-  Organizations table's "Their page" column were both taken out) — it is set
-  through the API: `PATCH /hosts/{id} {in_shared_feed}`, or `in_shared_feed`
-  on `POST /hosts` / `POST /invites` (`host_invites.in_shared_feed`). "Own page only" is how an agency tries the
-  platform without the other agencies' programs. By-id routes are untouched,
-  so a program's own link opens either way. The console's account menu links
-  to the organization's page.
 
 ## Holds, member email, sharing
 - **Saving a program with a `capacity` holds a spot for one hour**

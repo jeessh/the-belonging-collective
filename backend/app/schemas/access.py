@@ -3,7 +3,7 @@ from datetime import datetime
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 # Stripped before the length check, so "   " is refused rather than stored as "".
 GroupName = Annotated[
@@ -68,9 +68,3 @@ class AccessMemberOut(BaseModel):
     requested_at: datetime
     decided_at: datetime | None = None
     requested_via: RequestedViaOut | None = None
-
-
-class AccessAddIn(BaseModel):
-    """Addresses to add to a group — typed or pasted, one per item."""
-
-    emails: list[str] = Field(min_length=1, max_length=50)

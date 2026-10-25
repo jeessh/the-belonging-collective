@@ -16,7 +16,6 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_host, get_current_user, get_db
 from app.core.rate_limit import client_key, enforce, record
-from app.core import access_invites
 from app.models.access import (
     APPROVED,
     DECLINED,
@@ -24,14 +23,12 @@ from app.models.access import (
     REVOKED,
     STATUSES,
     AccessGroup,
-    AccessInvite,
     AccessMembership,
 )
 from app.models.event import Event
 from app.models.host import Host, org_id_of
 from app.models.user import User
 from app.schemas.access import (
-    AccessAddIn,
     AccessGroupIn,
     AccessGroupOut,
     AccessGroupRename,
@@ -338,65 +335,3 @@ def decide_membership(
         decided_at=membership.decided_at,
         requested_via=membership.requested_via,
     )
-
-
-# ---------- adding people by email (no approval step) ----------
-
-
-@router.post("/{group_id}/people")
-def add_people(
-    group_id: uuid.UUID,
-    body: AccessAddIn,
-    request: Request,
-    host: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    """Add people to a group by email. The organization chose them, so there
-    is nothing to approve: an address with an account is in at once, one
-    without gets an invitation and is in as soon as it signs up. Each is
-    emailed. Up to 50 addresses a time."""
-    group = _managed_group(db, group_id, host)
-    key = f"access-add:{host.id}"
-    enforce(db, {key: 30, client_key(request): 200})
-    record(db, key)
-    return access_invites.add_people(db, group, body.emails, host)
-
-
-@router.get("/{group_id}/invites")
-def list_invites(
-    group_id: uuid.UUID,
-    host: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    """Addresses added to the group that don't have an account yet."""
-    group = _managed_group(db, group_id, host)
-    rows = (
-        db.query(AccessInvite)
-        .filter(
-            AccessInvite.group_id == group.id,
-            AccessInvite.accepted_at.is_(None),
-            AccessInvite.revoked_at.is_(None),
-        )
-        .order_by(AccessInvite.created_at.desc())
-        .all()
-    )
-    return [
-        {"id": str(r.id), "email": r.email, "created_at": r.created_at} for r in rows
-    ]
-
-
-@router.delete("/{group_id}/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
-def withdraw_invite(
-    group_id: uuid.UUID,
-    invite_id: uuid.UUID,
-    host: Host = Depends(get_current_host),
-    db: Session = Depends(get_db),
-):
-    """Take back an invitation nobody has used yet. Stamped, not deleted."""
-    group = _managed_group(db, group_id, host)
-    inv = db.get(AccessInvite, invite_id)
-    if inv is None or inv.group_id != group.id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such invitation")
-    if inv.accepted_at is None and inv.revoked_at is None:
-        inv.revoked_at = func.now()
-        db.commit()

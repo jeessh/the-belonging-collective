@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Text, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,11 +40,6 @@ class HostInvite(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
-    )
-    # Organization invitations: whether its programs show in the shared feed
-    # as well as its own space. Ignored for staff invitations.
-    in_shared_feed: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True, server_default=text("true")
     )
     accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

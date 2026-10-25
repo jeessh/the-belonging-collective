@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ExternalLink, Image as ImageIcon, LogOut } from "lucide-react";
+import { ChevronDown, Image as ImageIcon, LogOut } from "lucide-react";
 import { apiMessage, logout, updateMyOrg, type HostMe } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -15,7 +15,7 @@ import { Brand } from "@/components/Brand";
  * The bar across the top of every console page: the brand on the left, the
  * signed-in account on the right. The sections live in the side panel
  * (`ConsoleNav`); the account button opens a small menu with the
- * organization's own page (`/o/{slug}`), its logo and Sign out.
+ * organization's logo and Sign out.
  */
 export function ConsoleHeader({
   me,
@@ -101,20 +101,6 @@ export function ConsoleHeader({
               aria-label="Account"
               className="absolute right-0 top-full z-40 mt-2 w-56 rounded-control border border-line bg-surface p-1 shadow-lift"
             >
-              {org.slug && (
-                // The page to send their members to: their programs only.
-                <a
-                  role="menuitem"
-                  href={`/o/${org.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
-                >
-                  <ExternalLink aria-hidden="true" className="size-4" />
-                  Your organization&apos;s page
-                </a>
-              )}
               <button
                 type="button"
                 role="menuitem"

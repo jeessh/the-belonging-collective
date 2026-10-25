@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, Mail, Pencil, Plus, UserPlus } from "lucide-react";
+import { Archive, Pencil, Plus } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -17,11 +17,6 @@ import {
   type AccessGroup,
   type AccessMember,
   type AdminAccount,
-  addPeopleToGroup,
-  fetchGroupInvites,
-  withdrawGroupInvite,
-  type AddPeopleResult,
-  type GroupInvite,
 } from "@/lib/api";
 import { TIME_ZONE } from "@/lib/time";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
@@ -29,7 +24,7 @@ import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyRow, Field, Pill, Select, TableCard, TextArea } from "@/components/AdminTable";
+import { EmptyRow, Field, Pill, Select, TableCard } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
 
 /** Groups listed before "Show all". */
@@ -123,10 +118,9 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             Special Access
           </h1>
           <p className="text-xl text-fg">
-            Some programs are only for the people in a group. Add people by
-            email and they&apos;re in straight away, or answer requests members
-            send from a program&apos;s page. Anyone in a group can see and save
-            every program in it.
+            Some programs are only for people you approve. Approve someone into
+            a group once and they can see every program in it. Members ask
+            from a program&apos;s page, and you answer here.
           </p>
         </div>
         <Button
@@ -287,33 +281,13 @@ function GroupPanel({
   const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<AccessMember | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [invites, setInvites] = useState<GroupInvite[]>([]);
 
   async function load() {
     try {
-      const [m, inv] = await Promise.all([
-        fetchAccessMembers(group.id),
-        fetchGroupInvites(group.id).catch(() => [] as GroupInvite[]),
-      ]);
-      setMembers(m);
-      setInvites(inv);
+      setMembers(await fetchAccessMembers(group.id));
       setLoadError(false);
     } catch {
       setLoadError(true);
-    }
-  }
-
-  async function withdraw(inv: GroupInvite) {
-    setBusyId(inv.id);
-    try {
-      await withdrawGroupInvite(group.id, inv.id);
-      setInvites((all) => all.filter((i) => i.id !== inv.id));
-      show({ title: `Withdrew the invitation for ${inv.email}.`, tone: "info" });
-    } catch (e) {
-      show({ title: apiMessage(e, "Couldn't withdraw that."), tone: "alert" });
-    } finally {
-      setBusyId(null);
     }
   }
 
@@ -380,15 +354,6 @@ function GroupPanel({
           {isSuper && <p className="text-lg text-fg-muted">{group.host_name}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* The organization already knows who belongs: adding someone
-              puts them straight in, no request or approval. */}
-          <Button
-            variant="primary"
-            leadingIcon={<UserPlus />}
-            onClick={() => setAdding(true)}
-          >
-            Add people
-          </Button>
           <Button leadingIcon={<Pencil />} onClick={onRename}>
             Rename
           </Button>
@@ -503,53 +468,6 @@ function GroupPanel({
             })
           )}
         </TableCard>
-      )}
-
-      {/* Added by email before they had an account: in the group the moment
-          they sign up with that address. */}
-      {invites.length > 0 && (
-        <section aria-labelledby="group-invites" className="flex flex-col gap-2">
-          <h3 id="group-invites" className="text-xl font-medium text-fg">
-            Waiting to sign up ({invites.length})
-          </h3>
-          <p className="text-base text-fg-muted">
-            Invited by email. They join {group.name} as soon as they create an
-            account with that address.
-          </p>
-          <ul className="flex flex-col divide-y divide-line-card rounded-card border border-line">
-            {invites.map((inv) => (
-              <li key={inv.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
-                <Mail aria-hidden="true" className="size-4 shrink-0 text-fg-icon" />
-                <span className="min-w-0 flex-1 break-all text-base text-fg">{inv.email}</span>
-                <span className="text-base text-fg-muted">
-                  Invited {shortDate(inv.created_at)}
-                </span>
-                <Button
-                  variant="ghost"
-                  disabled={busyId === inv.id}
-                  onClick={() => void withdraw(inv)}
-                >
-                  Withdraw
-                  <span className="sr-only"> the invitation for {inv.email}</span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {adding && (
-        <AddPeopleModal
-          groupName={group.name}
-          onAdd={(emails) => addPeopleToGroup(group.id, emails)}
-          onDone={(changed) => {
-            setAdding(false);
-            if (changed) {
-              void load();
-              onChanged();
-            }
-          }}
-        />
       )}
 
       {revoking && (
@@ -739,176 +657,5 @@ function ArchiveModal({
         </Button>
       </div>
     </Modal>
-  );
-}
-
-
-/**
- * Add people to a group by email, no approval: paste or type addresses, one
- * per line or separated by commas. Then says what happened to each — in now
- * (had an account), invited (no account yet), already in, or not an email.
- */
-function AddPeopleModal({
-  groupName,
-  onAdd,
-  onDone,
-}: {
-  groupName: string;
-  onAdd: (emails: string[]) => Promise<AddPeopleResult>;
-  /** `changed`: something was added, so the lists should reload. */
-  onDone: (changed: boolean) => void;
-}) {
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AddPeopleResult | null>(null);
-
-  const emails = text
-    .split(/[\s,;]+/)
-    .map((e) => e.trim())
-    .filter(Boolean);
-
-  async function submit() {
-    if (emails.length === 0) return;
-    if (emails.length > 50) {
-      setError("Add up to 50 addresses at a time.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      setResult(await onAdd(emails));
-    } catch (e) {
-      setError(apiMessage(e, "Couldn't add those people. Please try again."));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const changed = !!result && (result.added.length > 0 || result.invited.length > 0);
-
-  return (
-    <Modal
-      title={result ? "People added" : `Add people to ${groupName}`}
-      subtitle={
-        result
-          ? undefined
-          : "They're added straight away, with no request or approval. Everyone gets an email; people without an account are asked to create one."
-      }
-      onClose={() => onDone(changed)}
-    >
-      {result ? (
-        <div className="mt-6 flex flex-col gap-4">
-          {result.added.length > 0 && (
-            <ResultGroup
-              title={`In the group now (${result.added.length})`}
-              items={result.added.map((a) => `${a.name} · ${a.email}`)}
-            />
-          )}
-          {result.invited.length > 0 && (
-            <ResultGroup
-              title={`Invited to sign up (${result.invited.length})`}
-              hint="They join the group as soon as they create an account with that email."
-              items={result.invited}
-            />
-          )}
-          {result.already.length > 0 && (
-            <ResultGroup
-              title={`Already in or already invited (${result.already.length})`}
-              items={result.already}
-            />
-          )}
-          {result.invalid.length > 0 && (
-            <ResultGroup
-              title={`Not an email address (${result.invalid.length})`}
-              items={result.invalid}
-              tone="danger"
-            />
-          )}
-          <div className="mt-2 flex flex-wrap justify-end gap-3">
-            <Button
-              onClick={() => {
-                setResult(null);
-                setText("");
-              }}
-            >
-              Add more
-            </Button>
-            <Button variant="primary" onClick={() => onDone(changed)}>
-              Done
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <form
-          className="mt-6 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!busy) void submit();
-          }}
-        >
-          <Field label="Email addresses">
-            <TextArea
-              rows={5}
-              autoFocus
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={"one@example.com\nanother@example.com"}
-            />
-          </Field>
-          <p className="text-base text-fg-muted">
-            One per line, or separated by commas. Up to 50 at a time.
-          </p>
-          {error && (
-            <p role="alert" className="text-base text-danger-fg">
-              {error}
-            </p>
-          )}
-          <div className="flex flex-wrap justify-end gap-3">
-            <Button onClick={() => onDone(false)}>Cancel</Button>
-            <Button
-              type="submit"
-              variant="primary"
-              leadingIcon={<UserPlus />}
-              disabled={busy || emails.length === 0}
-            >
-              {busy
-                ? "Adding…"
-                : emails.length > 1
-                  ? `Add ${emails.length} people`
-                  : "Add to group"}
-            </Button>
-          </div>
-        </form>
-      )}
-    </Modal>
-  );
-}
-
-function ResultGroup({
-  title,
-  hint,
-  items,
-  tone,
-}: {
-  title: string;
-  hint?: string;
-  items: string[];
-  tone?: "danger";
-}) {
-  return (
-    <section className="flex flex-col gap-1">
-      <h3 className={`text-base font-medium ${tone === "danger" ? "text-danger-fg" : "text-fg"}`}>
-        {title}
-      </h3>
-      {hint && <p className="text-base text-fg-muted">{hint}</p>}
-      <ul className="flex flex-col text-base text-fg-muted">
-        {items.map((i) => (
-          <li key={i} className="break-all">
-            {i}
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
