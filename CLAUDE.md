@@ -270,7 +270,9 @@ can open.
   Cost & sign-up → Who it's for → Details & links (both optional) → Review.
   Each step is laid out in two columns from `lg` so it fits a 1440×900
   screen without scrolling (the image drop is `compact` here); keep a new
-  field from pushing a step past that. Next checks only that
+  field from pushing a step past that. The form carries `.form-dense`
+  (`globals.css`): 14px text and 36px controls inside it only, so the
+  shared TextField / Button / FilterChip keep the member app's large sizes. Next checks only that
   step's problems (`FIELD_STEP` maps a `missingRequired` field to its step —
   add a new required field there too) and names what's missing; Enter moves
   on rather than publishing. A new event opens steps in order; an edit opens

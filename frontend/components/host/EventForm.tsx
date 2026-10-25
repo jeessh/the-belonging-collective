@@ -930,7 +930,7 @@ export function EventForm({
   return (
     <form
       id={id}
-      className="flex flex-col gap-5"
+      className="form-dense flex flex-col gap-5"
       // The summary and each field's own message say what's wrong; the
       // browser's bubbles arrived first and said it differently.
       noValidate

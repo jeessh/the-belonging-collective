@@ -175,3 +175,50 @@ body {
 .glyph-centred {
   display: block;
 }
+
+/*
+ * Dense forms (the console's event form): 14px text and 36px controls, the
+ * standard desktop sizes, instead of the member app's large-type defaults.
+ * Scoped to `.form-dense` so the shared TextField, Button, FilterChip and
+ * SegmentedToggle keep their larger sizes everywhere else. Outside any
+ * @layer and one class deeper than the utilities, so these win.
+ */
+.form-dense input,
+.form-dense textarea,
+.form-dense select,
+.form-dense label,
+.form-dense legend,
+.form-dense p,
+.form-dense li,
+.form-dense dt,
+.form-dense dd,
+.form-dense button,
+.form-dense span,
+.form-dense a {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.form-dense h2 {
+  font-size: 20px;
+  line-height: 1.3;
+}
+.form-dense h2 span,
+.form-dense h3 {
+  font-size: 16px;
+}
+.form-dense .min-h-11,
+.form-dense .min-h-12,
+.form-dense .min-h-14 {
+  min-height: 36px;
+}
+.form-dense .py-3 {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.form-dense .px-6 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.form-dense .gap-5 {
+  gap: 16px;
+}
