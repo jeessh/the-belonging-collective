@@ -3,6 +3,7 @@
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   CalendarDays,
   Clock,
   MapPin,
@@ -18,12 +19,14 @@ import { whenLine } from "@/lib/time";
 import { useToast } from "@/components/ui/Toast";
 import { EventTags } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
+import { buttonClass } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
 
 /**
  * The component sheet's "Admin – Listed Event": a square image, the facts
- * beside it, and the program's tools at the top right. The whole card opens
- * the details page.
+ * beside it, the program's tools at the top right and View more (the
+ * details page) at the bottom right.
  *
  * The tools respect ownership. Edit and un-publish are only for the
  * organization that posted the program (or a superadmin); another agency's
@@ -58,22 +61,34 @@ export const AdminEventCard = memo(function AdminEventCard({
   }
 
   const tools = (
-    // Above the card's stretched link (z-10), so each tool is its own target.
-    <div className="relative z-10 flex items-center gap-1">
+    <div className="flex items-center gap-1">
       {canManage && (
-        <Link
-          href={`/host/events/${event.id}/edit`}
-          aria-label={`Edit ${event.title}`}
-          title="Edit"
-          className={TOOL}
-        >
-          <Pencil aria-hidden="true" className="size-4" />
-        </Link>
+        <Tooltip text="Edit this event">
+          {(tip) => (
+            <Link
+              href={`/host/events/${event.id}/edit`}
+              aria-label={`Edit ${event.title}`}
+              aria-describedby={tip}
+              className={TOOL}
+            >
+              <Pencil aria-hidden="true" className="size-4" />
+            </Link>
+          )}
+        </Tooltip>
       )}
-      <Tool label={`Share ${event.title}`} title="Share" onClick={() => void share()}>
+      <Tool
+        label={`Share ${event.title}`}
+        tip="Copy a link to this event to share"
+        onClick={() => void share()}
+      >
         <Send aria-hidden="true" className="size-4" />
       </Tool>
-      <Tool label={`Print ${event.title}`} title="Print poster" onClick={() => onPrint(event)}>
+      <Tool
+        label={`Print ${event.title}`}
+        tip="Print a poster with a QR code"
+        align={canManage ? "center" : "end"}
+        onClick={() => onPrint(event)}
+      >
         <Printer aria-hidden="true" className="size-4" />
       </Tool>
       {canManage && (
@@ -81,7 +96,8 @@ export const AdminEventCard = memo(function AdminEventCard({
           <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
           <Tool
             label={`Un-publish ${event.title}`}
-            title="Un-publish"
+            tip="Un-publish: take it off the member feed"
+            align="end"
             onClick={() => onUnpublish(event)}
             className="bg-danger text-danger-fg hover:bg-danger-hover"
           >
@@ -93,12 +109,10 @@ export const AdminEventCard = memo(function AdminEventCard({
   );
 
   return (
-    // The whole card opens the details page: the title is its one link, and
-    // that link's ::after stretches over the card. The tools sit above it.
     <article
       id={`event-${event.id}`}
       aria-label={event.title}
-      className="group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-colors hover:border-primary-border hover:bg-primary-soft/40 has-[:focus-visible]:border-primary-border sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
+      className="relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -114,14 +128,7 @@ export const AdminEventCard = memo(function AdminEventCard({
         <div className="flex flex-wrap gap-2">
           <EventTags event={event} />
         </div>
-        <h3 className="text-xl font-medium leading-tight text-fg">
-          <Link
-            href={`/host/events/${event.id}`}
-            className="rounded-sm outline-none after:absolute after:inset-0 after:rounded-card after:content-[''] group-hover:underline focus-visible:underline"
-          >
-            {event.title}
-          </Link>
-        </h3>
+        <h3 className="text-xl font-medium leading-tight text-fg">{event.title}</h3>
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
           <Fact icon={<CalendarDays />}>
             <span className="whitespace-nowrap font-medium text-fg">{when.rel}</span>
@@ -145,10 +152,21 @@ export const AdminEventCard = memo(function AdminEventCard({
         )}
       </div>
 
-      {/* Top right of the card; on a phone, over the picture's corner, so
-          the words keep the card's whole width. */}
-      <div className="self-start max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
-        {tools}
+      {/* The tools at the top right and View more at the bottom right; on a
+          phone the tools sit over the picture's corner and View more takes
+          the card's last row, so the words keep the whole width. */}
+      <div className="flex flex-col items-end justify-between gap-4 max-sm:contents">
+        <div className="max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
+          {tools}
+        </div>
+        <Link
+          href={`/host/events/${event.id}`}
+          aria-label={`View more about ${event.title}`}
+          className={buttonClass("secondary", "md", "max-sm:col-span-2 max-sm:w-full")}
+        >
+          View more
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </Link>
       </div>
     </article>
   );
@@ -160,27 +178,34 @@ const TOOL =
 
 function Tool({
   label,
-  title,
+  tip,
+  align = "center",
   onClick,
   className = "",
   children,
 }: {
   label: string;
-  title: string;
+  /** What it does, in the tooltip. */
+  tip: string;
+  align?: "center" | "end";
   onClick: () => void;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={title}
-      onClick={onClick}
-      className={`${TOOL} ${className}`}
-    >
-      {children}
-    </button>
+    <Tooltip text={tip} align={align}>
+      {(describedBy) => (
+        <button
+          type="button"
+          aria-label={label}
+          aria-describedby={describedBy}
+          onClick={onClick}
+          className={`${TOOL} ${className}`}
+        >
+          {children}
+        </button>
+      )}
+    </Tooltip>
   );
 }
 

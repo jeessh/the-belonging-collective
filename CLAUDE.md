@@ -258,10 +258,11 @@ can open.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
   the component sheet's "Admin – Listed Event" (square image, facts beside,
   the round edit / share / print / un-publish tools at the top right — over
-  the picture's corner on a phone). **The whole card opens the details
-  page**: the title is the card's one link and its `::after` stretches over
-  the card; the tools are `relative z-10` above it. Keep any new control on
-  the card above that layer too, or clicks on it will open the event beside `components/host/PostedEvents.tsx`'s accordion
+  the picture's corner on a phone — each with a `ui/Tooltip` saying what it
+  does, and **View more →** at the bottom right, the card's one way to the
+  details page; the card itself isn't clickable). `ui/Tooltip` shows on
+  hover and keyboard focus, is the control's `aria-describedby`, and closes
+  on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion
   `FilterPanel` (`ui/Checkbox` rows), with a Your Events / All Events toggle.
   Edit and un-publish show only for the owning organization or a superadmin;
   share and print for everyone. Un-publishing from the list or the details
