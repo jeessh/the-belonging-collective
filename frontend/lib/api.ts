@@ -618,37 +618,6 @@ export const getSession = () => api<Session>("/auth/me?role=host");
 
 export const getHostMe = () => api<HostMe>("/hosts/me");
 
-/* ---------------- team: an organization's own logins ---------------- */
-
-export type StaffInvite = {
-  id: string;
-  name: string;
-  email: string;
-  expires_at: string;
-  expired: boolean;
-};
-
-export type Team = {
-  org: HostMe["org"];
-  staff: HostMe["org"][];
-  invites: StaffInvite[];
-};
-
-/** Your own organization's team; a superadmin may ask for another's. */
-export const fetchTeam = (orgId?: string) =>
-  api<Team>(`/hosts/team${orgId ? `?org_id=${orgId}` : ""}`);
-
-/** Invite a person to join an organization as a staff login. */
-export const inviteStaff = (body: { org_id: string; name: string; email: string }) =>
-  api<{ id: string; token: string; name: string; email: string; emailed: boolean }>("/invites", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-
-/** Archives one staff login; the organization and its programs stay. */
-export const removeStaff = (staffId: string) =>
-  api(`/hosts/team/${staffId}`, { method: "DELETE" });
-
 /* ---------------- analytics ---------------- */
 
 export type AnalyticsWeek = {

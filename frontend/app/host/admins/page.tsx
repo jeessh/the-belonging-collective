@@ -88,8 +88,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </h1>
         <p className="text-xl text-fg">
           Every organization that posts programs on the platform. Each one
-          manages its own events, staff and special access. Adding people
-          to an organization&apos;s own team happens on its Team page.
+          manages its own events and special access.
         </p>
       </div>
 
@@ -679,12 +678,6 @@ function SuperadminModal({
               Only for KW Habilitation, which runs the platform.
             </p>
           </div>
-          <p className="text-base text-fg-muted">
-            Adding someone who works at KW Habilitation? Add them on KW
-            Habilitation&apos;s <a href="/host/team" className="underline underline-offset-2">Team page</a>{" "}
-            instead. They become a superadmin automatically, without a
-            separate organization.
-          </p>
           <TextField
             label="Name"
             placeholder="e.g. KW Habilitation – Programs"

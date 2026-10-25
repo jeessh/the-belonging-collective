@@ -61,22 +61,6 @@ class HostWithCountsOut(HostOut):
     staff: list[HostOut] = []
 
 
-class TeamOut(BaseModel):
-    """An organization's logins: the shared one, its staff, and who is invited."""
-
-    org: HostOut
-    staff: list[HostOut]
-    invites: list["StaffInviteOut"]
-
-
-class StaffInviteOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    email: str
-    expires_at: datetime
-    expired: bool
-
-
 class HostCreate(BaseModel):
     """A superadmin creating an account for an organizer.
 

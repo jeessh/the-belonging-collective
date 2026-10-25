@@ -10,7 +10,6 @@ import {
   Lock,
   Tags,
   UserCog,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,7 +72,6 @@ const ITEMS: Item[] = [
       { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
     ],
   },
-  { href: "/host/team", label: "Team", icon: Users, match: ["/host/team"] },
 ];
 
 export function ConsoleNav({
