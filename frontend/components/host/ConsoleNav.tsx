@@ -15,11 +15,12 @@ import {
 } from "lucide-react";
 
 /**
- * The console's sections, Event Management first — it is where every
- * organizer lands after signing in — with Analytics and Topics as its sub
- * tabs, and Special Access under Member Management. A side panel from `lg`, the sub tabs indented under their parent;
- * under `lg`, the same links (sub tabs included) as one scrolling row
- * beneath the top bar.
+ * The console's sections: Organization Management first for a superadmin,
+ * then Event Management — where every organizer lands after signing in —
+ * with Analytics and Topics as its sub tabs, and Special Access under
+ * Member Management. A side panel from `lg`, the sub tabs indented under
+ * their parent; under `lg`, the same links (sub tabs included) as one
+ * scrolling row beneath the top bar.
  *
  * Organization Management, Member Management and Topics are a
  * superadmin's only — those pages refuse anyone else, so the links would only
@@ -38,6 +39,14 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
+  // A superadmin's first tab; nobody else sees it.
+  {
+    href: "/host/admins",
+    label: "Organization Management",
+    icon: Building2,
+    match: ["/host/admins"],
+    superOnly: true,
+  },
   {
     href: "/host/events",
     label: "Event Management",
@@ -53,13 +62,6 @@ const ITEMS: Item[] = [
         superOnly: true,
       },
     ],
-  },
-  {
-    href: "/host/admins",
-    label: "Organization Management",
-    icon: Building2,
-    match: ["/host/admins"],
-    superOnly: true,
   },
   {
     href: "/host/users",

@@ -221,12 +221,13 @@ can open.
   the person's name over the org's when a staff login is signed in — whose
   menu has Change logo and Sign out) and **a side panel**
   (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
-  links under the top bar below that, scrolled to the current one): Event
+  links under the top bar below that, scrolled to the current one): for a
+  superadmin, Organization Management first; then Event
   Management (first — every sign-in, reset and invite lands there) with two
   sub tabs indented under it, Analytics and (superadmins only) Topics
   (`/host/topics`) — `children` on the item; below `lg` they join the
-  scrolling row as equals — then for superadmins Organization Management
-  (`/host/admins`) and Member Management (`/host/users`) with Special Access
+  scrolling row as equals — then for superadmins Member Management
+  (`/host/users`) with Special Access
   (pending-request badge) as its sub tab, then Team. A sub tab whose parent
   is hidden (Special Access, for an ordinary organization) takes the
   parent's place at the top level. There is no
