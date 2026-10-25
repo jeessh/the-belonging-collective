@@ -430,10 +430,11 @@ can open.
   only — a staff login has none.
 - **`hosts.in_shared_feed`** decides whether its programs also reach the
   shared feed at `/` — the unfiltered `GET /events` drops organizations with
-  it false. New organizations start in the shared feed; a superadmin
-  switches it in the Organizations table. (The API still takes
-  `in_shared_feed` on `POST /hosts` and `POST /invites` —
-  `host_invites.in_shared_feed` — but the console forms don't ask.) "Own page only" is how an agency tries the
+  it false. New organizations start in the shared feed, and **the console
+  has no control for it any more** (the onboarding choice and the
+  Organizations table's "Their page" column were both taken out) — it is set
+  through the API: `PATCH /hosts/{id} {in_shared_feed}`, or `in_shared_feed`
+  on `POST /hosts` / `POST /invites` (`host_invites.in_shared_feed`). "Own page only" is how an agency tries the
   platform without the other agencies' programs. By-id routes are untouched,
   so a program's own link opens either way. The console's account menu links
   to the organization's page.

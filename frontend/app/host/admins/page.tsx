@@ -11,7 +11,6 @@ import {
   deleteAdmin,
   listAdmins,
   listInvites,
-  orgSpaceUrl,
   revokeInvite,
   updateAdmin,
   type AdminAccount,
@@ -80,26 +79,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function setInShared(admin: AdminAccount, shared: boolean) {
-    setBusyId(admin.id);
-    try {
-      await updateAdmin(admin.id, { in_shared_feed: shared });
-      show({
-        title: shared
-          ? `${admin.name}'s programs now show in the shared feed too.`
-          : `${admin.name}'s programs now show on their own page only.`,
-      });
-      await load();
-    } catch (e) {
-      show({
-        title: apiMessage(e, "Couldn't change that. Please try again."),
-        tone: "alert",
-      });
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-8">
 
@@ -160,12 +139,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       ) : (
         <TableCard
           caption="Organizations, their staff logins, their access level, and how many programs each owns."
-          head={["Organization", "Login email", "Access", "Their page", "Programs", ""]}
+          head={["Organization", "Login email", "Access", "Programs", ""]}
         >
           {loading ? (
-            <EmptyRow colSpan={6} text="Loading…" />
+            <EmptyRow colSpan={5} text="Loading…" />
           ) : admins.length === 0 ? (
-            <EmptyRow colSpan={6} text="No organizations yet." />
+            <EmptyRow colSpan={5} text="No organizations yet." />
           ) : (
             admins.map((a) => {
               // "You" is your organization — the login you hold may be
@@ -216,46 +195,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                     <Pill tone={a.is_admin ? "warn" : "neutral"}>
                       {a.is_admin ? "Superadmin" : "Admin"}
                     </Pill>
-                  </td>
-                  <td className="px-3 py-3">
-                    {a.slug && (
-                      <span className="flex flex-col items-start gap-1">
-                        <span className="inline-flex items-center gap-1">
-                          <a
-                            href={`/o/${a.slug}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="whitespace-nowrap underline underline-offset-2"
-                          >
-                            /o/{a.slug}
-                          </a>
-                          <Button
-                            variant="ghost"
-                            aria-label={`Copy the link to ${a.name}'s page`}
-                            title="Copy link"
-                            onClick={() => {
-                              void copyText(orgSpaceUrl(a.slug!), show).then(
-                                (ok) => ok && show({ title: "Link copied." }),
-                              );
-                            }}
-                            leadingIcon={<Copy />}
-                          />
-                        </span>
-                        <span className="inline-flex flex-wrap items-center gap-2">
-                          <Pill tone={a.in_shared_feed === false ? "warn" : "neutral"}>
-                            {a.in_shared_feed === false ? "Own page only" : "Also in shared feed"}
-                          </Pill>
-                          <Button
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() => void setInShared(a, a.in_shared_feed === false)}
-                          >
-                            {a.in_shared_feed === false ? "Add to shared feed" : "Make own page only"}
-                            <span className="sr-only"> — {a.name}</span>
-                          </Button>
-                        </span>
-                      </span>
-                    )}
                   </td>
                   <td className="px-3 py-3">{a.event_count}</td>
                   <td className="px-3 py-3">
