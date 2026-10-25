@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ImageIcon, SendHorizontal, Trash2 } from "lucide-react";
+import { Copy, ImageIcon, Plus, SendHorizontal, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -352,7 +352,8 @@ function InviteForm({
   }
 
   return (
-    <section className="flex max-w-[1026px] flex-col gap-3">
+    // Boxed, so the two ways to add an organization read as one task.
+    <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
       <div>
         <h2 className="text-xl font-medium text-fg">Invite an organization</h2>
         <p className="text-xl text-fg">
@@ -433,22 +434,31 @@ function InviteForm({
             {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Checkbox
-            label="Superadmin: can manage every organization (KW Habilitation only)"
-            checked={isSuper}
-            onChange={(e) => setIsSuper(e.target.checked)}
-          />
-          <Button variant="ghost" onClick={onAddDirectly}>
-            Create an organization directly instead
-          </Button>
-        </div>
+        <Checkbox
+          label="Superadmin: can manage every organization (KW Habilitation only)"
+          checked={isSuper}
+          onChange={(e) => setIsSuper(e.target.checked)}
+        />
         {error && (
           <p role="alert" className="text-base text-danger-fg">
             {error}
           </p>
         )}
       </form>
+
+      {/* The other way in: set the organization up here, in person. */}
+      <div aria-hidden="true" className="flex items-center gap-4 text-sm text-fg-muted">
+        <span className="h-px flex-1 bg-line" />
+        or
+        <span className="h-px flex-1 bg-line" />
+      </div>
+      <Button
+        className="self-center"
+        leadingIcon={<Plus />}
+        onClick={onAddDirectly}
+      >
+        Create an organization
+      </Button>
     </section>
   );
 }
