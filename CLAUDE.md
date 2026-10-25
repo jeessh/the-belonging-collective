@@ -222,10 +222,12 @@ can open.
   menu has Change logo and Sign out) and **a side panel**
   (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
   links under the top bar below that, scrolled to the current one): Event
-  Management (first — every sign-in, reset and invite lands there), then for
-  superadmins Organization Management (`/host/admins`) and Member Management
-  (`/host/users`), then Analytics, Team, Special Access (pending-request
-  badge) and, superadmins only, Topics (`/host/topics`). There is no
+  Management (first — every sign-in, reset and invite lands there) with two
+  sub tabs indented under it, Analytics and (superadmins only) Topics
+  (`/host/topics`) — `children` on the item; below `lg` they join the
+  scrolling row as equals — then for superadmins Organization Management
+  (`/host/admins`) and Member Management (`/host/users`), then Team and
+  Special Access (pending-request badge). There is no
   in-page switch between those three any more — the side panel is it.
 - **Superadmins are added on purpose, never by a checkbox.** The
   organization invite and create forms always make an ordinary agency
