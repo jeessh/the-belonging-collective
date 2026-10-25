@@ -4,7 +4,6 @@ import { memo, type ReactNode } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
-  ChevronRight,
   Clock,
   MapPin,
   Pencil,
@@ -22,9 +21,9 @@ import { GoingCount } from "@/components/ui/GoingCount";
 import { eventUrl } from "@/components/CopyLinkButton";
 
 /**
- * The component sheet's "Admin – Listed Event": a square image with the
- * program's tools under it, the facts beside, and a chevron to the details
- * page at the edge.
+ * The component sheet's "Admin – Listed Event": a square image, the facts
+ * beside it, and the program's tools at the top right. The whole card opens
+ * the details page.
  *
  * The tools respect ownership. Edit and un-publish are only for the
  * organization that posted the program (or a superadmin); another agency's
@@ -58,61 +57,71 @@ export const AdminEventCard = memo(function AdminEventCard({
     });
   }
 
+  const tools = (
+    // Above the card's stretched link (z-10), so each tool is its own target.
+    <div className="relative z-10 flex items-center gap-1">
+      {canManage && (
+        <Link
+          href={`/host/events/${event.id}/edit`}
+          aria-label={`Edit ${event.title}`}
+          title="Edit"
+          className={TOOL}
+        >
+          <Pencil aria-hidden="true" className="size-4" />
+        </Link>
+      )}
+      <Tool label={`Share ${event.title}`} title="Share" onClick={() => void share()}>
+        <Send aria-hidden="true" className="size-4" />
+      </Tool>
+      <Tool label={`Print ${event.title}`} title="Print poster" onClick={() => onPrint(event)}>
+        <Printer aria-hidden="true" className="size-4" />
+      </Tool>
+      {canManage && (
+        <>
+          <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
+          <Tool
+            label={`Un-publish ${event.title}`}
+            title="Un-publish"
+            onClick={() => onUnpublish(event)}
+            className="bg-danger text-danger-fg hover:bg-danger-hover"
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+          </Tool>
+        </>
+      )}
+    </div>
+  );
+
   return (
+    // The whole card opens the details page: the title is its one link, and
+    // that link's ::after stretches over the card. The tools sit above it.
     <article
       id={`event-${event.id}`}
       aria-label={event.title}
-      className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-[188px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-6"
+      className="group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-colors hover:border-primary-border hover:bg-primary-soft/40 has-[:focus-visible]:border-primary-border sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
     >
-      {/* Image and tools: the whole width on a phone, a column from `sm`. */}
-      <div className="col-span-2 flex flex-col gap-3 sm:col-span-1">
-        <div className="relative aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:aspect-square">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={eventImage(event)}
-            alt=""
-            draggable={false}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </div>
-        <div className="flex items-center gap-1">
-          {canManage && (
-            <Link
-              href={`/host/events/${event.id}/edit`}
-              aria-label={`Edit ${event.title}`}
-              title="Edit"
-              className={TOOL}
-            >
-              <Pencil aria-hidden="true" className="size-5" />
-            </Link>
-          )}
-          <Tool label={`Share ${event.title}`} title="Share" onClick={() => void share()}>
-            <Send aria-hidden="true" className="size-5" />
-          </Tool>
-          <Tool label={`Print ${event.title}`} title="Print poster" onClick={() => onPrint(event)}>
-            <Printer aria-hidden="true" className="size-5" />
-          </Tool>
-          {canManage && (
-            <>
-              <span aria-hidden="true" className="mx-1 h-8 w-px bg-line" />
-              <Tool
-                label={`Un-publish ${event.title}`}
-                title="Un-publish"
-                onClick={() => onUnpublish(event)}
-                className="bg-danger text-danger-fg hover:bg-danger-hover"
-              >
-                <Trash2 aria-hidden="true" className="size-5" />
-              </Tool>
-            </>
-          )}
-        </div>
+      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={eventImage(event)}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-3">
-        <div className="flex flex-wrap gap-3">
+      <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
+        <div className="flex flex-wrap gap-2">
           <EventTags event={event} />
         </div>
-        <h3 className="text-xl font-medium leading-tight text-fg">{event.title}</h3>
+        <h3 className="text-xl font-medium leading-tight text-fg">
+          <Link
+            href={`/host/events/${event.id}`}
+            className="rounded-sm outline-none after:absolute after:inset-0 after:rounded-card after:content-[''] group-hover:underline focus-visible:underline"
+          >
+            {event.title}
+          </Link>
+        </h3>
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
           <Fact icon={<CalendarDays />}>
             <span className="whitespace-nowrap font-medium text-fg">{when.rel}</span>
@@ -136,19 +145,16 @@ export const AdminEventCard = memo(function AdminEventCard({
         )}
       </div>
 
-      <Link
-        href={`/host/events/${event.id}`}
-        aria-label={`View details for ${event.title}`}
-        title="View details"
-        className="grid size-11 place-items-center self-center rounded-full text-fg-icon hover:bg-surface-subtle"
-      >
-        <ChevronRight aria-hidden="true" className="size-7" />
-      </Link>
+      {/* Top right of the card; on a phone, over the picture's corner, so
+          the words keep the card's whole width. */}
+      <div className="self-start max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
+        {tools}
+      </div>
     </article>
   );
 });
 
-// The sheet's small round tool button; 44px so it can be hit.
+// The sheet's small round tool button (36px in the console's scale).
 const TOOL =
   "grid size-11 shrink-0 place-items-center rounded-full bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
 

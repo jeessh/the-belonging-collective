@@ -256,9 +256,12 @@ can open.
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
-  the component sheet's "Admin – Listed Event" (square image, the round
-  edit / share / print / un-publish tools under it, facts beside, a chevron
-  to the details page) beside `components/host/PostedEvents.tsx`'s accordion
+  the component sheet's "Admin – Listed Event" (square image, facts beside,
+  the round edit / share / print / un-publish tools at the top right — over
+  the picture's corner on a phone). **The whole card opens the details
+  page**: the title is the card's one link and its `::after` stretches over
+  the card; the tools are `relative z-10` above it. Keep any new control on
+  the card above that layer too, or clicks on it will open the event beside `components/host/PostedEvents.tsx`'s accordion
   `FilterPanel` (`ui/Checkbox` rows), with a Your Events / All Events toggle.
   Edit and un-publish show only for the owning organization or a superadmin;
   share and print for everyone. Un-publishing from the list or the details
