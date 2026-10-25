@@ -362,12 +362,10 @@ export function useLeaveGuard(dirty: boolean) {
 
 function Section({
   title,
-  lead,
   required,
   children,
 }: {
   title: string;
-  lead?: string;
   required?: boolean;
   children: ReactNode;
 }) {
@@ -379,7 +377,6 @@ function Section({
         {title}
         {required && <RequiredMark />}
       </legend>
-      {lead && <p className="text-base text-fg-muted">{lead}</p>}
       {children}
     </fieldset>
   );
@@ -677,14 +674,6 @@ export function EventForm({
                   />
                 )}
               </div>
-              {values.frequency !== "once" && (
-                <p className="text-base text-fg-muted">
-                  Each date is posted separately, so people can save the ones they
-                  can make.
-                  {values.repeatForever &&
-                    " We'll post dates about two years ahead and keep adding more."}
-                </p>
-              )}
             </Section>
           )}
         </div>
@@ -743,7 +732,7 @@ export function EventForm({
                     return (
                       <label
                         key={m}
-                        className={`flex cursor-pointer items-start gap-3 rounded-control border px-3 py-2 ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-control border px-3 py-2 ${
                           on
                             ? "border-primary-border bg-primary-soft"
                             : "border-line hover:bg-surface-subtle"
@@ -754,14 +743,9 @@ export function EventForm({
                           name={`${id}-pricing`}
                           checked={on}
                           onChange={() => set("pricingModel", m)}
-                          className="mt-1.5 size-4 accent-primary-border"
+                          className="size-4 accent-primary-border"
                         />
-                        <span>
-                          <span className="block text-lg text-fg">{t.label}</span>
-                          <span className="block text-sm text-fg-muted">
-                            {t.hint}
-                          </span>
-                        </span>
+                        <span className="text-lg text-fg">{t.label}</span>
                       </label>
                     );
                   })}
@@ -817,11 +801,6 @@ export function EventForm({
                     />
                   )}
                 </div>
-                {values.pricingModel === "series" && (
-                  <p className="text-base text-fg-muted">
-                    Signing up once enrols the member in every date in this series.
-                  </p>
-                )}
               </Section>
             )}
             <Section title="How people join">
@@ -856,17 +835,13 @@ export function EventForm({
                   page, and blocking that gets the link left out entirely. */}
               <p
                 role="status"
-                className={`text-base ${
+                className={
                   signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-tag-dropin-fg"
-                    : "text-fg-muted"
-                }`}
+                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                    : "sr-only"
+                }
               >
-                {signupHint?.tone === "warn"
-                  ? signupHint.message
-                  : values.requiresSignup
-                    ? "Where people register on your own site. Leave it blank if they sign up here instead."
-                    : "The program's page on your own site, if it has one."}
+                {signupHint?.tone === "warn" ? signupHint.message : ""}
               </p>
             </div>
           </Group>
@@ -918,7 +893,6 @@ export function EventForm({
             </Section>
             <Section
               title="What does it offer?"
-              lead="Only tick what you're sure of. Leaving one unticked doesn't mean no."
             >
               <div className="flex flex-wrap gap-2">
                 {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
@@ -938,7 +912,6 @@ export function EventForm({
             </Section>
             <Section
               title="Who can see this"
-              lead="Everyone, or only people you've approved into a special-access group."
             >
               <AccessPicker
                 hostId={hostId}
@@ -954,7 +927,6 @@ export function EventForm({
             <Section
               title="Activity Type"
               required
-              lead="Members pick these topics as interests, so this helps the right people find your event. Choose all that fit."
             >
               <div className="flex flex-wrap gap-2">
                 {categories.map((c) => {
@@ -976,7 +948,6 @@ export function EventForm({
           <Group title="Details & links">
             <Section
               title="Important Links"
-              lead="Up to three, like a flyer, a map or your own page. Each needs a label and a web address."
             >
               <div className="flex flex-col gap-3">
                 {values.links.map((link, i) => (
@@ -1023,7 +994,6 @@ export function EventForm({
             </Field>
             <Section
               title="Printable poster"
-              lead="Your own flyer: a PDF, PNG or JPEG up to 4 MB. Members can open it from the program's page. The details page has a QR code for that page."
             >
               <PosterField
                 value={values.posterUrl}
