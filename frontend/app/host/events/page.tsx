@@ -216,6 +216,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
               : "All Events"}
         </h1>
         <SegmentedToggle<Scope>
+          size="sm"
           label="Which events"
           className="max-w-full overflow-x-auto"
           value={scope}
@@ -281,7 +282,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         </div>
       ) : (
       <div className="flex flex-col items-start gap-8 lg:flex-row">
-        <div className="hidden w-[431px] shrink-0 lg:block">
+        <div className="hidden w-[280px] shrink-0 lg:block">
           <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
         </div>
 

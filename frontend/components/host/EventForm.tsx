@@ -1107,6 +1107,7 @@ export function EventForm({
             <Section title="Where">
               <div className="flex flex-col items-start gap-4">
                 <SegmentedToggle<"virtual" | "inperson">
+                  size="sm"
                   label="Venue"
                   value={values.isVirtual ? "virtual" : "inperson"}
                   onChange={(v) => setVenue(v === "virtual")}
@@ -1190,6 +1191,7 @@ export function EventForm({
             <Section title="Cost">
               <div className="flex flex-col items-start gap-4">
                 <SegmentedToggle<"free" | "paid">
+                  size="sm"
                   label="Cost"
                   value={paid ? "paid" : "free"}
                   onChange={(v) =>
@@ -1298,6 +1300,7 @@ export function EventForm({
             <Section title="How people join">
               <div className="flex flex-col items-start gap-4">
                 <SegmentedToggle<"dropin" | "registration">
+                  size="sm"
                   label="Registration"
                   value={values.requiresSignup ? "registration" : "dropin"}
                   onChange={(v) => set("requiresSignup", v === "registration")}
@@ -1381,6 +1384,7 @@ export function EventForm({
               </div>
               <Section title="Who is it for?">
                 <SegmentedToggle<"youth" | "everyone">
+                  size="sm"
                   className="self-start"
                   label="Audience"
                   value={values.isYouth ? "youth" : "everyone"}

@@ -364,6 +364,7 @@ function GroupPanel({
       </div>
 
       <SegmentedToggle<Tab>
+        size="sm"
         label="Members by status"
         className="self-start max-sm:w-full [&>button]:flex-1"
         value={tab}

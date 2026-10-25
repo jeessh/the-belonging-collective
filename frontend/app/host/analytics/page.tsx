@@ -220,6 +220,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
             row scrolls with an edge fade; wider, the toggle shows whole. */}
         <div className="max-w-full max-sm:overflow-x-auto max-sm:scroll-fade-x">
           <SegmentedToggle<Preset>
+            size="sm"
             label="Date range"
             value={preset}
             onChange={(next) => {

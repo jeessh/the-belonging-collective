@@ -96,7 +96,7 @@ export const FilterPanel = memo(function FilterPanel({
   return (
     <aside
       aria-label="Filter events"
-      className="w-full rounded-card border border-line bg-surface px-2.5 py-2 lg:w-[431px] lg:shrink-0"
+      className="w-full rounded-control border border-line bg-surface px-1 py-1 lg:w-[280px] lg:shrink-0"
     >
       {DIMENSIONS.map((d) => {
         const isOpen = open[d.key] ?? false;
@@ -109,29 +109,29 @@ export const FilterPanel = memo(function FilterPanel({
               type="button"
               onClick={() => setOpen((o) => ({ ...o, [d.key]: !isOpen }))}
               aria-expanded={isOpen}
-              className="flex min-h-14 w-full items-center gap-6 px-3 py-2 text-left text-xl text-fg"
+              className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-subtle"
             >
-              <span aria-hidden="true" className="w-6 shrink-0 text-fg-icon [&>svg]:size-6">
+              <span aria-hidden="true" className="w-4 shrink-0 text-fg-icon [&>svg]:size-4">
                 {group.icon}
               </span>
               <span className="flex-1">{group.label}</span>
               {chosen.length > 0 && (
-                <span className="grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-base font-medium text-fg">
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-medium text-fg">
                   {chosen.length}
                   <span className="sr-only"> selected</span>
                 </span>
               )}
               <ChevronDown
                 aria-hidden="true"
-                className={`size-6 shrink-0 text-fg-icon transition-transform ${
+                className={`size-4 shrink-0 text-fg-icon transition-transform ${
                   isOpen ? "rotate-180" : ""
                 }`}
               />
             </button>
             {isOpen && (
-              <div className="flex flex-col px-3 pb-3 pl-[60px]">
+              <div className="flex flex-col px-3 pb-2 pl-10">
                 {choices.length === 0 && (
-                  <p className="min-h-11 text-lg text-fg-muted">
+                  <p className="py-2 text-sm text-fg-muted">
                     Nothing to filter by yet.
                   </p>
                 )}
@@ -139,6 +139,7 @@ export const FilterPanel = memo(function FilterPanel({
                   <Checkbox
                     key={o.id}
                     label={o.label}
+                    dense
                     className="text-fg-muted"
                     checked={chosen.includes(o.id)}
                     onChange={() => toggle(d.key, o.id)}
@@ -156,11 +157,11 @@ export const FilterPanel = memo(function FilterPanel({
         role="radio"
         aria-checked={!anyChosen}
         onClick={() => onChange(NO_HOST_FILTERS)}
-        className="flex min-h-14 w-full items-center gap-6 px-3 py-2 text-left text-xl text-fg"
+        className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-subtle"
       >
         <span
           aria-hidden="true"
-          className="grid w-6 shrink-0 place-items-center text-fg-icon"
+          className="grid w-4 shrink-0 place-items-center text-fg-icon"
         >
           <span
             className={`size-3 rounded-full border-2 border-current ${

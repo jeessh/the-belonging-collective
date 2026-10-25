@@ -27,6 +27,7 @@ export function AccountsNav() {
       : "organizations";
   return (
     <SegmentedToggle<Tab>
+      size="sm"
       label="Account type"
       value={tab}
       onChange={(next) => {
