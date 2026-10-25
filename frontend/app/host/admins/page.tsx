@@ -132,6 +132,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </section>
       )}
 
+      <h2 className="-mb-5 text-xl font-medium text-fg">Organization Admins</h2>
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load accounts. Please refresh and try again.
