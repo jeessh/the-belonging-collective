@@ -94,7 +94,7 @@ function Members() {
       <AccountsNav />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+        <h1 className="text-3xl font-medium text-fg sm:text-4xl">
           Community Members
         </h1>
         <p className="text-xl text-fg">

@@ -208,7 +208,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+        <h1 className="text-3xl font-medium text-fg sm:text-4xl">
           {scope === "mine"
             ? "Your Events"
             : scope === "unpublished"

@@ -168,7 +168,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-[840px] flex-col gap-3">
-          <h1 className="text-4xl font-medium text-fg sm:text-5xl">
+          <h1 className="text-3xl font-medium text-fg sm:text-4xl">
             Analytics
           </h1>
           <p className="text-xl text-fg">
