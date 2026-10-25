@@ -106,10 +106,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
-          All Administrative Members
+          Organizations
         </h1>
         <p className="text-xl text-fg">
-          Every organization that can post events, and its staff logins.
+          Every organization that posts programs on the platform. Each one
+          manages its own events, staff and special access. Adding people
+          to an organization&apos;s own team happens on its Team page.
         </p>
       </div>
 
@@ -117,7 +119,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
 
       {invites.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-fg">Invitations waiting</h2>
+          <h2 className="text-xl font-medium text-fg">Organization invitations waiting</h2>
           <ul className="flex flex-col divide-y divide-line-active border-t border-line-active">
             {invites.map((inv) => (
               <li
@@ -154,13 +156,13 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </p>
       ) : (
         <TableCard
-          caption="Non-profits, their staff logins, their access level, and how many programs each owns."
-          head={["Non-Profit", "Email", "Access", "Programs", ""]}
+          caption="Organizations, their staff logins, their access level, and how many programs each owns."
+          head={["Organization", "Login email", "Access", "Programs", ""]}
         >
           {loading ? (
             <EmptyRow colSpan={5} text="Loading…" />
           ) : admins.length === 0 ? (
-            <EmptyRow colSpan={5} text="No accounts yet." />
+            <EmptyRow colSpan={5} text="No organizations yet." />
           ) : (
             admins.map((a) => {
               // "You" is your organization — the login you hold may be
@@ -352,10 +354,10 @@ function InviteForm({
   return (
     <section className="flex max-w-[1026px] flex-col gap-3">
       <div>
-        <h2 className="text-xl font-medium text-fg">Invite New Members</h2>
+        <h2 className="text-xl font-medium text-fg">Invite an organization</h2>
         <p className="text-xl text-fg">
-          Email a new organization an invite link. They choose their own
-          password when they open it.
+          For a new agency joining the platform. We email them a link to set
+          up their organization&apos;s login and choose a password.
         </p>
       </div>
 
@@ -418,7 +420,7 @@ function InviteForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email"
+            placeholder="Organization's email"
             autoComplete="off"
           />
           <Button
@@ -428,17 +430,17 @@ function InviteForm({
             disabled={busy || !organization.trim() || !email.trim()}
             trailingIcon={<SendHorizontal />}
           >
-            {busy ? "Sending…" : "Send Email"}
+            {busy ? "Sending…" : "Send invitation"}
           </Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Checkbox
-            label="Can manage other organizations (KW Habilitation staff only)"
+            label="Superadmin: can manage every organization (KW Habilitation only)"
             checked={isSuper}
             onChange={(e) => setIsSuper(e.target.checked)}
           />
           <Button variant="ghost" onClick={onAddDirectly}>
-            Create an account directly instead
+            Create an organization directly instead
           </Button>
         </div>
         {error && (
@@ -542,14 +544,14 @@ function AddAdminModal({
           `Check the email address and use at least ${PASSWORD_MIN_LENGTH} characters.`,
         );
       } else {
-        setError("Couldn't create that account. Please try again.");
+        setError("Couldn't create that organization. Please try again.");
       }
       setBusy(false);
     }
   }
 
   return (
-    <Modal title="Create an account" onClose={onClose}>
+    <Modal title="Create an organization" onClose={onClose}>
       <p className="mt-2 text-lg text-fg-muted">
         For setting up an organization in person. Give them the temporary
         password and ask them to change it.
@@ -585,7 +587,7 @@ function AddAdminModal({
           onChange={(e) => setPassword(e.target.value)}
         />
         <Checkbox
-          label="Can manage other organizations"
+          label="Superadmin: can manage every organization"
           checked={isSuper}
           onChange={(e) => setIsSuper(e.target.checked)}
         />
@@ -597,7 +599,7 @@ function AddAdminModal({
         <div className="flex flex-wrap justify-end gap-3">
           <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={!valid || busy}>
-            {busy ? "Creating…" : "Create account"}
+            {busy ? "Creating…" : "Create organization"}
           </Button>
         </div>
       </form>
@@ -624,7 +626,7 @@ function RemoveAdminModal({
       await deleteAdmin(admin.id);
       onRemoved(admin.name, admin.event_count);
     } catch (e) {
-      setError(apiMessage(e, "Couldn't remove that account. Please try again."));
+      setError(apiMessage(e, "Couldn't remove that organization. Please try again."));
       setBusy(false);
     }
   }
@@ -636,7 +638,7 @@ function RemoveAdminModal({
       title={
         <>
           <p className="text-2xl text-fg">
-            Are you sure you want to remove this account?
+            Are you sure you want to remove this organization?
           </p>
           <p className="mt-1 text-2xl font-medium italic text-fg">{admin.name}</p>
         </>

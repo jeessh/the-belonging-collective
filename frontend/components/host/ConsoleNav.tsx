@@ -36,7 +36,7 @@ const ITEMS: Item[] = [
   { href: "/host/access", label: "Special Access", icon: Lock, match: ["/host/access"] },
   {
     href: "/host/admins",
-    label: "Account Management",
+    label: "Organization Management",
     icon: UserCog,
     match: ["/host/admins", "/host/users", "/host/topics"],
     superOnly: true,

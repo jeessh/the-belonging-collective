@@ -297,10 +297,10 @@ function InviteStaffForm({
   return (
     <section className="flex max-w-[1026px] flex-col gap-3">
       <div>
-        <h2 className="text-xl font-medium text-fg">Add staff</h2>
+        <h2 className="text-xl font-medium text-fg">Add a staff member</h2>
         <p className="text-xl text-fg">
-          They get an email with a link, choose their own password, and sign in
-          as {orgName}.
+          Someone who works at {orgName}. They get an email with a link,
+          choose their own password, and manage {orgName}&apos;s programs.
         </p>
       </div>
 

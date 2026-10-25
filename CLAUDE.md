@@ -223,7 +223,7 @@ can open.
   (`components/host/ConsoleNav.tsx`, from `lg`; a scrolling row of the same
   links under the top bar below that, scrolled to the current one): Event
   Management (first — every sign-in, reset and invite lands there), Analytics,
-  Team, Special Access (pending-request badge) and Account Management
+  Team, Special Access (pending-request badge) and Organization Management
   (superadmins only; current on `/host/admins`, `/users`, `/topics`). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
