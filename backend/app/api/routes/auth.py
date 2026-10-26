@@ -147,6 +147,11 @@ def new_member(
             status.HTTP_409_CONFLICT, "Could not create the account — try again."
         )
     db.refresh(user)
+    # Special-access groups an organization added this address to before it
+    # had an account: approved now, with no request to make.
+    from app.core.access_invites import apply_pending
+
+    apply_pending(db, user)
     return user
 
 

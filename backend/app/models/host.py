@@ -49,6 +49,15 @@ class Host(Base):
     # Shown in the member feed's organization stepper. Null falls back to the
     # organization's initials.
     logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The organization's own space on the platform, /o/{slug}: the member
+    # feed with only this organization's programs. Organization rows only
+    # (null on a staff login); minted once from the name, never reused.
+    slug: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Whether its programs also show in the shared feed. Chosen when the
+    # organization is onboarded; off = its own space only.
+    in_shared_feed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
     # Set on a staff login: the organization it belongs to.
     org_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("hosts.id", ondelete="RESTRICT"), nullable=True
