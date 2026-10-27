@@ -43,7 +43,14 @@ export const FeedCard = memo(function FeedCard({
         event={event}
         layout="card"
         recommended={recommended}
-        going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
+        going={
+          // The feed card's fact icons are 36px (EventSummary's `icon`).
+          <GoingCount
+            count={event.saved_count}
+            onSignIn={onSignIn}
+            iconClassName="size-7 sm:size-9 short:!size-7"
+          />
+        }
         actions={
           <>
             <Button
