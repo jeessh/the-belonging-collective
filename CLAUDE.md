@@ -228,8 +228,8 @@ can open.
   (`/host/topics`) — `children` on the item; below `lg` they join the
   scrolling row as equals — then for superadmins Member Management
   (`/host/users`) with Special Access
-  (pending-request badge) as its sub tab. (There is no Team page any more.)
-  A sub tab whose parent
+  (pending-request badge) as its sub tab, then Team (`/host/team`, every
+  organization) last. A sub tab whose parent
   is hidden (Special Access, for an ordinary organization) takes the
   parent's place at the top level. There is no
   in-page switch between those three any more — the side panel is it.
@@ -238,14 +238,19 @@ can open.
   and inviting is the console's only way to add one — the "Create an
   organization" form (set a temporary password in person) was removed;
   `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
-  is its own form (what a superadmin can do, then an emailed invite with
-  `is_admin: true`). The Organizations table only shows each tier — there is no
+  is its own form (what a superadmin can do, a pointer to KWHab's Team page
+  — the usual way to give a KWHab person access — then an emailed invite
+  with `is_admin: true`). The Organizations table only shows each tier — there is no
   promote / demote button (the API's `PATCH /hosts/{id} {is_admin}` remains). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
-- `/host/analytics` is the grant-application numbers: KPI
+- `/host/team` is the organization's logins: the shared one, each staff
+  login, and staff invitations waiting (name + email → `POST /invites` with
+  `org_id`; the accept page at `/host/invite/[token]` reads `staff` from the
+  preview and creates the login under that org). A superadmin can pick any
+  organization. `/host/analytics` is the grant-application numbers: KPI
   tiles, `components/host/WeeklyChart.tsx` (inline SVG, three validated
   categorical hues, crosshair tooltip, a table twin under a `<details>`),
   the per-program table (sortable), a date range (presets + custom; default
@@ -595,15 +600,12 @@ Everything a staff login does is done *as the organization*:
   org alongside the login (and treats a login whose org is archived as
   archived). Use `is_superadmin`, not the `is_admin` column, when deciding
   what a caller may do — the column is meaningless on staff rows.
-- **Staff logins are no longer added.** The Team page (`/host/team`), its
-  routes (`GET /hosts/team`, `DELETE /hosts/team/{id}`) and staff
-  invitations (`POST /invites` with `org_id`) were removed as unnecessary;
-  `POST /invites` now only invites an organization. Everything else stays so
-  existing staff logins keep working: they sign in, act as their
-  organization and reset passwords by email; a staff invitation already
-  sent can still be accepted (`/host/invite/[token]` reads `staff` from the
-  preview); and `GET /hosts` (superadmin) still nests `staff` under each
-  organization.
+- Staff join by **invitation**: `POST /invites` with `org_id` + `name` (any
+  login of that org may send one, a superadmin for any org; the mail and the
+  accept flow are the same as an organization invite), `GET /hosts/team`
+  lists the org's logins and pending staff invites, `DELETE /hosts/team/{id}`
+  archives one staff login. `GET /hosts` (superadmin) nests `staff` under
+  each organization. Staff reset passwords by email like any organizer.
 
 **There is no host signup route.** It existed and was open to the internet;
 superadmins now create organizer accounts via `POST /hosts` or by issuing an
@@ -650,7 +652,8 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   visible but filed one agency's work under another's name — so both now get
   `deleted_at` and the programs stay attributed to the organization that ran
   them; the org's staff logins are archived in the same statement, since a
-  person can't act for an agency that has left. `hosts.email` is unique
+  person can't act for an agency that has left. Removing a staff login
+  (`DELETE /hosts/team/{id}`) archives just that row. `hosts.email` is unique
   over live rows only (`uq_hosts_email_live`), so an archived account
   releases its address and an agency that left can be invited back under it.
 - **A superadmin can't demote or delete themselves — or their own
