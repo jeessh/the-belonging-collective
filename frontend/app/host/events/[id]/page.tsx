@@ -398,7 +398,7 @@ function IconList({
 
 function Line({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <p className="flex items-center gap-2 text-xl text-fg">
+    <p className="flex items-center gap-2 text-base text-fg">
       <span aria-hidden="true" className="info-icon shrink-0 text-fg-icon [&>svg]:size-6">
         {icon}
       </span>

@@ -413,7 +413,7 @@ export function Group({ title, children }: { title: string; children: ReactNode 
     // A faint rule between groups: it separates without competing with the
     // fields.
     <section className="flex min-w-0 flex-col gap-4 border-t border-line/40 pt-5 first:border-t-0 first:pt-0">
-      <h2 className="text-xl font-medium text-fg">{title}</h2>
+      <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
   );
