@@ -25,6 +25,7 @@ import {
   controlClass,
 } from "@/components/AdminTable";
 import { Modal } from "@/components/Modal";
+import { Glyph } from "@/components/ui/Glyph";
 
 /**
  * The topic list — what members pick as interests and hosts file programs
@@ -246,7 +247,7 @@ function Topics() {
                       </form>
                     ) : (
                       <span className="inline-flex items-center gap-3">
-                        <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
+                        <Glyph icon={categoryStyle(c.slug).icon} />
                         {c.label}
                         <span className="text-base text-fg-muted">{c.slug}</span>
                       </span>

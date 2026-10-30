@@ -26,7 +26,6 @@ export type Dimension = {
   label: string;
   /** Long form, shown as the page heading. */
   heading: string;
-  emoji: string;
   /** Which bucket an event belongs to. */
   bucket: (event: Event) => {
     id: string;
@@ -34,14 +33,6 @@ export type Dimension = {
     color: string;
     /** Shown instead of initials when the bucket has one. */
     logoUrl?: string | null;
-    /**
-     * The glyph on the stepper ring. Every dimension but organization sets one:
-     * two-letter initials of "Sign up on their site" or "In person" told a
-     * member nothing, and this is a surface built for people who read icons
-     * faster than words. Organizations keep initials, because a generic
-     * building glyph on all six rings would identify none of them.
-     */
-    icon?: string;
   };
   /**
    * Every bucket an event belongs to, for filtering, where it can be in more
@@ -97,7 +88,6 @@ export const DIMENSIONS: Dimension[] = [
     key: "org",
     label: "Non-Profit Org.",
     heading: "Non-Profit Organization",
-    emoji: "🏢",
     bucket: (e) => {
       const name = e.host_name || "Community";
       return {
@@ -112,36 +102,32 @@ export const DIMENSIONS: Dimension[] = [
     key: "price",
     label: "Cost",
     heading: "Cost",
-    emoji: "💲",
     bucket: (e) =>
       e.is_free
-        ? { id: "free", label: "Free", color: "#2FA36B", icon: "🆓" }
-        : { id: "paid", label: "Paid", color: "#F59E0B", icon: "💲" },
+        ? { id: "free", label: "Free", color: "#2FA36B" }
+        : { id: "paid", label: "Paid", color: "#F59E0B" },
   },
   {
     key: "registration",
     label: "Registration Type",
     heading: "Registration Type",
-    emoji: "📋",
     // The three states a member actually experiences. Whether sign-up is
     // internal or external only changes anything when sign-up is required, so
     // drop-in is one bucket rather than two.
     bucket: (e) => {
       if (!e.requires_signup) {
-        return { id: "dropin", label: "Drop in", color: "#22C55E", icon: "🚪" };
+        return { id: "dropin", label: "Drop in", color: "#22C55E" };
       }
       return e.registration_mode === "external"
         ? {
             id: "external",
             label: "Registration (link given)",
             color: "#3B82F6",
-            icon: "🔗",
           }
         : {
             id: "internal",
             label: "Registration (no link)",
             color: "#9B5BD6",
-            icon: "✍️",
           };
     },
   },
@@ -149,7 +135,6 @@ export const DIMENSIONS: Dimension[] = [
     key: "eventType",
     label: "Event Type",
     heading: "Event Type",
-    emoji: "🗂️",
     // Virtual, in person, or for youth — the same three the admin filters on.
     bucket: (e) => (e.is_youth ? YOUTH : venueOf(e)),
     // The form asks venue and audience separately, so a virtual youth
@@ -160,7 +145,6 @@ export const DIMENSIONS: Dimension[] = [
     key: "activityType",
     label: "Activity Type",
     heading: "Activity Type",
-    emoji: "🎉",
     // The topic list. "Activity Type" is what the design calls it, and it is
     // what members pick as interests, so the feed groups on the same field the
     // matching runs on.
@@ -171,25 +155,22 @@ export const DIMENSIONS: Dimension[] = [
   },
 ];
 
-const YOUTH = { id: "youth", label: "Youth", color: "#F59E0B", icon: "🧒" };
+const YOUTH = { id: "youth", label: "Youth", color: "#F59E0B" };
 
 const venueOf = (e: Event) =>
   e.is_virtual
-    ? { id: "virtual", label: "Virtual", color: "#3B82F6", icon: "💻" }
-    : { id: "inperson", label: "In person", color: "#2FA36B", icon: "📍" };
+    ? { id: "virtual", label: "Virtual", color: "#3B82F6" }
+    : { id: "inperson", label: "In person", color: "#2FA36B" };
 
 function topicBucket(slug: string) {
   // The bucket is the slug; the label is looked up, so a renamed topic
   // regroups nothing. Callers hold `useCategories()` so this re-runs once the
   // list has loaded.
   const style = categoryStyle(slug);
-  // The same emoji the topic chips use, so a topic looks the same wherever it
-  // turns up — on the signup chips, the host form, and here.
   return {
     id: slug || FALLBACK_CATEGORY,
     label: slug ? categoryLabel(slug) : FALLBACK_CATEGORY,
     color: style.color,
-    icon: style.emoji,
   };
 }
 
@@ -201,7 +182,6 @@ export type Bucket = {
   label: string;
   color: string;
   logoUrl?: string | null;
-  icon?: string;
   /** Index in the feed of this bucket's first event — what jumping lands on. */
   index: number;
 };

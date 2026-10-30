@@ -14,7 +14,7 @@ const BY_TITLE: [RegExp, string][] = [
   [/\b(farm|garden|hik(e|ing)|walk(s|ing)?)\b/i, "outdoors.jpg"],
 ];
 
-// Keyed by topic slug, like the emoji and colours in lib/categories.ts, so a
+// Keyed by topic slug, like the icons and colours in lib/categories.ts, so a
 // rename keeps its picture. Several per topic where we have them: with one,
 // a run of programs on the same topic showed the same photo card after card.
 // A topic missing here gets EVENT_PLACEHOLDER.

@@ -238,6 +238,38 @@ body {
 .console .rounded-card:not(.print-target *) { border-radius: 12px; }
 
 /*
+ * Form fields — one rule for every console form. A field (`.field`: TextField,
+ * AdminTable's Field, the event form's Section) is its label over its control.
+ *
+ * Labels (`.field-label`) are regular weight in a dark grey: lighter than what
+ * is typed (`fg`), so the answers lead, and darker than placeholder text
+ * (`fg-muted`), so a label never reads as a placeholder.
+ *
+ * Spacing: 6px from a label to its control (and to its error), 16px from one
+ * field to the next — whatever gap the container was written with. A fieldset's
+ * legend isn't a flex item, so it takes a margin instead, and the fieldset's
+ * own parts (a chip row, then the fields under it) sit 12px apart.
+ */
+.console .field-label:not(.print-target *) { font-weight: 400; color: #4d4d4d; }
+.console .field:not(.print-target *) { row-gap: 6px; }
+.console fieldset.field:not(.print-target *) { row-gap: 12px; }
+.console fieldset.field > legend:not(.print-target *) { margin-bottom: 6px; }
+.console :is(form, div, section):has(> .field):not(.print-target *) { row-gap: 16px; }
+
+/*
+ * A field's leading icon (date, time, place): small, light and thin, close to
+ * the box's left edge, so it marks the field without competing with the
+ * answer. Date and time boxes drop the browser's own picker button on the
+ * right — clicking anywhere in the box opens the picker (TextField), and the
+ * keyboard still types and steps through the parts.
+ */
+.console .field-box.has-icon:not(.print-target *) { padding-left: 10px; column-gap: 8px; }
+.console .field-icon:not(.print-target *) { color: #838383; }
+.console .field-icon > svg:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.5; }
+.console input:is([type="date"], [type="time"])::-webkit-calendar-picker-indicator { display: none; }
+.console input:is([type="date"], [type="time"]):not(.print-target *) { cursor: pointer; }
+
+/*
  * The event form on top of that (`.form-dense`): every label, hint and
  * help line is body text, and its step heading is 20px.
  */

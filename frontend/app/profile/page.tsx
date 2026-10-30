@@ -43,6 +43,7 @@ import { Modal } from "@/components/Modal";
 import { FeedLoading } from "@/components/member/FeedLoading";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
 import { FormFooter } from "@/components/member/FormFooter";
+import { Glyph } from "@/components/ui/Glyph";
 
 /**
  * The member's own settings: email, picture, list link, and the people on
@@ -417,7 +418,7 @@ export default function ProfilePage() {
             aria-label="Choose an emblem"
             className="grid grid-cols-4 gap-3 sm:grid-cols-8"
           >
-            {EMBLEMS.map(({ slug, emoji, label }) => {
+            {EMBLEMS.map(({ slug, icon, label }) => {
               const pressed = me.avatar_emblem === slug;
               return (
                 <button
@@ -433,7 +434,7 @@ export default function ProfilePage() {
                       : "border-line bg-surface hover:bg-surface-subtle"
                   }`}
                 >
-                  <span aria-hidden="true">{emoji}</span>
+                  <Glyph icon={icon} className="text-fg-icon" />
                 </button>
               );
             })}

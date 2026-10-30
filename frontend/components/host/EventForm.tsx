@@ -37,6 +37,7 @@ import {
   type PricingModel,
 } from "@/lib/pricing";
 import { FREQUENCIES, type Frequency } from "@/lib/recurrence";
+import { Glyph } from "@/components/ui/Glyph";
 
 /** A location that is a meeting app or plainly online, not a place. */
 const ONLINE_PLACE = /\b(online|virtual|zoom|teams|google meet|meet\.google|webex|skype)\b/i;
@@ -395,8 +396,8 @@ function Section({
   return (
     // min-w-0: a fieldset is min-content wide by default, which pushed the
     // form past a phone's width.
-    <fieldset className="flex min-w-0 flex-col gap-3">
-      <legend className="text-lg font-medium text-fg">
+    <fieldset className="field flex min-w-0 flex-col gap-3">
+      <legend className="field-label text-lg font-medium text-fg">
         {title}
         {required && <RequiredMark />}
       </legend>
@@ -408,7 +409,9 @@ function Section({
 /** One titled part of the form: a heading over its fields, a rule above. */
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line pt-5 first:border-t-0 first:pt-0">
+    // A faint rule between groups: it separates without competing with the
+    // fields.
+    <section className="flex min-w-0 flex-col gap-4 border-t border-line/40 pt-5 first:border-t-0 first:pt-0">
       <h2 className="text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -568,6 +571,7 @@ export function EventForm({
           <Section title="Event image" required={mode === "create"}>
             <ImageDrop
               compact
+              square
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
@@ -600,8 +604,8 @@ export function EventForm({
               set("date", v);
             }}
           />
-          <div className="flex flex-col gap-2">
-            <p className="text-lg font-medium text-fg">
+          <div className="field flex flex-col gap-2">
+            <p className="field-label text-lg font-medium text-fg">
               Time
               <RequiredMark />
             </p>
@@ -617,7 +621,10 @@ export function EventForm({
                 error={fieldError("time")}
                 onChange={(e) => set("time", e.target.value)}
               />
-              <span aria-hidden="true" className="mt-6 h-px w-[30px] shrink-0 bg-fg-icon" />
+              {/* Centred on the boxes (36px), whatever errors show under them. */}
+              <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
+                <span className="h-px w-3 bg-fg-icon-muted" />
+              </span>
               <TextField
                 label="End time"
                 placeholder="11:00 AM"
@@ -658,7 +665,7 @@ export function EventForm({
             }
           />
           {mode === "create" && (
-            <Section title="Does it repeat?">
+            <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">
                 <Field label="How often" className="min-w-[200px]">
                   <Select
@@ -918,7 +925,7 @@ export function EventForm({
               title="What does it offer?"
             >
               <div className="flex flex-wrap gap-2">
-                {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
+                {SELECTABLE_TAGS.map(({ slug, label, icon }) => {
                   const on = values.accessibilityTags.includes(slug);
                   return (
                     <FilterChip
@@ -926,7 +933,7 @@ export function EventForm({
                       selected={on}
                       onClick={() => toggle("accessibilityTags", slug)}
                     >
-                      <span aria-hidden="true">{emoji}</span>
+                      <Glyph icon={icon} />
                       &nbsp;{label}
                     </FilterChip>
                   );
@@ -960,7 +967,7 @@ export function EventForm({
                       selected={on}
                       onClick={() => toggle("categories", c.slug)}
                     >
-                      <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
+                      <Glyph icon={categoryStyle(c.slug).icon} />
                       &nbsp;{c.label}
                     </FilterChip>
                   );

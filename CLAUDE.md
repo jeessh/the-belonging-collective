@@ -338,6 +338,16 @@ can open.
   Tailwind classes — the remap does the rest — and check a new page with
   the sizes in mind rather than adding one-off overrides. The member app
   has no `.console`, so its large accessible sizes are untouched.
+- **Console form fields** (`globals.css`, under `.console`): every field is
+  `.field` (TextField, AdminTable's `Field`, the event form's `Section`) with
+  a `.field-label` — regular weight, `#4d4d4d`, lighter than answers and
+  darker than placeholders. Spacing is one rule: 6px label→control, 16px
+  field→field (any container holding fields), 12px inside a fieldset. A
+  field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
+  grey, 10px from the edge; date and time boxes hide the browser's picker
+  button and open the picker on click (`TextField`). In the event form the
+  image box is square (`ImageDrop square`) and the right column's dividers
+  are `border-line/40`.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;
   don't "harmonize" the two surfaces just because the sidebar went.
@@ -438,8 +448,17 @@ can open.
   `require_live_slugs`, so a value typed by hand can never reach the database.
   On the frontend `lib/categories.ts` fetches the list once per page load
   (`useCategories()` for chips and pickers, `categoryLabel(slug)` for plain
-  functions like `lib/dimensions.ts`); emoji/colour per slug stay in that
-  file, so a new topic gets a stable hashed colour. Migration
+  functions like `lib/dimensions.ts`); icon/colour per slug stay in that
+  file, so a new topic gets a stable hashed colour and the fallback icon.
+- **No emoji anywhere — every picture is a Lucide icon** (the app's one icon
+  set). Topics (`categoryStyle(slug).icon`), access needs
+  (`ACCESSIBILITY_TAGS[].icon`, `tagIcon`), profile emblems (`emblemIcon`) and
+  the unused activity kinds hold a `LucideIcon`, drawn through `ui/Glyph`,
+  which sizes it to the surrounding text (1em) — so the same chip works at
+  14px in the console and 30px on the sign-up tiles. Lucide has no butterfly:
+  the `butterfly` emblem (slug unchanged, it's stored) is a flower, labelled
+  "Flower". Check a new icon exists in the installed lucide-react before
+  using it. Migration
   `0022_categories` rewrote the stored labels to slugs (ignoring case and stray spaces) and
   keeps anything it doesn't recognise as-is (the archived demo programming's
   `Advice`/`Arts`/`Hangout`/`Food`) — don't add a free-text category input,

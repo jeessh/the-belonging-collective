@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { ExternalLink, FileText, Paperclip } from "lucide-react";
-import { isDerivedTag, tagEmoji, tagLabel } from "@/lib/accessibility";
+import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
 import { EventSummary, EventTags } from "@/components/ui/EventSummary";
 import { HoldInfo } from "@/components/member/HoldInfo";
+import { Glyph } from "@/components/ui/Glyph";
 
 // The design's LINKS box: one bordered frame, a row per link, the paperclip
 // (or the file's own icon) at the row's end.
@@ -144,7 +145,7 @@ export function EventDetails({
                 key={slug}
                 className="inline-flex items-center gap-2 rounded-control border border-line bg-surface-subtle px-3 py-1.5 text-lg text-fg"
               >
-                <span aria-hidden="true">{tagEmoji(slug)}</span>
+                <Glyph icon={tagIcon(slug)} className="text-fg-icon" />
                 {tagLabel(slug)}
               </li>
             ))}

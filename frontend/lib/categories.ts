@@ -1,3 +1,23 @@
+import {
+  Apple,
+  Bike,
+  BookOpen,
+  Coffee,
+  CookingPot,
+  Dumbbell,
+  Gamepad2,
+  Handshake,
+  Headphones,
+  HeartHandshake,
+  Palette,
+  PartyPopper,
+  Sprout,
+  Ticket,
+  Trophy,
+  Backpack,
+  Leaf,
+  type LucideIcon,
+} from "lucide-react";
 import { api, type CategoryRow } from "@/lib/api";
 
 /**
@@ -9,7 +29,7 @@ import { api, type CategoryRow } from "@/lib/api";
  * a topic typed by hand can never match anyone.
  */
 export type Category = CategoryRow;
-export type CategoryStyle = { emoji: string; color: string };
+export type CategoryStyle = { icon: LucideIcon; color: string };
 
 // The list is fetched once per page load and shared by every caller. It is
 // module state rather than context so plain functions (dimensions.ts) can read
@@ -73,30 +93,30 @@ export function categoryLabel(
 
 /** Shown for a program with no topic. Not a topic anyone can be interested in. */
 export const FALLBACK_CATEGORY = "General";
-const FALLBACK_STYLE: CategoryStyle = { emoji: "🎟️", color: "#5B5BD6" };
+const FALLBACK_STYLE: CategoryStyle = { icon: Ticket, color: "#5B5BD6" };
 
-// Emoji and colour per slug, for the chips and the stepper. Keyed by slug so a
-// rename keeps its look; a topic added in the console gets a stable hashed
-// colour and the fallback glyph. The legacy hackathon slugs keep theirs so the
+// Icon (Lucide, the app's one icon set) and colour per slug, for the chips.
+// Keyed by slug so a rename keeps its look; a topic added in the console gets
+// a stable hashed colour and the fallback icon. The legacy hackathon slugs keep theirs so the
 // archived demo programming still reads the same.
 const STYLES: Record<string, CategoryStyle> = {
-  education: { emoji: "📚", color: "#4C6EE8" },
-  social: { emoji: "🎉", color: "#E86A4C" },
-  recreation: { emoji: "🎳", color: "#3AA0C2" },
-  "support-group": { emoji: "🤝", color: "#2FA36B" },
-  cooking: { emoji: "🍳", color: "#E8318A" },
-  fundraising: { emoji: "💛", color: "#E8A33D" },
-  "youth-programs": { emoji: "🧒", color: "#9B5BD6" },
-  wellness: { emoji: "🌿", color: "#2F8F5B" },
-  fitness: { emoji: "🏃", color: "#F59E0B" },
-  "arts-crafts": { emoji: "🎨", color: "#E84C88" },
-  music: { emoji: "🎧", color: "#6366F1" },
-  games: { emoji: "🎮", color: "#3B82F6" },
-  sports: { emoji: "🏐", color: "#22C55E" },
-  hangout: { emoji: "☕", color: "#22C55E" },
-  food: { emoji: "🍌", color: "#E8318A" },
-  advice: { emoji: "🌱", color: "#2FA36B" },
-  arts: { emoji: "🎨", color: "#F59E0B" },
+  education: { icon: BookOpen, color: "#4C6EE8" },
+  social: { icon: PartyPopper, color: "#E86A4C" },
+  recreation: { icon: Bike, color: "#3AA0C2" },
+  "support-group": { icon: Handshake, color: "#2FA36B" },
+  cooking: { icon: CookingPot, color: "#E8318A" },
+  fundraising: { icon: HeartHandshake, color: "#E8A33D" },
+  "youth-programs": { icon: Backpack, color: "#9B5BD6" },
+  wellness: { icon: Leaf, color: "#2F8F5B" },
+  fitness: { icon: Dumbbell, color: "#F59E0B" },
+  "arts-crafts": { icon: Palette, color: "#E84C88" },
+  music: { icon: Headphones, color: "#6366F1" },
+  games: { icon: Gamepad2, color: "#3B82F6" },
+  sports: { icon: Trophy, color: "#22C55E" },
+  hangout: { icon: Coffee, color: "#22C55E" },
+  food: { icon: Apple, color: "#E8318A" },
+  advice: { icon: Sprout, color: "#2FA36B" },
+  arts: { icon: Palette, color: "#F59E0B" },
 };
 
 // Stable fallback palette for unknown slugs (hashed → same colour always).
@@ -117,5 +137,5 @@ export function categoryStyle(slug?: string | null): CategoryStyle {
   if (known) return known;
   let h = 0;
   for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
-  return { emoji: FALLBACK_STYLE.emoji, color: PALETTE[h % PALETTE.length] };
+  return { icon: FALLBACK_STYLE.icon, color: PALETTE[h % PALETTE.length] };
 }

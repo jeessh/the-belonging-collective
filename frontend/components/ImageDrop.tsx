@@ -23,6 +23,7 @@ export function ImageDrop({
   onChange,
   sizing = "cover",
   compact = false,
+  square = false,
 }: {
   label: string;
   /** The current URL, "" for none. */
@@ -32,6 +33,11 @@ export function ImageDrop({
   sizing?: SizingKey;
   /** A shorter box, for a form that has to fit on one screen. */
   compact?: boolean;
+  /**
+   * The preview and the empty drop box as tall as they are wide — the event
+   * form's left column, matching the console's square event cards.
+   */
+  square?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -77,7 +83,7 @@ export function ImageDrop({
             src={value}
             alt=""
             className={`rounded-control object-cover ${
-              logo ? "size-40" : "aspect-[598/278] w-full"
+              logo ? "size-40" : square ? "aspect-square w-full" : "aspect-[598/278] w-full"
             }`}
           />
           <div className="flex flex-wrap gap-3">
@@ -116,7 +122,9 @@ export function ImageDrop({
             dragOver
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
-          } ${logo ? "" : compact ? "min-h-[160px]" : "min-h-[278px]"}`}
+          } ${
+            logo ? "" : square ? "aspect-square w-full" : compact ? "min-h-[160px]" : "min-h-[278px]"
+          }`}
         >
           <ArrowUpFromLine
             aria-hidden="true"
