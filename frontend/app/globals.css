@@ -242,8 +242,6 @@ body {
    16px arrow, still 36px tall like the other controls. */
 .console .back-button svg:not(.print-target *) { width: 16px; height: 16px; }
 
-/* Cards: less rounded. */
-.console .rounded-card:not(.print-target *) { border-radius: 12px; }
 
 /*
  * Form fields — one rule for every console form. A field (`.field`: TextField,

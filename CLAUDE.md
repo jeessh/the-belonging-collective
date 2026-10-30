@@ -352,7 +352,7 @@ can open.
   puts `.console` on every console page, and `globals.css` maps the shared
   components' member-app sizes onto it: 12px small, 14px body (and tables),
   16px card/section titles and page leads, 20/24px headings, 30/36px page
-  titles (`h1`), 36px controls, 12px card corners; printouts
+  titles (`h1`), 36px controls; printouts
   (`.print-target`) are exempt. Write console markup with the normal
   Tailwind classes — the remap does the rest — and check a new page with
   the sizes in mind rather than adding one-off overrides. The member app
@@ -384,6 +384,11 @@ can open.
   page itself, not just the nav entry. The API refuses regardless.
 
 ### Shared
+- **Every corner is 8px.** `tailwind.config.ts` resolves `rounded`,
+  `rounded-sm` … `rounded-3xl` and the named `control` / `field` / `card`
+  radii all to 8px, and the branded emails (`core/mail.py`) match.
+  `rounded-full` stays round (avatars, the round tool buttons, badges,
+  pills); the browser-tab icon keeps its own shape.
 - **One back control everywhere: `ui/BackButton`** — an arrow and its
   words ("← Back to events", "← Back"), a link or a button, on its own line
   **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).

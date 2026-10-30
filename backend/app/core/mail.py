@@ -68,7 +68,7 @@ def _button(label: str, url: str) -> str:
     # Full width, the design's email button.
     return (
         f'<p style="margin:8px 0 24px"><a href="{html.escape(url, quote=True)}" '
-        f'style="display:block;padding:14px 20px;border-radius:12px;text-align:center;'
+        f'style="display:block;padding:14px 20px;border-radius:8px;text-align:center;'
         f"border:2px solid {BUTTON_EDGE};background:{BUTTON};color:{INK};"
         f'font-size:17px;font-weight:600;text-decoration:none">{html.escape(label)}</a></p>'
     )
@@ -99,7 +99,7 @@ def _card(lines: list[str], picture: str | None) -> str:
     return (
         '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" '
         f'style="margin:0 0 20px;border-collapse:separate;border:1px solid {LINE};'
-        'border-radius:16px;overflow:hidden">'
+        'border-radius:8px;overflow:hidden">'
         f'{image}<tr><td style="padding:20px">{text}</td></tr></table>'
     )
 
@@ -150,7 +150,7 @@ def render_html(
     return f"""<!doctype html>
 <html lang="en">
 <body style="margin:0;padding:24px 12px;background:{PAGE};font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid {LINE};border-radius:20px;overflow:hidden">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid {LINE};border-radius:8px;overflow:hidden">
     <div style="background:{BAND};border-bottom:1px solid {BUTTON_EDGE};padding:16px;text-align:center">
       <img src="{logo}" alt="KW Habilitation" height="40" style="display:inline-block;height:40px;width:auto;border:0">
     </div>
