@@ -198,7 +198,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       >
         <div className="flex min-w-0 flex-col gap-4">
           <ReadField label="Event image">
-            <div className="aspect-square w-full overflow-hidden rounded-control bg-surface-subtle">
+            {/* The form's frame: 300px tall, full width, cropped to fill. */}
+            <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
             </div>

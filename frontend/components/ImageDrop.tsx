@@ -35,9 +35,10 @@ export function ImageDrop({
   /** The event form's box: smaller icon and spacing, no "Or" divider, 300px tall. */
   compact?: boolean;
   /**
-   * The preview as tall as it is wide — the event form's left column,
-   * matching the console's square event cards. The empty drop box keeps its
-   * own (shorter) height.
+   * The event form's frame: 300px tall and the column's full width, the
+   * picture cropped to fill it — the same frame whether a picture is there
+   * or not (the empty grey box is 300px too), and the same as the details
+   * page shows.
    */
   square?: boolean;
   /**
@@ -95,7 +96,7 @@ export function ImageDrop({
             src={shown}
             alt=""
             className={`rounded-control object-cover ${
-              logo ? "size-40" : square ? "aspect-square w-full" : "aspect-[598/278] w-full"
+              logo ? "size-40" : square ? "h-[300px] w-full" : "aspect-[598/278] w-full"
             }`}
           />
           <div className="flex flex-wrap gap-3">

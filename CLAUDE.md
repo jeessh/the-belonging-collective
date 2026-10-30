@@ -355,8 +355,8 @@ can open.
   card's or the details page's date / time / place, the going and clicks
   counts, the filter groups) carry `.info-icon` and get the same look, 8px
   from their text; icons on buttons are actions and keep their size. In the event form the
-  image preview is square (`ImageDrop square`); with no picture it is a
-  plain grey 300px box with one "Upload image" button (drop still works).
+  picture sits in a 300px-tall, full-width frame, cropped to fill
+  (`ImageDrop square`); with no picture it is a plain grey 300px box with one "Upload image" button (drop still works).
   Editing passes `imageFallback={eventImage(event)}`, so an event without a
   cover of its own shows the picture members see (another of its images or
   the topic's stock photo) with Change / Remove; Remove leaves the grey box,
