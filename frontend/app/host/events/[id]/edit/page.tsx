@@ -106,24 +106,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-9">
-      <PageHeader
-        title="Edit Event Details"
-        backHref={`/host/events/${event.id}`}
-        backLabel="Back to event details"
-        onBack={onBack}
-        actions={
-          <Button
-            type="submit"
-            form={FORM_ID}
-            variant="primary"
-            disabled={busy}
-            trailingIcon={<Upload />}
-          >
-            {busy ? "Saving…" : "Save Edits"}
-          </Button>
-        }
-      />
+    <div className="flex flex-col">
       <EventForm
         id={FORM_ID}
         mode="edit"
@@ -137,6 +120,23 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         submitLabel="Save Edits"
         submittingLabel="Saving…"
         imageFallback={eventImage(event)}
+        header={{
+          backHref: `/host/events/${event.id}`,
+          backLabel: "Back to event details",
+          onBack,
+          subtitle: `Posted by ${event.host_name}`,
+          actions: (
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              disabled={busy}
+              trailingIcon={<Upload />}
+            >
+              {busy ? "Saving…" : "Save Edits"}
+            </Button>
+          ),
+        }}
       />
       {dialog}
     </div>

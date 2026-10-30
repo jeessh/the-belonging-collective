@@ -317,9 +317,17 @@ can open.
   link, the poster or its QR code (its public page is gone). Its back arrow
   returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
   shares `EventForm` with create.
+  **The event's name is the page title** on every event page (28px,
+  `.event-title`; the header's buttons sit on their own line under it,
+  `PageHeader actionsBelow`). In the form it is typed right there: `EventForm`
+  draws its own header (the page passes `header` — back link, subtitle,
+  buttons), whose title is the name input (reads as a heading, shows it's
+  editable on hover / focus, carries the required error); the form has no
+  separate name box. The details page's title is `event.title`.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
-  order, below): on the left the event image, name, date and time, where,
-  and repeats; on the right `Group`s for Description, Cost & sign-up, Who
+  order, below): on the left, under an "Event details" heading (same size as
+  the right column's group headings — on the details page too), the event
+  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up, Who
   it's for, Topics and Details & links. **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"

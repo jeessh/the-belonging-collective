@@ -138,7 +138,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Event Details"
+        title={event.title}
+        titleClassName="event-title"
+        actionsBelow
         subtitle={`Posted by ${event.host_name}`}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
@@ -197,15 +199,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       >
         <div className="flex min-w-0 flex-col gap-4">
+          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           <ReadField label="Event image">
             {/* The form's frame: 300px tall, full width, cropped to fill. */}
             <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
             </div>
-          </ReadField>
-          <ReadField label="Name of Event">
-            <h2 className="text-base font-normal text-fg">{event.title}</h2>
           </ReadField>
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>

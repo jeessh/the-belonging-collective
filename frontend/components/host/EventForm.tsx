@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  Pencil,
   Upload,
 } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
@@ -38,6 +39,7 @@ import {
 } from "@/lib/pricing";
 import { FREQUENCIES, type Frequency } from "@/lib/recurrence";
 import { Glyph } from "@/components/ui/Glyph";
+import { PageHeader } from "@/components/host/PageHeader";
 
 /** A location that is a meeting app or plainly online, not a place. */
 const ONLINE_PLACE = /\b(online|virtual|zoom|teams|google meet|meet\.google|webex|skype)\b/i;
@@ -434,6 +436,7 @@ export function EventForm({
   submitLabel,
   submittingLabel,
   imageFallback,
+  header,
 }: {
   /** The page's submit button points at this with `form={id}`. */
   id: string;
@@ -461,6 +464,19 @@ export function EventForm({
    * of its own (another of its images, or the stock photo for its topic).
    */
   imageFallback?: string;
+  /**
+   * The page header the form draws: its title is the event's name, editable
+   * right there (so the name has no box of its own in the form); the page
+   * supplies the back link, the line under the title and the buttons, which
+   * sit on their own line below.
+   */
+  header: {
+    backHref: string;
+    backLabel?: string;
+    onBack?: (e: MouseEvent<HTMLElement>) => void;
+    subtitle?: ReactNode;
+    actions?: ReactNode;
+  };
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
@@ -543,6 +559,48 @@ export function EventForm({
         if (!submitting) onSubmit();
       }}
     >
+      <div className="mb-4">
+        <PageHeader
+          backHref={header.backHref}
+          backLabel={header.backLabel}
+          onBack={header.onBack}
+          subtitle={header.subtitle}
+          actions={header.actions}
+          actionsBelow
+          title={
+            <div className="flex flex-col gap-1">
+              <h1 className="sr-only">
+                {mode === "create" ? "Create New Event" : "Edit Event Details"}
+              </h1>
+              {/* The event's name is the page title, and it's typed right
+                  here: it reads as a heading, and shows it's editable on
+                  hover and focus. */}
+              <span className="flex items-center gap-2">
+                <input
+                  aria-label="Name of Event"
+                  aria-required="true"
+                  aria-invalid={fieldError("title") ? true : undefined}
+                  aria-describedby={fieldError("title") ? `${id}-title-error` : undefined}
+                  value={values.title}
+                  onChange={(e) => set("title", e.target.value)}
+                  placeholder="Name of Event"
+                  autoComplete="off"
+                  className={`event-title -ml-2 min-w-0 flex-1 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
+                    fieldError("title") ? "border-danger-border" : "border-transparent"
+                  }`}
+                />
+                <Pencil aria-hidden="true" className="size-5 shrink-0 text-fg-icon-muted" />
+              </span>
+              {fieldError("title") && (
+                <p id={`${id}-title-error`} className="text-base text-danger-fg">
+                  {fieldError("title")}
+                </p>
+              )}
+            </div>
+          }
+        />
+      </div>
+
       <div
         id={`${id}-missing`}
         ref={summaryRef}
@@ -572,6 +630,7 @@ export function EventForm({
           order, below lg. */}
       <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-5">
+          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           <Section title="Event image" required={mode === "create"}>
             <ImageDrop
               compact
@@ -582,15 +641,6 @@ export function EventForm({
               onChange={(v) => set("coverImageUrl", v)}
             />
           </Section>
-          <TextField
-            label="Name of Event"
-            required
-            value={values.title}
-            onChange={(e) => set("title", e.target.value)}
-            error={fieldError("title")}
-            placeholder="Open Space: Coffee & Chats"
-            autoComplete="off"
-          />
           <TextField
             label="Date"
             placeholder="DD/MM/YYYY"

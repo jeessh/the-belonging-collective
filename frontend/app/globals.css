@@ -213,6 +213,10 @@ body {
   .console :is(h1, h1.text-3xl):not(.print-target *) { font-size: 36px; }
 }
 
+/* An event's name as its page's title (the details page, and the event
+   form's editable name): a step below the console's page titles. */
+.console :is(h1, input).event-title:not(.print-target *) { font-size: 28px; line-height: 1.2; }
+
 /* Tables are body text, rows and headers alike (cells inherit the table's
    size). */
 .console :is(table, table.text-lg, table.text-xl, table.text-base):not(.print-target *) {
