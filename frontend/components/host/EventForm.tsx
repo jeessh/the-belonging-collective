@@ -667,18 +667,19 @@ export function EventForm({
           {mode === "create" && (
             <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">
-                <Field label="How often" className="min-w-[200px]">
-                  <Select
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                {/* The section's "Repeats" is its label; no second one. */}
+                <Select
+                  aria-label="Repeats"
+                  className="min-w-[200px]"
+                  value={values.frequency}
+                  onChange={(e) => set("frequency", e.target.value as Frequency)}
+                >
+                  {FREQUENCIES.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </Select>
                 {values.frequency !== "once" && !values.repeatForever && (
                   <TextField
                     label="How many times"
