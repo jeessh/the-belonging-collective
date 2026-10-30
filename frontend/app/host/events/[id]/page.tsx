@@ -1,30 +1,21 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArchiveX,
-  CalendarDays,
-  Clock,
-  MapPin,
   Pencil,
   Printer,
   RotateCcw,
-  type LucideIcon,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
-import { useCategories } from "@/lib/useCategories";
-import { longDate, timeRange } from "@/lib/time";
 import { repeatLabel } from "@/lib/recurrence";
-import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
-import { categoryStyle } from "@/lib/categories";
 import { eventImage } from "@/lib/eventImage";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
-import { Glyph } from "@/components/ui/Glyph";
-import { Group } from "@/components/host/EventForm";
+import { EventForm, valuesFromEvent } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PageHeader } from "@/components/host/PageHeader";
@@ -58,7 +49,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   // Un-published: read from /events/archived/{id}, shown with Restore.
   const [archived, setArchived] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const { label: topicLabel } = useCategories();
 
   useEffect(() => {
     api<Event>(`/events/${id}`)
@@ -189,153 +179,27 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         </p>
       )}
 
-      <article
-        id="event-details"
-        // The event form's layout, group for group and in its words, so an
-        // event reads back exactly as it was entered — every field, with
-        // what an empty one means ("None", "No limit", "Any age").
-        className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
-      >
-        <div className="flex min-w-0 flex-col gap-4">
-          <ReadField label="Event image">
-            {/* The form's frame: 300px tall, full width, cropped to fill. */}
-            <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
-            </div>
-          </ReadField>
-          <ReadField label="Name of Event">
-            <h2 className="text-base font-normal text-fg">{event.title}</h2>
-          </ReadField>
-          <ReadField label="Date">
-            <Line icon={<CalendarDays />}>
-              {longDate(event.starts_at) || "Date to be announced"}
-            </Line>
-          </ReadField>
-          <ReadField label="Time">
-            <Line icon={<Clock />}>
-              {timeRange(event.starts_at, event.ends_at) || "—"}
-            </Line>
-          </ReadField>
-          <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
-          <ReadField label={event.is_virtual ? "Location (online)" : "Location"}>
-            <Line icon={<MapPin />}>
-              {event.location || (event.is_virtual ? "Online" : "Location to be announced")}
-            </Line>
-          </ReadField>
-          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
-          <ConsoleCounts event={event} />
-        </div>
+      <ConsoleCounts event={event} />
 
-        <div className="flex min-w-0 flex-col gap-6">
-          <Group title="Description">
-            <ReadField label="Brief Description">
-              <p className="whitespace-pre-line">{event.description}</p>
-            </ReadField>
-          </Group>
-
-          <Group title="Cost & sign-up">
-            <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
-            {!event.is_free && (
-              <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
-            )}
-            <ReadField label="How people join">
-              {event.requires_signup ? "Registration" : "Drop-in"}
-            </ReadField>
-            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
-              {event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {event.registration_url}
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-          </Group>
-
-          <Group title="Who it's for">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <ReadField label="Spots available">
-                {event.capacity != null ? String(event.capacity) : "No limit"}
-              </ReadField>
-              <ReadField label="Youngest age">
-                {event.min_age != null ? String(event.min_age) : "Any"}
-              </ReadField>
-              <ReadField label="Oldest age">
-                {event.max_age != null ? String(event.max_age) : "Any"}
-              </ReadField>
-            </div>
-            <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
-            <ReadField label="What does it offer?">
-              <IconList
-                items={event.accessibility_tags
-                  .filter((t) => !isDerivedTag(t))
-                  .map((t) => ({ key: t, icon: tagIcon(t), label: tagLabel(t) }))}
-              />
-            </ReadField>
-            <ReadField label="Who can see this">
-              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
-            </ReadField>
-          </Group>
-
-          <Group title="Topics">
-            <IconList
-              items={(event.categories?.length ? event.categories : [event.category])
-                .filter((slug): slug is string => !!slug)
-                .map((slug) => ({
-                  key: slug,
-                  icon: categoryStyle(slug).icon,
-                  label: topicLabel(slug),
-                }))}
-            />
-          </Group>
-
-          <Group title="Details & links">
-            <ReadField label="Important Links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="Extra details">
-              {event.notes ? <p className="whitespace-pre-line">{event.notes}</p> : "None"}
-            </ReadField>
-            <ReadField label="Printable poster">
-              {event.poster_url ? (
-                <a
-                  href={event.poster_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  Open the poster
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-          </Group>
-        </div>
-      </article>
+      {/* The event form itself, view only: the answers in the boxes they
+          were entered in, nothing editable. `print()` marks this for paper. */}
+      <div id="event-details">
+        <EventForm
+          id="event-view"
+          mode="edit"
+          readOnly
+          hostId={event.host_id}
+          values={valuesFromEvent(event)}
+          onChange={() => {}}
+          submitting={false}
+          onSubmit={() => {}}
+          error={null}
+          submitLabel=""
+          submittingLabel=""
+          imageFallback={eventImage(event)}
+          recurrenceLabel={repeatLabel(event.recurrence)}
+        />
+      </div>
 
       {!archived && event.poster_url && <PosterSection event={event} />}
 
@@ -362,52 +226,4 @@ function agesLabel(min: number | null | undefined, max: number | null | undefine
   if (min != null) return `${min} and up`;
   if (max != null) return `Up to ${max}`;
   return null;
-}
-
-/**
- * A form field, read back: the form's label over its answer. Unlike the
- * form's own labels (light, since the answers sit in boxes), these are
- * medium weight — with nothing boxing the answer, weight is what tells the
- * label from what it describes.
- */
-function ReadField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="field flex min-w-0 flex-col gap-2">
-      <p className="text-base font-medium text-fg">{label}</p>
-      <div className="text-base font-normal text-fg">{children}</div>
-    </div>
-  );
-}
-
-/** Chosen chips, read back: icon + label each, or "None". */
-function IconList({
-  items,
-}: {
-  items: { key: string; icon: LucideIcon; label: string }[];
-}) {
-  if (!items.length) return <>None</>;
-  return (
-    <ul className="flex flex-wrap gap-2">
-      {items.map(({ key, icon, label }) => (
-        <li
-          key={key}
-          className="inline-flex items-center gap-2 rounded-control border border-line px-3 py-1 text-base text-fg"
-        >
-          <Glyph icon={icon} className="text-fg-icon" />
-          {label}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Line({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <p className="flex items-center gap-2 text-base text-fg">
-      <span aria-hidden="true" className="info-icon shrink-0 text-fg-icon [&>svg]:size-6">
-        {icon}
-      </span>
-      {children}
-    </p>
-  );
 }

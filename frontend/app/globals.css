@@ -299,3 +299,27 @@ body {
    Without this the form's own rule made it 20px there and the general
    text-xl remap 16px on the details page. */
 .console h2.group-heading:not(.print-target *) { font-size: 20px; line-height: 1.3; }
+
+/*
+ * The event form, view only (`EventForm readOnly` — the published view). The
+ * answers stay in their boxes, at full strength, while everything says it
+ * can't be changed: boxes fill grey with no focus ring or text cursor,
+ * unchosen chips and options fade back, the chosen ones stay lit, and the
+ * form's action buttons (upload, change, remove, new group) and required
+ * marks are gone. Placeholders would read as answers, so they're hidden.
+ */
+.console .form-readonly :is(input, textarea, select):disabled {
+  color: #1a1a1a;
+  -webkit-text-fill-color: #1a1a1a;
+  opacity: 1;
+}
+.console .form-readonly :is(.field-box, input, textarea, select):not([type="radio"], [type="checkbox"]) {
+  background-color: #f1f1f1;
+}
+.console .form-readonly :is(input, textarea, select, button, label) { cursor: default; }
+.console .form-readonly .field-box:focus-within { outline: none; }
+.console .form-readonly ::placeholder { color: transparent; }
+.console .form-readonly button[aria-pressed="false"],
+.console .form-readonly button[role="radio"][aria-checked="false"] { opacity: 0.45; }
+.console .form-readonly button:not([aria-pressed]):not([role="radio"]) { display: none; }
+.console .form-readonly .text-danger-fg[aria-hidden="true"] { display: none; }

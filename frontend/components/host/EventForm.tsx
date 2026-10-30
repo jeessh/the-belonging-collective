@@ -434,6 +434,8 @@ export function EventForm({
   submitLabel,
   submittingLabel,
   imageFallback,
+  readOnly = false,
+  recurrenceLabel,
 }: {
   /** The page's submit button points at this with `form={id}`. */
   id: string;
@@ -461,6 +463,15 @@ export function EventForm({
    * of its own (another of its images, or the stock photo for its topic).
    */
   imageFallback?: string;
+  /**
+   * The published view: the same form, every control disabled and shown as
+   * "view only" (`.form-readonly` in globals.css) — no submit, no upload or
+   * remove buttons, no required marks. The details page uses this, so an
+   * event reads back in exactly the boxes it was entered in.
+   */
+  readOnly?: boolean;
+  /** With `readOnly`: how the program repeats ("Weekly on Tuesdays"). */
+  recurrenceLabel?: string | null;
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
@@ -525,12 +536,13 @@ export function EventForm({
   return (
     <form
       id={id}
-      className="form-dense flex flex-col gap-5"
+      className={`form-dense flex flex-col gap-5 ${readOnly ? "form-readonly" : ""}`}
       // The summary and each field's own message say what's wrong; the
       // browser's bubbles arrived first and said it differently.
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        if (readOnly) return;
         if (problems.length) {
           setShowMissing(true);
           // The summary names everything still needed; take people to it.
@@ -543,13 +555,16 @@ export function EventForm({
         if (!submitting) onSubmit();
       }}
     >
+      {/* `disabled` reaches every control inside; `contents` keeps the
+          form's own layout. */}
+      <fieldset disabled={readOnly} className="contents">
       <div
         id={`${id}-missing`}
         ref={summaryRef}
         tabIndex={-1}
         className="flex flex-col gap-2 outline-none"
       >
-        {inSeries && (
+        {inSeries && !readOnly && (
           <p className="text-base text-fg-muted">
             Changes apply to this date and every later date in the series. The
             date and time change for this date only.
@@ -669,7 +684,18 @@ export function EventForm({
                 : "Street address or building"
             }
           />
-          {mode === "create" && (
+          {readOnly && (
+            <Section title="Repeats">
+              <TextField
+                label="Repeats"
+                className="[&>label]:sr-only"
+                placeholder=""
+                value={recurrenceLabel || "Doesn't repeat"}
+                readOnly
+              />
+            </Section>
+          )}
+          {mode === "create" && !readOnly && (
             <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">
                 {/* The section's "Repeats" is its label; no second one. */}
@@ -1040,18 +1066,21 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="flex max-w-[1200px] flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="max-sm:w-full"
-          disabled={submitting}
-          trailingIcon={<Upload />}
-        >
-          {submitting ? submittingLabel : submitLabel}
-        </Button>
-      </div>
+      </fieldset>
+      {!readOnly && (
+        <div className="flex max-w-[1200px] flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="max-sm:w-full"
+            disabled={submitting}
+            trailingIcon={<Upload />}
+          >
+            {submitting ? submittingLabel : submitLabel}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
