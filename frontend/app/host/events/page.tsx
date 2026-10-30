@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
@@ -57,6 +57,12 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [unpublishing, setUnpublishing] = useState<Event | null>(null);
   // The one program whose poster sheet is mounted, just long enough to print.
   const [printing, setPrinting] = useState<Event | null>(null);
+  // `?scope=unpublished` opens on that tab — where an un-published event's
+  // details page goes back to. Read after mount: the server has no URL.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("scope") === "unpublished")
+      setScope("unpublished");
+  }, []);
   const chosen = DIMENSIONS.reduce(
     (n, d) => n + (filters[d.key]?.length ?? 0),
     0,
@@ -267,14 +273,24 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                         .join(" · ")}
                     </p>
                   </div>
-                  <Button
-                    leadingIcon={<RotateCcw />}
-                    disabled={restoring !== null}
-                    onClick={() => void restore(ev)}
-                    aria-label={`Restore ${ev.title}`}
-                  >
-                    {restoring === ev.id ? "Restoring…" : "Restore"}
-                  </Button>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/host/events/${ev.id}`}
+                      aria-label={`View more about ${ev.title}`}
+                      className={buttonClass("secondary", "md")}
+                    >
+                      View more
+                      <ArrowRight aria-hidden="true" className="size-4" />
+                    </Link>
+                    <Button
+                      leadingIcon={<RotateCcw />}
+                      disabled={restoring !== null}
+                      onClick={() => void restore(ev)}
+                      aria-label={`Restore ${ev.title}`}
+                    >
+                      {restoring === ev.id ? "Restoring…" : "Restore"}
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

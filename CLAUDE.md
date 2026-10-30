@@ -298,11 +298,23 @@ can open.
   refetching the calendar. Print on a card mounts a `PosterSheet` just long
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
-  link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
+  link / Print details / Print poster); it shows the program's link as
+  "Sign-up link" or, for a drop-in, "Posting link". **An un-published
+  program opens there too**, for its organization or a superadmin, from
+  "View more" on the Un-published tab: `GET /events/archived/{id}` (same
+  rule as the list; the public `GET /events/{id}` still 404s), shown with a
+  notice and **Restore** in place of Edit / Un-publish, and without Copy
+  link, the poster or its QR code (its public page is gone). Its back arrow
+  returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
+  shares `EventForm` with create.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left the event image, name, date and time, where,
   and repeats; on the right `Group`s for Description, Cost & sign-up, Who
-  it's for, Activity type and Details & links. (It was a six-step flow; the
+  it's for, Topics and Details & links. **The console calls the topic list
+  "Topics"** (form, filter, details page) — what the design called Activity
+  Type. `events.activity_type` is something else: an unused "kind of event"
+  (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live
+  program; the form only carries it through unchanged. (It was a six-step flow; the
   steps, the Review step and `FIELD_STEP` are gone.) Publish / Save is in the
   page header and at the bottom, for create and edit alike; submitting with something missing shows "Still needed: …" at the
   top (scrolled to) and each field's own message. The form carries

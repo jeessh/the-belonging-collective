@@ -50,7 +50,7 @@ const GROUP: Record<DimensionKey, { label: string; icon: ReactNode }> = {
   price: { label: "Price", icon: <CircleDollarSign /> },
   registration: { label: "Registration Type", icon: <Clipboard /> },
   eventType: { label: "Event Type", icon: <Contact /> },
-  activityType: { label: "Activity Type", icon: <PartyPopper /> },
+  activityType: { label: "Topics", icon: <PartyPopper /> },
 };
 
 /**
@@ -69,7 +69,7 @@ export const FilterPanel = memo(function FilterPanel({
   onChange: (next: HostFilters) => void;
 }) {
   const [open, setOpen] = useState<Partial<Record<DimensionKey, boolean>>>({});
-  // Activity Type labels come from the topic list; recompute when it lands.
+  // Topic labels come from the topic list; recompute when it lands.
   const { categories } = useCategories();
 
   const options = useMemo(() => {

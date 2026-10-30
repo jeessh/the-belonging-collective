@@ -278,7 +278,7 @@ export function missingRequired(
   // Only new programs: older ones were posted before an image was required,
   // and refusing every edit to them until one is found helps nobody.
   if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
-  if (v.categories.length === 0) need("categories", "activity type");
+  if (v.categories.length === 0) need("categories", "a topic");
   if (v.links.some((l) => !!l.label.trim() !== !!l.url.trim()))
     need("links", "both a label and an address for each link");
   if (v.links.some((l) => checkPostingLink(l.url)?.tone === "error"))
@@ -946,9 +946,9 @@ export function EventForm({
               />
             </Section>
           </Group>
-          <Group title="Activity type">
+          <Group title="Topics">
             <Section
-              title="Activity Type"
+              title="Pick one or more"
               required
             >
               <div className="flex flex-wrap gap-2">
