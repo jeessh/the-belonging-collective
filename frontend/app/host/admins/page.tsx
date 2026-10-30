@@ -84,9 +84,8 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           Organizations
         </h1>
         <p className="text-xl text-fg">
-          Every organization that posts programs on the platform. Each one
-          manages its own events, staff and special access. Adding people
-          to an organization&apos;s own team happens on its Team page.
+          Every organization posting on the platform, each managing its own
+          events, team and special access
         </p>
       </div>
 
@@ -97,33 +96,42 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       {invites.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-medium text-fg">Organization invitations waiting</h2>
-          <ul className="flex flex-col divide-y divide-line-active border-t border-line-active">
+          <TableCard
+            caption="Organizations invited but not yet signed up, and whether each invitation is still open"
+            head={["Organization", "Email", "Status", ""]}
+          >
             {invites.map((inv) => (
-              <li
-                key={inv.id}
-                className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-xl text-fg"
-              >
-                <span className="min-w-[200px]">{inv.organization}</span>
-                <span className="text-fg-muted">{inv.email}</span>
-                <Pill tone={inv.expired ? "warn" : "neutral"}>
-                  {inv.expired ? "Expired" : "Pending"}
-                </Pill>
-                <span className="ml-auto">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      void revokeInvite(inv.id).then(() => {
-                        show({ title: `Revoked the invite for ${inv.organization}.` });
-                        void load();
-                      });
-                    }}
-                  >
-                    Revoke
-                  </Button>
-                </span>
-              </li>
+              <tr key={inv.id} className="align-middle">
+                <th scope="row" className="px-3 py-3 font-normal">
+                  {inv.organization}
+                </th>
+                <td className="px-3 py-3">
+                  <span className="whitespace-nowrap text-fg-muted">{inv.email}</span>
+                </td>
+                <td className="px-3 py-3">
+                  <Pill tone={inv.expired ? "warn" : "neutral"}>
+                    {inv.expired ? "Expired" : "Pending"}
+                  </Pill>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        void revokeInvite(inv.id).then(() => {
+                          show({ title: `Invitation for ${inv.organization} revoked` });
+                          void load();
+                        });
+                      }}
+                    >
+                      Revoke
+                      <span className="sr-only"> — {inv.organization}</span>
+                    </Button>
+                  </span>
+                </td>
+              </tr>
             ))}
-          </ul>
+          </TableCard>
         </section>
       )}
 
@@ -141,17 +149,17 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       </div>
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
-          Couldn&apos;t load accounts. Please refresh and try again.
+          Couldn&apos;t load organizations — refresh to try again
         </p>
       ) : (
         <TableCard
-          caption="Organizations, their staff logins, their access level, and how many programs each owns."
-          head={["Organization", "Login email", "Access", "Programs", ""]}
+          caption="Organizations, their staff logins, their access level and how many events each has posted"
+          head={["Organization", "Login email", "Access", "Events", ""]}
         >
           {loading ? (
             <EmptyRow colSpan={5} text="Loading…" />
           ) : admins.length === 0 ? (
-            <EmptyRow colSpan={5} text="No organizations yet." />
+            <EmptyRow colSpan={5} text="No organizations yet" />
           ) : (
             admins.map((a) => {
               // "You" is your organization — the login you hold may be
@@ -239,10 +247,10 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           onRemoved={(name, retired) => {
             setRemoving(null);
             show({
-              title: `Removed ${name}.`,
+              title: `${name} removed`,
               description:
                 retired > 0
-                  ? `${retired} ${retired === 1 ? "program" : "programs"} retired with the account.`
+                  ? `Their ${retired} ${retired === 1 ? "event" : "events"} left the member feed with them`
                   : undefined,
               tone: "alert",
             });
@@ -296,7 +304,7 @@ function InviteForm({
       setEmail("");
       onSent();
     } catch (e) {
-      setError(apiMessage(e, "Couldn't send that invitation."));
+      setError(apiMessage(e, "Couldn't send that invitation"));
     } finally {
       setBusy(false);
     }
@@ -310,8 +318,7 @@ function InviteForm({
           Invite Organization to the Belonging Collective
         </h2>
         <p className="text-xl text-fg">
-          For a new agency joining the platform. We email them a link to set
-          up their organization&apos;s login and choose a password.
+          We&apos;ll email them a link to set up their login and password
         </p>
       </div>
 
@@ -323,24 +330,24 @@ function InviteForm({
           <span className="flex-1">
             {sent.emailed ? (
               <>
-                Invitation sent to <strong>{sent.email}</strong> for {sent.org}.
+                Invitation for {sent.org} sent to <strong>{sent.email}</strong>{" "}
+                — the link works once and expires in 14 days
               </>
             ) : (
               // The invitation exists; only the email didn't go out (mail
               // not set up, or the mail server refused it).
               <>
-                Invitation created for {sent.org}, but the email to{" "}
-                <strong>{sent.email}</strong> couldn&apos;t be sent. Copy the
-                link and send it to them yourself.
+                Couldn&apos;t email <strong>{sent.email}</strong> — copy the
+                link and send it yourself (it works once and expires in 14
+                days)
               </>
-            )}{" "}
-            It works once and expires in 14 days.
+            )}
           </span>
           <Button
             leadingIcon={<Copy />}
             onClick={() => {
               void copyText(sent.url, show).then(
-                (ok) => ok && show({ title: "Invite link copied." }),
+                (ok) => ok && show({ title: "Invite link copied" }),
               );
             }}
           >
@@ -416,7 +423,7 @@ function RemoveAdminModal({
       await deleteAdmin(admin.id);
       onRemoved(admin.name, admin.event_count);
     } catch (e) {
-      setError(apiMessage(e, "Couldn't remove that organization. Please try again."));
+      setError(apiMessage(e, "Couldn't remove that organization — please try again"));
       setBusy(false);
     }
   }
@@ -435,20 +442,17 @@ function RemoveAdminModal({
       }
     >
       <p className="mt-3 text-lg text-fg-muted">
-        They won&apos;t be able to sign in
-        {admin.staff?.length ? ", and neither will their staff logins" : ""}.{" "}
+        They{admin.staff?.length ? " and their staff" : ""} will lose access
         {admin.event_count > 0 ? (
           <>
-            Their{" "}
+            , and their{" "}
             <strong className="text-fg">
-              {admin.event_count} {admin.event_count === 1 ? "program" : "programs"}
+              {admin.event_count} {admin.event_count === 1 ? "event" : "events"}
             </strong>{" "}
-            will leave the member feed. Nothing is deleted, and past attendance
-            still counts.
+            will leave the member feed — nothing is deleted, and past
+            attendance still counts
           </>
-        ) : (
-          "They don't own any programs."
-        )}
+        ) : null}
       </p>
       {error && (
         <p role="alert" className="mt-3 text-base text-danger-fg">
@@ -507,7 +511,7 @@ function SuperadminModal({
       });
       onSent();
     } catch (e) {
-      setError(apiMessage(e, "Couldn't send that invitation."));
+      setError(apiMessage(e, "Couldn't send that invitation"));
     } finally {
       setBusy(false);
     }
@@ -519,16 +523,15 @@ function SuperadminModal({
         <div className="mt-4 flex flex-col gap-4">
           <p className="text-lg text-fg">
             {sent.emailed
-              ? `Invitation sent to ${sent.email}.`
-              : `Invitation created, but the email to ${sent.email} couldn't be sent. Copy the link and send it to them yourself.`}{" "}
-            It works once and expires in 14 days.
+              ? `Invitation sent to ${sent.email} — the link works once and expires in 14 days`
+              : `Couldn't email ${sent.email} — copy the link and send it yourself (it works once and expires in 14 days)`}
           </p>
           <div className="flex flex-wrap justify-end gap-3">
             <Button
               leadingIcon={<Copy />}
               onClick={() => {
                 void copyText(sent.url, show).then(
-                  (ok) => ok && show({ title: "Invite link copied." }),
+                  (ok) => ok && show({ title: "Invite link copied" }),
                 );
               }}
             >
@@ -551,19 +554,18 @@ function SuperadminModal({
             <p className="text-base font-medium text-fg">A superadmin can:</p>
             <ul className="mt-1 list-disc pl-5 text-base text-fg">
               <li>add, remove and promote any organization</li>
-              <li>edit and un-publish any organization&apos;s programs</li>
+              <li>edit and un-publish any organization&apos;s events</li>
               <li>manage community member accounts and topics</li>
               <li>see every organization&apos;s analytics and special access</li>
             </ul>
             <p className="mt-2 text-base text-fg">
-              Only for KW Habilitation, which runs the platform.
+              Only for KW Habilitation, which runs the platform
             </p>
           </div>
           <p className="text-base text-fg-muted">
-            Adding someone who works at KW Habilitation? Add them on KW
-            Habilitation&apos;s <a href="/host/team" className="underline underline-offset-2">Team page</a>{" "}
-            instead. They become a superadmin automatically, without a
-            separate organization.
+            Someone who works at KW Habilitation? Add them on its{" "}
+            <a href="/host/team" className="underline underline-offset-2">Team page</a>{" "}
+            instead — they get superadmin access without a separate organization
           </p>
           <TextField
             label="Name"
