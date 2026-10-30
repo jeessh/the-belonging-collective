@@ -588,7 +588,11 @@ export function EventForm({
                     fieldError("title") ? "border-danger-border" : "border-transparent"
                   }`}
                 />
-                <Pencil aria-hidden="true" className="size-5 shrink-0 text-fg-icon-muted" />
+                {/* Creating, the pencil says the empty title takes typing;
+                    editing, Save Edits sits right beside it and says enough. */}
+                {mode === "create" && (
+                  <Pencil aria-hidden="true" className="size-5 shrink-0 text-fg-icon-muted" />
+                )}
               </span>
               {fieldError("title") && (
                 <p id={`${id}-title-error`} className="text-base text-danger-fg">
