@@ -48,10 +48,12 @@ function ForgotPassword() {
   }
 
   const toLogin = () => router.push("/signup?login=1");
+  const back = { label: "Back to login", onClick: toLogin };
 
   if (sent) {
     return (
       <MemberAuthPage
+        back={back}
         title="Check your email"
         subtitle={`If ${email.trim().toLowerCase()} has an account, a link to choose a new password is on its way. It works once and expires in an hour.`}
       >
@@ -60,7 +62,7 @@ function ForgotPassword() {
         </p>
         <FormFooter
           className="mt-12"
-          primary={{ label: "Back to login", onClick: toLogin }}
+          primary={{ label: "Log in", onClick: toLogin }}
         />
       </MemberAuthPage>
     );
@@ -68,6 +70,7 @@ function ForgotPassword() {
 
   return (
     <MemberAuthPage
+      back={back}
       title="Forgot your password?"
       subtitle="Enter your email and we'll send you a link to choose a new one."
     >
@@ -95,7 +98,6 @@ function ForgotPassword() {
         )}
         <FormFooter
           className="mt-6"
-          secondary={{ label: "Back to login", onClick: toLogin }}
           primary={{
             label: busy ? "Sending…" : "Send reset link",
             disabled: busy || !email.trim(),

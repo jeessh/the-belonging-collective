@@ -3,6 +3,7 @@
 import { useCallback, useRef } from "react";
 import { Modal } from "@/components/Modal";
 import { MemberAuthFlow, type AuthEntry } from "@/components/member/MemberAuthFlow";
+import { TitleWithBack } from "@/components/ui/BackButton";
 
 /** The pre-redesign accent, still read by RegisterPrompt. */
 export const CYAN = "#35CDEE";
@@ -63,12 +64,14 @@ export function LoginOverlay({
             onClose={close}
             subtitle={view.subtitle}
             title={
-              view.icon ? (
+              view.icon || view.back ? (
                 <>
                   {view.icon}
-                  <h2 className="text-2xl font-medium text-fg sm:text-3xl">
-                    {view.title}
-                  </h2>
+                  <TitleWithBack back={view.back}>
+                    <h2 className="text-2xl font-medium text-fg sm:text-3xl">
+                      {view.title}
+                    </h2>
+                  </TitleWithBack>
                 </>
               ) : (
                 view.title

@@ -1,6 +1,5 @@
 import type { MouseEvent, ReactNode } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 
 /** Back arrow, page title, and the page's own buttons on the right. */
 export function PageHeader({
@@ -14,22 +13,13 @@ export function PageHeader({
   backHref?: string;
   backLabel?: string;
   /** May preventDefault — the event form asks before dropping unsaved edits. */
-  onBack?: (e: MouseEvent<HTMLAnchorElement>) => void;
+  onBack?: (e: MouseEvent<HTMLElement>) => void;
   actions?: ReactNode;
 }) {
   return (
     <div className="no-print flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        {backHref && (
-          <Link
-            href={backHref}
-            aria-label={backLabel}
-            onClick={onBack}
-            className="grid size-11 place-items-center rounded-control text-fg hover:bg-surface-subtle"
-          >
-            <ArrowLeft aria-hidden="true" className="size-9" />
-          </Link>
-        )}
+      <div className="flex items-center gap-2">
+        {backHref && <BackButton href={backHref} label={backLabel} onClick={onBack} />}
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">{title}</h1>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}

@@ -127,6 +127,7 @@ function SignupFlow() {
             title={view.title}
             subtitle={view.subtitle}
             icon={view.icon}
+            back={view.back}
           >
             {view.body}
           </MemberAuthPage>

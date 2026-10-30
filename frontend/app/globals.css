@@ -234,6 +234,12 @@ body {
 /* Round icon buttons (the event cards' edit / share / print / un-publish). */
 .console :is(button, a).size-11:not(.print-target *) { width: 36px; height: 36px; }
 
+/* The back arrow (ui/BackButton): the console's titles are smaller, so its
+   arrow is too; the tap target stays 44px. */
+.console .back-button svg:not(.print-target *) { width: 24px; height: 24px; }
+/* `:is(button, a)` so this outranks the round-tool rule for `.size-11`. */
+.console :is(button, a).back-button:not(.print-target *) { width: 44px; height: 44px; }
+
 /* Cards: less rounded. */
 .console .rounded-card:not(.print-target *) { border-radius: 12px; }
 

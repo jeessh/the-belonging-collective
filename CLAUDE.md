@@ -367,6 +367,14 @@ can open.
   page itself, not just the nav entry. The API refuses regardless.
 
 ### Shared
+- **One back control everywhere: `ui/BackButton`** — an arrow, no words, just
+  left of the title (`TitleWithBack`, or `PageHeader`'s `backHref`), a link
+  or a button, with a spoken `label` ("Back to events", "Back"). Console
+  pages, the All Saved Events panel, Profile, both forgot-password pages
+  (`AuthPage` / `MemberAuthPage` take `back`) and every sign-up / log-in step
+  (`AuthView.back`, drawn beside the step title by the overlay and
+  `/signup`). No "Back" text buttons in footers or corner links; Next takes
+  the row. (The tour's Back is a slideshow control, not navigation.)
 - All HTTP goes through the single `api()` helper in `lib/api.ts`
   (`credentials: "include"` for the auth cookie). Image uploads use raw `FormData`
   via `uploadImage()` — never force `Content-Type: application/json` on those.

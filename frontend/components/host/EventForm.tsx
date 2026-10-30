@@ -358,7 +358,7 @@ export function useLeaveGuard(dirty: boolean) {
     };
   }, [dirty]);
 
-  const onBack = (e: MouseEvent<HTMLAnchorElement>) => {
+  const onBack = (e: MouseEvent<HTMLElement>) => {
     if (!dirty) return;
     e.preventDefault();
     setLeaving(e.currentTarget.getAttribute("href"));
