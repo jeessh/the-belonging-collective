@@ -270,6 +270,13 @@ class EventOut(EventBase):
     click_count: int | None = None
     # The login that posted it (attribution; host_id is the owner).
     created_by_host_id: uuid.UUID | None = None
+    # That login's name — a staff member's own, or the organization's for its
+    # shared login. Filled only for a signed-in organizer, by the route; null
+    # for everyone else (members never see who on a team posted what).
+    created_by_name: str | None = None
+    # That login's picture (an organization's logo for its shared login;
+    # staff logins have none, so the console draws their initials).
+    created_by_picture: str | None = None
     # capacity minus the holds still running, floored at 0; null without a
     # capacity. Filled by core/holds.annotate, not read off the row.
     spots_left: int | None = None

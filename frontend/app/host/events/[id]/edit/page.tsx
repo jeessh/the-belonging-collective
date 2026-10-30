@@ -8,6 +8,7 @@ import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/Ad
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
+import { PostedBy } from "@/components/host/PostedBy";
 import { eventImage } from "@/lib/eventImage";
 import {
   EventForm,
@@ -124,7 +125,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           backHref: `/host/events/${event.id}`,
           backLabel: "Back to event details",
           onBack,
-          subtitle: `Posted by ${event.host_name}`,
+          subtitle: <PostedBy event={event} />,
           actions: (
             <Button
               type="submit"

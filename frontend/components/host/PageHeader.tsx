@@ -59,7 +59,7 @@ export function PageHeader({
       >
         <div className="min-w-0 flex-1">
           {heading}
-          {subtitle && <p className="mt-1 text-base text-fg-muted">{subtitle}</p>}
+          {subtitle && <div className="mt-1 text-base text-fg-muted">{subtitle}</div>}
         </div>
         {!actionsBelow && buttons}
       </div>

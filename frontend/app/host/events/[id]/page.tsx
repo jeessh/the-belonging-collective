@@ -31,6 +31,7 @@ import { eventUrl } from "@/components/CopyLinkButton";
 import { copyText } from "@/lib/clipboard";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
+import { PostedBy } from "@/components/host/PostedBy";
 import { PosterSection } from "@/components/host/PosterSection";
 import {
   UnpublishModal,
@@ -152,7 +153,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        subtitle={`Posted by ${event.host_name}`}
+        subtitle={<PostedBy event={event} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
           <>
