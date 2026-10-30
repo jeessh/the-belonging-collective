@@ -3,14 +3,14 @@
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  ArchiveX,
   ArrowRight,
   CalendarDays,
   Clock,
   MapPin,
   Pencil,
-  Printer,
+  QrCode,
   Send,
-  Trash2,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
@@ -63,7 +63,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   const tools = (
     <div className="flex items-center gap-1">
       {canManage && (
-        <Tooltip text="Edit this event">
+        <Tooltip text="Edit event details">
           {(tip) => (
             <Link
               href={`/host/events/${event.id}/edit`}
@@ -89,7 +89,7 @@ export const AdminEventCard = memo(function AdminEventCard({
         align={canManage ? "center" : "end"}
         onClick={() => onPrint(event)}
       >
-        <Printer aria-hidden="true" className="size-4" />
+        <QrCode aria-hidden="true" className="size-4" />
       </Tool>
       {canManage && (
         <>
@@ -101,7 +101,7 @@ export const AdminEventCard = memo(function AdminEventCard({
             onClick={() => onUnpublish(event)}
             className="bg-danger text-danger-fg hover:bg-danger-hover"
           >
-            <Trash2 aria-hidden="true" className="size-4" />
+            <ArchiveX aria-hidden="true" className="size-4" />
           </Tool>
         </>
       )}

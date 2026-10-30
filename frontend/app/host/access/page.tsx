@@ -440,7 +440,7 @@ function GroupPanel({
                         via{" "}
                         <Link
                           href={`/host/events/${m.requested_via.id}`}
-                          className="text-[#307CFF] underline underline-offset-4"
+                          className="text-fg underline underline-offset-4"
                         >
                           {m.requested_via.title}
                         </Link>

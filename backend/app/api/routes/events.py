@@ -313,6 +313,26 @@ def list_archived_events(
     return _public_view(db, rows, None, host)
 
 
+@router.get("/archived/{event_id}", response_model=EventOut)
+def get_archived_event(
+    event_id: uuid.UUID,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """One un-published program, for the console to look over before
+    restoring it. Same rule as the list: your own organization's, or any for
+    a superadmin. The public page still treats it as gone."""
+    event = (
+        db.query(Event)
+        .options(*_EVENT_OUT_OPTIONS)
+        .filter(Event.id == event_id, Event.deleted_at.is_not(None))
+        .first()
+    )
+    if not event or (not host.is_superadmin and event.host_id != org_id_of(host)):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "We couldn't find that event.")
+    return _public_view(db, [event], None, host)[0]
+
+
 @router.get("/{event_id}", response_model=EventOut)
 def get_event(
     event_id: uuid.UUID,

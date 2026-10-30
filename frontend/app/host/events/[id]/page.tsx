@@ -10,6 +10,8 @@ import {
   MapPin,
   Pencil,
   Printer,
+  QrCode,
+  RotateCcw,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
@@ -26,12 +28,20 @@ import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PosterSection } from "@/components/host/PosterSection";
 import { PosterSheet, printSheet } from "@/components/host/PrintSheets";
-import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
+import {
+  UnpublishModal,
+  restoreEvent,
+  unpublishedToast,
+} from "@/components/host/UnpublishModal";
 
 /**
  * The read-only view of one program. Its own organization (or a superadmin)
  * can edit and un-publish it from here; anyone else can read it in full and
  * share it, which the old list never allowed.
+ *
+ * An un-published one opens too, for its organization (or a superadmin) to
+ * look over before restoring it: a notice and Restore stand in for the tools,
+ * and the link and poster are left out, since its public page is gone.
  */
 export default function EventDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,14 +54,30 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [missing, setMissing] = useState("");
   const [unpublishing, setUnpublishing] = useState(false);
+  // Un-published: read from /events/archived/{id}, shown with Restore.
+  const [archived, setArchived] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const { label: topicLabel } = useCategories();
 
   useEffect(() => {
     api<Event>(`/events/${id}`)
-      .then(setEvent)
-      .catch((e) => {
+      .then((ev) => {
+        setEvent(ev);
+        setArchived(false);
+      })
+      .catch(async (e) => {
         if (e instanceof ApiError && e.status === 401) router.replace(loginAgainHref());
         else {
+          // Un-published, and ours to restore? Then show it, marked as such.
+          if (e instanceof ApiError && e.status === 404) {
+            try {
+              setEvent(await api<Event>(`/events/archived/${id}`));
+              setArchived(true);
+              return;
+            } catch {
+              // Not one we can see: fall through to the API's own sentence.
+            }
+          }
           // The API says which: "That event isn't published any more." for
           // an archived one, "We couldn't find that event." for a bad link
           // (a non-UUID id is a 422 with no sentence to show).
@@ -79,25 +105,39 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
   if (!event) return <p className="text-lg text-fg-muted">Loading…</p>;
 
-  const canManage = ctx.isSuper || event.host_id === ctx.org.id;
+  const canManage = !archived && (ctx.isSuper || event.host_id === ctx.org.id);
+
+  async function restore() {
+    if (!event) return;
+    setRestoring(true);
+    try {
+      await restoreEvent(event.id);
+      setEvent(await api<Event>(`/events/${event.id}`));
+      setArchived(false);
+      show({ title: event.title, description: "was successfully restored" });
+    } catch (e) {
+      show({
+        title: "Couldn't put that back.",
+        description: apiMessage(e, "Please refresh and try again."),
+        tone: "alert",
+      });
+    } finally {
+      setRestoring(false);
+    }
+  }
   const facts: [string, ReactNode][] = [
     ["Organization", event.host_name],
     ["Cost", event.price_label || (event.is_free ? "Free" : "Paid")],
     [
-      "Activity Type",
+      "Topics",
       (event.categories?.length ? event.categories : [event.category])
         .map(topicLabel)
         .filter(Boolean)
         .join(", "),
     ],
     ["Repeats", repeatLabel(event.recurrence)],
-    ["Spaces", event.capacity != null ? String(event.capacity) : null],
-    [
-      "Ages",
-      event.min_age != null || event.max_age != null
-        ? `${event.min_age ?? "Any"} – ${event.max_age ?? "any"}`
-        : null,
-    ],
+    ["Spots available", event.capacity != null ? String(event.capacity) : null],
+    ["Ages", agesLabel(event.min_age, event.max_age)],
     ["Who it's for", event.is_youth ? "Youth" : null],
     [
       "Who can see it",
@@ -112,13 +152,15 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         null,
     ],
     [
-      "Sign-up link",
-      event.requires_signup && event.registration_url ? (
+      // The form calls it a posting link for a drop-in and a sign-up link
+      // when registration is needed; either way it's shown.
+      event.requires_signup ? "Sign-up link" : "Posting link",
+      event.registration_url ? (
         <a
           href={event.registration_url}
           target="_blank"
           rel="noreferrer"
-          className="break-all text-[#307CFF] underline underline-offset-4"
+          className="break-all underline underline-offset-4"
         >
           {event.registration_url}
         </a>
@@ -139,19 +181,31 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Event Details"
-        backHref="/host/events"
+        backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
           <>
-            <CopyLinkButton eventId={event.id} title={event.title} />
+            {!archived && <CopyLinkButton eventId={event.id} title={event.title} />}
             <Button leadingIcon={<Printer />} onClick={print}>
-              Print
+              Print details
             </Button>
-            <Button
-              leadingIcon={<Printer />}
-              onClick={() => printSheet(document.getElementById("program-poster"))}
-            >
-              Print poster
-            </Button>
+            {!archived && (
+              <Button
+                leadingIcon={<QrCode />}
+                onClick={() => printSheet(document.getElementById("program-poster"))}
+              >
+                Print poster
+              </Button>
+            )}
+            {archived && (
+              <Button
+                variant="primary"
+                leadingIcon={<RotateCcw />}
+                disabled={restoring}
+                onClick={() => void restore()}
+              >
+                {restoring ? "Restoring…" : "Restore"}
+              </Button>
+            )}
             {canManage && (
               <>
                 <Link
@@ -173,6 +227,16 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </>
         }
       />
+
+      {archived && (
+        <p
+          role="status"
+          className="rounded-control border border-line bg-surface-subtle px-4 py-3 text-base text-fg"
+        >
+          This event is un-published, so members can&apos;t see it. Restore it
+          to put every date of it back in the member feed.
+        </p>
+      )}
 
       <article
         id="event-details"
@@ -222,7 +286,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           )}
           {!!event.links?.length && (
             <Fact label="Important Links">
-              <ol className="flex list-decimal flex-col gap-4 pl-8 text-xl text-[#307CFF]">
+              <ol className="flex list-decimal flex-col gap-4 pl-8 text-xl text-fg">
                 {event.links.map((l) => (
                   <li key={l.url}>
                     <a
@@ -261,8 +325,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         </div>
       </article>
 
-      {event.poster_url && <PosterSection event={event} />}
-      <PosterSheet id="program-poster" event={event} />
+      {!archived && event.poster_url && <PosterSection event={event} />}
+      {!archived && <PosterSheet id="program-poster" event={event} />}
 
       {unpublishing && (
         <UnpublishModal
@@ -279,6 +343,14 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       )}
     </div>
   );
+}
+
+/** "12–18", "12 and up", "Up to 18", or nothing for any age. */
+function agesLabel(min: number | null | undefined, max: number | null | undefined) {
+  if (min != null && max != null) return `${min}–${max}`;
+  if (min != null) return `${min} and up`;
+  if (max != null) return `Up to ${max}`;
+  return null;
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {

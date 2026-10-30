@@ -43,7 +43,17 @@ export type Dimension = {
      */
     icon?: string;
   };
+  /**
+   * Every bucket an event belongs to, for filtering, where it can be in more
+   * than one (several topics; youth and virtual at once). Absent means just
+   * `bucket`. `bucket` stays the one the stepper and tags group on.
+   */
+  all?: (event: Event) => ReturnType<Dimension["bucket"]>[];
 };
+
+/** Every bucket `event` is in on `dimension` — what a filter matches on. */
+export const bucketsOf = (dimension: Dimension, event: Event) =>
+  dimension.all ? dimension.all(event) : [dimension.bucket(event)];
 
 /** Stable colour per bucket id, so a bucket keeps its colour across renders. */
 const PALETTE = [
@@ -123,13 +133,13 @@ export const DIMENSIONS: Dimension[] = [
       return e.registration_mode === "external"
         ? {
             id: "external",
-            label: "Sign up on their site",
+            label: "Registration (link given)",
             color: "#3B82F6",
             icon: "🔗",
           }
         : {
             id: "internal",
-            label: "Sign up here",
+            label: "Registration (no link)",
             color: "#9B5BD6",
             icon: "✍️",
           };
@@ -141,13 +151,10 @@ export const DIMENSIONS: Dimension[] = [
     heading: "Event Type",
     emoji: "🗂️",
     // Virtual, in person, or for youth — the same three the admin filters on.
-    bucket: (e) => {
-      if (e.is_youth)
-        return { id: "youth", label: "Youth", color: "#F59E0B", icon: "🧒" };
-      return e.is_virtual
-        ? { id: "virtual", label: "Virtual", color: "#3B82F6", icon: "💻" }
-        : { id: "inperson", label: "In person", color: "#2FA36B", icon: "📍" };
-    },
+    bucket: (e) => (e.is_youth ? YOUTH : venueOf(e)),
+    // The form asks venue and audience separately, so a virtual youth
+    // program is in both "Virtual" and "Youth".
+    all: (e) => (e.is_youth ? [venueOf(e), YOUTH] : [venueOf(e)]),
   },
   {
     key: "activityType",
@@ -157,23 +164,34 @@ export const DIMENSIONS: Dimension[] = [
     // The topic list. "Activity Type" is what the design calls it, and it is
     // what members pick as interests, so the feed groups on the same field the
     // matching runs on.
-    bucket: (e) => {
-      // The bucket is the slug; the label is looked up, so a renamed topic
-      // regroups nothing. Callers hold `useCategories()` so this re-runs
-      // once the list has loaded.
-      const slug = e.category || "";
-      const style = categoryStyle(slug);
-      // The same emoji the topic chips use, so a topic looks the same wherever
-      // it turns up — on the signup chips, the host form, and here.
-      return {
-        id: slug || FALLBACK_CATEGORY,
-        label: slug ? categoryLabel(slug) : FALLBACK_CATEGORY,
-        color: style.color,
-        icon: style.emoji,
-      };
-    },
+    bucket: (e) => topicBucket(e.category || ""),
+    // A program can carry several topics; it's under each of them.
+    all: (e) =>
+      (e.categories?.length ? e.categories : [e.category || ""]).map(topicBucket),
   },
 ];
+
+const YOUTH = { id: "youth", label: "Youth", color: "#F59E0B", icon: "🧒" };
+
+const venueOf = (e: Event) =>
+  e.is_virtual
+    ? { id: "virtual", label: "Virtual", color: "#3B82F6", icon: "💻" }
+    : { id: "inperson", label: "In person", color: "#2FA36B", icon: "📍" };
+
+function topicBucket(slug: string) {
+  // The bucket is the slug; the label is looked up, so a renamed topic
+  // regroups nothing. Callers hold `useCategories()` so this re-runs once the
+  // list has loaded.
+  const style = categoryStyle(slug);
+  // The same emoji the topic chips use, so a topic looks the same wherever it
+  // turns up — on the signup chips, the host form, and here.
+  return {
+    id: slug || FALLBACK_CATEGORY,
+    label: slug ? categoryLabel(slug) : FALLBACK_CATEGORY,
+    color: style.color,
+    icon: style.emoji,
+  };
+}
 
 export const dimensionByKey = (key: DimensionKey): Dimension =>
   DIMENSIONS.find((d) => d.key === key) ?? DIMENSIONS[0];
@@ -192,8 +210,9 @@ export type Bucket = {
 export function bucketsFor(events: Event[], dimension: Dimension): Bucket[] {
   const seen = new Map<string, Bucket>();
   events.forEach((event, index) => {
-    const b = dimension.bucket(event);
-    if (!seen.has(b.id)) seen.set(b.id, { ...b, index });
+    for (const b of bucketsOf(dimension, event)) {
+      if (!seen.has(b.id)) seen.set(b.id, { ...b, index });
+    }
   });
   return [...seen.values()];
 }

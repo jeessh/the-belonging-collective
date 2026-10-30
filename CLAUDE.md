@@ -274,13 +274,22 @@ can open.
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
   the component sheet's "Admin – Listed Event" (square image, facts beside,
-  the round edit / share / print / un-publish tools at the top right — over
+  the round edit / share / print-poster (QR icon) / un-publish (archive
+  icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
   does, and **View more →** at the bottom right, the card's one way to the
   details page; the card itself isn't clickable). `ui/Tooltip` shows on
   hover and keyboard focus, is the control's `aria-describedby`, and closes
   on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion
-  `FilterPanel` (`ui/Checkbox` rows), with a Your Events / All Events toggle.
+  `FilterPanel` (`ui/Checkbox` rows; its reset row reads "No filters" so it
+  isn't confused with the toggle), with a Your Events / All Events toggle.
+  **A filter matches every option a program is in** (`Dimension.all`,
+  `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
+  Type, and both Virtual/In person and Youth under Event Type, because the
+  form asks venue and audience separately. `bucket` (one per program) is
+  still what the member stepper and tags group on. The console says
+  "event" throughout, never "program" (the printed poster, which members
+  read, keeps the member app's word).
   Edit and un-publish show only for the owning organization or a superadmin;
   share and print for everyone. Un-publishing from the list or the details
   page goes through `components/host/UnpublishModal.tsx` — the pink-edged
@@ -289,17 +298,32 @@ can open.
   refetching the calendar. Print on a card mounts a `PosterSheet` just long
   enough to print it (`onReady` fires once the QR is drawn).
   `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
-  link / Print); `/host/events/[id]/edit` shares `EventForm` with create.
+  link / Print details / Print poster); it shows the program's link as
+  "Sign-up link" or, for a drop-in, "Posting link". **An un-published
+  program opens there too**, for its organization or a superadmin, from
+  "View more" on the Un-published tab: `GET /events/archived/{id}` (same
+  rule as the list; the public `GET /events/{id}` still 404s), shown with a
+  notice and **Restore** in place of Edit / Un-publish, and without Copy
+  link, the poster or its QR code (its public page is gone). Its back arrow
+  returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
+  shares `EventForm` with create.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left the event image, name, date and time, where,
   and repeats; on the right `Group`s for Description, Cost & sign-up, Who
-  it's for, Activity type and Details & links. (It was a six-step flow; the
-  steps, the Review step and `FIELD_STEP` are gone.) Publish / Save is at the
-  bottom; submitting with something missing shows "Still needed: …" at the
+  it's for, Topics and Details & links. **The console calls the topic list
+  "Topics"** (form, filter, details page) — what the design called Activity
+  Type. `events.activity_type` is something else: an unused "kind of event"
+  (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live
+  program; the form only carries it through unchanged. (It was a six-step flow; the
+  steps, the Review step and `FIELD_STEP` are gone.) Publish / Save is in the
+  page header and at the bottom, for create and edit alike; submitting with something missing shows "Still needed: …" at the
   top (scrolled to) and each field's own message. The form carries
   `.form-dense` (`globals.css`): 14px text and 36px controls inside it only,
   so the shared TextField / Button / FilterChip keep the member app's large
-  sizes.
+  sizes. `useLeaveGuard` asks "Leave without saving?" for any link that
+  leaves a changed form — the back arrow, the side panel, the logo, the
+  account menu (a capture-phase click listener, since client-side navigation
+  never fires `beforeunload`) — plus the browser's own warning on reload.
   Accounts stay table-first — `components/AdminTable.tsx` backs
   `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,

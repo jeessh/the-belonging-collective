@@ -278,7 +278,7 @@ export function missingRequired(
   // Only new programs: older ones were posted before an image was required,
   // and refusing every edit to them until one is found helps nobody.
   if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
-  if (v.categories.length === 0) need("categories", "activity type");
+  if (v.categories.length === 0) need("categories", "a topic");
   if (v.links.some((l) => !!l.label.trim() !== !!l.url.trim()))
     need("links", "both a label and an address for each link");
   if (v.links.some((l) => checkPostingLink(l.url)?.tone === "error"))
@@ -316,8 +316,10 @@ export function missingRequired(
 
 /**
  * Unsaved-changes protection for the event form: the browser's own warning
- * on reload or close, and a "Leave without saving?" dialog for the page's
- * back arrow (pass `onBack` to PageHeader). Render `dialog` somewhere.
+ * on reload or close, and a "Leave without saving?" dialog for any link that
+ * would leave the page — the page's back arrow (pass `onBack` to PageHeader)
+ * and every other link on it: the side panel, the logo, the account menu.
+ * Render `dialog` somewhere.
  */
 export function useLeaveGuard(dirty: boolean) {
   const router = useRouter();
@@ -331,7 +333,28 @@ export function useLeaveGuard(dirty: boolean) {
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    // Client-side navigation never fires beforeunload, so catch the click on
+    // the way down, before Next's Link handles it. Links that open a new tab
+    // (or are opened that way) leave the form where it is, so they pass.
+    const intercept = (e: globalThis.MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]");
+      if (!(a instanceof HTMLAnchorElement) || a.target === "_blank" || a.hasAttribute("download"))
+        return;
+      const to = new URL(a.href, window.location.href);
+      if (to.origin !== window.location.origin) return;
+      if (to.pathname === window.location.pathname && to.search === window.location.search)
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      setLeaving(to.pathname + to.search + to.hash);
+    };
+    document.addEventListener("click", intercept, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", intercept, true);
+    };
   }, [dirty]);
 
   const onBack = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -923,9 +946,9 @@ export function EventForm({
               />
             </Section>
           </Group>
-          <Group title="Activity type">
+          <Group title="Topics">
             <Section
-              title="Activity Type"
+              title="Pick one or more"
               required
             >
               <div className="flex flex-wrap gap-2">

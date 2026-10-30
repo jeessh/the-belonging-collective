@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
-import { DIMENSIONS, bucketsFor, type DimensionKey } from "@/lib/dimensions";
+import { DIMENSIONS, bucketsFor, bucketsOf, type DimensionKey } from "@/lib/dimensions";
 import { Checkbox } from "@/components/ui/Checkbox";
 
 /* ---------------- filters ---------------- */
@@ -30,7 +30,8 @@ export function applyHostFilters(
   const active = DIMENSIONS.filter((d) => filters[d.key]?.length);
   return events.filter((ev) => {
     for (const d of active) {
-      if (!filters[d.key]?.includes(d.bucket(ev).id)) return false;
+      const ids = bucketsOf(d, ev).map((b) => b.id);
+      if (!filters[d.key]?.some((id) => ids.includes(id))) return false;
     }
     if (q) {
       const hay = [ev.title, ev.description, ev.location, ev.host_name]
@@ -49,7 +50,7 @@ const GROUP: Record<DimensionKey, { label: string; icon: ReactNode }> = {
   price: { label: "Price", icon: <CircleDollarSign /> },
   registration: { label: "Registration Type", icon: <Clipboard /> },
   eventType: { label: "Event Type", icon: <Contact /> },
-  activityType: { label: "Activity Type", icon: <PartyPopper /> },
+  activityType: { label: "Topics", icon: <PartyPopper /> },
 };
 
 /**
@@ -68,7 +69,7 @@ export const FilterPanel = memo(function FilterPanel({
   onChange: (next: HostFilters) => void;
 }) {
   const [open, setOpen] = useState<Partial<Record<DimensionKey, boolean>>>({});
-  // Activity Type labels come from the topic list; recompute when it lands.
+  // Topic labels come from the topic list; recompute when it lands.
   const { categories } = useCategories();
 
   const options = useMemo(() => {
@@ -169,7 +170,7 @@ export const FilterPanel = memo(function FilterPanel({
             }`}
           />
         </span>
-        All Events
+        No filters
       </button>
     </aside>
   );
