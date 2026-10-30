@@ -364,12 +364,17 @@ function agesLabel(min: number | null | undefined, max: number | null | undefine
   return null;
 }
 
-/** A form field, read back: the form's label over its answer. */
+/**
+ * A form field, read back: the form's label over its answer. Unlike the
+ * form's own labels (light, since the answers sit in boxes), these are
+ * medium weight — with nothing boxing the answer, weight is what tells the
+ * label from what it describes.
+ */
 function ReadField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="field flex min-w-0 flex-col gap-2">
-      <p className="field-label text-base text-fg">{label}</p>
-      <div className="text-base text-fg">{children}</div>
+      <p className="text-base font-medium text-fg">{label}</p>
+      <div className="text-base font-normal text-fg">{children}</div>
     </div>
   );
 }
