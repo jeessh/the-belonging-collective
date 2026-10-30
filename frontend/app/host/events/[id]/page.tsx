@@ -205,7 +205,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             </div>
           </ReadField>
           <ReadField label="Name of Event">
-            <h2 className="text-base font-medium text-fg">{event.title}</h2>
+            <h2 className="text-base font-normal text-fg">{event.title}</h2>
           </ReadField>
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
@@ -365,15 +365,16 @@ function agesLabel(min: number | null | undefined, max: number | null | undefine
 }
 
 /**
- * A form field, read back: the form's label over its answer. The label is
- * the form's light one (regular, grey — `.field-label`); the answer is
- * medium weight, so what was entered leads and the label stays quiet.
+ * A form field, read back: the form's label over its answer. Unlike the
+ * form's own labels (light, since the answers sit in boxes), these are
+ * medium weight — with nothing boxing the answer, weight is what tells the
+ * label from what it describes.
  */
 function ReadField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="field flex min-w-0 flex-col gap-2">
-      <p className="field-label text-base text-fg">{label}</p>
-      <div className="text-base font-medium text-fg">{children}</div>
+      <p className="text-base font-medium text-fg">{label}</p>
+      <div className="text-base font-normal text-fg">{children}</div>
     </div>
   );
 }
