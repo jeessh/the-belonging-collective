@@ -3,7 +3,6 @@
 import { useCallback, useRef } from "react";
 import { Modal } from "@/components/Modal";
 import { MemberAuthFlow, type AuthEntry } from "@/components/member/MemberAuthFlow";
-import { TitleWithBack } from "@/components/ui/BackButton";
 
 /** The pre-redesign accent, still read by RegisterPrompt. */
 export const CYAN = "#35CDEE";
@@ -57,6 +56,8 @@ export function LoginOverlay({
         onGuest={onGuest ?? close}
         onGuestSignIn={onGuestSignIn}
         onBack={onBack}
+        // A modal: back is the footer's secondary button, not a title arrow.
+        backPlacement="footer"
       >
         {(view) => (
           <Modal
@@ -64,14 +65,12 @@ export function LoginOverlay({
             onClose={close}
             subtitle={view.subtitle}
             title={
-              view.icon || view.back ? (
+              view.icon ? (
                 <>
                   {view.icon}
-                  <TitleWithBack back={view.back} inline>
-                    <h2 className="text-2xl font-medium text-fg sm:text-3xl">
-                      {view.title}
-                    </h2>
-                  </TitleWithBack>
+                  <h2 className="text-2xl font-medium text-fg sm:text-3xl">
+                    {view.title}
+                  </h2>
                 </>
               ) : (
                 view.title

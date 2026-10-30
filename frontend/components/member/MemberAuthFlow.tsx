@@ -78,6 +78,7 @@ export function MemberAuthFlow({
   onGuest,
   onGuestSignIn,
   onBack,
+  backPlacement = "title",
   children,
 }: {
   initial?: AuthEntry;
@@ -89,9 +90,20 @@ export function MemberAuthFlow({
   onGuestSignIn: () => void;
   /** "Go back" on the success screen; left out, the screen has only "Continue". */
   onBack?: () => void;
+  /**
+   * Where a step's back goes. "title" (a page — /signup): `view.back`, drawn
+   * above the step's title. "footer" (a modal — the in-feed sheet): a
+   * secondary button beside the step's primary one (Back | Next), and no
+   * `view.back`.
+   */
+  backPlacement?: "title" | "footer";
   children: (view: AuthView) => ReactNode;
 }) {
   const toast = useToast();
+  const inFooter = backPlacement === "footer";
+  /** A step's back as its footer's secondary button, in a modal only. */
+  const footerBack = (b: { label: string; onClick: () => void } | null) =>
+    inFooter && b ? b : undefined;
   const [step, setStep] = useState<Step>(
     initial === "chooser" ? "chooser" : initial === "login" ? "credentials" : "who",
   );
@@ -372,6 +384,7 @@ export function MemberAuthFlow({
             </fieldset>
             <FormFooter
               className="mt-12"
+              secondary={footerBack(back("chooser"))}
               primary={{ label: "Next" }}
             />
           </form>
@@ -432,6 +445,7 @@ export function MemberAuthFlow({
             {errorLine}
             <FormFooter
               className="mt-6"
+              secondary={footerBack(back("who"))}
               primary={{ label: "Next", disabled: !nameReady }}
             />
           </form>
@@ -472,6 +486,7 @@ export function MemberAuthFlow({
             />
             <FormFooter
               className="mt-6"
+              secondary={footerBack(back("name"))}
               primary={{ label: "Next", disabled: email.trim() === "" }}
             />
           </form>
@@ -519,6 +534,7 @@ export function MemberAuthFlow({
             {errorLine}
             <FormFooter
               className="mt-6"
+              secondary={footerBack(back("email"))}
               primary={{
                 label: busy ? "Creating…" : "Create account",
                 disabled: busy || password === "" || confirm === "",
@@ -565,6 +581,7 @@ export function MemberAuthFlow({
             {errorLine}
             <FormFooter
               className="mt-6"
+              secondary={footerBack({ label: "Cancel", onClick: () => go("chooser") })}
               primary={{
                 label: busy ? "Logging in…" : "Login",
                 disabled: busy || email.trim() === "" || password === "",
@@ -615,6 +632,7 @@ export function MemberAuthFlow({
         body: (
           <CareLinkForm
             mode="create"
+            onCancel={inFooter ? () => setStep("care-choice") : undefined}
             onDone={(result) => {
               setCareResult(result);
               setStep("complete");
@@ -632,6 +650,7 @@ export function MemberAuthFlow({
         body: (
           <CareLinkForm
             mode="link"
+            onCancel={inFooter ? () => setStep("care-choice") : undefined}
             onDone={(result) => {
               setCareResult(result);
               setStep("complete");
@@ -657,6 +676,7 @@ export function MemberAuthFlow({
         ),
         body: (
           <FormFooter
+            secondary={footerBack(onBack ? { label: "Go back", onClick: onBack } : null)}
             primary={{
               label: "Continue to events",
               onClick: () => onSignedIn({ mode: "signup", caregiver }),
@@ -669,6 +689,7 @@ export function MemberAuthFlow({
 
   return children({
     ...view,
+    back: inFooter ? null : view.back,
     body: <div ref={bodyRef}>{view.body}</div>,
   });
 }

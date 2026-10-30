@@ -11,60 +11,37 @@ type Back = {
 };
 
 /**
- * The platform's one back control: an arrow and its words ("← Back to
- * events"), sitting on its own line above the page's title. A link when it
- * goes somewhere, a button when it steps back inside a flow. Every back on a
- * page goes through here, so they all look and sit the same — don't add a
- * "Back" button in a footer or a back link in a corner.
+ * The platform's one back control on a page: an arrow and its words ("← Back
+ * to events"), on its own line above the page's title. A link when it goes
+ * somewhere, a button when it steps back inside a flow. Every page's back
+ * goes through here, so they all look and sit the same.
  *
- * `inline` is the one exception, for modals (the sign-in sheet): just the
- * arrow, beside the title, where a line above would crowd the sheet.
+ * Modals don't use it: there, back is a secondary button beside the primary
+ * one (Back | Next — `FormFooter`), as the sign-in sheet does.
  */
-export function BackButton({ label, href, onClick, inline = false }: Back & { inline?: boolean }) {
-  const cls = inline
-    ? "back-button back-inline -ml-2 grid size-11 shrink-0 place-items-center rounded-control text-fg transition-colors hover:bg-surface-subtle"
-    : "back-button -ml-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-control px-2 text-base font-medium text-fg transition-colors hover:bg-surface-subtle";
-  const content = inline ? (
-    <ArrowLeft aria-hidden="true" className="size-7" />
-  ) : (
+export function BackButton({ label, href, onClick }: Back) {
+  const cls =
+    "back-button -ml-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-control px-2 text-base font-medium text-fg transition-colors hover:bg-surface-subtle";
+  const content = (
     <>
       <ArrowLeft aria-hidden="true" className="size-5 shrink-0" />
       {label}
     </>
   );
-  const named = inline ? { "aria-label": label } : {};
   return href ? (
-    <Link href={href} onClick={onClick} className={cls} {...named}>
+    <Link href={href} onClick={onClick} className={cls}>
       {content}
     </Link>
   ) : (
-    <button type="button" onClick={onClick} className={cls} {...named}>
+    <button type="button" onClick={onClick} className={cls}>
       {content}
     </button>
   );
 }
 
-/**
- * A title with its back button: on the line above it, or — `inline`, for a
- * modal — the arrow beside it. Just the title without one.
- */
-export function TitleWithBack({
-  back,
-  inline = false,
-  children,
-}: {
-  back?: Back | null;
-  inline?: boolean;
-  children: ReactNode;
-}) {
+/** A title with its back button on the line above (just the title without one). */
+export function TitleWithBack({ back, children }: { back?: Back | null; children: ReactNode }) {
   if (!back) return <>{children}</>;
-  if (inline)
-    return (
-      <div className="flex min-w-0 items-center gap-2">
-        <BackButton {...back} inline />
-        {children}
-      </div>
-    );
   return (
     <div className="flex min-w-0 flex-col items-start gap-2">
       <BackButton {...back} />

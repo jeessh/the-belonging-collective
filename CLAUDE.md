@@ -380,10 +380,11 @@ can open.
   **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).
   Console pages, the All Saved Events panel, Profile, both forgot-password
   pages (`AuthPage` / `MemberAuthPage` take `back`) and every sign-up /
-  log-in step on the `/signup` page (`AuthView.back`). **Modals are the
-  exception:** the in-feed sign-in sheet (`LoginOverlay`) draws the same
-  back as just an arrow beside the step title (`TitleWithBack inline`). No
-  "Back" text buttons in footers or corner links; Next takes the row. (The
+  log-in step on the `/signup` page (`AuthView.back`). **In a modal, back
+  is a secondary button beside the primary one** (Back | Next, Cancel |
+  Login, Go back | Continue — `FormFooter`): the in-feed sign-in sheet passes
+  `backPlacement="footer"` to `MemberAuthFlow`, which then puts each step's
+  back in its footer instead of `view.back`. No corner back links. (The
   tour's Back is a slideshow control, not navigation.)
 - All HTTP goes through the single `api()` helper in `lib/api.ts`
   (`credentials: "include"` for the auth cookie). Image uploads use raw `FormData`
