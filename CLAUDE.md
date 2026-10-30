@@ -308,7 +308,7 @@ can open.
   "Everyone" rather than disappearing (`ReadField`, `IconList`). The
   organization is the header's subtitle — "Posted by …" here, "Posting
   under …" on create (`PageHeader subtitle`); the header's buttons share the
-  title's row and don't wrap from `lg`. Header: Copy link / Print details / Edit / Un-publish;
+  title's row and don't wrap from `lg`. Header: Share (icon) / Print (icon) / Edit / Un-publish;
   the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
@@ -318,8 +318,9 @@ can open.
   returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
   shares `EventForm` with create.
   **The event's name is the page title** on every event page (28px,
-  `.event-title`; the header's buttons sit on their own line under it,
-  `PageHeader actionsBelow`). In the form it is typed right there: `EventForm`
+  `.event-title`; the header's buttons on the title's row at the right,
+  top-aligned). On the details page Share and Print are icon-only buttons
+  with `ui/Tooltip`s, then "Edit" (pencil + word) and Un-publish. In the form it is typed right there: `EventForm`
   draws its own header (the page passes `header` — back link, subtitle,
   buttons), whose title is the name input (reads as a heading, shows it's
   editable on hover / focus, carries the required error); the form has no

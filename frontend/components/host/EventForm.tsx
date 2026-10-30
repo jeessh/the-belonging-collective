@@ -566,7 +566,6 @@ export function EventForm({
           onBack={header.onBack}
           subtitle={header.subtitle}
           actions={header.actions}
-          actionsBelow
           title={
             <div className="flex flex-col gap-1">
               <h1 className="sr-only">

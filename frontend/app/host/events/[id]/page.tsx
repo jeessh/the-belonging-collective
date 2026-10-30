@@ -11,6 +11,7 @@ import {
   Pencil,
   Printer,
   RotateCcw,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
@@ -26,7 +27,9 @@ import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { Glyph } from "@/components/ui/Glyph";
 import { Group } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
-import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { eventUrl } from "@/components/CopyLinkButton";
+import { copyText } from "@/lib/clipboard";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PosterSection } from "@/components/host/PosterSection";
 import {
@@ -126,6 +129,15 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       setRestoring(false);
     }
   }
+  async function share() {
+    if (!event) return;
+    if (!(await copyText(eventUrl(event.id), show))) return;
+    show({
+      title: `Link to '${event.title}' copied.`,
+      description: "Paste it wherever you're sharing.",
+    });
+  }
+
   function print() {
     // Mark just the event, print, then put the page back — the global print
     // rules hide everything outside `.print-target`.
@@ -140,15 +152,34 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        actionsBelow
         subtitle={`Posted by ${event.host_name}`}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
           <>
-            {!archived && <CopyLinkButton eventId={event.id} title={event.title} />}
-            <Button leadingIcon={<Printer />} onClick={print}>
-              Print details
-            </Button>
+            {/* Share and print are icons (with tooltips saying what they do);
+                Edit keeps its word. */}
+            {!archived && (
+              <Tooltip text="Copy a link to this event to share">
+                {(tip) => (
+                  <Button
+                    aria-label={`Share ${event.title}`}
+                    aria-describedby={tip}
+                    onClick={() => void share()}
+                    leadingIcon={<Share2 />}
+                  />
+                )}
+              </Tooltip>
+            )}
+            <Tooltip text="Print these details">
+              {(tip) => (
+                <Button
+                  aria-label={`Print the details of ${event.title}`}
+                  aria-describedby={tip}
+                  onClick={print}
+                  leadingIcon={<Printer />}
+                />
+              )}
+            </Tooltip>
             {archived && (
               <Button
                 variant="primary"
@@ -165,8 +196,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                   href={`/host/events/${event.id}/edit`}
                   className={buttonClass("secondary")}
                 >
-                  Edit Event Details
                   <Pencil aria-hidden="true" className="size-6" />
+                  Edit
                 </Link>
                 <Button
                   variant="danger"
