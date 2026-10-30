@@ -31,7 +31,7 @@ export function ImageDrop({
   onChange: (url: string) => void;
   /** What the image is for — decides the size asked for. Covers by default. */
   sizing?: SizingKey;
-  /** A shorter box, for a form that has to fit on one screen. */
+  /** The event form's box: smaller icon and spacing, no "Or" divider, 300px tall. */
   compact?: boolean;
   /**
    * The preview as tall as it is wide — the event form's left column,
@@ -124,7 +124,7 @@ export function ImageDrop({
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
           } ${
-            logo ? "" : compact ? "min-h-[160px]" : "min-h-[278px]"
+            logo ? "" : compact ? "min-h-[300px]" : "min-h-[278px]"
           }`}
         >
           <ArrowUpFromLine
