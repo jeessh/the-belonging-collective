@@ -302,8 +302,8 @@ can open.
   form**: the same 5fr / 7fr columns, left column fields, right-column
   `Group`s (EventForm exports `Group`; its `.group-heading` is 20px on both
   pages), headings and field labels (14px, answers 14px too — on the
-  details page the labels are medium weight and the answers regular, since
-  no box sets the answer apart), and every
+  details page the labels are the form's light ones and the answers medium
+  weight, so what was entered leads), and every
   field the form has — an empty one reads "None", "No limit", "Any" or
   "Everyone" rather than disappearing (`ReadField`, `IconList`). The
   organization is the header's subtitle — "Posted by …" here, "Posting
