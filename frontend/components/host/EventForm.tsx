@@ -406,8 +406,9 @@ function Section({
   );
 }
 
-/** One titled part of the form: a heading over its fields, a rule above. */
-function Group({ title, children }: { title: string; children: ReactNode }) {
+/** One titled part of the form (and of the details page, which mirrors it):
+    a heading over its fields, a faint rule above. */
+export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     // A faint rule between groups: it separates without competing with the
     // fields.

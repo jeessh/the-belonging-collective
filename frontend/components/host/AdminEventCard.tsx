@@ -9,7 +9,6 @@ import {
   Clock,
   MapPin,
   Pencil,
-  QrCode,
   Send,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -37,12 +36,10 @@ export const AdminEventCard = memo(function AdminEventCard({
   event,
   canManage,
   onUnpublish,
-  onPrint,
 }: {
   event: Event;
   canManage: boolean;
   onUnpublish: (event: Event) => void;
-  onPrint: (event: Event) => void;
 }) {
   const { show } = useToast();
   const when = whenLine(event);
@@ -79,17 +76,10 @@ export const AdminEventCard = memo(function AdminEventCard({
       <Tool
         label={`Share ${event.title}`}
         tip="Copy a link to this event to share"
+        align={canManage ? "center" : "end"}
         onClick={() => void share()}
       >
         <Send aria-hidden="true" className="size-4" />
-      </Tool>
-      <Tool
-        label={`Print ${event.title}`}
-        tip="Print a poster with a QR code"
-        align={canManage ? "center" : "end"}
-        onClick={() => onPrint(event)}
-      >
-        <QrCode aria-hidden="true" className="size-4" />
       </Tool>
       {canManage && (
         <>

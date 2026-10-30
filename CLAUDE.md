@@ -274,7 +274,7 @@ can open.
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
   the component sheet's "Admin – Listed Event" (square image, facts beside,
-  the round edit / share / print-poster (QR icon) / un-publish (archive
+  the round edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
   does, and **View more →** at the bottom right, the card's one way to the
@@ -295,13 +295,17 @@ can open.
   page goes through `components/host/UnpublishModal.tsx` — the pink-edged
   confirm plus `unpublishedToast` (title, "was successfully un-published",
   Undo → `restoreEvent`); the list patches its rows in place rather than
-  refetching the calendar. Print on a card mounts a `PosterSheet` just long
-  enough to print it (`onReady` fires once the QR is drawn).
-  `/host/events/[id]` is a read-only details page laid out on the event
-  form's columns (5fr / 7fr, the picture square) so an event keeps its shape
-  from editing to reading (Edit / Un-publish / Copy
-  link / Print details / Print poster); it shows the program's link as
-  "Sign-up link" or, for a drop-in, "Posting link". **An un-published
+  refetching the calendar. There is no generated poster any more (the
+  card's poster tool, "Print poster" and `PosterSheet` were removed); the
+  agency's own uploaded poster and its QR code (`PosterSection`) remain.
+  `/host/events/[id]` is a read-only details page that **mirrors the event
+  form**: the same 5fr / 7fr columns, left column fields, right-column
+  `Group`s (EventForm exports `Group`), headings and field labels, and every
+  field the form has — an empty one reads "None", "No limit", "Any" or
+  "Everyone" rather than disappearing (`ReadField`, `IconList`). The
+  organization is "Posted by …" in the header, where the form says
+  "Posting under …". Header: Copy link / Print details / Edit / Un-publish;
+  the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
   rule as the list; the public `GET /events/{id}` still 404s), shown with a

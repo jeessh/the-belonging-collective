@@ -15,7 +15,7 @@ import { SearchField } from "@/components/AdminTable";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { useToast } from "@/components/ui/Toast";
-import { PosterSheet, WeeklySheet, printSheet } from "@/components/host/PrintSheets";
+import { WeeklySheet, printSheet } from "@/components/host/PrintSheets";
 import { AdminEventCard } from "@/components/host/AdminEventCard";
 import {
   UnpublishModal,
@@ -55,8 +55,6 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   // Rotating a tablet past `lg` shows the panel, so the sheet must not linger.
   const wide = useMediaQuery("(min-width: 1024px)");
   const [unpublishing, setUnpublishing] = useState<Event | null>(null);
-  // The one program whose poster sheet is mounted, just long enough to print.
-  const [printing, setPrinting] = useState<Event | null>(null);
   // `?scope=unpublished` opens on that tab — where an un-published event's
   // details page goes back to. Read after mount: the server has no URL.
   useEffect(() => {
@@ -374,7 +372,6 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                   event={ev}
                   canManage={ctx.isSuper || ev.host_id === ctx.org.id}
                   onUnpublish={setUnpublishing}
-                  onPrint={setPrinting}
                 />
               ))}
             </div>
@@ -393,16 +390,6 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         from={week.from}
         to={week.to}
       />
-      {printing && (
-        <PosterSheet
-          id="card-poster"
-          event={printing}
-          onReady={() => {
-            printSheet(document.getElementById("card-poster"));
-            setPrinting(null);
-          }}
-        />
-      )}
 
       {filtersOpen && !wide && (
         <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
