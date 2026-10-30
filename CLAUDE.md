@@ -351,8 +351,14 @@ can open.
   card's or the details page's date / time / place, the going and clicks
   counts, the filter groups) carry `.info-icon` and get the same look, 8px
   from their text; icons on buttons are actions and keep their size. In the event form the
-  image preview is square (`ImageDrop square`; the empty upload box stays
-  short) and the right column's dividers
+  image preview is square (`ImageDrop square`); with no picture it is a
+  plain grey 300px box with one "Upload image" button (drop still works).
+  Editing passes `imageFallback={eventImage(event)}`, so an event without a
+  cover of its own shows the picture members see (another of its images or
+  the topic's stock photo) with Change / Remove; Remove leaves the grey box,
+  and saving without an upload still shows the stock photo. There is no
+  "* Required" key over the form — the asterisks on the fields say it. The
+  right column's dividers
   are `border-line/40`.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;

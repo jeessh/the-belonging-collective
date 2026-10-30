@@ -432,6 +432,7 @@ export function EventForm({
   error,
   submitLabel,
   submittingLabel,
+  imageFallback,
 }: {
   /** The page's submit button points at this with `form={id}`. */
   id: string;
@@ -451,9 +452,14 @@ export function EventForm({
   submitting: boolean;
   onSubmit: () => void;
   error: string | null;
-  /** The last step's button: "Publish Event" / "Save Edits". */
+  /** The submit button's words: "Publish Event" / "Save Edits". */
   submitLabel: string;
   submittingLabel: string;
+  /**
+   * Editing: the picture the event shows members now when it has no cover
+   * of its own (another of its images, or the stock photo for its topic).
+   */
+  imageFallback?: string;
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
@@ -548,9 +554,6 @@ export function EventForm({
             date and time change for this date only.
           </p>
         )}
-        <p className="text-base text-fg-muted">
-          <span className="text-danger-fg">*</span> Required
-        </p>
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
@@ -572,6 +575,7 @@ export function EventForm({
             <ImageDrop
               compact
               square
+              fallback={imageFallback}
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}

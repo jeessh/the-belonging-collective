@@ -8,6 +8,7 @@ import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/Ad
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
+import { eventImage } from "@/lib/eventImage";
 import {
   EventForm,
   payloadFrom,
@@ -135,6 +136,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         error={error}
         submitLabel="Save Edits"
         submittingLabel="Saving…"
+        imageFallback={eventImage(event)}
       />
       {dialog}
     </div>
