@@ -297,7 +297,9 @@ can open.
   Undo → `restoreEvent`); the list patches its rows in place rather than
   refetching the calendar. Print on a card mounts a `PosterSheet` just long
   enough to print it (`onReady` fires once the QR is drawn).
-  `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
+  `/host/events/[id]` is a read-only details page laid out on the event
+  form's columns (5fr / 7fr, the picture square) so an event keeps its shape
+  from editing to reading (Edit / Un-publish / Copy
   link / Print details / Print poster); it shows the program's link as
   "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from

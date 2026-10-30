@@ -240,10 +240,14 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
 
       <article
         id="event-details"
-        className="grid gap-x-9 gap-y-8 lg:grid-cols-[598px_minmax(0,1fr)]"
+        // The event form's columns (EventForm), so a program keeps its shape
+        // from editing to reading: the smaller left column for the picture
+        // and when / where, the wider right one for everything else.
+        className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       >
         <div className="flex flex-col gap-6">
-          <div className="aspect-[598/278] w-full overflow-hidden rounded-control bg-surface-subtle">
+          {/* Square, as the form previews it. */}
+          <div className="aspect-square w-full overflow-hidden rounded-control bg-surface-subtle">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={eventImage(event)}
