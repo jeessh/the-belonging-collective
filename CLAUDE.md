@@ -298,18 +298,17 @@ can open.
   refetching the calendar. There is no generated poster any more (the
   card's poster tool, "Print poster" and `PosterSheet` were removed); the
   agency's own uploaded poster and its QR code (`PosterSection`) remain.
-  `/host/events/[id]` is a read-only details page that **is the event form,
-  view only** (`EventForm readOnly`, fed `valuesFromEvent`): the answers sit
-  in the boxes they were entered in, every control disabled through one
-  `<fieldset disabled>`, and `.form-readonly` (globals.css) makes it read as
-  view only — grey-filled boxes at full-strength text, no focus ring,
-  unchosen chips and options faded, chosen ones lit, placeholders and
-  required marks hidden, and the form's own buttons (upload, change,
-  remove, new group, submit) gone. Repeats shows as the program's
-  recurrence. So the published view can't drift from the form. The
+  `/host/events/[id]` is a read-only details page that **mirrors the event
+  form**: the same 5fr / 7fr columns, left column fields, right-column
+  `Group`s (EventForm exports `Group`; its `.group-heading` is 20px on both
+  pages), headings and field labels (14px, answers 14px too — on the
+  details page the labels are medium weight and the answers regular, since
+  no box sets the answer apart), and every
+  field the form has — an empty one reads "None", "No limit", "Any" or
+  "Everyone" rather than disappearing (`ReadField`, `IconList`). The
   organization is the header's subtitle — "Posted by …" here, "Posting
   under …" on create (`PageHeader subtitle`); the header's buttons share the
-  title's row, top-aligned, and don't wrap from `lg`. Header: Copy link / Print details / Edit / Un-publish;
+  title's row and don't wrap from `lg`. Header: Copy link / Print details / Edit / Un-publish;
   the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
