@@ -217,7 +217,7 @@ export const SavedEvents = memo(function SavedEvents({
           across is the panel's own width, not the viewport's. */}
       <div className="flex flex-col gap-6 p-4 [container-type:inline-size] sm:gap-8 sm:p-6 lg:p-9">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-col items-start gap-2">
             <BackButton label="Back to events" onClick={onClose} />
             <h1 className="text-2xl font-medium text-fg sm:text-3xl">
               {owner ? listTitle : "All Saved Events"} ({me ? total : 0})

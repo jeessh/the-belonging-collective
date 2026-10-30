@@ -67,7 +67,7 @@ export function LoginOverlay({
               view.icon || view.back ? (
                 <>
                   {view.icon}
-                  <TitleWithBack back={view.back}>
+                  <TitleWithBack back={view.back} inline>
                     <h2 className="text-2xl font-medium text-fg sm:text-3xl">
                       {view.title}
                     </h2>

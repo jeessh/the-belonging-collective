@@ -313,7 +313,7 @@ export default function ProfilePage() {
   return (
     <main className="min-h-dvh bg-surface-subtle px-4 py-6 text-fg sm:px-6 sm:py-10">
       <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start gap-2">
           <BackButton href="/" label="Back to programs" />
           <h1 className="text-2xl font-medium sm:text-3xl">Profile</h1>
         </div>
