@@ -325,7 +325,11 @@ can open.
   organization with its logo for the shared login or an imported event.
   `EventOut.created_by_name` / `created_by_picture` are filled for signed-in
   organizers only (one query per page in `_public_view`); members never
-  see who on a team posted what. On the details page Share and Print are icon-only buttons
+  see who on a team posted what. Beside the title a status tag (`host/EventStatus`, on
+  `AdminTable`'s `Pill`) says where the event stands: **Draft** on create
+  (nothing is saved until Publish — there is no server-side draft state),
+  **Published** on edit and on a live event's details, **Un-published** on
+  an archived one's. On the details page Share and Print are icon-only buttons
   with `ui/Tooltip`s, then "Edit" (pencil + word) and Un-publish. In the form it is typed right there: `EventForm`
   draws its own header (the page passes `header` — back link, subtitle,
   buttons), whose title is the name input (reads as a heading, shows it's

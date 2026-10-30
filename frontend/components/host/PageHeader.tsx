@@ -19,6 +19,7 @@ export function PageHeader({
   actions,
   actionsBelow = false,
   titleClassName = "",
+  status,
 }: {
   title: ReactNode;
   /** Muted text under the title, e.g. which organization the event is for. */
@@ -31,10 +32,15 @@ export function PageHeader({
   actionsBelow?: boolean;
   /** Extra classes for a string title's h1 (`event-title` on the event pages). */
   titleClassName?: string;
+  /** A tag beside the title saying where the page's subject stands. */
+  status?: ReactNode;
 }) {
   const heading =
     typeof title === "string" ? (
-      <h1 className={`text-3xl font-medium text-fg sm:text-4xl ${titleClassName}`}>{title}</h1>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h1 className={`text-3xl font-medium text-fg sm:text-4xl ${titleClassName}`}>{title}</h1>
+        {status}
+      </div>
     ) : (
       title
     );

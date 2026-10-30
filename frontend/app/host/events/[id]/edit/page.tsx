@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
+import { EventStatus } from "@/components/host/EventStatus";
 import { eventImage } from "@/lib/eventImage";
 import {
   EventForm,
@@ -126,6 +127,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           backLabel: "Back to event details",
           onBack,
           subtitle: <PostedBy event={event} />,
+          status: <EventStatus state="published" />,
           actions: (
             <Button
               type="submit"

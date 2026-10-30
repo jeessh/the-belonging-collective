@@ -476,6 +476,8 @@ export function EventForm({
     onBack?: (e: MouseEvent<HTMLElement>) => void;
     subtitle?: ReactNode;
     actions?: ReactNode;
+    /** The tag beside the name: Draft (create) or Published (edit). */
+    status?: ReactNode;
   };
 }) {
   const [showMissing, setShowMissing] = useState(false);
@@ -593,6 +595,7 @@ export function EventForm({
                 {mode === "create" && (
                   <Pencil aria-hidden="true" className="size-5 shrink-0 text-fg-icon-muted" />
                 )}
+                {header.status}
               </span>
               {fieldError("title") && (
                 <p id={`${id}-title-error`} className="text-base text-danger-fg">

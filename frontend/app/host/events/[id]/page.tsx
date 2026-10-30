@@ -32,6 +32,7 @@ import { copyText } from "@/lib/clipboard";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
+import { EventStatus } from "@/components/host/EventStatus";
 import { PosterSection } from "@/components/host/PosterSection";
 import {
   UnpublishModal,
@@ -154,6 +155,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         title={event.title}
         titleClassName="event-title"
         subtitle={<PostedBy event={event} />}
+        status={<EventStatus state={archived ? "unpublished" : "published"} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
           <>
