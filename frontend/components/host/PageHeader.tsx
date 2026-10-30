@@ -22,7 +22,11 @@ export function PageHeader({
         {backHref && <BackButton href={backHref} label={backLabel} onClick={onBack} />}
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">{title}</h1>
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
+      {/* Pushed to the right edge, and kept there when the row wraps under
+          the title — wrapped buttons used to start at the left. */}
+      {actions && (
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">{actions}</div>
+      )}
     </div>
   );
 }
