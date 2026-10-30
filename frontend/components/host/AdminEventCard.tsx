@@ -5,19 +5,20 @@ import Link from "next/link";
 import {
   ArchiveX,
   ArrowRight,
+  Cake,
   CalendarDays,
-  Clock,
   MapPin,
   Pencil,
   Send,
+  Ticket,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { useToast } from "@/components/ui/Toast";
-import { EventTags } from "@/components/ui/EventSummary";
-import { GoingCount } from "@/components/ui/GoingCount";
+import { EventTags, ageLabel } from "@/components/ui/EventSummary";
+import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { buttonClass } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
@@ -45,8 +46,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   const when = whenLine(event);
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
-  const clicks = event.click_count;
-  const showClicks = clicks != null && (clicks > 0 || !!event.registration_url);
+  const ages = ageLabel(event);
 
   async function share() {
     const url = eventUrl(event.id);
@@ -119,27 +119,24 @@ export const AdminEventCard = memo(function AdminEventCard({
           <EventTags event={event} />
         </div>
         <h3 className="text-xl font-medium leading-tight text-fg">{event.title}</h3>
-        <div className="flex flex-col gap-2 text-lg text-fg-muted">
+        {/* The member card's facts (ui/EventSummary), in its order and
+            words: when (the date, the time under it), where, ages, spots,
+            and "N going" — plus the clicks only the console sees. */}
+        <div className="flex flex-col gap-2 text-lg text-fg">
           <Fact icon={<CalendarDays />}>
-            <span className="whitespace-nowrap font-medium text-fg">{when.rel}</span>
+            <span className="whitespace-nowrap">{when.rel}</span>
             {when.date && <span className="whitespace-nowrap"> · {when.date}</span>}
+            {when.time && <span className="block text-fg-muted">{when.time}</span>}
           </Fact>
-          {when.time && <Fact icon={<Clock />}>{when.time}</Fact>}
           <Fact icon={<MapPin />}>{where}</Fact>
+          {ages && <Fact icon={<Cake />}>{ages}</Fact>}
+          {typeof event.spots_left === "number" && (
+            <Fact icon={<Ticket />}>
+              {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left
+            </Fact>
+          )}
+          <ConsoleCounts event={event} />
         </div>
-        {/* The counts that go in a grant application, where there are any.
-            Clicks are registration-link clicks; shown whenever the program
-            has a link to click, so a zero is information, not clutter. */}
-        {((event.saved_count ?? 0) > 0 || showClicks) && (
-          <div className="flex flex-wrap gap-2">
-            <GoingCount count={event.saved_count} variant="tag" />
-            {showClicks && (
-              <span className="inline-flex items-center rounded-control bg-surface-subtle px-3 py-1 text-sm uppercase tracking-wide text-fg-muted">
-                {clicks} {clicks === 1 ? "click" : "clicks"}
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* The tools at the top right and View more at the bottom right; on a
