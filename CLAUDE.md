@@ -346,7 +346,8 @@ can open.
   field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
   grey, 10px from the edge; date and time boxes hide the browser's picker
   button and open the picker on click (`TextField`). In the event form the
-  image box is square (`ImageDrop square`) and the right column's dividers
+  image preview is square (`ImageDrop square`; the empty upload box stays
+  short) and the right column's dividers
   are `border-line/40`.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;

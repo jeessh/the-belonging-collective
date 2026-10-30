@@ -34,8 +34,9 @@ export function ImageDrop({
   /** A shorter box, for a form that has to fit on one screen. */
   compact?: boolean;
   /**
-   * The preview and the empty drop box as tall as they are wide — the event
-   * form's left column, matching the console's square event cards.
+   * The preview as tall as it is wide — the event form's left column,
+   * matching the console's square event cards. The empty drop box keeps its
+   * own (shorter) height.
    */
   square?: boolean;
 }) {
@@ -123,7 +124,7 @@ export function ImageDrop({
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
           } ${
-            logo ? "" : square ? "aspect-square w-full" : compact ? "min-h-[160px]" : "min-h-[278px]"
+            logo ? "" : compact ? "min-h-[160px]" : "min-h-[278px]"
           }`}
         >
           <ArrowUpFromLine
