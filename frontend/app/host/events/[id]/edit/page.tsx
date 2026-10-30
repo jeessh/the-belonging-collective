@@ -82,7 +82,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         method: "PATCH",
         body: JSON.stringify(payloadFrom(values)),
       });
-      show({ title: `'${saved.title}' was successfully edited.` });
+      show({ title: saved.title, description: "was successfully edited" });
       router.push(`/host/events/${event.id}`);
     } catch (e) {
       setError(apiMessage(e, "Couldn't save this event. Please try again."));

@@ -10,6 +10,7 @@ import {
   MapPin,
   Pencil,
   Printer,
+  QrCode,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
@@ -91,13 +92,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         .join(", "),
     ],
     ["Repeats", repeatLabel(event.recurrence)],
-    ["Spaces", event.capacity != null ? String(event.capacity) : null],
-    [
-      "Ages",
-      event.min_age != null || event.max_age != null
-        ? `${event.min_age ?? "Any"} – ${event.max_age ?? "any"}`
-        : null,
-    ],
+    ["Spots available", event.capacity != null ? String(event.capacity) : null],
+    ["Ages", agesLabel(event.min_age, event.max_age)],
     ["Who it's for", event.is_youth ? "Youth" : null],
     [
       "Who can see it",
@@ -118,7 +114,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           href={event.registration_url}
           target="_blank"
           rel="noreferrer"
-          className="break-all text-[#307CFF] underline underline-offset-4"
+          className="break-all underline underline-offset-4"
         >
           {event.registration_url}
         </a>
@@ -144,10 +140,10 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           <>
             <CopyLinkButton eventId={event.id} title={event.title} />
             <Button leadingIcon={<Printer />} onClick={print}>
-              Print
+              Print details
             </Button>
             <Button
-              leadingIcon={<Printer />}
+              leadingIcon={<QrCode />}
               onClick={() => printSheet(document.getElementById("program-poster"))}
             >
               Print poster
@@ -222,7 +218,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           )}
           {!!event.links?.length && (
             <Fact label="Important Links">
-              <ol className="flex list-decimal flex-col gap-4 pl-8 text-xl text-[#307CFF]">
+              <ol className="flex list-decimal flex-col gap-4 pl-8 text-xl text-fg">
                 {event.links.map((l) => (
                   <li key={l.url}>
                     <a
@@ -279,6 +275,14 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       )}
     </div>
   );
+}
+
+/** "12–18", "12 and up", "Up to 18", or nothing for any age. */
+function agesLabel(min: number | null | undefined, max: number | null | undefined) {
+  if (min != null && max != null) return `${min}–${max}`;
+  if (min != null) return `${min} and up`;
+  if (max != null) return `Up to ${max}`;
+  return null;
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {

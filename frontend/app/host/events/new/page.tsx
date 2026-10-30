@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import {
@@ -41,8 +43,8 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
       // Undo matters more than the confirmation does: publishing to a shared
       // calendar is where "wait, no" arrives a second late.
       show({
-        title: "Event Successfully Published!",
-        description: created.title,
+        title: created.title,
+        description: "was successfully published",
         action: {
           label: "Undo",
           onClick: () => {
@@ -74,14 +76,25 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   return (
     <div className="flex flex-col gap-9">
       <PageHeader
-        title="Create a New Event"
+        title="Create New Event"
         backHref="/host/events"
         onBack={onBack}
-        // Publish is the last step's button now, after the review.
+        // Publish here and at the foot of the form, as Edit has Save.
         actions={
-          <span className="text-base text-fg-muted">
-            Posting under {ctx.org.name}
-          </span>
+          <>
+            <span className="text-base text-fg-muted">
+              Posting under {ctx.org.name}
+            </span>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              disabled={busy}
+              trailingIcon={<Upload />}
+            >
+              {busy ? "Publishing…" : "Publish Event"}
+            </Button>
+          </>
         }
       />
       <EventForm

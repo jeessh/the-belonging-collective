@@ -128,7 +128,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
             !(program.series_id && ev.series_id === program.series_id),
         ),
       );
-      show({ title: `'${program.title}' is published again.` });
+      show({ title: program.title, description: "was successfully restored" });
       load()
         .then(setEvents)
         .catch(() => {});
@@ -237,8 +237,8 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
       {scope === "unpublished" ? (
         <div className="flex flex-col gap-4">
           <p className="text-lg text-fg-muted">
-            Programs taken off the calendar. Nothing was deleted: restore one
-            and every date of it is back in the member feed.
+            Events taken off the member feed. Nothing was deleted: restore one
+            and every date of it is back.
           </p>
           {archivedError ? (
             <p role="alert" className="text-lg text-danger-fg">
@@ -312,7 +312,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                 Print this week
               </Button>
               <Link href="/host/events/new" className={buttonClass("primary")}>
-                Create new event
+                Create New Event
                 <Plus aria-hidden="true" className="size-6" />
               </Link>
             </div>
@@ -321,7 +321,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           <p role="status" aria-live="polite" className="sr-only">
             {loading
               ? "Loading events"
-              : `${shown.length} of ${oneCardPerProgram(inScope).length} programs shown`}
+              : `${shown.length} of ${oneCardPerProgram(inScope).length} events shown`}
           </p>
 
           {loadError ? (
@@ -403,7 +403,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
             className="mt-6 w-full"
             onClick={() => setFiltersOpen(false)}
           >
-            Show {shown.length} {shown.length === 1 ? "program" : "programs"}
+            Show {shown.length} {shown.length === 1 ? "event" : "events"}
           </Button>
         </Modal>
       )}
