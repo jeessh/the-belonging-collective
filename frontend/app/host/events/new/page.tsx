@@ -77,24 +77,20 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-9">
       <PageHeader
         title="Create New Event"
+        subtitle={`Posting under ${ctx.org.name}`}
         backHref="/host/events"
         onBack={onBack}
         // Publish here and at the foot of the form, as Edit has Save.
         actions={
-          <>
-            <span className="text-base text-fg-muted">
-              Posting under {ctx.org.name}
-            </span>
-            <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
-              disabled={busy}
-              trailingIcon={<Upload />}
-            >
-              {busy ? "Publishing…" : "Publish Event"}
-            </Button>
-          </>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            variant="primary"
+            disabled={busy}
+            trailingIcon={<Upload />}
+          >
+            {busy ? "Publishing…" : "Publish Event"}
+          </Button>
         }
       />
       <EventForm

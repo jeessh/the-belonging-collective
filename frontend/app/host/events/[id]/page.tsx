@@ -139,10 +139,10 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Event Details"
+        subtitle={`Posted by ${event.host_name}`}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
           <>
-            <span className="text-base text-fg-muted">Posted by {event.host_name}</span>
             {!archived && <CopyLinkButton eventId={event.id} title={event.title} />}
             <Button leadingIcon={<Printer />} onClick={print}>
               Print details

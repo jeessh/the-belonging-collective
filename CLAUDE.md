@@ -304,8 +304,9 @@ can open.
   pages), headings and field labels (14px, answers 14px too), and every
   field the form has — an empty one reads "None", "No limit", "Any" or
   "Everyone" rather than disappearing (`ReadField`, `IconList`). The
-  organization is "Posted by …" in the header, where the form says
-  "Posting under …". Header: Copy link / Print details / Edit / Un-publish;
+  organization is the header's subtitle — "Posted by …" here, "Posting
+  under …" on create (`PageHeader subtitle`); the header's buttons share the
+  title's row and don't wrap from `lg`. Header: Copy link / Print details / Edit / Un-publish;
   the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
