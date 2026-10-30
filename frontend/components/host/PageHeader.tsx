@@ -3,7 +3,9 @@ import { BackButton } from "@/components/ui/BackButton";
 
 /**
  * Back arrow and page title — with an optional line under the title ("Posted
- * by …") — and the page's own buttons on the same row, at the right edge.
+ * by …") — and the page's own buttons on the same row, at the right edge,
+ * their tops level with the top of the title (not centred on the title and
+ * subtitle together). The arrow lines up with the title's first line.
  * From `lg` the buttons never wrap under the title; on a narrower screen they
  * drop below it, still right-aligned.
  */
@@ -25,8 +27,8 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="no-print flex flex-wrap items-center justify-between gap-4 lg:flex-nowrap">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="no-print flex flex-wrap items-start justify-between gap-4 lg:flex-nowrap">
+      <div className="flex min-w-0 items-start gap-2">
         {backHref && <BackButton href={backHref} label={backLabel} onClick={onBack} />}
         <div className="min-w-0">
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">{title}</h1>
