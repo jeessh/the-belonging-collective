@@ -205,7 +205,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                   trailingIcon={<ArchiveX />}
                   onClick={() => setUnpublishing(true)}
                 >
-                  Un-publish Event
+                  Un-publish
                 </Button>
               </>
             )}
