@@ -345,7 +345,10 @@ can open.
   field→field (any container holding fields), 12px inside a fieldset. A
   field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
   grey, 10px from the edge; date and time boxes hide the browser's picker
-  button and open the picker on click (`TextField`). In the event form the
+  button and open the picker on click (`TextField`). The event screens' information icons (a
+  card's or the details page's date / time / place, the going and clicks
+  counts, the filter groups) carry `.info-icon` and get the same look, 8px
+  from their text; icons on buttons are actions and keep their size. In the event form the
   image preview is square (`ImageDrop square`; the empty upload box stays
   short) and the right column's dividers
   are `border-line/40`.

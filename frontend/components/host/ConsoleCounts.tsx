@@ -25,7 +25,7 @@ export function ConsoleCounts({
     <span
       className={`inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-fg ${className}`}
     >
-      <GoingCount count={event.saved_count} />
+      <GoingCount count={event.saved_count} iconClassName="info-icon size-6" />
       {going > 0 && showClicks && (
         <span aria-hidden="true" className="text-fg-muted">
           ·
@@ -35,7 +35,7 @@ export function ConsoleCounts({
         <span className="inline-flex items-center gap-3">
           <MousePointerClick
             aria-hidden="true"
-            className="size-6 shrink-0 text-fg-icon"
+            className="info-icon size-6 shrink-0 text-fg-icon"
           />
           {clicks} {clicks === 1 ? "click" : "clicks"}
         </span>

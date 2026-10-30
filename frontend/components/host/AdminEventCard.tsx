@@ -212,7 +212,7 @@ function Tool({
 function Fact({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <p className="flex items-start gap-3">
-      <span aria-hidden="true" className="mt-0.5 shrink-0 text-fg-icon [&>svg]:size-6">
+      <span aria-hidden="true" className="info-icon mt-0.5 shrink-0 text-fg-icon [&>svg]:size-6">
         {icon}
       </span>
       <span className="min-w-0">{children}</span>

@@ -112,7 +112,7 @@ export const FilterPanel = memo(function FilterPanel({
               aria-expanded={isOpen}
               className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-subtle"
             >
-              <span aria-hidden="true" className="w-4 shrink-0 text-fg-icon [&>svg]:size-4">
+              <span aria-hidden="true" className="info-icon w-4 shrink-0 text-fg-icon [&>svg]:size-4">
                 {group.icon}
               </span>
               <span className="flex-1">{group.label}</span>
