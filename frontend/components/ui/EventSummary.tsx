@@ -163,7 +163,7 @@ export function EventSummary({
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
-          className={`mt-0.5 shrink-0 text-fg-icon-muted ${icon}`}
+          className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
         <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
           {/* Each part stays whole, so a narrow column breaks between
@@ -184,7 +184,7 @@ export function EventSummary({
       <div className="flex items-start gap-3">
         <MapPin
           aria-hidden="true"
-          className={`mt-0.5 shrink-0 text-fg-icon-muted ${icon}`}
+          className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
@@ -192,7 +192,7 @@ export function EventSummary({
         <div className="flex items-start gap-3">
           <Cake
             aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-icon-muted ${icon}`}
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">{ages}</p>
         </div>
@@ -201,7 +201,7 @@ export function EventSummary({
         <div className="flex items-start gap-3">
           <Ticket
             aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-icon-muted ${icon}`}
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">
             {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left

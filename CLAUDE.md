@@ -204,7 +204,7 @@ can open.
   the sheets portal to `document.body` — keep both if you add another.
 - The fact icons on every event summary (`ui/EventSummary` — feed card, list
   row, saved tile, event page: when, where, ages, spots) and the "going"
-  people icon (`ui/GoingCount`) are `text-fg-icon-muted`, a neutral grey;
+  people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
 - **Every member-side icon draws a 2px line, whatever its size** — the
   View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow
