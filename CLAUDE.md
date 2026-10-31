@@ -202,6 +202,10 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- The fact icons on every event summary (`ui/EventSummary` — feed card, list
+  row, saved tile, event page: when, where, ages, spots) and the "going"
+  people icon (`ui/GoingCount`) are `text-fg-icon-muted`, a neutral grey;
+  the words carry the facts. Button icons keep `fg-icon`.
 - `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
