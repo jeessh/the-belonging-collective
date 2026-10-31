@@ -206,6 +206,11 @@ can open.
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-icon-muted`, a neutral grey;
   the words carry the facts. Button icons keep `fg-icon`.
+- **Every member-side icon draws a 2px line, whatever its size** — the
+  View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow
+  drew 4px), so globals.css draws `svg.lucide` outside `.console` with
+  `vector-effect: non-scaling-stroke`. Keep icons at the default
+  `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the

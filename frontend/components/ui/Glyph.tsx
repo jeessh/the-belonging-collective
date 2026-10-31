@@ -17,7 +17,9 @@ export function Glyph({
     <Icon
       aria-hidden="true"
       focusable="false"
-      strokeWidth={1.75}
+      // 2, like every other icon; globals.css draws it as a 2px line at
+      // any size in the member app.
+      strokeWidth={2}
       className={`inline-block size-[1em] shrink-0 align-[-0.125em] ${className}`}
     />
   );
