@@ -317,8 +317,6 @@ def shared_list(token: str, db: Session = Depends(get_db)):
     )
     out = [EventOut.model_validate(row) for row in rows]
     holds.annotate(rows, out, None)
-    for item in out:
-        item.saved_count = None
     return SharedListOut(first_name=user.first_name, events=out)
 
 

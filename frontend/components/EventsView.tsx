@@ -834,8 +834,7 @@ export function EventsView({
     setMe(null);
     setSavedEvents([]);
     setCareFor(null);
-    // The counts are for signed-in eyes; drop them rather than refetch.
-    setEvents((evs) => evs.map((ev) => ({ ...ev, saved_count: null })));
+    // "N going" is public, so the counts stay as they are.
     setDetailFor(null);
     closeSaved();
     setSrMessage("Signed out.");

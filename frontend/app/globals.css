@@ -24,6 +24,18 @@ body {
   overscroll-behavior: none;
 }
 
+/*
+ * One line weight for every icon in the member app. Lucide draws its stroke
+ * in the icon's own 24-unit grid, so a bigger icon gets a thicker line: the
+ * View toggle's 24px icons drew 2px, the card's 36px calendar 3px, the ↑ / ↓
+ * arrows 4px. Drawn as non-scaling strokes, every icon's line is its
+ * stroke-width in screen pixels — 2px, the View toggle's — whatever its size.
+ * The console has its own smaller, lighter scale and is left alone.
+ */
+svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, rect) {
+  vector-effect: non-scaling-stroke;
+}
+
 /* Big, obvious focus for accessibility. */
 :where(button, a, [tabindex], input):focus-visible {
   outline: 3px solid #5b5bd6;

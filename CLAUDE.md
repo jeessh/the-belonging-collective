@@ -174,10 +174,10 @@ can open.
   the feed itself. "Not for me" writes the program id (`series_id ?? id`) to
   `Me.dismissed_program_ids` (PATCH replaces the whole list) and only removes
   the row from the section; the toast's Undo writes the list back.
-- `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See
-  who else is going" and opens sign-in (or links to `/signup?next=` on the
-  server-rendered page). The feed re-reads `/events` on sign-in
-  (`fetchAllEvents`) so the counts appear, and nulls them on sign-out.
+- **"N going" is public.** `saved_count` is sent to everyone, signed in or
+  not (just a count, no names — the shared-list page too), and
+  `ui/GoingCount` shows "N going" — nothing at zero. There is no "See who
+  else is going" sign-in nudge any more, and sign-out keeps the counts.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
@@ -202,6 +202,20 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- The fact icons on every event summary (`ui/EventSummary` — feed card, list
+  row, saved tile, event page: when, where, ages, spots) and the "going"
+  people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
+  the words carry the facts. Button icons keep `fg-icon`.
+- **The console's "Who it's for" reaches members in full:** spots ("N
+  spots left"), ages and the Youth answer on one line (`audienceLabel` in
+  `ui/EventSummary`: "Youth · Ages 12–18", "For youth", "Ages 18+" — also on
+  the admin card), what it offers (the event page's Accessibility list) and
+  special access (the pill).
+- **Every member-side icon draws a 2px line, whatever its size** — the
+  View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow
+  drew 4px), so globals.css draws `svg.lucide` outside `.console` with
+  `vector-effect: non-scaling-stroke`. Keep icons at the default
+  `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
@@ -451,7 +465,7 @@ can open.
 - **Saving is a bookmark.** It never registers anyone, and it never fails for
   capacity. What `events.capacity` does is hold a spot for the first hour —
   see "Holds, member email, sharing" below. `EventOut.saved_count` ("N going")
-  is `null` for signed-out viewers — the public event routes withhold it.
+  is public — shown to signed-out visitors too.
 - **Member emails are unique over live rows only** (`uq_users_email_live` on
   `lower(email)`), the same rule as `uq_hosts_email_live`.
 - **Special access is per group, not per event.** `access_groups` belong to

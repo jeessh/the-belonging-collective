@@ -23,6 +23,22 @@ export function ageLabel(ev: {
 }
 
 /**
+ * Who a program is for, as its card says it: "Youth · Ages 12–18", "For
+ * youth", "Ages 18+", or nothing for everyone of any age. The console's
+ * "Who it's for" answers (Everyone / Youth, youngest and oldest age), read
+ * back to members.
+ */
+export function audienceLabel(ev: {
+  is_youth?: boolean | null;
+  min_age?: number | null;
+  max_age?: number | null;
+}): string | null {
+  const ages = ageLabel(ev);
+  if (ev.is_youth) return ages ? `Youth · ${ages}` : "For youth";
+  return ages;
+}
+
+/**
  * The tag pills every surface shows for a program, in the design's order:
  * cost, registration, venue, then the special-access notice. Drawn by
  * `EventSummary`, except in the `detail` layout, where the listing puts them
@@ -107,7 +123,7 @@ export function EventSummary({
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = eventImage(event);
-  const ages = ageLabel(event);
+  const ages = audienceLabel(event);
   // The member's own hold, while it is still running.
   const held =
     event.held_until && new Date(event.held_until).getTime() > Date.now()
@@ -121,6 +137,8 @@ export function EventSummary({
     : tile
       ? "text-xl"
       : "text-lg";
+  // The fact icons (when, where, ages, spots) are a neutral grey: they mark
+  // the facts, the words carry them.
   const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
 
   const img = (
@@ -161,7 +179,7 @@ export function EventSummary({
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
-          className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+          className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
         <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
           {/* Each part stays whole, so a narrow column breaks between
@@ -182,7 +200,7 @@ export function EventSummary({
       <div className="flex items-start gap-3">
         <MapPin
           aria-hidden="true"
-          className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+          className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
@@ -190,7 +208,7 @@ export function EventSummary({
         <div className="flex items-start gap-3">
           <Cake
             aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">{ages}</p>
         </div>
@@ -199,7 +217,7 @@ export function EventSummary({
         <div className="flex items-start gap-3">
           <Ticket
             aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-icon ${icon}`}
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">
             {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left

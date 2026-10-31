@@ -175,8 +175,8 @@ _EVENT_OUT_OPTIONS = (
 def _public_view(
     db: Session, rows: list[Event], viewer: User | None, organizer: Host | None
 ) -> list[EventOut]:
-    """Serialize for a public route. "N going" is for people who are signed
-    in — a member or an organizer — so anonymous visitors get null, not 0.
+    """Serialize for a public route. "N going" is a plain count, shown to
+    everyone (signed in or not) — no names, just how many.
 
     A signed-in member also learns where they stand with each restricted
     program's group (`access_status`), so the page can offer "request access"
@@ -184,9 +184,6 @@ def _public_view(
     """
     out = [EventOut.model_validate(row) for row in rows]
     holds.annotate(rows, out, viewer.id if viewer else None)
-    if not (viewer or organizer):
-        for item in out:
-            item.saved_count = None
     if organizer and rows:
         # Who posted each one, for the console's "Posted by …". One query.
         poster_ids = {row.created_by_host_id for row in rows if row.created_by_host_id}
