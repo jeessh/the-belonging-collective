@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowUpFromLine, Pencil, X } from "lucide-react";
+import { ArrowUpFromLine, ImageUp, Pencil, X } from "lucide-react";
 import { ApiError, uploadImage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import {
@@ -23,6 +23,8 @@ export function ImageDrop({
   onChange,
   sizing = "cover",
   compact = false,
+  square = false,
+  fallback,
 }: {
   label: string;
   /** The current URL, "" for none. */
@@ -30,13 +32,30 @@ export function ImageDrop({
   onChange: (url: string) => void;
   /** What the image is for — decides the size asked for. Covers by default. */
   sizing?: SizingKey;
-  /** A shorter box, for a form that has to fit on one screen. */
+  /** The event form's box: smaller icon and spacing, no "Or" divider, 300px tall. */
   compact?: boolean;
+  /**
+   * The event form's frame: 300px tall and the column's full width, the
+   * picture cropped to fill it — the same frame whether a picture is there
+   * or not (the empty grey box is 300px too), and the same as the details
+   * page shows.
+   */
+  square?: boolean;
+  /**
+   * The picture members see while there's no `value` — an event without its
+   * own upload shows a stock photo for its topic. Shown with Change / Remove
+   * like an upload; Remove leaves the empty box (saving then still shows the
+   * stock photo to members, since there's still nothing of the event's own).
+   */
+  fallback?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Remove on a fallback hides it for this visit.
+  const [fallbackHidden, setFallbackHidden] = useState(false);
+  const shown = value || (!fallbackHidden && fallback) || "";
 
   async function handleFiles(files: FileList | null) {
     const file = files?.[0];
@@ -70,14 +89,14 @@ export function ImageDrop({
 
   return (
     <div>
-      {value ? (
+      {shown ? (
         <div className="flex flex-col items-start gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={value}
+            src={shown}
             alt=""
             className={`rounded-control object-cover ${
-              logo ? "size-40" : "aspect-[598/278] w-full"
+              logo ? "size-40" : square ? "h-[300px] w-full" : "aspect-[598/278] w-full"
             }`}
           />
           <div className="flex flex-wrap gap-3">
@@ -92,11 +111,45 @@ export function ImageDrop({
               variant="ghost"
               leadingIcon={<X />}
               disabled={busy}
-              onClick={() => onChange("")}
+              onClick={() => {
+                setFallbackHidden(true);
+                onChange("");
+              }}
             >
               Remove
             </Button>
           </div>
+        </div>
+      ) : square ? (
+        // The event form's empty state: a plain grey box, the size the
+        // upload box has always been here, with one way in. Dropping a file
+        // on it still works. The picture, once there, keeps Change / Remove.
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            void handleFiles(e.dataTransfer.files);
+          }}
+          className={`flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-control border px-6 text-center transition-colors ${
+            dragOver ? "border-primary-border bg-primary-soft" : "border-transparent bg-surface-subtle"
+          }`}
+        >
+          <ImageUp aria-hidden="true" strokeWidth={1.5} className="size-8 text-fg-icon-muted" />
+          <Button
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            aria-label={`${label}: upload from computer`}
+          >
+            {busy ? "Uploading…" : "Upload image"}
+          </Button>
+          <p className="text-sm text-fg-muted">
+            {ACCEPTED_LABEL}, or drag one here
+          </p>
         </div>
       ) : (
         <div
@@ -116,7 +169,9 @@ export function ImageDrop({
             dragOver
               ? "border-primary-border bg-primary-soft"
               : "border-fg-icon-muted bg-surface-subtle"
-          } ${logo ? "" : compact ? "min-h-[160px]" : "min-h-[278px]"}`}
+          } ${
+            logo ? "" : compact ? "min-h-[300px]" : "min-h-[278px]"
+          }`}
         >
           <ArrowUpFromLine
             aria-hidden="true"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { api, apiMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
@@ -42,15 +41,12 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  const backToSignIn = (
-    <Link href="/host" className="w-fit text-lg text-fg underline underline-offset-4">
-      Back to login
-    </Link>
-  );
+  const back = { label: "Back to login", href: "/host" };
 
   if (sent) {
     return (
       <AuthPage
+        back={back}
         title="Check your email"
         subtitle={`If ${email.trim().toLowerCase()} has an account, a reset link is on its way. It works once and expires in an hour.`}
       >
@@ -58,13 +54,13 @@ export default function ForgotPasswordPage() {
           Nothing arrived? Check your spam folder. Make sure it&apos;s the
           email your account uses, then try again.
         </p>
-        {backToSignIn}
       </AuthPage>
     );
   }
 
   return (
     <AuthPage
+      back={back}
       title="Reset your password"
       subtitle="We'll email you a link to choose a new one."
     >
@@ -100,7 +96,6 @@ export default function ForgotPasswordPage() {
           {busy ? "Sending…" : "Send reset link"}
         </Button>
       </form>
-      {backToSignIn}
     </AuthPage>
   );
 }

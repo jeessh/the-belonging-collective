@@ -213,6 +213,10 @@ body {
   .console :is(h1, h1.text-3xl):not(.print-target *) { font-size: 36px; }
 }
 
+/* An event's name as its page's title (the details page, and the event
+   form's editable name): a step below the console's page titles. */
+.console :is(h1, input).event-title:not(.print-target *) { font-size: 28px; line-height: 1.2; }
+
 /* Tables are body text, rows and headers alike (cells inherit the table's
    size). */
 .console :is(table, table.text-lg, table.text-xl, table.text-base):not(.print-target *) {
@@ -234,8 +238,54 @@ body {
 /* Round icon buttons (the event cards' edit / share / print / un-publish). */
 .console :is(button, a).size-11:not(.print-target *) { width: 36px; height: 36px; }
 
-/* Cards: less rounded. */
-.console .rounded-card:not(.print-target *) { border-radius: 12px; }
+/* The back button (ui/BackButton) in the console: body-size words and a
+   16px arrow, still 36px tall like the other controls. */
+.console .back-button svg:not(.print-target *) { width: 16px; height: 16px; }
+
+
+/*
+ * Form fields — one rule for every console form. A field (`.field`: TextField,
+ * AdminTable's Field, the event form's Section) is its label over its control.
+ *
+ * Labels (`.field-label`) are regular weight in a dark grey: lighter than what
+ * is typed (`fg`), so the answers lead, and darker than placeholder text
+ * (`fg-muted`), so a label never reads as a placeholder.
+ *
+ * Spacing: 6px from a label to its control (and to its error), 16px from one
+ * field to the next — whatever gap the container was written with. A fieldset's
+ * legend isn't a flex item, so it takes a margin instead, and the fieldset's
+ * own parts (a chip row, then the fields under it) sit 12px apart.
+ */
+.console .field-label:not(.print-target *) { font-weight: 400; color: #4d4d4d; }
+.console .field:not(.print-target *) { row-gap: 6px; }
+.console fieldset.field:not(.print-target *) { row-gap: 12px; }
+.console fieldset.field > legend:not(.print-target *) { margin-bottom: 6px; }
+.console :is(form, div, section):has(> .field):not(.print-target *) { row-gap: 16px; }
+
+/*
+ * A field's leading icon (date, time, place): small, light and thin, close to
+ * the box's left edge, so it marks the field without competing with the
+ * answer. Date and time boxes drop the browser's own picker button on the
+ * right — clicking anywhere in the box opens the picker (TextField), and the
+ * keyboard still types and steps through the parts.
+ */
+.console .field-box.has-icon:not(.print-target *) { padding-left: 10px; column-gap: 8px; }
+
+/* The same look for the icons that label information on the event screens —
+   a card's or the details page's date, time and place, the going / clicks
+   counts, the filter groups (`.info-icon`, on the icon or its wrapper), 8px
+   from their text. Icons on buttons are actions and keep their own size. */
+.console :is(.field-icon, .info-icon):not(.print-target *) { color: #838383; }
+.console :is(.field-icon, .info-icon) > svg:not(.print-target *),
+.console svg.info-icon:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.5; }
+.console :has(> .info-icon):not(.print-target *) { column-gap: 8px; }
+
+/* Every icon on a console event card — the round tools, the tag pills, the
+   facts, the counts, View more — one size and one line weight, so they read
+   as one set (a thicker line looks like a bigger icon). */
+.console .event-card svg:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.75; }
+.console input:is([type="date"], [type="time"])::-webkit-calendar-picker-indicator { display: none; }
+.console input:is([type="date"], [type="time"]):not(.print-target *) { cursor: pointer; }
 
 /*
  * The event form on top of that (`.form-dense`): every label, hint and
@@ -248,3 +298,9 @@ body {
 .console .form-dense :is(h2, h2.text-2xl) { font-size: 20px; line-height: 1.3; }
 .console .form-dense :is(h2 span, h3) { font-size: 16px; }
 .console .form-dense .gap-5 { gap: 16px; }
+
+/* A group's heading ("Description", "Cost & sign-up", …) is 20px wherever
+   the group is drawn — the event form and the details page that mirrors it.
+   Without this the form's own rule made it 20px there and the general
+   text-xl remap 16px on the details page. */
+.console h2.group-heading:not(.print-target *) { font-size: 20px; line-height: 1.3; }

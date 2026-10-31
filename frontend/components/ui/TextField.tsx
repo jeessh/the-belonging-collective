@@ -44,6 +44,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       variant = "header",
       className = "",
       type,
+      onClick,
       ...rest
     },
     ref,
@@ -76,6 +77,18 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
             : "min-w-0 flex-1 bg-transparent text-lg text-fg focus-visible:outline-none placeholder:text-fg-muted"
         }
         type={password && shown ? "text" : type}
+        // A date or time box opens its picker wherever it's clicked, not only
+        // on the browser's small picker button (which the console hides).
+        onClick={(e) => {
+          onClick?.(e);
+          if (!e.defaultPrevented && (type === "date" || type === "time")) {
+            try {
+              e.currentTarget.showPicker?.();
+            } catch {
+              // Not allowed here (or not supported); typing still works.
+            }
+          }
+        }}
         {...rest}
       />
     );
@@ -100,7 +113,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     );
 
     return (
-      <div className={`flex flex-col gap-2 ${className}`}>
+      <div className={`field flex flex-col gap-2 ${className}`}>
         {variant === "floating" ? (
           <label
             htmlFor={inputId}
@@ -121,17 +134,17 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           </label>
         ) : (
           <>
-            <label htmlFor={inputId} className="text-lg font-medium text-fg">
+            <label htmlFor={inputId} className="field-label text-lg font-medium text-fg">
               {label}
               {mark}
             </label>
             <div
-              className={`flex min-h-12 items-center gap-3 rounded border bg-surface px-4 focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[#5b5bd6] ${border}`}
+              className={`field-box ${icon ? "has-icon" : ""} flex min-h-12 items-center gap-3 rounded border bg-surface px-4 focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[#5b5bd6] ${border}`}
             >
               {icon && (
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-fg-icon [&>svg]:size-6"
+                  className="field-icon shrink-0 text-fg-icon [&>svg]:size-6"
                 >
                   {icon}
                 </span>

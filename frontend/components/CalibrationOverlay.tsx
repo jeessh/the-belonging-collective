@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { Check } from "lucide-react";
 import type { HeadProxy } from "@/lib/headPose";
 
 // Four corners and the centre, as viewport fractions.
@@ -302,7 +303,9 @@ export function CalibrationOverlay({
                     />
                   </svg>
                 )}
-                <span className="relative">{state === "done" ? "✓" : ""}</span>
+                <span className="relative">
+                  {state === "done" && <Check aria-hidden="true" className="size-6" strokeWidth={3} />}
+                </span>
               </div>
             </div>
           </div>

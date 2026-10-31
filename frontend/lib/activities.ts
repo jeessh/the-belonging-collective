@@ -1,3 +1,15 @@
+import {
+  BookOpen,
+  Bus,
+  DoorOpen,
+  Drama,
+  Handshake,
+  PartyPopper,
+  Sprout,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+
 /**
  * What kind of thing a program is, as distinct from what it's about.
  *
@@ -13,17 +25,17 @@
  * describes its programming. It is the sort of thing the agencies should
  * correct; changing a label here changes what hosts can pick.
  */
-export type ActivityType = { label: string; emoji: string };
+export type ActivityType = { label: string; icon: LucideIcon };
 
 export const ACTIVITY_TYPES: ActivityType[] = [
-  { label: "Class", emoji: "📚" },
-  { label: "Workshop", emoji: "🛠️" },
-  { label: "Social", emoji: "🎉" },
-  { label: "Drop-in", emoji: "🚪" },
-  { label: "Outing", emoji: "🚌" },
-  { label: "Support group", emoji: "🤝" },
-  { label: "Volunteering", emoji: "🌱" },
-  { label: "Performance", emoji: "🎭" },
+  { label: "Class", icon: BookOpen },
+  { label: "Workshop", icon: Wrench },
+  { label: "Social", icon: PartyPopper },
+  { label: "Drop-in", icon: DoorOpen },
+  { label: "Outing", icon: Bus },
+  { label: "Support group", icon: Handshake },
+  { label: "Volunteering", icon: Sprout },
+  { label: "Performance", icon: Drama },
 ];
 
 /** Shown for a program whose host didn't pick a kind. */

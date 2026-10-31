@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { TitleWithBack } from "@/components/ui/BackButton";
 
 /**
  * The member door as a page: /signup, /forgot and /reset. The same card as
@@ -9,19 +10,24 @@ export function MemberAuthPage({
   title,
   subtitle,
   icon,
+  back,
   children,
 }: {
   title: string;
   subtitle?: ReactNode;
   /** Sits above the title, as on the account-created screen. */
   icon?: ReactNode;
+  /** The back arrow beside the title. */
+  back?: { label: string; href?: string; onClick?: () => void } | null;
   children: ReactNode;
 }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-surface-subtle px-4 py-8">
       <section className="w-full max-w-[800px] rounded-card border border-line bg-surface p-6 shadow-lift sm:p-12">
         {icon}
-        <h1 className="text-2xl font-medium text-fg sm:text-3xl">{title}</h1>
+        <TitleWithBack back={back}>
+          <h1 className="text-2xl font-medium text-fg sm:text-3xl">{title}</h1>
+        </TitleWithBack>
         {subtitle && <p className="mt-2 text-lg text-fg-muted">{subtitle}</p>}
         <div className="mt-10">{children}</div>
       </section>

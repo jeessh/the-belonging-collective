@@ -33,7 +33,8 @@ export function CareLinkForm({
 }: {
   mode: "create" | "link";
   onDone: (result: CareLinkResult) => void;
-  onCancel: () => void;
+  /** A footer Cancel beside the submit; inside sign-up the step's back arrow does it instead. */
+  onCancel?: () => void;
   cancelLabel?: string;
 }) {
   const [first, setFirst] = useState("");
@@ -164,7 +165,7 @@ export function CareLinkForm({
 
       <FormFooter
         className="mt-6"
-        secondary={{ label: cancelLabel, onClick: onCancel }}
+        secondary={onCancel && { label: cancelLabel, onClick: onCancel }}
         primary={{
           label: busy ? "Working…" : create ? "Create account" : "Link",
           disabled: busy || !ready,

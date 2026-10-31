@@ -8,6 +8,9 @@ import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/Ad
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
+import { PostedBy } from "@/components/host/PostedBy";
+import { EventStatus } from "@/components/host/EventStatus";
+import { eventImage } from "@/lib/eventImage";
 import {
   EventForm,
   payloadFrom,
@@ -105,24 +108,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-9">
-      <PageHeader
-        title="Edit Event Details"
-        backHref={`/host/events/${event.id}`}
-        backLabel="Back to event details"
-        onBack={onBack}
-        actions={
-          <Button
-            type="submit"
-            form={FORM_ID}
-            variant="primary"
-            disabled={busy}
-            trailingIcon={<Upload />}
-          >
-            {busy ? "Saving…" : "Save Edits"}
-          </Button>
-        }
-      />
+    <div className="flex flex-col">
       <EventForm
         id={FORM_ID}
         mode="edit"
@@ -135,6 +121,25 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         error={error}
         submitLabel="Save Edits"
         submittingLabel="Saving…"
+        imageFallback={eventImage(event)}
+        header={{
+          backHref: `/host/events/${event.id}`,
+          backLabel: "Back to event details",
+          onBack,
+          subtitle: <PostedBy event={event} />,
+          status: <EventStatus state="published" />,
+          actions: (
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              disabled={busy}
+              trailingIcon={<Upload />}
+            >
+              {busy ? "Saving…" : "Save Edits"}
+            </Button>
+          ),
+        }}
       />
       {dialog}
     </div>

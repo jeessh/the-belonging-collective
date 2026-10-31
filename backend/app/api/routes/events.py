@@ -188,6 +188,19 @@ def _public_view(
         for item in out:
             item.saved_count = None
     if organizer and rows:
+        # Who posted each one, for the console's "Posted by …". One query.
+        poster_ids = {row.created_by_host_id for row in rows if row.created_by_host_id}
+        if poster_ids:
+            posters = {
+                pid: (name, logo)
+                for pid, name, logo in db.query(Host.id, Host.name, Host.logo_url)
+                .filter(Host.id.in_(poster_ids))
+                .all()
+            }
+            for row, item in zip(rows, out):
+                name, logo = posters.get(row.created_by_host_id, (None, None))
+                item.created_by_name = name
+                item.created_by_picture = logo
         # Registration-link clicks, for the console's "N going · M clicks".
         # One grouped query for the page; members never see this number.
         clicks = dict(

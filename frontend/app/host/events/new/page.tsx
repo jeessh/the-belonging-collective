@@ -6,8 +6,8 @@ import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
+import { EventStatus } from "@/components/host/EventStatus";
 import { useToast } from "@/components/ui/Toast";
-import { PageHeader } from "@/components/host/PageHeader";
 import {
   EMPTY_FORM,
   EventForm,
@@ -74,29 +74,7 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-9">
-      <PageHeader
-        title="Create New Event"
-        backHref="/host/events"
-        onBack={onBack}
-        // Publish here and at the foot of the form, as Edit has Save.
-        actions={
-          <>
-            <span className="text-base text-fg-muted">
-              Posting under {ctx.org.name}
-            </span>
-            <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
-              disabled={busy}
-              trailingIcon={<Upload />}
-            >
-              {busy ? "Publishing…" : "Publish Event"}
-            </Button>
-          </>
-        }
-      />
+    <div className="flex flex-col">
       <EventForm
         id={FORM_ID}
         mode="create"
@@ -108,6 +86,24 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
         error={error}
         submitLabel="Publish Event"
         submittingLabel="Publishing…"
+        header={{
+          backHref: "/host/events",
+          onBack,
+          subtitle: `Posting under ${ctx.org.name}`,
+          status: <EventStatus state="draft" />,
+          // Publish here and at the foot of the form, as Edit has Save.
+          actions: (
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              disabled={busy}
+              trailingIcon={<Upload />}
+            >
+              {busy ? "Publishing…" : "Publish Event"}
+            </Button>
+          ),
+        }}
       />
       {dialog}
     </div>

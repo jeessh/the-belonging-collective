@@ -1,19 +1,32 @@
+import {
+  Bird,
+  Flower2,
+  Leaf,
+  Mountain,
+  Music,
+  Palette,
+  Rainbow,
+  Waves,
+  type LucideIcon,
+} from "lucide-react";
+
 /**
  * Profile-picture emblems — mirrors EMBLEMS in core/avatars.py.
  *
  * Purely decorative — nothing about sign-in.
  */
-export const EMBLEMS = [
-  { slug: "rainbow", emoji: "🌈", label: "Rainbow" },
-  { slug: "leaf", emoji: "🍃", label: "Leaf" },
-  { slug: "bird", emoji: "🐦", label: "Bird" },
-  { slug: "mountain", emoji: "⛰️", label: "Mountain" },
-  { slug: "wave", emoji: "🌊", label: "Wave" },
-  { slug: "butterfly", emoji: "🦋", label: "Butterfly" },
-  { slug: "music", emoji: "🎵", label: "Music" },
-  { slug: "paint", emoji: "🎨", label: "Paint" },
-] as const;
+export const EMBLEMS: { slug: string; icon: LucideIcon; label: string }[] = [
+  { slug: "rainbow", icon: Rainbow, label: "Rainbow" },
+  { slug: "leaf", icon: Leaf, label: "Leaf" },
+  { slug: "bird", icon: Bird, label: "Bird" },
+  { slug: "mountain", icon: Mountain, label: "Mountain" },
+  { slug: "wave", icon: Waves, label: "Wave" },
+  // The slug stays "butterfly" (it's what's stored); Lucide has no butterfly.
+  { slug: "butterfly", icon: Flower2, label: "Flower" },
+  { slug: "music", icon: Music, label: "Music" },
+  { slug: "paint", icon: Palette, label: "Paint" },
+];
 
-export function emblemEmoji(slug?: string | null): string | null {
-  return EMBLEMS.find((e) => e.slug === slug)?.emoji ?? null;
+export function emblemIcon(slug?: string | null): LucideIcon | null {
+  return EMBLEMS.find((e) => e.slug === slug)?.icon ?? null;
 }

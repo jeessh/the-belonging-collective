@@ -37,11 +37,6 @@ export function printSheet(el: HTMLElement | null): void {
   el.classList.remove("print-target");
 }
 
-/** "the-belonging-collective.vercel.app/events/…" — the address without the scheme. */
-function shortUrl(url: string): string {
-  return url.replace(/^https?:\/\//, "");
-}
-
 function OrgLine({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
   return (
     <div className="flex items-center gap-3">
@@ -70,81 +65,6 @@ function Footer() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/kwhab-logo.png" alt="KW Habilitation" className="h-[0.45in] w-auto" />
       <span>The Belonging Collective</span>
-    </div>
-  );
-}
-
-/**
- * One program on one page: cover, title, when, where, who runs it, and a QR
- * code to the program's public page. Offered whether or not the agency
- * attached a flyer of their own.
- */
-export function PosterSheet({
-  id,
-  event,
-  onReady,
-}: {
-  id: string;
-  event: Event;
-  /** Called once the QR code is drawn — the list mounts a sheet only to print it. */
-  onReady?: () => void;
-}) {
-  const [url, setUrl] = useState("");
-  useEffect(() => setUrl(eventUrl(event.id)), [event.id]);
-  const svg = useQrSvg(url);
-  useEffect(() => {
-    if (svg) onReady?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [svg]);
-  const when = [longDate(event.starts_at), timeRange(event.starts_at, event.ends_at)]
-    .filter(Boolean)
-    .join(" · ");
-  const repeats = repeatLabel(event.recurrence);
-  const image = event.cover_image_url ?? event.images[0]?.url ?? null;
-
-  return (
-    <div id={id} className="hidden bg-white text-fg">
-      <div className="mx-auto flex h-[10in] w-[7.5in] flex-col gap-4">
-        <OrgLine name={event.host_name} logoUrl={event.host_logo_url} />
-        {image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={image}
-            alt=""
-            className="h-[3in] w-full rounded-control object-cover"
-          />
-        )}
-        <h1 style={{ fontSize: "36pt", lineHeight: 1.1 }} className="font-medium">
-          {event.title}
-        </h1>
-        <div style={{ fontSize: "20pt" }} className="flex flex-col gap-1">
-          <p>{when || "Date to be announced"}</p>
-          {repeats && <p className="text-fg-muted">{repeats}</p>}
-          <p>
-            {event.location ||
-              (event.is_virtual ? "Online" : "Location to be announced")}
-          </p>
-        </div>
-        {event.description && (
-          <p style={{ fontSize: "14pt" }} className="line-clamp-3">
-            {event.description}
-          </p>
-        )}
-        <div className="mt-auto flex items-center gap-6">
-          <div
-            aria-hidden="true"
-            className="size-[2.4in] shrink-0 [&>svg]:h-full [&>svg]:w-full"
-            dangerouslySetInnerHTML={{ __html: svg }}
-          />
-          <div style={{ fontSize: "16pt" }} className="flex flex-col gap-2">
-            <p className="font-medium">Scan to see this program and save your spot.</p>
-            <p style={{ fontSize: "14pt" }} className="break-all text-fg-muted">
-              {shortUrl(url)}
-            </p>
-          </div>
-        </div>
-        <Footer />
-      </div>
     </div>
   );
 }

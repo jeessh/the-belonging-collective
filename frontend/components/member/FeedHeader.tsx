@@ -9,6 +9,7 @@ import {
   LogOut,
   PersonStanding,
   UserRound,
+  Mic,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,7 @@ import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
+import { Glyph } from "@/components/ui/Glyph";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -367,9 +369,9 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         {listening && (
           <span
             aria-hidden
-            className="absolute -bottom-1 left-6 grid size-5 place-items-center rounded-full bg-primary-strong text-[10px]"
+            className="absolute -bottom-1 left-6 grid size-5 place-items-center rounded-full bg-primary-strong text-fg"
           >
-            🎤
+            <Mic className="size-3" strokeWidth={2} />
           </span>
         )}
       </button>
@@ -455,7 +457,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
                     pressed={interests.includes(slug)}
                     onClick={() => onToggleInterest(slug)}
                   >
-                    <span aria-hidden>{categoryStyle(slug).emoji}</span>
+                    <Glyph icon={categoryStyle(slug).icon} />
                     {label}
                   </Chip>
                 ))}
@@ -477,13 +479,13 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
                 aria-label="Things you need a program to offer"
                 className="mt-3 flex flex-wrap gap-2"
               >
-                {SELECTABLE_TAGS.map(({ slug, label, emoji }) => (
+                {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
                   <Chip
                     key={slug}
                     pressed={accessPrefs.includes(slug)}
                     onClick={() => onToggleAccessPref(slug, label)}
                   >
-                    <span aria-hidden>{emoji}</span>
+                    <Glyph icon={icon} />
                     {label}
                   </Chip>
                 ))}

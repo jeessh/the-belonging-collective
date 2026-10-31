@@ -90,10 +90,21 @@ const config: Config = {
           fg: "#7F000E",
         },
       },
+      // One corner everywhere: 8px. The named radii and Tailwind's own sizes
+      // all resolve to it, so a stray `rounded-xl` can't bring back a
+      // second shape. `rounded-full` stays round (avatars, the round tool
+      // buttons, badges and pills).
       borderRadius: {
+        DEFAULT: "8px",
+        sm: "8px",
+        md: "8px",
+        lg: "8px",
+        xl: "8px",
+        "2xl": "8px",
+        "3xl": "8px",
         control: "8px", // buttons, tags, inputs, images
-        field: "18px", // the floating-label text field
-        card: "24px", // cards, modals
+        field: "8px", // the floating-label text field
+        card: "8px", // cards, modals
       },
       fontFamily: {
         sans: ["var(--font-body)"],

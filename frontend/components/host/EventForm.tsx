@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  Pencil,
   Upload,
 } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
@@ -37,6 +38,8 @@ import {
   type PricingModel,
 } from "@/lib/pricing";
 import { FREQUENCIES, type Frequency } from "@/lib/recurrence";
+import { Glyph } from "@/components/ui/Glyph";
+import { PageHeader } from "@/components/host/PageHeader";
 
 /** A location that is a meeting app or plainly online, not a place. */
 const ONLINE_PLACE = /\b(online|virtual|zoom|teams|google meet|meet\.google|webex|skype)\b/i;
@@ -357,7 +360,7 @@ export function useLeaveGuard(dirty: boolean) {
     };
   }, [dirty]);
 
-  const onBack = (e: MouseEvent<HTMLAnchorElement>) => {
+  const onBack = (e: MouseEvent<HTMLElement>) => {
     if (!dirty) return;
     e.preventDefault();
     setLeaving(e.currentTarget.getAttribute("href"));
@@ -395,8 +398,8 @@ function Section({
   return (
     // min-w-0: a fieldset is min-content wide by default, which pushed the
     // form past a phone's width.
-    <fieldset className="flex min-w-0 flex-col gap-3">
-      <legend className="text-lg font-medium text-fg">
+    <fieldset className="field flex min-w-0 flex-col gap-3">
+      <legend className="field-label text-lg font-medium text-fg">
         {title}
         {required && <RequiredMark />}
       </legend>
@@ -405,11 +408,14 @@ function Section({
   );
 }
 
-/** One titled part of the form: a heading over its fields, a rule above. */
-function Group({ title, children }: { title: string; children: ReactNode }) {
+/** One titled part of the form (and of the details page, which mirrors it):
+    a heading over its fields, a faint rule above. */
+export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line pt-5 first:border-t-0 first:pt-0">
-      <h2 className="text-xl font-medium text-fg">{title}</h2>
+    // A faint rule between groups: it separates without competing with the
+    // fields.
+    <section className="flex min-w-0 flex-col gap-4 border-t border-line/40 pt-5 first:border-t-0 first:pt-0">
+      <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
   );
@@ -429,6 +435,8 @@ export function EventForm({
   error,
   submitLabel,
   submittingLabel,
+  imageFallback,
+  header,
 }: {
   /** The page's submit button points at this with `form={id}`. */
   id: string;
@@ -448,9 +456,29 @@ export function EventForm({
   submitting: boolean;
   onSubmit: () => void;
   error: string | null;
-  /** The last step's button: "Publish Event" / "Save Edits". */
+  /** The submit button's words: "Publish Event" / "Save Edits". */
   submitLabel: string;
   submittingLabel: string;
+  /**
+   * Editing: the picture the event shows members now when it has no cover
+   * of its own (another of its images, or the stock photo for its topic).
+   */
+  imageFallback?: string;
+  /**
+   * The page header the form draws: its title is the event's name, editable
+   * right there (so the name has no box of its own in the form); the page
+   * supplies the back link, the line under the title and the buttons, which
+   * sit on their own line below.
+   */
+  header: {
+    backHref: string;
+    backLabel?: string;
+    onBack?: (e: MouseEvent<HTMLElement>) => void;
+    subtitle?: ReactNode;
+    actions?: ReactNode;
+    /** The tag beside the name: Draft (create) or Published (edit). */
+    status?: ReactNode;
+  };
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
@@ -533,6 +561,52 @@ export function EventForm({
         if (!submitting) onSubmit();
       }}
     >
+      <div className="mb-4">
+        <PageHeader
+          backHref={header.backHref}
+          backLabel={header.backLabel}
+          onBack={header.onBack}
+          subtitle={header.subtitle}
+          actions={header.actions}
+          title={
+            <div className="flex flex-col gap-1">
+              <h1 className="sr-only">
+                {mode === "create" ? "Create New Event" : "Edit Event Details"}
+              </h1>
+              {/* The event's name is the page title, and it's typed right
+                  here: it reads as a heading, and shows it's editable on
+                  hover and focus. */}
+              <span className="flex items-center gap-2">
+                <input
+                  aria-label="Name of Event"
+                  aria-required="true"
+                  aria-invalid={fieldError("title") ? true : undefined}
+                  aria-describedby={fieldError("title") ? `${id}-title-error` : undefined}
+                  value={values.title}
+                  onChange={(e) => set("title", e.target.value)}
+                  placeholder="Name of Event"
+                  autoComplete="off"
+                  className={`event-title -ml-2 min-w-0 flex-1 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
+                    fieldError("title") ? "border-danger-border" : "border-transparent"
+                  }`}
+                />
+                {/* Creating, the pencil says the empty title takes typing;
+                    editing, Save Edits sits right beside it and says enough. */}
+                {mode === "create" && (
+                  <Pencil aria-hidden="true" className="size-5 shrink-0 text-fg-icon-muted" />
+                )}
+                {header.status}
+              </span>
+              {fieldError("title") && (
+                <p id={`${id}-title-error`} className="text-base text-danger-fg">
+                  {fieldError("title")}
+                </p>
+              )}
+            </div>
+          }
+        />
+      </div>
+
       <div
         id={`${id}-missing`}
         ref={summaryRef}
@@ -545,9 +619,6 @@ export function EventForm({
             date and time change for this date only.
           </p>
         )}
-        <p className="text-base text-fg-muted">
-          <span className="text-danger-fg">*</span> Required
-        </p>
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
@@ -565,23 +636,17 @@ export function EventForm({
           order, below lg. */}
       <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-5">
+          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           <Section title="Event image" required={mode === "create"}>
             <ImageDrop
               compact
+              square
+              fallback={imageFallback}
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
             />
           </Section>
-          <TextField
-            label="Name of Event"
-            required
-            value={values.title}
-            onChange={(e) => set("title", e.target.value)}
-            error={fieldError("title")}
-            placeholder="Open Space: Coffee & Chats"
-            autoComplete="off"
-          />
           <TextField
             label="Date"
             placeholder="DD/MM/YYYY"
@@ -600,8 +665,8 @@ export function EventForm({
               set("date", v);
             }}
           />
-          <div className="flex flex-col gap-2">
-            <p className="text-lg font-medium text-fg">
+          <div className="field flex flex-col gap-2">
+            <p className="field-label text-lg font-medium text-fg">
               Time
               <RequiredMark />
             </p>
@@ -617,7 +682,10 @@ export function EventForm({
                 error={fieldError("time")}
                 onChange={(e) => set("time", e.target.value)}
               />
-              <span aria-hidden="true" className="mt-6 h-px w-[30px] shrink-0 bg-fg-icon" />
+              {/* Centred on the boxes (36px), whatever errors show under them. */}
+              <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
+                <span className="h-px w-3 bg-fg-icon-muted" />
+              </span>
               <TextField
                 label="End time"
                 placeholder="11:00 AM"
@@ -658,20 +726,21 @@ export function EventForm({
             }
           />
           {mode === "create" && (
-            <Section title="Does it repeat?">
+            <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">
-                <Field label="How often" className="min-w-[200px]">
-                  <Select
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                {/* The section's "Repeats" is its label; no second one. */}
+                <Select
+                  aria-label="Repeats"
+                  className="min-w-[200px]"
+                  value={values.frequency}
+                  onChange={(e) => set("frequency", e.target.value as Frequency)}
+                >
+                  {FREQUENCIES.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </Select>
                 {values.frequency !== "once" && !values.repeatForever && (
                   <TextField
                     label="How many times"
@@ -918,7 +987,7 @@ export function EventForm({
               title="What does it offer?"
             >
               <div className="flex flex-wrap gap-2">
-                {SELECTABLE_TAGS.map(({ slug, label, emoji }) => {
+                {SELECTABLE_TAGS.map(({ slug, label, icon }) => {
                   const on = values.accessibilityTags.includes(slug);
                   return (
                     <FilterChip
@@ -926,7 +995,7 @@ export function EventForm({
                       selected={on}
                       onClick={() => toggle("accessibilityTags", slug)}
                     >
-                      <span aria-hidden="true">{emoji}</span>
+                      <Glyph icon={icon} />
                       &nbsp;{label}
                     </FilterChip>
                   );
@@ -960,7 +1029,7 @@ export function EventForm({
                       selected={on}
                       onClick={() => toggle("categories", c.slug)}
                     >
-                      <span aria-hidden="true">{categoryStyle(c.slug).emoji}</span>
+                      <Glyph icon={categoryStyle(c.slug).icon} />
                       &nbsp;{c.label}
                     </FilterChip>
                   );

@@ -120,6 +120,9 @@ export type Event = {
   click_count?: number | null;
   /** The login that posted it; `host_id` is the owning organization. */
   created_by_host_id?: string | null;
+  /** Who posted it and their picture — signed-in organizers only, else null. */
+  created_by_name?: string | null;
+  created_by_picture?: string | null;
   min_age?: number | null;
   max_age?: number | null;
   /** Virtual or in person; youth or everyone. Both filter the admin list. */

@@ -132,8 +132,8 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className={`flex flex-col gap-2 ${className}`}>
-      <span className="flex items-end justify-between gap-3 text-lg font-medium text-fg">
+    <label className={`field flex flex-col gap-2 ${className}`}>
+      <span className="field-label flex items-end justify-between gap-3 text-lg font-medium text-fg">
         <span>
           {label}
           {required && <RequiredMark />}

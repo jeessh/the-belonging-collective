@@ -8,6 +8,7 @@ import { useCategories } from "@/lib/useCategories";
 import { FormFooter } from "@/components/member/FormFooter";
 import { MemberAuthFlow } from "@/components/member/MemberAuthFlow";
 import { MemberAuthPage } from "@/components/member/MemberAuthPage";
+import { Glyph } from "@/components/ui/Glyph";
 
 /**
  * A same-origin path from `?next=`, or the feed.
@@ -126,6 +127,7 @@ function SignupFlow() {
             title={view.title}
             subtitle={view.subtitle}
             icon={view.icon}
+            back={view.back}
           >
             {view.body}
           </MemberAuthPage>
@@ -146,7 +148,7 @@ function SignupFlow() {
       >
         {categories.map(({ slug, label }) => {
           const chosen = interests.includes(slug);
-          const { emoji } = categoryStyle(slug);
+          const { icon } = categoryStyle(slug);
           return (
             <button
               key={slug}
@@ -159,8 +161,8 @@ function SignupFlow() {
                   : "border-line bg-surface hover:bg-surface-subtle"
               }`}
             >
-              <span className="text-3xl" aria-hidden="true">
-                {emoji}
+              <span className="text-3xl text-fg-icon" aria-hidden="true">
+                <Glyph icon={icon} />
               </span>
               <span className="text-base font-medium text-fg">{label}</span>
             </button>

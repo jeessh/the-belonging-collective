@@ -1,6 +1,6 @@
 import { User } from "lucide-react";
 import { avatarColor } from "@/lib/dimensions";
-import { emblemEmoji } from "@/lib/emblems";
+import { emblemIcon } from "@/lib/emblems";
 
 /** "Sophie L." → "SL"; "Sophie" → "S". */
 export function initials(name: string): string {
@@ -53,15 +53,15 @@ export function Avatar({
       </span>
     );
   }
-  const emoji = emblemEmoji(emblem);
-  if (emoji) {
+  const Emblem = emblemIcon(emblem);
+  if (Emblem) {
     return (
       <span
         aria-hidden="true"
-        style={{ ...style, fontSize: size * 0.55 }}
-        className={`${base} bg-primary-soft leading-none`}
+        style={style}
+        className={`${base} bg-primary-soft text-fg-icon`}
       >
-        {emoji}
+        <Emblem strokeWidth={1.75} style={{ width: size * 0.55, height: size * 0.55 }} />
       </span>
     );
   }

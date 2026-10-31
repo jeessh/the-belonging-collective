@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Camera,
   Link2,
   Mail,
@@ -43,6 +42,8 @@ import { Modal } from "@/components/Modal";
 import { FeedLoading } from "@/components/member/FeedLoading";
 import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkForm";
 import { FormFooter } from "@/components/member/FormFooter";
+import { Glyph } from "@/components/ui/Glyph";
+import { BackButton } from "@/components/ui/BackButton";
 
 /**
  * The member's own settings: email, picture, list link, and the people on
@@ -312,12 +313,9 @@ export default function ProfilePage() {
   return (
     <main className="min-h-dvh bg-surface-subtle px-4 py-6 text-fg sm:px-6 sm:py-10">
       <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start gap-2">
+          <BackButton href="/" label="Back to programs" />
           <h1 className="text-2xl font-medium sm:text-3xl">Profile</h1>
-          <Link href="/" className={buttonClass("secondary")}>
-            <ArrowLeft aria-hidden="true" className="size-6" />
-            Back to programs
-          </Link>
         </div>
 
         <Card
@@ -417,7 +415,7 @@ export default function ProfilePage() {
             aria-label="Choose an emblem"
             className="grid grid-cols-4 gap-3 sm:grid-cols-8"
           >
-            {EMBLEMS.map(({ slug, emoji, label }) => {
+            {EMBLEMS.map(({ slug, icon, label }) => {
               const pressed = me.avatar_emblem === slug;
               return (
                 <button
@@ -433,7 +431,7 @@ export default function ProfilePage() {
                       : "border-line bg-surface hover:bg-surface-subtle"
                   }`}
                 >
-                  <span aria-hidden="true">{emoji}</span>
+                  <Glyph icon={icon} className="text-fg-icon" />
                 </button>
               );
             })}

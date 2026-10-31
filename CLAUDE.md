@@ -273,8 +273,12 @@ can open.
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
-  the component sheet's "Admin – Listed Event" (square image, facts beside,
-  the round edit / share / print-poster (QR icon) / un-publish (archive
+  the component sheet's "Admin – Listed Event" (square image, facts beside —
+  the member card's facts in its order and words: the date with the time
+  under it, place, ages, spots left, "N going", plus the console's clicks
+  (`ConsoleCounts`); every icon on the card — tools, tags, facts, counts,
+  View more — is 16px at a 1.75 line, one rule on `.event-card`
+  the round edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
   does, and **View more →** at the bottom right, the card's one way to the
@@ -295,11 +299,21 @@ can open.
   page goes through `components/host/UnpublishModal.tsx` — the pink-edged
   confirm plus `unpublishedToast` (title, "was successfully un-published",
   Undo → `restoreEvent`); the list patches its rows in place rather than
-  refetching the calendar. Print on a card mounts a `PosterSheet` just long
-  enough to print it (`onReady` fires once the QR is drawn).
-  `/host/events/[id]` is a read-only details page (Edit / Un-publish / Copy
-  link / Print details / Print poster); it shows the program's link as
-  "Sign-up link" or, for a drop-in, "Posting link". **An un-published
+  refetching the calendar. There is no generated poster any more (the
+  card's poster tool, "Print poster" and `PosterSheet` were removed); the
+  agency's own uploaded poster and its QR code (`PosterSection`) remain.
+  `/host/events/[id]` is a read-only details page that **mirrors the event
+  form**: the same 5fr / 7fr columns, left column fields, right-column
+  `Group`s (EventForm exports `Group`; its `.group-heading` is 20px on both
+  pages), headings and field labels (14px, answers 14px too — on the
+  details page the labels are medium weight and the answers regular, since
+  no box sets the answer apart), and every
+  field the form has — an empty one reads "None", "No limit", "Any" or
+  "Everyone" rather than disappearing (`ReadField`, `IconList`). The
+  organization is the header's subtitle — "Posted by …" here, "Posting
+  under …" on create (`PageHeader subtitle`); the header's buttons share the
+  title's row and don't wrap from `lg`. Header: Share (icon) / Print (icon) / Edit / Un-publish (just the word);
+  the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
   rule as the list; the public `GET /events/{id}` still 404s), shown with a
@@ -307,9 +321,28 @@ can open.
   link, the poster or its QR code (its public page is gone). Its back arrow
   returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
   shares `EventForm` with create.
+  **The event's name is the page title** on every event page (28px,
+  `.event-title`; the header's buttons on the title's row at the right,
+  top-aligned). Under the title, `host/PostedBy` says who posted it and from where,
+  with their picture: "Posted by Sam Lee · Karis Disability Services" for a
+  staff login (initials avatar — organizer logins have no photo), just the
+  organization with its logo for the shared login or an imported event.
+  `EventOut.created_by_name` / `created_by_picture` are filled for signed-in
+  organizers only (one query per page in `_public_view`); members never
+  see who on a team posted what. Beside the title a status tag (`host/EventStatus`, on
+  `AdminTable`'s `Pill`) says where the event stands: **Draft** on create
+  (nothing is saved until Publish — there is no server-side draft state),
+  **Published** on edit and on a live event's details, **Un-published** on
+  an archived one's. On the details page Share and Print are icon-only buttons
+  with `ui/Tooltip`s, then "Edit" (pencil + word) and Un-publish. In the form it is typed right there: `EventForm`
+  draws its own header (the page passes `header` — back link, subtitle,
+  buttons), whose title is the name input (reads as a heading, shows it's
+  editable on hover / focus, carries the required error); the form has no
+  separate name box. The details page's title is `event.title`.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
-  order, below): on the left the event image, name, date and time, where,
-  and repeats; on the right `Group`s for Description, Cost & sign-up, Who
+  order, below): on the left, under an "Event details" heading (same size as
+  the right column's group headings — on the details page too), the event
+  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up, Who
   it's for, Topics and Details & links. **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
@@ -333,11 +366,31 @@ can open.
   puts `.console` on every console page, and `globals.css` maps the shared
   components' member-app sizes onto it: 12px small, 14px body (and tables),
   16px card/section titles and page leads, 20/24px headings, 30/36px page
-  titles (`h1`), 36px controls, 12px card corners; printouts
+  titles (`h1`), 36px controls; printouts
   (`.print-target`) are exempt. Write console markup with the normal
   Tailwind classes — the remap does the rest — and check a new page with
   the sizes in mind rather than adding one-off overrides. The member app
   has no `.console`, so its large accessible sizes are untouched.
+- **Console form fields** (`globals.css`, under `.console`): every field is
+  `.field` (TextField, AdminTable's `Field`, the event form's `Section`) with
+  a `.field-label` — regular weight, `#4d4d4d`, lighter than answers and
+  darker than placeholders. Spacing is one rule: 6px label→control, 16px
+  field→field (any container holding fields), 12px inside a fieldset. A
+  field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
+  grey, 10px from the edge; date and time boxes hide the browser's picker
+  button and open the picker on click (`TextField`). The event screens' information icons (a
+  card's or the details page's date / time / place, the going and clicks
+  counts, the filter groups) carry `.info-icon` and get the same look, 8px
+  from their text; icons on buttons are actions and keep their size. In the event form the
+  picture sits in a 300px-tall, full-width frame, cropped to fill
+  (`ImageDrop square`); with no picture it is a plain grey 300px box with one "Upload image" button (drop still works).
+  Editing passes `imageFallback={eventImage(event)}`, so an event without a
+  cover of its own shows the picture members see (another of its images or
+  the topic's stock photo) with Change / Remove; Remove leaves the grey box,
+  and saving without an upload still shows the stock photo. There is no
+  "* Required" key over the form — the asterisks on the fields say it. The
+  right column's dividers
+  are `border-line/40`.
 - Dense and staff-first — **deliberately not** the soft one-thing-at-a-time
   member idiom. Staff doing repetitive work want everything one click away;
   don't "harmonize" the two surfaces just because the sidebar went.
@@ -345,6 +398,22 @@ can open.
   page itself, not just the nav entry. The API refuses regardless.
 
 ### Shared
+- **Every corner is 8px.** `tailwind.config.ts` resolves `rounded`,
+  `rounded-sm` … `rounded-3xl` and the named `control` / `field` / `card`
+  radii all to 8px, and the branded emails (`core/mail.py`) match.
+  `rounded-full` stays round (avatars, the round tool buttons, badges,
+  pills); the browser-tab icon keeps its own shape.
+- **One back control everywhere: `ui/BackButton`** — an arrow and its
+  words ("← Back to events", "← Back"), a link or a button, on its own line
+  **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).
+  Console pages, the All Saved Events panel, Profile, both forgot-password
+  pages (`AuthPage` / `MemberAuthPage` take `back`) and every sign-up /
+  log-in step on the `/signup` page (`AuthView.back`). **In a modal, back
+  is a secondary button beside the primary one** (Back | Next, Cancel |
+  Login, Go back | Continue — `FormFooter`): the in-feed sign-in sheet passes
+  `backPlacement="footer"` to `MemberAuthFlow`, which then puts each step's
+  back in its footer instead of `view.back`. No corner back links. (The
+  tour's Back is a slideshow control, not navigation.)
 - All HTTP goes through the single `api()` helper in `lib/api.ts`
   (`credentials: "include"` for the auth cookie). Image uploads use raw `FormData`
   via `uploadImage()` — never force `Content-Type: application/json` on those.
@@ -438,8 +507,17 @@ can open.
   `require_live_slugs`, so a value typed by hand can never reach the database.
   On the frontend `lib/categories.ts` fetches the list once per page load
   (`useCategories()` for chips and pickers, `categoryLabel(slug)` for plain
-  functions like `lib/dimensions.ts`); emoji/colour per slug stay in that
-  file, so a new topic gets a stable hashed colour. Migration
+  functions like `lib/dimensions.ts`); icon/colour per slug stay in that
+  file, so a new topic gets a stable hashed colour and the fallback icon.
+- **No emoji anywhere — every picture is a Lucide icon** (the app's one icon
+  set). Topics (`categoryStyle(slug).icon`), access needs
+  (`ACCESSIBILITY_TAGS[].icon`, `tagIcon`), profile emblems (`emblemIcon`) and
+  the unused activity kinds hold a `LucideIcon`, drawn through `ui/Glyph`,
+  which sizes it to the surrounding text (1em) — so the same chip works at
+  14px in the console and 30px on the sign-up tiles. Lucide has no butterfly:
+  the `butterfly` emblem (slug unchanged, it's stored) is a flower, labelled
+  "Flower". Check a new icon exists in the installed lucide-react before
+  using it. Migration
   `0022_categories` rewrote the stored labels to slugs (ignoring case and stray spaces) and
   keeps anything it doesn't recognise as-is (the archived demo programming's
   `Advice`/`Arts`/`Hangout`/`Food`) — don't add a free-text category input,

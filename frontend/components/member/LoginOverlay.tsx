@@ -56,6 +56,8 @@ export function LoginOverlay({
         onGuest={onGuest ?? close}
         onGuestSignIn={onGuestSignIn}
         onBack={onBack}
+        // A modal: back is the footer's secondary button, not a title arrow.
+        backPlacement="footer"
       >
         {(view) => (
           <Modal
