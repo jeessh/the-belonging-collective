@@ -96,8 +96,7 @@ export function EventDetails({
   const access = (event.accessibility_tags ?? []).filter((t) => !isDerivedTag(t));
 
   return (
-    // `event-view`: the information icons are drawn light (globals.css).
-    <div className="event-view flex flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <div
         className={`flex flex-wrap items-center justify-between gap-4 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
       >

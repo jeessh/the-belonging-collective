@@ -24,20 +24,6 @@ body {
   overscroll-behavior: none;
 }
 
-/* An event's full listing (member/EventDetails — the event page, the "More
-   information" dialog, the print preview): the icons that label information
-   (when, where, ages, spots, going, what it offers) are a thin line in a
-   light grey, so they mark the facts without outweighing them. Icons on
-   buttons and links are actions, and a tag pill's icon wears its pill's
-   colour; both keep their own look. "N going" counts as information even
-   when it is a link ("See who else is going"), so its people icon matches
-   the facts above it. */
-.event-view svg:not(button svg, a svg, .tag svg),
-.event-view svg.going-icon {
-  stroke-width: 1.5;
-  color: #838383;
-}
-
 /* Big, obvious focus for accessibility. */
 :where(button, a, [tabindex], input):focus-visible {
   outline: 3px solid #5b5bd6;
