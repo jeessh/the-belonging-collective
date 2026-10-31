@@ -174,10 +174,10 @@ can open.
   the feed itself. "Not for me" writes the program id (`series_id ?? id`) to
   `Me.dismissed_program_ids` (PATCH replaces the whole list) and only removes
   the row from the section; the toast's Undo writes the list back.
-- `saved_count` is null for anonymous viewers, so `ui/GoingCount` shows "See
-  who else is going" and opens sign-in (or links to `/signup?next=` on the
-  server-rendered page). The feed re-reads `/events` on sign-in
-  (`fetchAllEvents`) so the counts appear, and nulls them on sign-out.
+- **"N going" is public.** `saved_count` is sent to everyone, signed in or
+  not (just a count, no names — the shared-list page too), and
+  `ui/GoingCount` shows "N going" — nothing at zero. There is no "See who
+  else is going" sign-in nudge any more, and sign-out keeps the counts.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
@@ -465,7 +465,7 @@ can open.
 - **Saving is a bookmark.** It never registers anyone, and it never fails for
   capacity. What `events.capacity` does is hold a spot for the first hour —
   see "Holds, member email, sharing" below. `EventOut.saved_count` ("N going")
-  is `null` for signed-out viewers — the public event routes withhold it.
+  is public — shown to signed-out visitors too.
 - **Member emails are unique over live rows only** (`uq_users_email_live` on
   `lower(email)`), the same rule as `uq_hosts_email_live`.
 - **Special access is per group, not per event.** `access_groups` belong to
