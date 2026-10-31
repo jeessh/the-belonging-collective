@@ -279,6 +279,11 @@ body {
 .console :is(.field-icon, .info-icon) > svg:not(.print-target *),
 .console svg.info-icon:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.5; }
 .console :has(> .info-icon):not(.print-target *) { column-gap: 8px; }
+
+/* Every icon on a console event card — the round tools, the tag pills, the
+   facts, the counts, View more — one size and one line weight, so they read
+   as one set (a thicker line looks like a bigger icon). */
+.console .event-card svg:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.75; }
 .console input:is([type="date"], [type="time"])::-webkit-calendar-picker-indicator { display: none; }
 .console input:is([type="date"], [type="time"]):not(.print-target *) { cursor: pointer; }
 

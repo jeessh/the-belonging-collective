@@ -276,7 +276,8 @@ can open.
   the component sheet's "Admin – Listed Event" (square image, facts beside —
   the member card's facts in its order and words: the date with the time
   under it, place, ages, spots left, "N going", plus the console's clicks
-  (`ConsoleCounts`); their icons 16px like the tools',
+  (`ConsoleCounts`); every icon on the card — tools, tags, facts, counts,
+  View more — is 16px at a 1.75 line, one rule on `.event-card`
   the round edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
