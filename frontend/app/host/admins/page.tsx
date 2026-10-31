@@ -140,7 +140,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
         <Button
-          variant="ghost"
+          variant="secondary"
           leadingIcon={<ShieldCheck />}
           onClick={() => setAddingSuper(true)}
         >
