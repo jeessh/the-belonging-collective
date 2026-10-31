@@ -17,7 +17,7 @@ import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { useToast } from "@/components/ui/Toast";
-import { EventTags, ageLabel } from "@/components/ui/EventSummary";
+import { EventTags, audienceLabel } from "@/components/ui/EventSummary";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { buttonClass } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -46,7 +46,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   const when = whenLine(event);
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
-  const ages = ageLabel(event);
+  const ages = audienceLabel(event);
 
   async function share() {
     const url = eventUrl(event.id);

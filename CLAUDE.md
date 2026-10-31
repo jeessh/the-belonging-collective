@@ -206,6 +206,11 @@ can open.
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
+- **The console's "Who it's for" reaches members in full:** spots ("N
+  spots left"), ages and the Youth answer on one line (`audienceLabel` in
+  `ui/EventSummary`: "Youth · Ages 12–18", "For youth", "Ages 18+" — also on
+  the admin card), what it offers (the event page's Accessibility list) and
+  special access (the pill).
 - **Every member-side icon draws a 2px line, whatever its size** — the
   View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow
   drew 4px), so globals.css draws `svg.lucide` outside `.console` with

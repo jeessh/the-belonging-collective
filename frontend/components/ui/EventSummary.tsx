@@ -23,6 +23,22 @@ export function ageLabel(ev: {
 }
 
 /**
+ * Who a program is for, as its card says it: "Youth · Ages 12–18", "For
+ * youth", "Ages 18+", or nothing for everyone of any age. The console's
+ * "Who it's for" answers (Everyone / Youth, youngest and oldest age), read
+ * back to members.
+ */
+export function audienceLabel(ev: {
+  is_youth?: boolean | null;
+  min_age?: number | null;
+  max_age?: number | null;
+}): string | null {
+  const ages = ageLabel(ev);
+  if (ev.is_youth) return ages ? `Youth · ${ages}` : "For youth";
+  return ages;
+}
+
+/**
  * The tag pills every surface shows for a program, in the design's order:
  * cost, registration, venue, then the special-access notice. Drawn by
  * `EventSummary`, except in the `detail` layout, where the listing puts them
@@ -107,7 +123,7 @@ export function EventSummary({
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = eventImage(event);
-  const ages = ageLabel(event);
+  const ages = audienceLabel(event);
   // The member's own hold, while it is still running.
   const held =
     event.held_until && new Date(event.held_until).getTime() > Date.now()
