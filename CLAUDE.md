@@ -207,9 +207,9 @@ can open.
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
 - **The console's "Who it's for" reaches members in full:** spots ("N
-  spots left"), ages and the Youth answer on one line (`audienceLabel` in
-  `ui/EventSummary`: "Youth · Ages 12–18", "For youth", "Ages 18+" — also on
-  the admin card), what it offers (the event page's Accessibility list) and
+  spots left"), ages (every card), the Youth answer on the event's own page
+  only (`audienceLabel` in `ui/EventSummary`, `detail` layout: "Youth · Ages
+  12–18", "For youth" — cards, including the admin card, show just the ages), what it offers (the event page's Accessibility list) and
   special access (the pill).
 - **Every member-side icon draws a 2px line, whatever its size** — the
   View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow
