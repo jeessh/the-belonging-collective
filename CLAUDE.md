@@ -118,6 +118,11 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- The feed's account button and menu (`FeedHeader`'s `AccountButton`) are
+  the console's (`host/ConsoleHeader`) size for size — a 32px picture, the
+  name (14px medium) over the account type ("Caregiver" / "Community
+  member", `Me.is_caregiver`, 12px grey), a 16px chevron, and a 224px menu
+  of rounded 14px items with 16px icons. Change one, change the other.
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
@@ -207,9 +212,9 @@ can open.
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
 - **The console's "Who it's for" reaches members in full:** spots ("N
-  spots left"), ages and the Youth answer on one line (`audienceLabel` in
-  `ui/EventSummary`: "Youth · Ages 12–18", "For youth", "Ages 18+" — also on
-  the admin card), what it offers (the event page's Accessibility list) and
+  spots left"), ages (every card), the Youth answer on the event's own page
+  only (`audienceLabel` in `ui/EventSummary`, `detail` layout: "Youth · Ages
+  12–18", "For youth" — cards, including the admin card, show just the ages), what it offers (the event page's Accessibility list) and
   special access (the pill).
 - **Every member-side icon draws a 2px line, whatever its size** — the
   View toggle's weight. Lucide scales its stroke with the icon (a 48px arrow

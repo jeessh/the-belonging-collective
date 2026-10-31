@@ -38,6 +38,7 @@ export type AvatarChoice = {
 
 export const FeedHeader = memo(function FeedHeader({
   name,
+  role,
   avatar,
   care,
   onSignIn,
@@ -46,6 +47,8 @@ export const FeedHeader = memo(function FeedHeader({
 }: {
   /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
+  /** "Caregiver" or "Community member", under the name. */
+  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Only for a caregiver with linked members; the switcher is hidden otherwise. */
   care?: CareChoice | null;
@@ -55,10 +58,13 @@ export const FeedHeader = memo(function FeedHeader({
   children: ReactNode;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 sm:py-5 lg:px-9 short:!py-3">
+    // 12px above and below at every size (it was 20px on taller screens): a
+    // slimmer bar leaves more of the screen to the programs.
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9">
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}
+          role={role}
           avatar={avatar}
           // Beside the switcher a phone has room for the picture, not the
           // name; the menu still carries it.
@@ -179,12 +185,15 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
  */
 function AccountButton({
   name,
+  role,
   avatar,
   compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
+  /** The account type, as a smaller line under the name. */
+  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Hide the name below `sm`; the picture stands in for it. */
   compact?: boolean;
@@ -218,38 +227,47 @@ function AccountButton({
         onClick={() => (signedIn ? setOpen((v) => !v) : onSignIn())}
         aria-haspopup={signedIn ? "menu" : undefined}
         aria-expanded={signedIn ? open : undefined}
-        className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control py-1 pl-1 pr-3 text-xl transition-colors hover:bg-surface-subtle sm:gap-4"
+        // The console's account button (host/ConsoleHeader), size for size:
+        // a 32px picture, the name over the account type, a small chevron.
+        className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control px-2 text-left transition-colors hover:bg-surface-subtle"
       >
         <Avatar
           name={name}
           src={avatar?.url}
           emblem={avatar?.emblem}
-          size={36}
+          size={32}
         />
+        {/* The name over the account type ("Caregiver" / "Community
+            member"), as the console's account button puts a person over
+            their organization. */}
         <span
-          className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"} ${
-            compact ? "max-sm:sr-only" : ""
-          }`}
+          className={`flex min-w-0 flex-col leading-tight ${compact ? "max-sm:sr-only" : ""}`}
         >
-          {name ?? "Not Logged In"}
+          <span
+            className={`truncate text-sm ${signedIn ? "font-medium text-fg" : "text-fg-muted"}`}
+          >
+            {name ?? "Not Logged In"}
+          </span>
+          {signedIn && role && <span className="truncate text-xs text-fg-muted">{role}</span>}
         </span>
         {signedIn && (
-          <ChevronDown aria-hidden="true" className="size-5 text-fg-icon" />
+          <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-fg-icon" />
         )}
       </button>
 
       {open && signedIn && (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-2 min-w-[200px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift"
+          aria-label="Account"
+          className="absolute left-0 top-full z-50 mt-2 w-56 rounded-control border border-line bg-surface p-1 shadow-lift"
         >
           <Link
             role="menuitem"
             href="/profile"
             onClick={() => setOpen(false)}
-            className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle"
+            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
           >
-            <UserRound aria-hidden="true" className="size-5" />
+            <UserRound aria-hidden="true" className="size-4" />
             Profile
           </Link>
           <button
@@ -259,9 +277,9 @@ function AccountButton({
               setOpen(false);
               onSignOut();
             }}
-            className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle"
+            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
           >
-            <LogOut aria-hidden="true" className="size-5" />
+            <LogOut aria-hidden="true" className="size-4" />
             Sign out
           </button>
         </div>
@@ -362,7 +380,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         data-tour="a11y"
         className="relative inline-flex min-h-11 items-center gap-3 rounded-control px-2 py-1 text-xl text-fg transition-colors hover:bg-surface-subtle"
       >
-        <PersonStanding aria-hidden="true" className="size-10 shrink-0" />
+        <PersonStanding aria-hidden="true" className="size-8 shrink-0" />
         <span className="hidden sm:inline">Accessibility Tools</span>
         <span className="sr-only sm:hidden">Accessibility Tools</span>
         <ChevronDown aria-hidden="true" className="size-5 text-fg-icon" />

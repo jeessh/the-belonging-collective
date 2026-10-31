@@ -123,7 +123,9 @@ export function EventSummary({
   const where =
     event.location || (event.is_virtual ? "Online" : "Location to be announced");
   const image = eventImage(event);
-  const ages = audienceLabel(event);
+  // Cards say only the ages; the event's own page (`detail`) also says when
+  // it's a youth program ("Youth · Ages 12–18" / "For youth").
+  const ages = layout === "detail" ? audienceLabel(event) : ageLabel(event);
   // The member's own hold, while it is still running.
   const held =
     event.held_until && new Date(event.held_until).getTime() > Date.now()
