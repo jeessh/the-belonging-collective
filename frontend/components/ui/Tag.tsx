@@ -62,7 +62,7 @@ export function Tag({
   const { label, className: tone, icon: Icon } = TAG[kind];
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-control px-3 py-1 text-base uppercase tracking-wide ${tone} ${className}`}
+      className={`tag inline-flex items-center gap-2 rounded-control px-3 py-1 text-base uppercase tracking-wide ${tone} ${className}`}
     >
       {Icon && <Icon aria-hidden="true" className="size-4 shrink-0" />}
       {label}

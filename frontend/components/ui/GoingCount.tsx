@@ -41,19 +41,19 @@ export function GoingCount({
     const look = `inline-flex min-h-11 items-center gap-3 text-fg underline decoration-line underline-offset-4 hover:decoration-fg ${className}`;
     return signInHref ? (
       <Link href={signInHref} className={look}>
-        <Users aria-hidden="true" className={`shrink-0 text-fg-icon ${iconClassName}`} />
+        <Users aria-hidden="true" className={`going-icon shrink-0 text-fg-icon ${iconClassName}`} />
         See who else is going
       </Link>
     ) : (
       <button type="button" onClick={onSignIn} className={look}>
-        <Users aria-hidden="true" className={`shrink-0 text-fg-icon ${iconClassName}`} />
+        <Users aria-hidden="true" className={`going-icon shrink-0 text-fg-icon ${iconClassName}`} />
         See who else is going
       </button>
     );
   }
   return (
     <span className={`inline-flex items-center gap-3 text-fg ${className}`}>
-      <Users aria-hidden="true" className={`shrink-0 text-fg-icon ${iconClassName}`} />
+      <Users aria-hidden="true" className={`going-icon shrink-0 text-fg-icon ${iconClassName}`} />
       {count} going
     </span>
   );

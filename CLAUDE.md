@@ -202,6 +202,11 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- On an event's full listing (`member/EventDetails`, root `.event-view`) the
+  information icons — when, where, ages, spots, "N going" (`.going-icon`,
+  even as a link), what it offers — are a 1.5 line in `#838383`
+  (globals.css); icons on buttons and links, and a tag pill's (`.tag`),
+  keep their own look.
 - `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
