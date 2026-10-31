@@ -20,6 +20,7 @@ from app.api.routes import (
     events,
     google_calendar,
     hosts,
+    imports,
     internal,
     invites,
     share,
@@ -73,6 +74,7 @@ app.include_router(care.invite_router)
 app.include_router(invites.router)
 app.include_router(access.router)
 app.include_router(analytics.router)
+app.include_router(imports.router)
 app.include_router(share.router)
 app.include_router(internal.router)
 

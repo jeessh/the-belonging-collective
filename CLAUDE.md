@@ -560,6 +560,34 @@ can open.
   so a program's own link opens either way. The console's account menu links
   to the organization's page.
 
+## Importing a calendar (`/host/import`, superadmins)
+- **Bring an organization's existing calendar in as events** — KW Hab's
+  Teamup community calendar (`https://ics.teamup.com/feed/ksakacjdxmrwoqtzym/0.ics`),
+  or any iCal feed / `.ics` file (Google, Outlook). "Import events" on Event
+  Management (superadmins only).
+- **Preview, then commit — nothing is written until Import.**
+  `POST /imports/calendar/preview {url | ics}` reads it
+  (`core/calendar_import.py`: `fetch` — http(s), public addresses only, ≤ 5 MB;
+  `parse` — pure, upcoming dates only, ≤ 104 dates and two years per program,
+  using the calendar's own dates so skipped (EXDATE) and moved
+  (RECURRENCE-ID) ones come through) and answers one row per program with
+  its matched organization (`match_org`: exact, contained, or initials —
+  "WRFN"), guessed topics (`guess_topics`, keywords → live slugs), a
+  `restricted` flag (an audience "who registered" elsewhere, e.g. LEG Up!)
+  and a likely duplicate (same organization, similar title, same day). The
+  page maps each calendar organization once, then lets the superadmin untick
+  rows and set each one's topic and special-access group.
+  `POST /imports/calendar/commit` creates them all-or-nothing: one row per
+  date sharing a series_id, like a console repeating event; free unless the
+  calendar tags it paid; drop-in; "Who: …" and any overflow of a long
+  description under extra details; link lines as Important Links.
+- Teamup's categories mix organizations with flags — "Free Community
+  Events", "Paid Community Events", "Virtual Events" — which set cost and
+  venue instead. Titles' trailing "(audience)" is dropped when it repeats
+  the Who.
+- New dependencies: `icalendar`, `python-dateutil` (requirements.txt). No
+  migration.
+
 ## Holds, member email, sharing
 - **Saving a program with a `capacity` holds a spot for one hour**
   (`event_attendees.held_until`, `core/holds.py`). Capacity never refuses a
