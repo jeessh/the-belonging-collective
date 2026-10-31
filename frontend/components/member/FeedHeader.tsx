@@ -38,6 +38,7 @@ export type AvatarChoice = {
 
 export const FeedHeader = memo(function FeedHeader({
   name,
+  role,
   avatar,
   care,
   onSignIn,
@@ -46,6 +47,8 @@ export const FeedHeader = memo(function FeedHeader({
 }: {
   /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
+  /** "Caregiver" or "Community member", under the name. */
+  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Only for a caregiver with linked members; the switcher is hidden otherwise. */
   care?: CareChoice | null;
@@ -59,6 +62,7 @@ export const FeedHeader = memo(function FeedHeader({
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}
+          role={role}
           avatar={avatar}
           // Beside the switcher a phone has room for the picture, not the
           // name; the menu still carries it.
@@ -179,12 +183,15 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
  */
 function AccountButton({
   name,
+  role,
   avatar,
   compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
+  /** The account type, as a smaller line under the name. */
+  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Hide the name below `sm`; the picture stands in for it. */
   compact?: boolean;
@@ -226,12 +233,20 @@ function AccountButton({
           emblem={avatar?.emblem}
           size={36}
         />
+        {/* The name over the account type ("Caregiver" / "Community
+            member"), as the console's account button puts a person over
+            their organization. */}
         <span
-          className={`truncate ${signedIn ? "text-fg" : "text-fg-muted"} ${
+          className={`flex min-w-0 flex-col items-start text-left leading-tight ${
             compact ? "max-sm:sr-only" : ""
           }`}
         >
-          {name ?? "Not Logged In"}
+          <span className={`max-w-full truncate ${signedIn ? "text-fg" : "text-fg-muted"}`}>
+            {name ?? "Not Logged In"}
+          </span>
+          {signedIn && role && (
+            <span className="max-w-full truncate text-base text-fg-muted">{role}</span>
+          )}
         </span>
         {signedIn && (
           <ChevronDown aria-hidden="true" className="size-5 text-fg-icon" />

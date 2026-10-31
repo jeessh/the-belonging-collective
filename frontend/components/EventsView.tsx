@@ -1133,6 +1133,7 @@ export function EventsView({
 
       <FeedHeader
         name={name}
+        role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
         avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
         care={careChoice}
         onSignIn={() => toSignIn()}

@@ -118,6 +118,10 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- The feed's account button (`FeedHeader`'s `AccountButton`) shows the
+  member's name over their account type — "Caregiver" or "Community member"
+  (`Me.is_caregiver`) — as `/profile` does under the name and the console's
+  account button does with a person's organization.
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
