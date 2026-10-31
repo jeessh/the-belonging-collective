@@ -58,7 +58,9 @@ export const FeedHeader = memo(function FeedHeader({
   children: ReactNode;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 sm:py-5 lg:px-9 short:!py-3">
+    // 12px above and below at every size (it was 20px on taller screens): a
+    // slimmer bar leaves more of the screen to the programs.
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!py-2">
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}
@@ -377,7 +379,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         data-tour="a11y"
         className="relative inline-flex min-h-11 items-center gap-3 rounded-control px-2 py-1 text-xl text-fg transition-colors hover:bg-surface-subtle"
       >
-        <PersonStanding aria-hidden="true" className="size-10 shrink-0" />
+        <PersonStanding aria-hidden="true" className="size-8 shrink-0" />
         <span className="hidden sm:inline">Accessibility Tools</span>
         <span className="sr-only sm:hidden">Accessibility Tools</span>
         <ChevronDown aria-hidden="true" className="size-5 text-fg-icon" />
