@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, CalendarPlus, Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
@@ -325,6 +325,13 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
               >
                 Print this week
               </Button>
+              {/* Bringing in an organization's existing calendar. */}
+              {ctx.isSuper && (
+                <Link href="/host/import" className={buttonClass("secondary")}>
+                  <CalendarPlus aria-hidden="true" className="size-6" />
+                  Import events
+                </Link>
+              )}
               <Link href="/host/events/new" className={buttonClass("primary")}>
                 Create New Event
                 <Plus aria-hidden="true" className="size-6" />

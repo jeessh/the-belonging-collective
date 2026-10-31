@@ -652,6 +652,50 @@ export const inviteStaff = (body: { org_id: string; name: string; email: string 
 export const removeStaff = (staffId: string) =>
   api(`/hosts/team/${staffId}`, { method: "DELETE" });
 
+/* ---------------- calendar import (superadmins) ---------------- */
+
+/** One program read from a calendar, as the preview shows it. */
+export type ImportProgram = {
+  key: string;
+  title: string;
+  description: string;
+  location: string | null;
+  who: string | null;
+  /** The organization as the calendar names it. */
+  org_label: string | null;
+  /** The platform organization it matched, or null. */
+  host_id: string | null;
+  links: EventLink[];
+  is_free: boolean;
+  is_virtual: boolean;
+  min_age: number | null;
+  /** Guessed topic slugs. */
+  categories: string[];
+  dates: { starts_at: string; ends_at: string | null }[];
+  recurrence: string | null;
+  /** For an audience that registered elsewhere ("People who registered…"). */
+  restricted: boolean;
+  duplicate: { id: string; title: string } | null;
+  problems: string[];
+};
+
+export const previewCalendarImport = (source: { url?: string; ics?: string }) =>
+  api<{ programs: ImportProgram[]; organizations: { id: string; name: string }[] }>(
+    "/imports/calendar/preview",
+    { method: "POST", body: JSON.stringify(source) },
+  );
+
+export type ImportProgramIn = Omit<
+  ImportProgram,
+  "key" | "org_label" | "host_id" | "restricted" | "duplicate" | "problems"
+> & { host_id: string; access_group_id: string | null };
+
+export const commitCalendarImport = (programs: ImportProgramIn[]) =>
+  api<{ programs: number; events: number }>("/imports/calendar/commit", {
+    method: "POST",
+    body: JSON.stringify({ programs }),
+  });
+
 /* ---------------- analytics ---------------- */
 
 export type AnalyticsWeek = {
