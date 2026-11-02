@@ -563,9 +563,10 @@ function SuperadminModal({
             </p>
           </div>
           <p className="text-base text-fg-muted">
-            Someone who works at KW Habilitation? Add them on its{" "}
+            Only for someone who should run the whole platform. To let a KW
+            Habilitation colleague maintain its events, add them on its{" "}
             <a href="/host/team" className="underline underline-offset-2">Team page</a>{" "}
-            instead — they get superadmin access without a separate organization
+            instead — they get normal admin access
           </p>
           <TextField
             label="Name"
