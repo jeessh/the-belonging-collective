@@ -583,8 +583,11 @@ can open.
   "WRFN"), guessed topics (`guess_topics`, keywords → live slugs), a
   `restricted` flag (an audience "who registered" elsewhere, e.g. LEG Up!)
   and a likely duplicate (same organization, similar title, same day). The
-  page maps each calendar organization once, then lets the superadmin untick
-  rows and set each one's topic and special-access group.
+  page maps each calendar organization once and each restricted audience
+  once ("Audiences": "People who registered through LEG Up!" → a group of
+  that organization — fills every matching row), then lets the superadmin
+  untick rows and set each one's topic and special-access group. Preview
+  re-reads the groups, so one made meanwhile is offered.
   `POST /imports/calendar/commit` creates them all-or-nothing: one row per
   date sharing a series_id, like a console repeating event; free unless the
   calendar tags it paid; drop-in; "Who: …" and any overflow of a long

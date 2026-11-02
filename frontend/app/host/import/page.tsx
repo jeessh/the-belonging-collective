@@ -64,7 +64,13 @@ function Importer() {
     setError(null);
     setResult(null);
     try {
-      const res = await previewCalendarImport(file ? { ics: file.text } : { url });
+      // Groups too, so one made in Special Access since the page opened is
+      // offered.
+      const [res, latestGroups] = await Promise.all([
+        previewCalendarImport(file ? { ics: file.text } : { url }),
+        fetchAccessGroups().catch(() => null),
+      ]);
+      if (latestGroups) setGroups(latestGroups);
       setPrograms(res.programs);
       setOrgs(res.organizations);
       // One choice per calendar organization, starting from what matched.
@@ -141,6 +147,37 @@ function Importer() {
       setImporting(false);
     }
   }
+
+  // Restricted audiences ("People who registered through LEG Up!"), each with
+  // how many events it covers — so one choice can file them all under a
+  // special-access group instead of one dropdown per row.
+  const audiences = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of programs ?? []) {
+      if (p.restricted && p.who) counts.set(p.who, (counts.get(p.who) ?? 0) + 1);
+    }
+    return [...counts.entries()];
+  }, [programs]);
+
+  /** Set every row with this audience to `groupId` — where the group belongs
+      to that row's organization (a group is one organization's). */
+  function setAudienceGroup(who: string, groupId: string) {
+    const group = groups.find((g) => g.id === groupId);
+    setRows((r) => {
+      const next = { ...r };
+      for (const p of programs ?? []) {
+        if (p.who !== who) continue;
+        if (groupId && group?.host_id !== hostOf(p)) continue;
+        next[p.key] = { ...next[p.key], groupId };
+      }
+      return next;
+    });
+  }
+  /** The group every row of an audience shares, or "" when they differ. */
+  const audienceGroup = (who: string) => {
+    const ids = new Set((programs ?? []).filter((p) => p.who === who).map((p) => rows[p.key]?.groupId ?? ""));
+    return ids.size === 1 ? [...ids][0] : "";
+  };
 
   const setRow = (key: string, patch: Partial<Row>) =>
     setRows((r) => ({ ...r, [key]: { ...r[key], ...patch } }));
@@ -254,6 +291,58 @@ function Importer() {
               ))}
             </TableCard>
           </section>
+
+          {audiences.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-xl font-medium text-fg">Audiences</h2>
+              <TableCard
+                caption="Restricted audiences in the calendar, and the special-access group their events go behind"
+                head={["Audience", "Events", "Who can see these"]}
+              >
+                {audiences.map(([who, count]) => {
+                  // The groups of the organizations these events go under.
+                  const hosts = new Set(
+                    (programs ?? []).filter((p) => p.who === who).map((p) => hostOf(p)),
+                  );
+                  const options = groups.filter((g) => hosts.has(g.host_id));
+                  return (
+                    <tr key={who} className="align-middle">
+                      <th scope="row" className="px-3 py-3 font-normal">
+                        {who}
+                      </th>
+                      <td className="px-3 py-3">{count}</td>
+                      <td className="px-3 py-3">
+                        <Select
+                          aria-label={`Who can see events for ${who}`}
+                          value={audienceGroup(who)}
+                          onChange={(e) => setAudienceGroup(who, e.target.value)}
+                        >
+                          <option value="">Everyone</option>
+                          {options.map((g) => (
+                            <option key={g.id} value={g.id}>
+                              Special access — {g.name}
+                              {hosts.size > 1 ? ` (${g.host_name})` : ""}
+                            </option>
+                          ))}
+                        </Select>
+                        {options.length === 0 && (
+                          <span className="mt-1 block text-sm text-fg-muted">
+                            No special-access groups yet for{" "}
+                            {hosts.size === 1 ? "this organization" : "these organizations"}{" "}
+                            —{" "}
+                            <Link href="/host/access" className="underline underline-offset-2">
+                              create one
+                            </Link>
+                            , then preview again
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </TableCard>
+            </section>
+          )}
 
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-medium text-fg">Events</h2>
