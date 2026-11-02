@@ -88,13 +88,18 @@ class Host(Base):
 
     @property
     def is_superadmin(self) -> bool:
-        """The access level in force: the organization's, for a staff login.
+        """Whether this login may act as a superadmin.
+
+        Only an organization's own row can be one (its `is_admin`). A staff
+        login is never a superadmin, whatever its organization is: someone
+        added to KW Habilitation's Team maintains KW Habilitation's events
+        like any agency's staff, and superadmins are added on purpose ("Add a
+        KWHab superadmin"), never by joining a team.
 
         Read through the row, never the token — `require_admin` and every
-        ownership check use this, so changing an organization's tier applies
-        to its staff on their next request.
+        ownership check use this, so it applies on the next request.
         """
-        return self.org.is_admin if self.org_id is not None else self.is_admin
+        return False if self.org_id is not None else self.is_admin
 
 
 def org_id_of(host: Host) -> uuid.UUID:

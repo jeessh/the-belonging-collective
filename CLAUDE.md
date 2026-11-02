@@ -179,8 +179,11 @@ can open.
   the feed itself. "Not for me" writes the program id (`series_id ?? id`) to
   `Me.dismissed_program_ids` (PATCH replaces the whole list) and only removes
   the row from the section; the toast's Undo writes the list back.
-- **"N going" is public.** `saved_count` is sent to everyone, signed in or
-  not (just a count, no names — the shared-list page too), and
+- **"N going" is public** — except on a special-access program, where only
+  people approved into its group, its organization and superadmins get the
+  count (`_public_view` blanks it for anyone else). `saved_count` is
+  otherwise sent to everyone, signed in or not (just a count, no names —
+  the shared-list page too), and
   `ui/GoingCount` shows "N going" — nothing at zero. There is no "See who
   else is going" sign-in nudge any more, and sign-out keeps the counts.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
@@ -258,8 +261,8 @@ can open.
   organization" form (set a temporary password in person) was removed;
   `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
   is its own form (what a superadmin can do, a pointer to KWHab's Team page
-  — the usual way to give a KWHab person access — then an emailed invite
-  with `is_admin: true`). The Organizations table only shows each tier — there is no
+  for colleagues who should only maintain events — staff are normal
+  admins — then an emailed invite with `is_admin: true`). The Organizations table only shows each tier — there is no
   promote / demote button (the API's `PATCH /hosts/{id} {is_admin}` remains). `ConsoleContext` carries `me` (the login) and `org` (the
   organization it acts for): **ownership comparisons read `ctx.org.id`,
   never `session.id`**, which is the person's own login when they're staff.
@@ -744,11 +747,14 @@ Everything a staff login does is done *as the organization*:
   analytics. Programs keep `host_id` = the organization;
   `events.created_by_host_id` records which login posted it (attribution,
   not ownership).
-- A staff login's tier is its organization's: `Host.is_superadmin` reads
-  `org.is_admin` through the relationship, and `deps.load_live_host` loads the
-  org alongside the login (and treats a login whose org is archived as
-  archived). Use `is_superadmin`, not the `is_admin` column, when deciding
-  what a caller may do — the column is meaningless on staff rows.
+- **A staff login is never a superadmin** — not even at KW Habilitation:
+  `Host.is_superadmin` is the organization row's `is_admin` and always false
+  for a staff row, so someone added to KWHab's Team maintains KWHab's events
+  like any agency's staff (no Organization / Member Management, Topics or
+  Import). Superadmins are added on purpose ("Add a KWHab superadmin").
+  `deps.load_live_host` loads the org alongside the login (and treats a
+  login whose org is archived as archived). Use `is_superadmin`, not the
+  `is_admin` column, when deciding what a caller may do.
 - Staff join by **invitation**: `POST /invites` with `org_id` + `name` (any
   login of that org may send one, a superadmin for any org; the mail and the
   accept flow are the same as an organization invite), `GET /hosts/team`

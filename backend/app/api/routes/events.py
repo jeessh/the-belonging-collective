@@ -30,6 +30,7 @@ from app.core.access import (
     resolve_group_for_host,
     scope_to_viewer,
 )
+from app.models.access import APPROVED
 from app.models.event import Event
 from app.models.event_image import EventImage
 from app.models.click import RegistrationClick
@@ -176,7 +177,8 @@ def _public_view(
     db: Session, rows: list[Event], viewer: User | None, organizer: Host | None
 ) -> list[EventOut]:
     """Serialize for a public route. "N going" is a plain count, shown to
-    everyone (signed in or not) — no names, just how many.
+    everyone (signed in or not) — no names, just how many — except on a
+    special-access program, where only its group sees it (below).
 
     A signed-in member also learns where they stand with each restricted
     program's group (`access_status`), so the page can offer "request access"
@@ -215,6 +217,17 @@ def _public_view(
         for row, item in zip(rows, out):
             if row.access_group_id:
                 item.access_status = statuses.get(row.access_group_id, NONE)
+    # A special-access program's "N going" is for the group: people approved
+    # into it, its own organization and superadmins. Anyone else — the page
+    # opens for anyone with the link — sees no count.
+    for row, item in zip(rows, out):
+        if not row.access_group_id:
+            continue
+        insider = (organizer is not None and (
+            organizer.is_superadmin or row.host_id == org_id_of(organizer)
+        )) or item.access_status == APPROVED
+        if not insider:
+            item.saved_count = None
     return out
 
 
