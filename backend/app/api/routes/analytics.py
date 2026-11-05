@@ -22,8 +22,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db
 from app.models.host import Host, org_id_of
+from app.models.event import Event
 from app.schemas.analytics import (
     AnalyticsOut,
+    EventAnalyticsDate,
+    EventAnalyticsOut,
+    EventAnalyticsTotals,
     AnalyticsProgram,
     AnalyticsTotals,
     AnalyticsWeek,
@@ -225,6 +229,117 @@ def analytics(
 ):
     from_, to = _range(from_, to)
     return _compute(db, _scope(db, host, host_id), from_, to)
+
+
+@router.get("/events/{event_id}/analytics", response_model=EventAnalyticsOut)
+def event_analytics(
+    event_id: uuid.UUID,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """One program's numbers, all time: its organization's (or a
+    superadmin's) to read. Any of a repeating program's dates answers for
+    the whole series. Un-published programs answer too — what happened while
+    it was up still counts."""
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+    if not host.is_superadmin and event.host_id != org_id_of(host):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only its organization can see this.")
+
+    params = {"pid": event.series_id or event.id}
+    program = "coalesce(e.series_id, e.id) = :pid"
+
+    posted_at, title = db.execute(
+        text(f"SELECT min(e.created_at), min(e.title) FROM events e WHERE {program}"),
+        params,
+    ).one()
+    saves, unique_savers, going = db.execute(
+        text(
+            f"""
+            SELECT count(*), count(DISTINCT a.user_id),
+                   count(*) FILTER (WHERE a.status = 'saved' AND e.deleted_at IS NULL)
+            FROM event_attendees a JOIN events e ON e.id = a.event_id
+            WHERE {program}
+            """
+        ),
+        params,
+    ).one()
+    (clicks,) = db.execute(
+        text(
+            f"""
+            SELECT count(*)
+            FROM event_registration_clicks c JOIN events e ON e.id = c.event_id
+            WHERE {program}
+            """
+        ),
+        params,
+    ).one()
+
+    def weekly(sql: str) -> dict[date, int]:
+        return {week: n for week, n in db.execute(text(sql), params).all()}
+
+    w_saves = weekly(
+        f"""
+        SELECT {_WEEK.format(col='a.created_at')}, count(*)
+        FROM event_attendees a JOIN events e ON e.id = a.event_id
+        WHERE {program} GROUP BY 1
+        """
+    )
+    w_clicks = weekly(
+        f"""
+        SELECT {_WEEK.format(col='c.clicked_at')}, count(*)
+        FROM event_registration_clicks c JOIN events e ON e.id = c.event_id
+        WHERE {program} GROUP BY 1
+        """
+    )
+    today = datetime.now(TZ).date()
+    first = max(posted_at.astimezone(TZ).date(), today - timedelta(days=MAX_DAYS))
+    weeks: list[AnalyticsWeek] = []
+    week = first - timedelta(days=first.weekday())
+    while week <= today:
+        weeks.append(
+            AnalyticsWeek(
+                week=week,
+                saves=w_saves.get(week, 0),
+                clicks=w_clicks.get(week, 0),
+                postings=0,
+            )
+        )
+        week += timedelta(days=7)
+
+    dates = [
+        EventAnalyticsDate(
+            event_id=r[0], starts_at=r[1], saves=r[2], going=r[3], clicks=r[4], archived=r[5]
+        )
+        for r in db.execute(
+            text(
+                f"""
+                SELECT e.id, e.starts_at,
+                       (SELECT count(*) FROM event_attendees a WHERE a.event_id = e.id),
+                       (SELECT count(*) FROM event_attendees a
+                        WHERE a.event_id = e.id AND a.status = 'saved'),
+                       (SELECT count(*) FROM event_registration_clicks c WHERE c.event_id = e.id),
+                       e.deleted_at IS NOT NULL
+                FROM events e
+                WHERE {program}
+                ORDER BY e.starts_at NULLS LAST, e.created_at
+                """
+            ),
+            params,
+        ).all()
+    ]
+
+    return EventAnalyticsOut(
+        program_id=params["pid"],
+        title=title,
+        posted_at=posted_at,
+        totals=EventAnalyticsTotals(
+            saves=saves, unique_savers=unique_savers, going=going, clicks=clicks
+        ),
+        weekly=weeks,
+        dates=dates,
+    )
 
 
 def _cell(text: str | None) -> str:

@@ -50,3 +50,35 @@ class AnalyticsOut(BaseModel):
     totals: AnalyticsTotals
     weekly: list[AnalyticsWeek]
     programs: list[AnalyticsProgram]
+
+
+class EventAnalyticsDate(BaseModel):
+    """One date of the program (a repeating program has several)."""
+
+    event_id: uuid.UUID
+    starts_at: datetime | None
+    saves: int
+    going: int
+    clicks: int
+    archived: bool
+
+
+class EventAnalyticsTotals(BaseModel):
+    # Every save ever made on it, un-saved ones included (see AnalyticsTotals).
+    saves: int
+    unique_savers: int
+    # Saved right now, across its dates.
+    going: int
+    clicks: int
+
+
+class EventAnalyticsOut(BaseModel):
+    """One program's numbers since it was posted."""
+
+    program_id: uuid.UUID
+    title: str
+    posted_at: datetime
+    totals: EventAnalyticsTotals
+    # Saves and clicks per week, from the week it was posted to this one.
+    weekly: list[AnalyticsWeek]
+    dates: list[EventAnalyticsDate]

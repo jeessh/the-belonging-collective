@@ -17,7 +17,7 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
  * aqua): adjacent-pair CVD ΔE 9.2 on the console's white surface.
  */
 
-type SeriesKey = "saves" | "clicks" | "postings";
+export type SeriesKey = "saves" | "clicks" | "postings";
 
 export const SERIES: {
   key: SeriesKey;
@@ -66,7 +66,15 @@ function niceMax(max: number): number {
   return Math.ceil(max / (pow * (step / 5))) * (pow * (step / 5));
 }
 
-export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
+export function WeeklyChart({
+  weeks,
+  keys = ["saves", "clicks", "postings"],
+}: {
+  weeks: AnalyticsWeek[];
+  /** Which lines to draw; one event's chart leaves out "Programs posted". */
+  keys?: SeriesKey[];
+}) {
+  const series = SERIES.filter((s) => keys.includes(s.key));
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const titleId = useId();
@@ -82,7 +90,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const max = niceMax(
-    Math.max(1, ...weeks.flatMap((w) => [w.saves, w.clicks, w.postings])),
+    Math.max(1, ...weeks.flatMap((w) => series.map((s) => w[s.key]))),
   );
   const x = (i: number) =>
     PAD.left +
@@ -107,7 +115,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
   const last = weeks.length - 1;
   // End labels, nudged apart when two lines finish close together so a label
   // never sits on another line.
-  const ends = SERIES.map((s) => ({ ...s, y: y(weeks[last][s.key]) })).sort(
+  const ends = series.map((s) => ({ ...s, y: y(weeks[last][s.key]) })).sort(
     (a, b) => a.y - b.y,
   );
   for (let i = 1; i < ends.length; i++) {
@@ -119,7 +127,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
   return (
     <figure className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-base text-fg">
-        {SERIES.map((s) => (
+        {series.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-2">
             <span
               aria-hidden="true"
@@ -151,7 +159,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
           tabIndex={0}
         >
           <title id={titleId}>
-            Saves, registration clicks and programs posted per week
+            {series.map((s) => s.label).join(", ")} per week
           </title>
           {ticks.map((t) => (
             <g key={t}>
@@ -202,7 +210,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
             />
           )}
 
-          {SERIES.map((s) => (
+          {series.map((s) => (
             <path
               key={s.key}
               d={weeks
@@ -218,7 +226,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
           {/* Markers only at the end and under the crosshair: a dot on every
               point of three series is noise. The 2px white ring keeps a dot
               legible where it crosses another line. */}
-          {SERIES.map((s) =>
+          {series.map((s) =>
             [last, hover].map((i) =>
               i === null ? null : (
                 <circle
@@ -263,7 +271,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
             }}
           >
             <p className="text-fg-muted">Week of {shortWeek(h.week)}</p>
-            {SERIES.map((s) => (
+            {series.map((s) => (
               <p
                 key={s.key}
                 className="flex items-center gap-2 whitespace-nowrap"
@@ -297,7 +305,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
                 <th scope="col" className="px-2 pb-2 font-normal">
                   Week of
                 </th>
-                {SERIES.map((s) => (
+                {series.map((s) => (
                   <th
                     key={s.key}
                     scope="col"
@@ -314,7 +322,7 @@ export function WeeklyChart({ weeks }: { weeks: AnalyticsWeek[] }) {
                   <th scope="row" className="px-2 py-1.5 font-normal">
                     {shortWeek(w.week)}
                   </th>
-                  {SERIES.map((s) => (
+                  {series.map((s) => (
                     <td
                       key={s.key}
                       className="px-2 py-1.5 text-right"

@@ -798,6 +798,14 @@ happened while it was up, and the table marks it `archived`. A repeating
 program is one posting (`coalesce(series_id, id)`). Everything is
 aggregated in SQL in `app/api/routes/analytics.py`; keep it that way.
 
+**One event's numbers** are the Analytics tab on its details page
+(`/host/events/{id}?tab=analytics`, `host/EventAnalyticsPanel`), from
+`GET /events/{id}/analytics`: all time since it was posted, the whole
+series — going, saves, unique savers, clicks, saves and clicks per week
+(`WeeklyChart keys`), and a By date table for a repeating event. Same
+counting rules. Its organization and superadmins only (403 otherwise), so
+the tabs only show for them; an un-published event answers too.
+
 ## Account recovery
 Both doors reset by email, the same way: a single-use token stored as a
 SHA-256 hash, expiring in an hour, issued (row + mail) on a background task so
