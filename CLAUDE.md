@@ -364,8 +364,11 @@ can open.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event
-  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up, Who
-  it's for and Topics. **There is no Details & links group** — the form has
+  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up and Who
+  it's for. **Topics are not on the form**: Publish / Save checks every
+  other field first, then opens a "What's this event about?" dialog with
+  the topic chips (already picked on edit); its Publish / Save waits for
+  one, Keep editing closes it. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
   carries them through unchanged). Links live in Cost & sign-up under the
