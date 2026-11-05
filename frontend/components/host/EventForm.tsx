@@ -11,9 +11,12 @@ import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Clock,
+  Link2,
   MapPin,
   Pencil,
+  Plus,
   Upload,
+  X,
 } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
@@ -25,7 +28,6 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
-import { PosterField } from "@/components/host/PosterField";
 import { checkPostingLink } from "@/lib/postingLink";
 import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
@@ -144,7 +146,10 @@ export function valuesFromEvent(event: Event): EventFormValues {
       : "",
     time: start ? clock(start) : "",
     endTime: end ? clock(end) : "",
-    location: event.location ?? "",
+    // "Online" was the old stand-in for "no address"; the meeting-link box
+    // starts empty instead (members still read "Online").
+    location:
+      event.is_virtual && event.location?.trim() === "Online" ? "" : event.location ?? "",
     description: event.description ?? "",
     notes: event.notes ?? "",
     registrationUrl: event.registration_url ?? "",
@@ -483,7 +488,14 @@ export function EventForm({
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
   const problems = missingRequired(values, mode);
-  const missing = problems.map((p) => p.text);
+  // Topics are chosen in the dialog Publish / Save opens, so the summary
+  // over the form never asks for one.
+  const formProblems = problems.filter((p) => p.field !== "categories");
+  const missing = formProblems.map((p) => p.text);
+  // The topics dialog: opened by Publish / Save once everything else is in.
+  const [topicsOpen, setTopicsOpen] = useState(false);
+  // 1 = topics, 2 = what it offers.
+  const [publishStep, setPublishStep] = useState<1 | 2>(1);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
     showMissing
@@ -493,24 +505,17 @@ export function EventForm({
     key: K,
     v: EventFormValues[K],
   ) => onChange((prev) => ({ ...prev, [key]: v }));
-  // Venue and location answer the same question, so each nudges the other:
-  // choosing Virtual with no location fills in "Online" (and choosing
-  // In-Person clears that again), and typing a meeting app or "online"
-  // switches the venue to Virtual. An address can't be told apart reliably,
-  // so typing one never flips it back.
+  // Venue and location answer the same question, so each nudges the other.
+  // Switching venue swaps the box between an address and a meeting link,
+  // keeping whatever was typed in the other one in case they switch back;
+  // typing a meeting app or "online" as an address switches to Virtual.
+  const otherPlace = useRef("");
   const setVenue = (virtual: boolean) => {
     onChange((prev) => {
-      const loc = prev.location.trim();
-      return {
-        ...prev,
-        isVirtual: virtual,
-        location:
-          virtual && loc === ""
-            ? "Online"
-            : !virtual && loc === "Online"
-              ? ""
-              : prev.location,
-      };
+      if (prev.isVirtual === virtual) return prev;
+      const stashed = otherPlace.current;
+      otherPlace.current = prev.location;
+      return { ...prev, isVirtual: virtual, location: stashed };
     });
   };
   const setLocation = (text: string) =>
@@ -519,6 +524,20 @@ export function EventForm({
       location: text,
       isVirtual: prev.isVirtual || ONLINE_PLACE.test(text),
     }));
+  // How many link rows show: the ones already filled in, then one more each
+  // time "Add a link" is pressed.
+  const [linkRows, setLinkRows] = useState(
+    () => values.links.filter((l) => l.label.trim() || l.url.trim()).length,
+  );
+  /** Take out row `i`; the rows under it move up, and the form still holds
+      LINKS_MAX rows (blank ones are dropped on save). */
+  const removeLink = (i: number) => {
+    onChange((prev) => ({
+      ...prev,
+      links: [...prev.links.slice(0, i), ...prev.links.slice(i + 1), { label: "", url: "" }],
+    }));
+    setLinkRows((n) => Math.max(n - 1, 0));
+  };
   const setLink = (i: number, patch: Partial<EventLink>) =>
     onChange((prev) => ({
       ...prev,
@@ -549,7 +568,7 @@ export function EventForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (problems.length) {
+        if (formProblems.length) {
           setShowMissing(true);
           // The summary names everything still needed; take people to it.
           requestAnimationFrame(() => {
@@ -558,7 +577,11 @@ export function EventForm({
           });
           return;
         }
-        if (!submitting) onSubmit();
+        // Everything else is in: ask what it's about, then publish / save.
+        if (!submitting) {
+          setPublishStep(1);
+          setTopicsOpen(true);
+        }
       }}
     >
       <div className="mb-4">
@@ -698,10 +721,12 @@ export function EventForm({
               />
             </div>
           </div>
-          <Section title="Where">
-            <div className="flex flex-col items-start gap-4">
+          {/* Venue and its address / meeting link, side by side. */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <Section title="Where">
               <SegmentedToggle<"virtual" | "inperson">
                 size="sm"
+                className="self-start"
                 label="Venue"
                 value={values.isVirtual ? "virtual" : "inperson"}
                 onChange={(v) => setVenue(v === "virtual")}
@@ -710,21 +735,32 @@ export function EventForm({
                   { value: "inperson", label: "In-Person" },
                 ]}
               />
-            </div>
-          </Section>
-          <TextField
-            label={values.isVirtual ? "Location (online)" : "Location"}
-            required={!values.isVirtual}
-            icon={<MapPin />}
-            value={values.location}
-            error={fieldError("location")}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder={
-              values.isVirtual
-                ? "e.g. Zoom — link sent after sign-up"
-                : "Street address or building"
-            }
-          />
+            </Section>
+            {values.isVirtual ? (
+              <TextField
+                key="meeting"
+                label="Meeting link"
+                inputMode="url"
+                autoComplete="off"
+                icon={<Link2 />}
+                value={values.location}
+                error={fieldError("location")}
+                onChange={(e) => set("location", e.target.value)}
+                placeholder="https://meet.google.com/…"
+              />
+            ) : (
+              <TextField
+                key="address"
+                label="Address"
+                required
+                icon={<MapPin />}
+                value={values.location}
+                error={fieldError("location")}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Street address or building"
+              />
+            )}
+          </div>
           {mode === "create" && (
             <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">
@@ -936,6 +972,65 @@ export function EventForm({
                 {signupHint?.tone === "warn" ? signupHint.message : ""}
               </p>
             </div>
+            {/* Other links (a flyer, a map, the agency's page) live with the
+                sign-up link, added one at a time, up to LINKS_MAX. */}
+            {linkRows > 0 && (
+              <Section title="Other links">
+                <div className="flex flex-col gap-3">
+                  {values.links.slice(0, linkRows).map((link, i) => (
+                    <div
+                      key={i}
+                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                    >
+                      {/* The placeholder says which box is the label: "Link 1"
+                          read as "put link 1 here", so addresses ended up in it. */}
+                      <TextField
+                        label={`Link ${i + 1} label`}
+                        className="[&>label]:sr-only"
+                        value={link.label}
+                        onChange={(e) => setLink(i, { label: e.target.value })}
+                        placeholder="Link label, e.g. Flyer"
+                      />
+                      <TextField
+                        label={`Link ${i + 1} address`}
+                        className="[&>label]:sr-only"
+                        // type="text": the browser's url validation rejects
+                        // "yourorg.ca"; the API adds https:// when it's missing.
+                        type="text"
+                        inputMode="url"
+                        value={link.url}
+                        onChange={(e) => setLink(i, { url: e.target.value })}
+                        placeholder="Web address, e.g. yourorg.ca/page"
+                        error={
+                          checkPostingLink(link.url)?.tone === "error"
+                            ? "That doesn't look like a web address."
+                            : null
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+            {linkRows < LINKS_MAX && (
+              <Button
+                className="self-start"
+                leadingIcon={<Plus />}
+                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
+              >
+                Add a link
+                <span className="text-fg-muted">
+                  {" "}
+                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
+                </span>
+              </Button>
+            )}
           </Group>
           <Group title="Who it's for">
             <div className="flex flex-wrap gap-4">
@@ -984,25 +1079,6 @@ export function EventForm({
               />
             </Section>
             <Section
-              title="What does it offer?"
-            >
-              <div className="flex flex-wrap gap-2">
-                {SELECTABLE_TAGS.map(({ slug, label, icon }) => {
-                  const on = values.accessibilityTags.includes(slug);
-                  return (
-                    <FilterChip
-                      key={slug}
-                      selected={on}
-                      onClick={() => toggle("accessibilityTags", slug)}
-                    >
-                      <Glyph icon={icon} />
-                      &nbsp;{label}
-                    </FilterChip>
-                  );
-                })}
-              </div>
-            </Section>
-            <Section
               title="Who can see this"
             >
               <AccessPicker
@@ -1012,84 +1088,6 @@ export function EventForm({
                 onChange={(accessMode, accessGroupId) =>
                   onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
                 }
-              />
-            </Section>
-          </Group>
-          <Group title="Topics">
-            <Section
-              title="Pick one or more"
-              required
-            >
-              <div className="flex flex-wrap gap-2">
-                {categories.map((c) => {
-                  const on = values.categories.includes(c.slug);
-                  return (
-                    <FilterChip
-                      key={c.slug}
-                      selected={on}
-                      onClick={() => toggle("categories", c.slug)}
-                    >
-                      <Glyph icon={categoryStyle(c.slug).icon} />
-                      &nbsp;{c.label}
-                    </FilterChip>
-                  );
-                })}
-              </div>
-            </Section>
-          </Group>
-          <Group title="Details & links">
-            <Section
-              title="Important Links"
-            >
-              <div className="flex flex-col gap-3">
-                {values.links.map((link, i) => (
-                  <div
-                    key={i}
-                    className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
-                  >
-                    {/* The placeholder says which box is the label: "Link 1"
-                        read as "put link 1 here", so addresses ended up in it. */}
-                    <TextField
-                      label={`Link ${i + 1} label`}
-                      className="[&>label]:sr-only"
-                      value={link.label}
-                      onChange={(e) => setLink(i, { label: e.target.value })}
-                      placeholder="Link label, e.g. Flyer"
-                    />
-                    <TextField
-                      label={`Link ${i + 1} address`}
-                      className="[&>label]:sr-only"
-                      // type="text": the browser's url validation rejects
-                      // "yourorg.ca"; the API adds https:// when it's missing.
-                      type="text"
-                      inputMode="url"
-                      value={link.url}
-                      onChange={(e) => setLink(i, { url: e.target.value })}
-                      placeholder="Web address, e.g. yourorg.ca/page"
-                      error={
-                        checkPostingLink(link.url)?.tone === "error"
-                          ? "That doesn't look like a web address."
-                          : null
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </Section>
-            <Field label="Extra details">
-              <TextArea
-                rows={3}
-                value={values.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="What to bring, who to ask for, anything that varies week to week."
-              />
-            </Field>
-            <Section
-              title="Printable poster"
-            >
-              <PosterField
-                value={values.posterUrl}
-                onChange={(v) => set("posterUrl", v)}
               />
             </Section>
           </Group>
@@ -1108,6 +1106,88 @@ export function EventForm({
           {submitting ? submittingLabel : submitLabel}
         </Button>
       </div>
+      {topicsOpen && (
+        <Modal
+          title={
+            publishStep === 1
+              ? "What's this event about?"
+              : "What does it offer?"
+          }
+          subtitle={
+            publishStep === 1
+              ? "Step 1 of 2. Pick one or more topics. Members choose these as interests, so this is how the right people find it."
+              : "Step 2 of 2. Pick anything that applies, or none. Members with these needs see it sooner."
+          }
+          onClose={() => setTopicsOpen(false)}
+        >
+          {publishStep === 1 ? (
+            <div
+              role="group"
+              aria-label="Topics"
+              className="form-dense mt-6 flex flex-wrap gap-2"
+            >
+              {categories.map((c) => (
+                <FilterChip
+                  key={c.slug}
+                  selected={values.categories.includes(c.slug)}
+                  onClick={() => toggle("categories", c.slug)}
+                >
+                  <Glyph icon={categoryStyle(c.slug).icon} />
+                  &nbsp;{c.label}
+                </FilterChip>
+              ))}
+            </div>
+          ) : (
+            <div
+              role="group"
+              aria-label="What it offers"
+              className="form-dense mt-6 flex flex-wrap gap-2"
+            >
+              {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
+                <FilterChip
+                  key={slug}
+                  selected={values.accessibilityTags.includes(slug)}
+                  onClick={() => toggle("accessibilityTags", slug)}
+                >
+                  <Glyph icon={icon} />
+                  &nbsp;{label}
+                </FilterChip>
+              ))}
+            </div>
+          )}
+          <div className="mt-8 flex flex-wrap justify-end gap-3">
+            {publishStep === 1 ? (
+              <>
+                <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
+                <Button
+                  variant="primary"
+                  disabled={values.categories.length === 0}
+                  onClick={() => setPublishStep(2)}
+                >
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setPublishStep(1)} disabled={submitting}>
+                  Back
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={submitting}
+                  trailingIcon={<Upload />}
+                  onClick={() => {
+                    setTopicsOpen(false);
+                    onSubmit();
+                  }}
+                >
+                  {submitting ? submittingLabel : submitLabel}
+                </Button>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
     </form>
   );
 }

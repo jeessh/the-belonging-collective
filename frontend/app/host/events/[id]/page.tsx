@@ -1,5 +1,6 @@
 "use client";
 
+import { meetingUrl } from "@/lib/place";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import {
   Pencil,
   Printer,
   RotateCcw,
+  Link2,
   Share2,
   type LucideIcon,
 } from "lucide-react";
@@ -32,6 +34,7 @@ import { copyText } from "@/lib/clipboard";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
+import { EventAnalyticsPanel } from "@/components/host/EventAnalyticsPanel";
 import { EventStatus } from "@/components/host/EventStatus";
 import { PosterSection } from "@/components/host/PosterSection";
 import {
@@ -62,6 +65,20 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [unpublishing, setUnpublishing] = useState(false);
   // Un-published: read from /events/archived/{id}, shown with Restore.
   const [archived, setArchived] = useState(false);
+  // Details | Analytics. ?tab=analytics opens on the numbers, so the tab
+  // survives a reload and can be linked to.
+  const [tab, setTab] = useState<"details" | "analytics">("details");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "analytics")
+      setTab("analytics");
+  }, []);
+  function chooseTab(next: "details" | "analytics") {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "analytics") url.searchParams.set("tab", "analytics");
+    else url.searchParams.delete("tab");
+    window.history.replaceState(window.history.state, "", url);
+  }
   const [restoring, setRestoring] = useState(false);
   const { label: topicLabel } = useCategories();
 
@@ -111,7 +128,11 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
   if (!event) return <p className="text-lg text-fg-muted">Loading…</p>;
 
-  const canManage = !archived && (ctx.isSuper || event.host_id === ctx.org.id);
+  const owns = ctx.isSuper || event.host_id === ctx.org.id;
+  const canManage = !archived && owns;
+  // The numbers are the organization's own (and a superadmin's); another
+  // agency's event shows its details only.
+  const showAnalytics = owns && tab === "analytics";
 
   async function restore() {
     if (!event) return;
@@ -215,6 +236,59 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         }
       />
 
+      {owns && (
+        <div
+          role="tablist"
+          aria-label="Event"
+          className="-mt-2 flex max-w-[1200px] gap-6 border-b border-line"
+        >
+          {(
+            [
+              ["details", "Details"],
+              ["analytics", "Analytics"],
+            ] as const
+          ).map(([key, label]) => {
+            const on = (key === "analytics") === showAnalytics;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                id={`tab-${key}`}
+                aria-selected={on}
+                aria-controls={`panel-${key}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => chooseTab(key)}
+                onKeyDown={(e) => {
+                  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                  const next = key === "details" ? "analytics" : "details";
+                  chooseTab(next);
+                  document.getElementById(`tab-${next}`)?.focus();
+                }}
+                className={`-mb-px border-b-2 pb-3 pt-1 text-base ${
+                  on
+                    ? "border-fg font-medium text-fg"
+                    : "border-transparent text-fg-muted hover:text-fg"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {showAnalytics ? (
+        <div role="tabpanel" id="panel-analytics" aria-labelledby="tab-analytics">
+          <EventAnalyticsPanel eventId={event.id} />
+        </div>
+      ) : (
+      <div
+        role={owns ? "tabpanel" : undefined}
+        id="panel-details"
+        aria-labelledby={owns ? "tab-details" : undefined}
+        className="flex flex-col gap-8"
+      >
       {archived && (
         <p
           role="status"
@@ -251,12 +325,27 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {timeRange(event.starts_at, event.ends_at) || "—"}
             </Line>
           </ReadField>
-          <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
-          <ReadField label={event.is_virtual ? "Location (online)" : "Location"}>
-            <Line icon={<MapPin />}>
-              {event.location || (event.is_virtual ? "Online" : "Location to be announced")}
-            </Line>
-          </ReadField>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8">
+            <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
+            <ReadField label={event.is_virtual ? "Meeting link" : "Address"}>
+              {meetingUrl(event) ? (
+                <Line icon={<Link2 />}>
+                  <a
+                    href={meetingUrl(event)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all underline underline-offset-2"
+                  >
+                    {event.location}
+                  </a>
+                </Line>
+              ) : (
+                <Line icon={<MapPin />}>
+                  {event.location || (event.is_virtual ? "None" : "Location to be announced")}
+                </Line>
+              )}
+            </ReadField>
+          </div>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
         </div>
@@ -286,6 +375,26 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 >
                   {event.registration_url}
                 </a>
+              ) : (
+                "None"
+              )}
+            </ReadField>
+            <ReadField label="Other links">
+              {event.links?.length ? (
+                <ol className="flex list-decimal flex-col gap-1 pl-5">
+                  {event.links.map((l) => (
+                    <li key={l.url}>
+                      <a
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
               ) : (
                 "None"
               )}
@@ -329,49 +438,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             />
           </Group>
 
-          <Group title="Details & links">
-            <ReadField label="Important Links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="Extra details">
-              {event.notes ? <p className="whitespace-pre-line">{event.notes}</p> : "None"}
-            </ReadField>
-            <ReadField label="Printable poster">
-              {event.poster_url ? (
-                <a
-                  href={event.poster_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  Open the poster
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-          </Group>
         </div>
       </article>
 
       {!archived && event.poster_url && <PosterSection event={event} />}
+      </div>
+      )}
 
       {unpublishing && (
         <UnpublishModal

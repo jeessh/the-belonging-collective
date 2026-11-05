@@ -364,8 +364,21 @@ can open.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event
-  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up, Who
-  it's for, Topics and Details & links. **The console calls the topic list
+  image, date and time, where (the Virtual / In-Person toggle and its box
+  on one row: "Address", required, or "Meeting link", optional — both are
+  `events.location`; `lib/place.ts` shows a link as "Online" on every card
+  and as "Join online" on the event page), and repeats; on the right `Group`s for Description, Cost & sign-up and Who
+  it's for. **Topics are not on the form**: Publish / Save checks every
+  other field first, then opens a two-step dialog: "What's this event
+  about?" (the topic chips, already picked on edit; Next waits for one,
+  Keep editing closes it), then "What does it offer?" (the access-need
+  chips, optional; Back | Publish / Save). Neither is on the form. **There is no Details & links group** — the form has
+  no Extra details or Printable poster field any more (an event that already
+  has notes or a poster keeps them, and members still see them; the form
+  carries them through unchanged). Links live in Cost & sign-up under the
+  sign-up / posting link: "Add a link" adds a label + address row, up to
+  `LINKS_MAX` (3), each with a remove button; the details page reads them
+  back there as "Other links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
   (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live
@@ -753,6 +766,14 @@ on `deleted_at`** — a program un-published since still counts for what
 happened while it was up, and the table marks it `archived`. A repeating
 program is one posting (`coalesce(series_id, id)`). Everything is
 aggregated in SQL in `app/api/routes/analytics.py`; keep it that way.
+
+**One event's numbers** are the Analytics tab on its details page
+(`/host/events/{id}?tab=analytics`, `host/EventAnalyticsPanel`), from
+`GET /events/{id}/analytics`: all time since it was posted, the whole
+series — going, saves, unique savers, clicks, saves and clicks per week
+(`WeeklyChart keys`), and a By date table for a repeating event. Same
+counting rules. Its organization and superadmins only (403 otherwise), so
+the tabs only show for them; an un-published event answers too.
 
 ## Account recovery
 Both doors reset by email, the same way: a single-use token stored as a

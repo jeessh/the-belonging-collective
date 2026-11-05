@@ -692,6 +692,26 @@ export type Analytics = {
   programs: AnalyticsProgram[];
 };
 
+/** One event's numbers since it was posted (its whole series). */
+export type EventAnalytics = {
+  program_id: string;
+  title: string;
+  posted_at: string;
+  totals: { saves: number; unique_savers: number; going: number; clicks: number };
+  weekly: AnalyticsWeek[];
+  dates: {
+    event_id: string;
+    starts_at: string | null;
+    saves: number;
+    going: number;
+    clicks: number;
+    archived: boolean;
+  }[];
+};
+
+export const fetchEventAnalytics = (id: string) =>
+  api<EventAnalytics>(`/events/${id}/analytics`);
+
 export type AnalyticsParams = { from?: string; to?: string; host_id?: string };
 
 function analyticsQuery(params: AnalyticsParams): string {
