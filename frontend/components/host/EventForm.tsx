@@ -490,6 +490,8 @@ export function EventForm({
   const missing = formProblems.map((p) => p.text);
   // The topics dialog: opened by Publish / Save once everything else is in.
   const [topicsOpen, setTopicsOpen] = useState(false);
+  // 1 = topics, 2 = what it offers.
+  const [publishStep, setPublishStep] = useState<1 | 2>(1);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
     showMissing
@@ -579,7 +581,10 @@ export function EventForm({
           return;
         }
         // Everything else is in: ask what it's about, then publish / save.
-        if (!submitting) setTopicsOpen(true);
+        if (!submitting) {
+          setPublishStep(1);
+          setTopicsOpen(true);
+        }
       }}
     >
       <div className="mb-4">
@@ -1064,25 +1069,6 @@ export function EventForm({
               />
             </Section>
             <Section
-              title="What does it offer?"
-            >
-              <div className="flex flex-wrap gap-2">
-                {SELECTABLE_TAGS.map(({ slug, label, icon }) => {
-                  const on = values.accessibilityTags.includes(slug);
-                  return (
-                    <FilterChip
-                      key={slug}
-                      selected={on}
-                      onClick={() => toggle("accessibilityTags", slug)}
-                    >
-                      <Glyph icon={icon} />
-                      &nbsp;{label}
-                    </FilterChip>
-                  );
-                })}
-              </div>
-            </Section>
-            <Section
               title="Who can see this"
             >
               <AccessPicker
@@ -1112,39 +1098,83 @@ export function EventForm({
       </div>
       {topicsOpen && (
         <Modal
-          title="What's this event about?"
-          subtitle="Pick one or more topics. Members choose these as interests, so this is how the right people find it."
+          title={
+            publishStep === 1
+              ? "What's this event about?"
+              : "What does it offer?"
+          }
+          subtitle={
+            publishStep === 1
+              ? "Step 1 of 2. Pick one or more topics. Members choose these as interests, so this is how the right people find it."
+              : "Step 2 of 2. Pick anything that applies, or none. Members with these needs see it sooner."
+          }
           onClose={() => setTopicsOpen(false)}
         >
-          <div
-            role="group"
-            aria-label="Topics"
-            className="form-dense mt-6 flex flex-wrap gap-2"
-          >
-            {categories.map((c) => (
-              <FilterChip
-                key={c.slug}
-                selected={values.categories.includes(c.slug)}
-                onClick={() => toggle("categories", c.slug)}
-              >
-                <Glyph icon={categoryStyle(c.slug).icon} />
-                &nbsp;{c.label}
-              </FilterChip>
-            ))}
-          </div>
-          <div className="mt-8 flex flex-wrap justify-end gap-3">
-            <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
-            <Button
-              variant="primary"
-              disabled={submitting || values.categories.length === 0}
-              trailingIcon={<Upload />}
-              onClick={() => {
-                setTopicsOpen(false);
-                onSubmit();
-              }}
+          {publishStep === 1 ? (
+            <div
+              role="group"
+              aria-label="Topics"
+              className="form-dense mt-6 flex flex-wrap gap-2"
             >
-              {submitting ? submittingLabel : submitLabel}
-            </Button>
+              {categories.map((c) => (
+                <FilterChip
+                  key={c.slug}
+                  selected={values.categories.includes(c.slug)}
+                  onClick={() => toggle("categories", c.slug)}
+                >
+                  <Glyph icon={categoryStyle(c.slug).icon} />
+                  &nbsp;{c.label}
+                </FilterChip>
+              ))}
+            </div>
+          ) : (
+            <div
+              role="group"
+              aria-label="What it offers"
+              className="form-dense mt-6 flex flex-wrap gap-2"
+            >
+              {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
+                <FilterChip
+                  key={slug}
+                  selected={values.accessibilityTags.includes(slug)}
+                  onClick={() => toggle("accessibilityTags", slug)}
+                >
+                  <Glyph icon={icon} />
+                  &nbsp;{label}
+                </FilterChip>
+              ))}
+            </div>
+          )}
+          <div className="mt-8 flex flex-wrap justify-end gap-3">
+            {publishStep === 1 ? (
+              <>
+                <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
+                <Button
+                  variant="primary"
+                  disabled={values.categories.length === 0}
+                  onClick={() => setPublishStep(2)}
+                >
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setPublishStep(1)} disabled={submitting}>
+                  Back
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={submitting}
+                  trailingIcon={<Upload />}
+                  onClick={() => {
+                    setTopicsOpen(false);
+                    onSubmit();
+                  }}
+                >
+                  {submitting ? submittingLabel : submitLabel}
+                </Button>
+              </>
+            )}
           </div>
         </Modal>
       )}
