@@ -1,3 +1,4 @@
+import { meetingUrl } from "@/lib/place";
 import type { ReactNode } from "react";
 import { ExternalLink, FileText, Paperclip } from "lucide-react";
 import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
@@ -75,7 +76,10 @@ export function EventDetails({
    */
   insetForClose?: boolean;
 }) {
+  const meeting = meetingUrl(event);
   const links = [
+    // A virtual event's meeting link comes first: it's how you get in.
+    ...(meeting ? [{ label: "Join online", url: meeting }] : []),
     ...(event.links ?? []),
     // The organizer's own posting, where there is one.
     ...(event.registration_url

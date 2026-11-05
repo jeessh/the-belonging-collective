@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Clock,
+  Link2,
   MapPin,
   Pencil,
   Plus,
@@ -145,7 +146,10 @@ export function valuesFromEvent(event: Event): EventFormValues {
       : "",
     time: start ? clock(start) : "",
     endTime: end ? clock(end) : "",
-    location: event.location ?? "",
+    // "Online" was the old stand-in for "no address"; the meeting-link box
+    // starts empty instead (members still read "Online").
+    location:
+      event.is_virtual && event.location?.trim() === "Online" ? "" : event.location ?? "",
     description: event.description ?? "",
     notes: event.notes ?? "",
     registrationUrl: event.registration_url ?? "",
@@ -501,24 +505,17 @@ export function EventForm({
     key: K,
     v: EventFormValues[K],
   ) => onChange((prev) => ({ ...prev, [key]: v }));
-  // Venue and location answer the same question, so each nudges the other:
-  // choosing Virtual with no location fills in "Online" (and choosing
-  // In-Person clears that again), and typing a meeting app or "online"
-  // switches the venue to Virtual. An address can't be told apart reliably,
-  // so typing one never flips it back.
+  // Venue and location answer the same question, so each nudges the other.
+  // Switching venue swaps the box between an address and a meeting link,
+  // keeping whatever was typed in the other one in case they switch back;
+  // typing a meeting app or "online" as an address switches to Virtual.
+  const otherPlace = useRef("");
   const setVenue = (virtual: boolean) => {
     onChange((prev) => {
-      const loc = prev.location.trim();
-      return {
-        ...prev,
-        isVirtual: virtual,
-        location:
-          virtual && loc === ""
-            ? "Online"
-            : !virtual && loc === "Online"
-              ? ""
-              : prev.location,
-      };
+      if (prev.isVirtual === virtual) return prev;
+      const stashed = otherPlace.current;
+      otherPlace.current = prev.location;
+      return { ...prev, isVirtual: virtual, location: stashed };
     });
   };
   const setLocation = (text: string) =>
@@ -724,10 +721,12 @@ export function EventForm({
               />
             </div>
           </div>
-          <Section title="Where">
-            <div className="flex flex-col items-start gap-4">
+          {/* Venue and its address / meeting link, side by side. */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <Section title="Where">
               <SegmentedToggle<"virtual" | "inperson">
                 size="sm"
+                className="self-start"
                 label="Venue"
                 value={values.isVirtual ? "virtual" : "inperson"}
                 onChange={(v) => setVenue(v === "virtual")}
@@ -736,21 +735,32 @@ export function EventForm({
                   { value: "inperson", label: "In-Person" },
                 ]}
               />
-            </div>
-          </Section>
-          <TextField
-            label={values.isVirtual ? "Location (online)" : "Location"}
-            required={!values.isVirtual}
-            icon={<MapPin />}
-            value={values.location}
-            error={fieldError("location")}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder={
-              values.isVirtual
-                ? "e.g. Zoom — link sent after sign-up"
-                : "Street address or building"
-            }
-          />
+            </Section>
+            {values.isVirtual ? (
+              <TextField
+                key="meeting"
+                label="Meeting link"
+                inputMode="url"
+                autoComplete="off"
+                icon={<Link2 />}
+                value={values.location}
+                error={fieldError("location")}
+                onChange={(e) => set("location", e.target.value)}
+                placeholder="https://meet.google.com/…"
+              />
+            ) : (
+              <TextField
+                key="address"
+                label="Address"
+                required
+                icon={<MapPin />}
+                value={values.location}
+                error={fieldError("location")}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Street address or building"
+              />
+            )}
+          </div>
           {mode === "create" && (
             <Section title="Repeats">
               <div className="flex flex-wrap items-end gap-4">

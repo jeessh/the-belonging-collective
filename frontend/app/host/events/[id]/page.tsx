@@ -1,5 +1,6 @@
 "use client";
 
+import { meetingUrl } from "@/lib/place";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import {
   Pencil,
   Printer,
   RotateCcw,
+  Link2,
   Share2,
   type LucideIcon,
 } from "lucide-react";
@@ -251,12 +253,27 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {timeRange(event.starts_at, event.ends_at) || "—"}
             </Line>
           </ReadField>
-          <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
-          <ReadField label={event.is_virtual ? "Location (online)" : "Location"}>
-            <Line icon={<MapPin />}>
-              {event.location || (event.is_virtual ? "Online" : "Location to be announced")}
-            </Line>
-          </ReadField>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8">
+            <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
+            <ReadField label={event.is_virtual ? "Meeting link" : "Address"}>
+              {meetingUrl(event) ? (
+                <Line icon={<Link2 />}>
+                  <a
+                    href={meetingUrl(event)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all underline underline-offset-2"
+                  >
+                    {event.location}
+                  </a>
+                </Line>
+              ) : (
+                <Line icon={<MapPin />}>
+                  {event.location || (event.is_virtual ? "None" : "Location to be announced")}
+                </Line>
+              )}
+            </ReadField>
+          </div>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
         </div>

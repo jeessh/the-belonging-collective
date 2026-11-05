@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLabel } from "@/lib/place";
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -45,7 +46,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   const { show } = useToast();
   const when = whenLine(event);
   const where =
-    event.location || (event.is_virtual ? "Online" : "Location to be announced");
+    placeLabel(event);
   const ages = ageLabel(event);
 
   async function share() {

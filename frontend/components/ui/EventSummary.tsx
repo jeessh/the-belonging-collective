@@ -1,3 +1,4 @@
+import { placeLabel } from "@/lib/place";
 import type { ReactNode } from "react";
 import { Cake, CalendarDays, MapPin, Ticket } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -120,8 +121,7 @@ export function EventSummary({
   const feed = layout === "card";
   const tile = layout === "tile";
   const when = whenLine(event, { fixed: fixedDates });
-  const where =
-    event.location || (event.is_virtual ? "Online" : "Location to be announced");
+  const where = placeLabel(event);
   const image = eventImage(event);
   // Cards say only the ages; the event's own page (`detail`) also says when
   // it's a youth program ("Youth · Ages 12–18" / "For youth").
