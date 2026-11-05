@@ -364,7 +364,10 @@ can open.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event
-  image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up and Who
+  image, date and time, where (the Virtual / In-Person toggle and its box
+  on one row: "Address", required, or "Meeting link", optional — both are
+  `events.location`; `lib/place.ts` shows a link as "Online" on every card
+  and as "Join online" on the event page), and repeats; on the right `Group`s for Description, Cost & sign-up and Who
   it's for. **Topics are not on the form**: Publish / Save checks every
   other field first, then opens a two-step dialog: "What's this event
   about?" (the topic chips, already picked on edit; Next waits for one,
