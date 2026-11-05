@@ -13,7 +13,9 @@ import {
   Clock,
   MapPin,
   Pencil,
+  Plus,
   Upload,
+  X,
 } from "lucide-react";
 import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
@@ -25,7 +27,6 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
-import { PosterField } from "@/components/host/PosterField";
 import { checkPostingLink } from "@/lib/postingLink";
 import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
@@ -519,6 +520,20 @@ export function EventForm({
       location: text,
       isVirtual: prev.isVirtual || ONLINE_PLACE.test(text),
     }));
+  // How many link rows show: the ones already filled in, then one more each
+  // time "Add a link" is pressed.
+  const [linkRows, setLinkRows] = useState(
+    () => values.links.filter((l) => l.label.trim() || l.url.trim()).length,
+  );
+  /** Take out row `i`; the rows under it move up, and the form still holds
+      LINKS_MAX rows (blank ones are dropped on save). */
+  const removeLink = (i: number) => {
+    onChange((prev) => ({
+      ...prev,
+      links: [...prev.links.slice(0, i), ...prev.links.slice(i + 1), { label: "", url: "" }],
+    }));
+    setLinkRows((n) => Math.max(n - 1, 0));
+  };
   const setLink = (i: number, patch: Partial<EventLink>) =>
     onChange((prev) => ({
       ...prev,
@@ -936,6 +951,65 @@ export function EventForm({
                 {signupHint?.tone === "warn" ? signupHint.message : ""}
               </p>
             </div>
+            {/* Other links (a flyer, a map, the agency's page) live with the
+                sign-up link, added one at a time, up to LINKS_MAX. */}
+            {linkRows > 0 && (
+              <Section title="Other links">
+                <div className="flex flex-col gap-3">
+                  {values.links.slice(0, linkRows).map((link, i) => (
+                    <div
+                      key={i}
+                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                    >
+                      {/* The placeholder says which box is the label: "Link 1"
+                          read as "put link 1 here", so addresses ended up in it. */}
+                      <TextField
+                        label={`Link ${i + 1} label`}
+                        className="[&>label]:sr-only"
+                        value={link.label}
+                        onChange={(e) => setLink(i, { label: e.target.value })}
+                        placeholder="Link label, e.g. Flyer"
+                      />
+                      <TextField
+                        label={`Link ${i + 1} address`}
+                        className="[&>label]:sr-only"
+                        // type="text": the browser's url validation rejects
+                        // "yourorg.ca"; the API adds https:// when it's missing.
+                        type="text"
+                        inputMode="url"
+                        value={link.url}
+                        onChange={(e) => setLink(i, { url: e.target.value })}
+                        placeholder="Web address, e.g. yourorg.ca/page"
+                        error={
+                          checkPostingLink(link.url)?.tone === "error"
+                            ? "That doesn't look like a web address."
+                            : null
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+            {linkRows < LINKS_MAX && (
+              <Button
+                className="self-start"
+                leadingIcon={<Plus />}
+                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
+              >
+                Add a link
+                <span className="text-fg-muted">
+                  {" "}
+                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
+                </span>
+              </Button>
+            )}
           </Group>
           <Group title="Who it's for">
             <div className="flex flex-wrap gap-4">
@@ -1035,62 +1109,6 @@ export function EventForm({
                   );
                 })}
               </div>
-            </Section>
-          </Group>
-          <Group title="Details & links">
-            <Section
-              title="Important Links"
-            >
-              <div className="flex flex-col gap-3">
-                {values.links.map((link, i) => (
-                  <div
-                    key={i}
-                    className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
-                  >
-                    {/* The placeholder says which box is the label: "Link 1"
-                        read as "put link 1 here", so addresses ended up in it. */}
-                    <TextField
-                      label={`Link ${i + 1} label`}
-                      className="[&>label]:sr-only"
-                      value={link.label}
-                      onChange={(e) => setLink(i, { label: e.target.value })}
-                      placeholder="Link label, e.g. Flyer"
-                    />
-                    <TextField
-                      label={`Link ${i + 1} address`}
-                      className="[&>label]:sr-only"
-                      // type="text": the browser's url validation rejects
-                      // "yourorg.ca"; the API adds https:// when it's missing.
-                      type="text"
-                      inputMode="url"
-                      value={link.url}
-                      onChange={(e) => setLink(i, { url: e.target.value })}
-                      placeholder="Web address, e.g. yourorg.ca/page"
-                      error={
-                        checkPostingLink(link.url)?.tone === "error"
-                          ? "That doesn't look like a web address."
-                          : null
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </Section>
-            <Field label="Extra details">
-              <TextArea
-                rows={3}
-                value={values.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="What to bring, who to ask for, anything that varies week to week."
-              />
-            </Field>
-            <Section
-              title="Printable poster"
-            >
-              <PosterField
-                value={values.posterUrl}
-                onChange={(v) => set("posterUrl", v)}
-              />
             </Section>
           </Group>
         </div>

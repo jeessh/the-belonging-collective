@@ -365,7 +365,13 @@ can open.
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event
   image, date and time, where, and repeats; on the right `Group`s for Description, Cost & sign-up, Who
-  it's for, Topics and Details & links. **The console calls the topic list
+  it's for and Topics. **There is no Details & links group** — the form has
+  no Extra details or Printable poster field any more (an event that already
+  has notes or a poster keeps them, and members still see them; the form
+  carries them through unchanged). Links live in Cost & sign-up under the
+  sign-up / posting link: "Add a link" adds a label + address row, up to
+  `LINKS_MAX` (3), each with a remove button; the details page reads them
+  back there as "Other links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
   (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live

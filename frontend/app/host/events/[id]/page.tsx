@@ -290,6 +290,26 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 "None"
               )}
             </ReadField>
+            <ReadField label="Other links">
+              {event.links?.length ? (
+                <ol className="flex list-decimal flex-col gap-1 pl-5">
+                  {event.links.map((l) => (
+                    <li key={l.url}>
+                      <a
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                "None"
+              )}
+            </ReadField>
           </Group>
 
           <Group title="Who it's for">
@@ -329,45 +349,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             />
           </Group>
 
-          <Group title="Details & links">
-            <ReadField label="Important Links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="Extra details">
-              {event.notes ? <p className="whitespace-pre-line">{event.notes}</p> : "None"}
-            </ReadField>
-            <ReadField label="Printable poster">
-              {event.poster_url ? (
-                <a
-                  href={event.poster_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  Open the poster
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-          </Group>
         </div>
       </article>
 
