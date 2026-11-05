@@ -484,7 +484,12 @@ export function EventForm({
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
   const problems = missingRequired(values, mode);
-  const missing = problems.map((p) => p.text);
+  // Topics are chosen in the dialog Publish / Save opens, so the summary
+  // over the form never asks for one.
+  const formProblems = problems.filter((p) => p.field !== "categories");
+  const missing = formProblems.map((p) => p.text);
+  // The topics dialog: opened by Publish / Save once everything else is in.
+  const [topicsOpen, setTopicsOpen] = useState(false);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
     showMissing
@@ -564,7 +569,7 @@ export function EventForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (problems.length) {
+        if (formProblems.length) {
           setShowMissing(true);
           // The summary names everything still needed; take people to it.
           requestAnimationFrame(() => {
@@ -573,7 +578,8 @@ export function EventForm({
           });
           return;
         }
-        if (!submitting) onSubmit();
+        // Everything else is in: ask what it's about, then publish / save.
+        if (!submitting) setTopicsOpen(true);
       }}
     >
       <div className="mb-4">
@@ -1089,28 +1095,6 @@ export function EventForm({
               />
             </Section>
           </Group>
-          <Group title="Topics">
-            <Section
-              title="Pick one or more"
-              required
-            >
-              <div className="flex flex-wrap gap-2">
-                {categories.map((c) => {
-                  const on = values.categories.includes(c.slug);
-                  return (
-                    <FilterChip
-                      key={c.slug}
-                      selected={on}
-                      onClick={() => toggle("categories", c.slug)}
-                    >
-                      <Glyph icon={categoryStyle(c.slug).icon} />
-                      &nbsp;{c.label}
-                    </FilterChip>
-                  );
-                })}
-              </div>
-            </Section>
-          </Group>
         </div>
       </div>
 
@@ -1126,6 +1110,44 @@ export function EventForm({
           {submitting ? submittingLabel : submitLabel}
         </Button>
       </div>
+      {topicsOpen && (
+        <Modal
+          title="What's this event about?"
+          subtitle="Pick one or more topics. Members choose these as interests, so this is how the right people find it."
+          onClose={() => setTopicsOpen(false)}
+        >
+          <div
+            role="group"
+            aria-label="Topics"
+            className="form-dense mt-6 flex flex-wrap gap-2"
+          >
+            {categories.map((c) => (
+              <FilterChip
+                key={c.slug}
+                selected={values.categories.includes(c.slug)}
+                onClick={() => toggle("categories", c.slug)}
+              >
+                <Glyph icon={categoryStyle(c.slug).icon} />
+                &nbsp;{c.label}
+              </FilterChip>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-wrap justify-end gap-3">
+            <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
+            <Button
+              variant="primary"
+              disabled={submitting || values.categories.length === 0}
+              trailingIcon={<Upload />}
+              onClick={() => {
+                setTopicsOpen(false);
+                onSubmit();
+              }}
+            >
+              {submitting ? submittingLabel : submitLabel}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </form>
   );
 }
