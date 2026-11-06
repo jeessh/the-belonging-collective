@@ -375,7 +375,9 @@ can open.
   chips, optional; Back | Publish / Save). Neither is on the form. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
-  carries them through unchanged). Links live in Cost & sign-up under the
+  carries them through unchanged). Cost & sign-up opens with Cost and How people join
+  side by side (form and details page; "How is it paid?" under the row).
+  Links live in Cost & sign-up under the
   sign-up / posting link: "Add a link" adds a label + address row, up to
   `LINKS_MAX` (3), each with a remove button; the details page reads them
   back there as "Other links". **The console calls the topic list

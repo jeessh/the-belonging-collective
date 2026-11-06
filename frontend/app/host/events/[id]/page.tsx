@@ -358,13 +358,15 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </Group>
 
           <Group title="Cost & sign-up">
-            <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
+              <ReadField label="How people join">
+                {event.requires_signup ? "Registration" : "Drop-in"}
+              </ReadField>
+            </div>
             {!event.is_free && (
               <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
             )}
-            <ReadField label="How people join">
-              {event.requires_signup ? "Registration" : "Drop-in"}
-            </ReadField>
             <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
               {event.registration_url ? (
                 <a

@@ -834,23 +834,41 @@ export function EventForm({
             </Field>
           </Group>
           <Group title="Cost & sign-up">
-            <Section title="Cost">
-              <div className="flex flex-col items-start gap-4">
-                <SegmentedToggle<"free" | "paid">
-                  size="sm"
-                  label="Cost"
-                  value={paid ? "paid" : "free"}
-                  onChange={(v) =>
-                    // Coming back to paid lands on the commonest shape.
-                    set("pricingModel", v === "free" ? "free" : "per_session")
-                  }
-                  segments={[
-                    { value: "free", label: "Free" },
-                    { value: "paid", label: "Paid" },
-                  ]}
-                />
-              </div>
-            </Section>
+            {/* Cost and how people join, side by side; the paid details
+                go under the row. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Section title="Cost">
+                <div className="flex flex-col items-start gap-4">
+                  <SegmentedToggle<"free" | "paid">
+                    size="sm"
+                    label="Cost"
+                    value={paid ? "paid" : "free"}
+                    onChange={(v) =>
+                      // Coming back to paid lands on the commonest shape.
+                      set("pricingModel", v === "free" ? "free" : "per_session")
+                    }
+                    segments={[
+                      { value: "free", label: "Free" },
+                      { value: "paid", label: "Paid" },
+                    ]}
+                  />
+                </div>
+              </Section>
+              <Section title="How people join">
+                <div className="flex flex-col items-start gap-4">
+                  <SegmentedToggle<"dropin" | "registration">
+                    size="sm"
+                    label="Registration"
+                    value={values.requiresSignup ? "registration" : "dropin"}
+                    onChange={(v) => set("requiresSignup", v === "registration")}
+                    segments={[
+                      { value: "dropin", label: "Drop-in" },
+                      { value: "registration", label: "Registration" },
+                    ]}
+                  />
+                </div>
+              </Section>
+            </div>
             {paid && (
               <Section title="How is it paid?" required>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -931,20 +949,6 @@ export function EventForm({
                 </div>
               </Section>
             )}
-            <Section title="How people join">
-              <div className="flex flex-col items-start gap-4">
-                <SegmentedToggle<"dropin" | "registration">
-                  size="sm"
-                  label="Registration"
-                  value={values.requiresSignup ? "registration" : "dropin"}
-                  onChange={(v) => set("requiresSignup", v === "registration")}
-                  segments={[
-                    { value: "dropin", label: "Drop-in" },
-                    { value: "registration", label: "Registration" },
-                  ]}
-                />
-              </div>
-            </Section>
             {/* Shown for drop-ins too: many carry a posting link, and hiding
                 the field would blank it on the next save. */}
             <div className="flex flex-col gap-2">
