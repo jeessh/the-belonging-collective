@@ -362,13 +362,14 @@ can open.
   buttons), whose title is the name input (reads as a heading, shows it's
   editable on hover / focus, carries the required error); the form has no
   separate name box. The details page's title is `event.title`.
-  **Cards and a floating action bar** (after a Meetup reference): each
-  column of the event form and of the details page is one white card
-  (`EventForm`'s `CARD` — hairline edge, soft shadow, 8px corners); the
-  right column's sections (`Group`) share it, a divider between each. Publish / Save lives only in a bar pinned to the foot
-  of the window (`sticky bottom-4`): Cancel (the back link, through the
-  leave guard) on the left, the submit on the right — the header has no
-  submit button any more.
+  **Layout (after a Sweatpals reference): no boxes, picture on the right.**
+  From `lg` the create / edit form and the details page are two equal
+  columns: every field on the left in `Group` sections (When & where,
+  Description, Cost & sign-up, Who it's for — a rule above each), the
+  event picture on the right, 520px tall and `sticky` so it stays in view
+  (`ImageDrop frameClassName`). One column below `lg`, the picture first.
+  Cancel | Publish / Save (wide) close the fields column, sticky at the
+  window's foot; the header has no submit button.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event

@@ -27,7 +27,7 @@ import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/Ad
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { Glyph } from "@/components/ui/Glyph";
-import { CARD, Group } from "@/components/host/EventForm";
+import { Group } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
 import { eventUrl } from "@/components/CopyLinkButton";
 import { copyText } from "@/lib/clipboard";
@@ -304,16 +304,17 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // The event form's layout, group for group and in its words, so an
         // event reads back exactly as it was entered — every field, with
         // what an empty one means ("None", "No limit", "Any age").
-        className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        className="grid max-w-[1200px] items-start gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
       >
-        <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
-          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
-          {/* The form's frame: 300px tall, full width, cropped to fill — no
-              label over it, as on the form. */}
-          <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
-          </div>
+        {/* The form's picture: on the right from lg, large and staying in
+            view; first in one column. */}
+        <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle lg:sticky lg:top-6 lg:order-2 lg:h-[520px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+          <Group title="When & where">
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
               {longDate(event.starts_at) || "Date to be announced"}
@@ -347,9 +348,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </div>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
-        </section>
+          </Group>
 
-        <div className={`${CARD} flex min-w-0 flex-col gap-6`}>
           <Group title="Description">
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>

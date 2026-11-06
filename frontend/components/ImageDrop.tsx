@@ -25,6 +25,7 @@ export function ImageDrop({
   compact = false,
   square = false,
   fallback,
+  frameClassName = "h-[300px]",
 }: {
   label: string;
   /** The current URL, "" for none. */
@@ -48,6 +49,8 @@ export function ImageDrop({
    * stock photo to members, since there's still nothing of the event's own).
    */
   fallback?: string;
+  /** The `square` frame's height (the event form makes it taller from lg). */
+  frameClassName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -104,7 +107,7 @@ export function ImageDrop({
             setDragOver(false);
             void handleFiles(e.dataTransfer.files);
           }}
-          className={`relative h-[300px] w-full overflow-hidden rounded-control ${
+          className={`relative w-full overflow-hidden rounded-control ${frameClassName} ${
             dragOver ? "ring-2 ring-primary-border" : ""
           }`}
         >
@@ -167,7 +170,7 @@ export function ImageDrop({
             setDragOver(false);
             void handleFiles(e.dataTransfer.files);
           }}
-          className={`flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-control border px-6 text-center transition-colors ${
+          className={`flex flex-col items-center justify-center gap-3 rounded-control border px-6 text-center transition-colors ${frameClassName} ${
             dragOver ? "border-primary-border bg-primary-soft" : "border-transparent bg-surface-subtle"
           }`}
         >

@@ -664,13 +664,12 @@ export function EventForm({
         )}
       </div>
 
-      {/* Two columns from lg: the event itself and when it is on the left,
-          everything that describes it on the right. One column, in that
-          order, below lg. */}
-      <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <section className={`${CARD} flex min-w-0 flex-col gap-5`}>
-          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
+      {/* Two columns from lg, no boxes: every field on the left, in
+          sections with a rule between them, and the picture on the right,
+          large, staying in view as the form scrolls. One column below lg,
+          the picture first. Cancel / Publish close the fields column. */}
+      <div className="grid max-w-[1200px] items-start gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6 lg:order-2 lg:sticky lg:top-6">
           {/* No label over the picture: it speaks for itself. Its buttons
               still say "Event image" to a screen reader, and a missing one
               on create is in the "Still needed" summary. */}
@@ -678,150 +677,152 @@ export function EventForm({
             <ImageDrop
               compact
               square
+              frameClassName="h-[300px] lg:h-[520px]"
               fallback={imageFallback}
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
             />
           </div>
-          <TextField
-            label="Date"
-            placeholder="DD/MM/YYYY"
-            required
-            type="date"
-            icon={<CalendarDays />}
-            value={values.date}
-            error={fieldError("date")}
-            // Chrome's date field takes a six-digit year; min/max bound the
-            // spinner and the clamp catches typing.
-            min="2000-01-01"
-            max="2100-12-31"
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
-              set("date", v);
-            }}
-          />
-          <div className="field flex flex-col gap-2">
-            <p className="field-label text-lg font-medium text-fg">
-              Time
-              <RequiredMark />
-            </p>
-            <div className="flex items-start gap-2">
-              <TextField
-                label="Start time"
-                placeholder="9:00 AM"
-                className="min-w-0 flex-1 [&>label]:sr-only"
-                type="time"
-                icon={<Clock />}
-                required
-                value={values.time}
-                error={fieldError("time")}
-                onChange={(e) => set("time", e.target.value)}
-              />
-              {/* Centred on the boxes (36px), whatever errors show under them. */}
-              <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
-                <span className="h-px w-3 bg-fg-icon-muted" />
-              </span>
-              <TextField
-                label="End time"
-                placeholder="11:00 AM"
-                className="min-w-0 flex-1 [&>label]:sr-only"
-                type="time"
-                icon={<Clock />}
-                value={values.endTime}
-                error={fieldError("endTime")}
-                onChange={(e) => set("endTime", e.target.value)}
-              />
-            </div>
-          </div>
-          {/* Venue and its address / meeting link, side by side. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
-            <Section title="Where">
-              <SegmentedToggle<"virtual" | "inperson">
-                size="sm"
-                className="self-start"
-                label="Venue"
-                value={values.isVirtual ? "virtual" : "inperson"}
-                onChange={(v) => setVenue(v === "virtual")}
-                segments={[
-                  { value: "virtual", label: "Virtual" },
-                  { value: "inperson", label: "In-Person" },
-                ]}
-              />
-            </Section>
-            {values.isVirtual ? (
-              <TextField
-                key="meeting"
-                label="Meeting link"
-                inputMode="url"
-                autoComplete="off"
-                icon={<Link2 />}
-                value={values.location}
-                error={fieldError("location")}
-                onChange={(e) => set("location", e.target.value)}
-                placeholder="https://meet.google.com/…"
-              />
-            ) : (
-              <TextField
-                key="address"
-                label="Address"
-                required
-                icon={<MapPin />}
-                value={values.location}
-                error={fieldError("location")}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Street address or building"
-              />
-            )}
-          </div>
-          {mode === "create" && (
-            <Section title="Repeats">
-              <div className="flex flex-wrap items-end gap-4">
-                {/* The section's "Repeats" is its label; no second one. */}
-                <Select
-                  aria-label="Repeats"
-                  className="min-w-[200px]"
-                  value={values.frequency}
-                  onChange={(e) => set("frequency", e.target.value as Frequency)}
-                >
-                  {FREQUENCIES.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </Select>
-                {values.frequency !== "once" && !values.repeatForever && (
-                  <TextField
-                    label="How many times"
-                    required
-                    className="min-w-[170px]"
-                    type="number"
-                    min={2}
-                    max={104}
-                    value={values.occurrenceCount}
-                    onChange={(e) => set("occurrenceCount", e.target.value)}
-                    error={fieldError("occurrenceCount")}
-                    placeholder="8"
-                  />
-                )}
-                {values.frequency !== "once" && (
-                  // A drop-in that has run every Friday for nine years has no
-                  // session count to give.
-                  <Checkbox
-                    label="It keeps going"
-                    className="min-h-12"
-                    checked={values.repeatForever}
-                    onChange={(e) => set("repeatForever", e.target.checked)}
-                  />
-                )}
-              </div>
-            </Section>
-          )}
-          </section>
         </div>
 
-        <div className={`${CARD} flex min-w-0 flex-col gap-6`}>
+        <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+          <Group title="When & where">
+            <TextField
+              label="Date"
+              placeholder="DD/MM/YYYY"
+              required
+              type="date"
+              icon={<CalendarDays />}
+              value={values.date}
+              error={fieldError("date")}
+              // Chrome's date field takes a six-digit year; min/max bound the
+              // spinner and the clamp catches typing.
+              min="2000-01-01"
+              max="2100-12-31"
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
+                set("date", v);
+              }}
+            />
+            <div className="field flex flex-col gap-2">
+              <p className="field-label text-lg font-medium text-fg">
+                Time
+                <RequiredMark />
+              </p>
+              <div className="flex items-start gap-2">
+                <TextField
+                  label="Start time"
+                  placeholder="9:00 AM"
+                  className="min-w-0 flex-1 [&>label]:sr-only"
+                  type="time"
+                  icon={<Clock />}
+                  required
+                  value={values.time}
+                  error={fieldError("time")}
+                  onChange={(e) => set("time", e.target.value)}
+                />
+                {/* Centred on the boxes (36px), whatever errors show under them. */}
+                <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
+                  <span className="h-px w-3 bg-fg-icon-muted" />
+                </span>
+                <TextField
+                  label="End time"
+                  placeholder="11:00 AM"
+                  className="min-w-0 flex-1 [&>label]:sr-only"
+                  type="time"
+                  icon={<Clock />}
+                  value={values.endTime}
+                  error={fieldError("endTime")}
+                  onChange={(e) => set("endTime", e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Venue and its address / meeting link, side by side. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <Section title="Where">
+                <SegmentedToggle<"virtual" | "inperson">
+                  size="sm"
+                  className="self-start"
+                  label="Venue"
+                  value={values.isVirtual ? "virtual" : "inperson"}
+                  onChange={(v) => setVenue(v === "virtual")}
+                  segments={[
+                    { value: "virtual", label: "Virtual" },
+                    { value: "inperson", label: "In-Person" },
+                  ]}
+                />
+              </Section>
+              {values.isVirtual ? (
+                <TextField
+                  key="meeting"
+                  label="Meeting link"
+                  inputMode="url"
+                  autoComplete="off"
+                  icon={<Link2 />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => set("location", e.target.value)}
+                  placeholder="https://meet.google.com/…"
+                />
+              ) : (
+                <TextField
+                  key="address"
+                  label="Address"
+                  required
+                  icon={<MapPin />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Street address or building"
+                />
+              )}
+            </div>
+            {mode === "create" && (
+              <Section title="Repeats">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* The section's "Repeats" is its label; no second one. */}
+                  <Select
+                    aria-label="Repeats"
+                    className="min-w-[200px]"
+                    value={values.frequency}
+                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {values.frequency !== "once" && !values.repeatForever && (
+                    <TextField
+                      label="How many times"
+                      required
+                      className="min-w-[170px]"
+                      type="number"
+                      min={2}
+                      max={104}
+                      value={values.occurrenceCount}
+                      onChange={(e) => set("occurrenceCount", e.target.value)}
+                      error={fieldError("occurrenceCount")}
+                      placeholder="8"
+                    />
+                  )}
+                  {values.frequency !== "once" && (
+                    // A drop-in that has run every Friday for nine years has no
+                    // session count to give.
+                    <Checkbox
+                      label="It keeps going"
+                      className="min-h-12"
+                      checked={values.repeatForever}
+                      onChange={(e) => set("repeatForever", e.target.checked)}
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
+          </Group>
           <Group title="Description">
             <Field
               label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
@@ -1094,28 +1095,25 @@ export function EventForm({
               </Section>
             </div>
           </Group>
-        </div>
-      </div>
 
-      {/* The action bar floats at the foot of the window while the form
-          scrolls under it: Cancel on the left, Publish / Save on the right. */}
-      <div className="sticky bottom-4 z-30 max-w-[1200px]">
-        <div className="flex items-center justify-between gap-3 rounded-card border border-line/70 bg-surface/95 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur sm:px-6">
-          <Link
-            href={header.backHref}
-            onClick={header.onBack}
-            className={buttonClass("ghost")}
-          >
-            Cancel
-          </Link>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={submitting}
-            trailingIcon={<Upload />}
-          >
-            {submitting ? submittingLabel : submitLabel}
-          </Button>
+          <div className="sticky bottom-4 z-30 flex items-center gap-3 rounded-card bg-surface/95 py-2 backdrop-blur">
+            <Link
+              href={header.backHref}
+              onClick={header.onBack}
+              className={buttonClass("secondary")}
+            >
+              Cancel
+            </Link>
+            <Button
+              type="submit"
+              variant="primary"
+              className="flex-1"
+              disabled={submitting}
+              trailingIcon={<Upload />}
+            >
+              {submitting ? submittingLabel : submitLabel}
+            </Button>
+          </div>
         </div>
       </div>
       {topicsOpen && (
