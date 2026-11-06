@@ -816,7 +816,7 @@ export function EventForm({
               </Button>
             )}
           </Group>
-          <Group title="When & where">
+          <Group title="When">
             <TextField
               label="Date"
               placeholder="DD/MM/YYYY"
@@ -867,46 +867,6 @@ export function EventForm({
                   onChange={(e) => set("endTime", e.target.value)}
                 />
               </div>
-            </div>
-            {/* Venue and its address / meeting link, side by side. */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
-              <Section title="Where">
-                <SegmentedToggle<"virtual" | "inperson">
-                  size="sm"
-                  className="self-start"
-                  label="Venue"
-                  value={values.isVirtual ? "virtual" : "inperson"}
-                  onChange={(v) => setVenue(v === "virtual")}
-                  segments={[
-                    { value: "virtual", label: "Virtual" },
-                    { value: "inperson", label: "In-Person" },
-                  ]}
-                />
-              </Section>
-              {values.isVirtual ? (
-                <TextField
-                  key="meeting"
-                  label="Meeting link"
-                  inputMode="url"
-                  autoComplete="off"
-                  icon={<Link2 />}
-                  value={values.location}
-                  error={fieldError("location")}
-                  onChange={(e) => set("location", e.target.value)}
-                  placeholder="https://meet.google.com/…"
-                />
-              ) : (
-                <TextField
-                  key="address"
-                  label="Address"
-                  required
-                  icon={<MapPin />}
-                  value={values.location}
-                  error={fieldError("location")}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Street address or building"
-                />
-              )}
             </div>
             {mode === "create" && (
               <Section title="Repeats">
@@ -986,6 +946,46 @@ export function EventForm({
                     ]}
                   />
                 </div>
+            {/* Venue and its address / meeting link, side by side. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <Section title="Where">
+                <SegmentedToggle<"virtual" | "inperson">
+                  size="sm"
+                  className="self-start"
+                  label="Venue"
+                  value={values.isVirtual ? "virtual" : "inperson"}
+                  onChange={(v) => setVenue(v === "virtual")}
+                  segments={[
+                    { value: "virtual", label: "Virtual" },
+                    { value: "inperson", label: "In-Person" },
+                  ]}
+                />
+              </Section>
+              {values.isVirtual ? (
+                <TextField
+                  key="meeting"
+                  label="Meeting link"
+                  inputMode="url"
+                  autoComplete="off"
+                  icon={<Link2 />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => set("location", e.target.value)}
+                  placeholder="https://meet.google.com/…"
+                />
+              ) : (
+                <TextField
+                  key="address"
+                  label="Address"
+                  required
+                  icon={<MapPin />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Street address or building"
+                />
+              )}
+            </div>
               </Section>
             </div>
             {paid && (

@@ -366,7 +366,8 @@ can open.
   **Layout (after a Sweatpals reference): no boxes, picture on the right.**
   From `lg` the create / edit form and the details page are two equal
   columns: every field on the left in `Group` sections (Description
-  first, then When & where, Tags (cost, how people join), Who it's for — a rule above each), the
+  first, then When (date, time, repeats), Tags (cost, how people join, where —
+  the venue toggle with its address / meeting link), Who it's for — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
   The buttons are top right in the header: Cancel (through the leave
