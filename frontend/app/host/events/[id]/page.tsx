@@ -355,7 +355,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             </ReadField>
           </Group>
 
-          <Group title="When">
+          <Group title="Time and date">
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
               {longDate(event.starts_at) || "Date to be announced"}

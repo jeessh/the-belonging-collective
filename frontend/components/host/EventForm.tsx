@@ -816,7 +816,7 @@ export function EventForm({
               </Button>
             )}
           </Group>
-          <Group title="When">
+          <Group title="Time and date">
             <TextField
               label="Date"
               placeholder="DD/MM/YYYY"
