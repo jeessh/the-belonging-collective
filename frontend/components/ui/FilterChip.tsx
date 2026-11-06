@@ -9,7 +9,11 @@ export function FilterChip({
   onClick,
   children,
   className = "",
+  light = false,
 }: {
+  /** The selected state in the primary button's light blue (the event
+      form's Event tags) instead of the solid cyan. */
+  light?: boolean;
   selected: boolean;
   onClick: () => void;
   children: ReactNode;
@@ -22,7 +26,9 @@ export function FilterChip({
       onClick={onClick}
       className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control border px-4 py-1.5 text-base uppercase tracking-wide transition-colors sm:text-xl ${
         selected
-          ? "border-transparent bg-primary-active text-fg"
+          ? light
+            ? "border-primary-border bg-primary-light text-fg"
+            : "border-transparent bg-primary-active text-fg"
           : "border-primary-strong bg-surface text-fg-muted hover:bg-primary-soft"
       } ${className}`}
     >

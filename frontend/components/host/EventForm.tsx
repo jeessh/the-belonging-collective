@@ -1071,6 +1071,7 @@ export function EventForm({
               <div role="group" aria-label="Topics" className="flex flex-wrap gap-2">
                 {categories.map((c) => (
                   <FilterChip
+                    light
                     key={c.slug}
                     selected={values.categories.includes(c.slug)}
                     onClick={() => toggle("categories", c.slug)}
@@ -1088,6 +1089,7 @@ export function EventForm({
               <div role="group" aria-label="What it offers" className="flex flex-wrap gap-2">
                 {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
                   <FilterChip
+                    light
                     key={slug}
                     selected={values.accessibilityTags.includes(slug)}
                     onClick={() => toggle("accessibilityTags", slug)}
