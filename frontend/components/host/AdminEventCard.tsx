@@ -1,14 +1,13 @@
 "use client";
 
-import { memo, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArchiveX, CalendarPlus, Pencil, Send, Bookmark } from "lucide-react";
+import { ArchiveX, Bookmark, CalendarPlus, MoreHorizontal, Pencil, Send } from "lucide-react";
 import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { PostedBy } from "@/components/host/PostedBy";
 import { savedLine } from "@/components/host/ConsoleCounts";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
 import { ShareModal } from "@/components/member/ShareModal";
 
@@ -36,43 +35,85 @@ export const AdminEventCard = memo(function AdminEventCard({
   // Share opens the members' share sheet: email or copy the link.
   const [sharing, setSharing] = useState(false);
 
+  // Edit, Share and Un-publish live in one ⋯ menu at the top right.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const away = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      }
+    };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [menuOpen]);
+
+  const item =
+    "flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-base hover:bg-surface-subtle focus-visible:bg-surface-subtle";
   const tools = (
-    <div className="flex items-center gap-1">
-      {canManage && (
-        <Tooltip text="Edit event details">
-          {(tip) => (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        aria-label={`More actions for ${event.title}`}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((o) => !o)}
+        className={TOOL}
+      >
+        <MoreHorizontal aria-hidden="true" className="size-4" />
+      </button>
+      {menuOpen && (
+        <div
+          role="menu"
+          aria-label={`Actions for ${event.title}`}
+          className="absolute right-0 top-full z-30 mt-2 flex w-48 flex-col rounded-control border border-line bg-surface p-1 text-fg shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          {canManage && (
             <Link
+              role="menuitem"
               href={`/host/events/${event.id}/edit`}
-              aria-label={`Edit ${event.title}`}
-              aria-describedby={tip}
-              className={TOOL}
+              className={item}
             >
-              <Pencil aria-hidden="true" className="size-4" />
+              <Pencil aria-hidden="true" className="size-4 shrink-0" />
+              Edit
             </Link>
           )}
-        </Tooltip>
-      )}
-      <Tool
-        label={`Share ${event.title}`}
-        tip="Share by email or link"
-        align={canManage ? "center" : "end"}
-        onClick={() => setSharing(true)}
-      >
-        <Send aria-hidden="true" className="size-4" />
-      </Tool>
-      {canManage && (
-        <>
-          <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
-          <Tool
-            label={`Un-publish ${event.title}`}
-            tip="Un-publish: take it off the member feed"
-            align="end"
-            onClick={() => onUnpublish(event)}
-            className="bg-danger text-danger-fg hover:bg-danger-hover"
+          <button
+            type="button"
+            role="menuitem"
+            className={item}
+            onClick={() => {
+              setMenuOpen(false);
+              setSharing(true);
+            }}
           >
-            <ArchiveX aria-hidden="true" className="size-4" />
-          </Tool>
-        </>
+            <Send aria-hidden="true" className="size-4 shrink-0" />
+            Share
+          </button>
+          {canManage && (
+            <button
+              type="button"
+              role="menuitem"
+              className={`${item} text-danger-fg hover:bg-danger focus-visible:bg-danger`}
+              onClick={() => {
+                setMenuOpen(false);
+                onUnpublish(event);
+              }}
+            >
+              <ArchiveX aria-hidden="true" className="size-4 shrink-0" />
+              Un-publish
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -147,39 +188,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   );
 });
 
-// The small square tool button (36px in the console's scale, 8px corners).
+// The ⋯ button: small and square (36px in the console's scale, 8px corners).
 const TOOL =
   "grid size-11 shrink-0 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
 
-function Tool({
-  label,
-  tip,
-  align = "center",
-  onClick,
-  className = "",
-  children,
-}: {
-  label: string;
-  /** What it does, in the tooltip. */
-  tip: string;
-  align?: "center" | "end";
-  onClick: () => void;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <Tooltip text={tip} align={align}>
-      {(describedBy) => (
-        <button
-          type="button"
-          aria-label={label}
-          aria-describedby={describedBy}
-          onClick={onClick}
-          className={`${TOOL} ${className}`}
-        >
-          {children}
-        </button>
-      )}
-    </Tooltip>
-  );
-}

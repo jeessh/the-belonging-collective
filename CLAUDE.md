@@ -308,10 +308,11 @@ can open.
   and "N people saved this event" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
   more. Its icons follow the console's one icon rule (below)
-  the square (8px-cornered) edit / share / un-publish (archive
-  icon, never a trash can: nothing is deleted) tools at the top right — over
-  the picture's corner on a phone — each with a `ui/Tooltip` saying what it
-  does, and **View more →** at the bottom right, and the **whole card** opens the details page — there is no View
+  one square ⋯ button at the top right — over the picture's corner on
+  a phone — opening a menu of Edit, Share (the share sheet) and Un-publish
+  (red, archive icon — never a trash can: nothing is deleted); Edit and
+  Un-publish only for the owner or a superadmin. Escape or a click away
+  closes it, and **View more →** at the bottom right, and the **whole card** opens the details page — there is no View
   more button (the title link's `::after` covers the card; the tools sit
   above it on `z-10`), with a hover state — darker edge, faint fill, soft shadow).
   `/host/events` is centred, 1200px of content at most, wide margins. `ui/Tooltip` shows on
