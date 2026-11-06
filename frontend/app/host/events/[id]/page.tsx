@@ -308,13 +308,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       >
         <div className="flex min-w-0 flex-col gap-4">
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
-          <ReadField label="Event image">
-            {/* The form's frame: 300px tall, full width, cropped to fill. */}
-            <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
-            </div>
-          </ReadField>
+          {/* The form's frame: 300px tall, full width, cropped to fill — no
+              label over it, as on the form. */}
+          <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
+          </div>
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
               {longDate(event.starts_at) || "Date to be announced"}

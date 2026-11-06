@@ -660,7 +660,10 @@ export function EventForm({
       <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
-          <Section title="Event image" required={mode === "create"}>
+          {/* No label over the picture: it speaks for itself. Its buttons
+              still say "Event image" to a screen reader, and a missing one
+              on create is in the "Still needed" summary. */}
+          <div className="field">
             <ImageDrop
               compact
               square
@@ -669,7 +672,7 @@ export function EventForm({
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
             />
-          </Section>
+          </div>
           <TextField
             label="Date"
             placeholder="DD/MM/YYYY"
