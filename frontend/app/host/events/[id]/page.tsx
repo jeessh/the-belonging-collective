@@ -319,7 +319,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>
             </ReadField>
-            <ReadField label={event.requires_signup ? "Sign-up link" : "External links"}>
+            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
               {event.registration_url ? (
                 <a
                   href={event.registration_url}
@@ -333,7 +333,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 "None"
               )}
             </ReadField>
-            <ReadField label="Other links">
+            <ReadField label="External links">
               {event.links?.length ? (
                 <ol className="flex list-decimal flex-col gap-1 pl-5">
                   {event.links.map((l) => (

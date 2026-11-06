@@ -730,14 +730,13 @@ export function EventForm({
                 placeholder="Type out your description here…"
               />
             </Field>
-            {/* Shown for drop-ins too: many carry a posting link, and hiding
-                the field would blank it on the next save. */}
+            {/* The sign-up link, for an event people register for. A drop-in
+                that already carries a posting link keeps the box, so it can
+                be changed or cleared rather than silently kept. */}
+            {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
             <div className="flex flex-col gap-2">
-              {/* "Add a link" sits beside the box, lined up with it. */}
-              <div className="flex items-end gap-2">
               <TextField
-                className="min-w-0 flex-1"
-                label={values.requiresSignup ? "Sign-up link" : "External links (optional)"}
+                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
                 type="text"
                 inputMode="url"
                 value={values.registrationUrl}
@@ -747,20 +746,6 @@ export function EventForm({
                   signupHint?.tone === "error" ? signupHint.message : null
                 }
               />
-              {linkRows < LINKS_MAX && (
-                <Tooltip text={`Add a link (${LINKS_MAX - linkRows} of ${LINKS_MAX} left)`} align="end">
-                  {(tip) => (
-                    <Button
-                      className="shrink-0"
-                      leadingIcon={<Plus />}
-                      aria-label="Add a link"
-                      aria-describedby={tip}
-                      onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
-                    />
-                  )}
-                </Tooltip>
-              )}
-              </div>
               {/* A caution, not a refusal: some agencies really do have one
                   page, and blocking that gets the link left out entirely. */}
               <p
@@ -774,52 +759,72 @@ export function EventForm({
                 {signupHint?.tone === "warn" ? signupHint.message : ""}
               </p>
             </div>
-            {/* Other links (a flyer, a map, the agency's page) live with the
-                sign-up link, added one at a time, up to LINKS_MAX. */}
-            {linkRows > 0 && (
-              <Section title="Other links">
-                <div className="flex flex-col gap-3">
-                  {values.links.slice(0, linkRows).map((link, i) => (
-                    <div
-                      key={i}
-                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
-                    >
-                      {/* The placeholder says which box is the label: "Link 1"
-                          read as "put link 1 here", so addresses ended up in it. */}
-                      <TextField
-                        label={`Link ${i + 1} label`}
-                        className="[&>label]:sr-only"
-                        value={link.label}
-                        onChange={(e) => setLink(i, { label: e.target.value })}
-                        placeholder="Link label, e.g. Flyer"
-                      />
-                      <TextField
-                        label={`Link ${i + 1} address`}
-                        className="[&>label]:sr-only"
-                        // type="text": the browser's url validation rejects
-                        // "yourorg.ca"; the API adds https:// when it's missing.
-                        type="text"
-                        inputMode="url"
-                        value={link.url}
-                        onChange={(e) => setLink(i, { url: e.target.value })}
-                        placeholder="Web address, e.g. yourorg.ca/page"
-                        error={
-                          checkPostingLink(link.url)?.tone === "error"
-                            ? "That doesn't look like a web address."
-                            : null
-                        }
-                      />
+            )}
+            {/* External links (a flyer, a map, the agency's page): a label
+                and an address per row, the first row always there with + to
+                add another beside it, up to LINKS_MAX; later rows have ×. */}
+            <Section title="External links (optional)">
+              <div className="flex flex-col gap-3">
+                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
+                  <div
+                    key={i}
+                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                  >
+                    {/* The placeholder says which box is the label: "Link 1"
+                        read as "put link 1 here", so addresses ended up in it. */}
+                    <TextField
+                      label={`Link ${i + 1} label`}
+                      className="[&>label]:sr-only"
+                      value={link.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Link label, e.g. Flyer"
+                    />
+                    <TextField
+                      label={`Link ${i + 1} address`}
+                      className="[&>label]:sr-only"
+                      // type="text": the browser's url validation rejects
+                      // "yourorg.ca"; the API adds https:// when it's missing.
+                      type="text"
+                      inputMode="url"
+                      value={link.url}
+                      onChange={(e) => setLink(i, { url: e.target.value })}
+                      placeholder="Web address, e.g. yourorg.ca/page"
+                      error={
+                        checkPostingLink(link.url)?.tone === "error"
+                          ? "That doesn't look like a web address."
+                          : null
+                      }
+                    />
+                    {i === 0 ? (
+                      Math.max(linkRows, 1) < LINKS_MAX && (
+                        <Tooltip
+                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
+                          align="end"
+                        >
+                          {(tip) => (
+                            <Button
+                              leadingIcon={<Plus />}
+                              aria-label="Add a link"
+                              aria-describedby={tip}
+                              onClick={() =>
+                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
+                              }
+                            />
+                          )}
+                        </Tooltip>
+                      )
+                    ) : (
                       <Button
                         variant="ghost"
                         aria-label={`Remove link ${i + 1}`}
                         leadingIcon={<X />}
                         onClick={() => removeLink(i)}
                       />
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
           </Group>
           <Group title="Event details">
             <TextField

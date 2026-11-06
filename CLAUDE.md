@@ -390,10 +390,12 @@ can open.
   has notes or a poster keeps them, and members still see them; the form
   carries them through unchanged). Cost & sign-up opens with Cost and How people join
   side by side (form and details page; "How is it paid?" under the row).
-  Links live under Description (form and details page): the
-  sign-up / external link with a + button ("Add a link", tooltip) beside it, which adds a label + address row, up to
-  `LINKS_MAX` (3), each with a remove button; the details page reads them
-  back there as "Other links". **The console calls the topic list
+  Links live under Description: the Sign-up link (Registration
+  events; a drop-in shows its old Posting link box only if it has one),
+  then **External links (optional)** — `links` rows of label + address,
+  the first always shown with a + button beside it (tooltip "Add a link")
+  that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
+  page reads them back as "External links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
   (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live
