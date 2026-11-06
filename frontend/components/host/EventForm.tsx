@@ -946,8 +946,8 @@ export function EventForm({
                     ]}
                   />
                 </div>
-            {/* Where on its own row, its address / meeting link the full width under it. */}
-            <div className="flex flex-col gap-4">
+            {/* Venue and its address / meeting link, side by side. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
               <Section title="Where">
                 <SegmentedToggle<"virtual" | "inperson">
                   size="sm"
