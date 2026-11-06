@@ -1063,26 +1063,6 @@ export function EventForm({
                 error={fieldError("capacity")}
                 placeholder="20"
               />
-              <TextField
-                label="Youngest age"
-                className="min-w-[140px]"
-                type="number"
-                min={0}
-                value={values.minAge}
-                onChange={(e) => set("minAge", e.target.value)}
-                error={fieldError("minAge")}
-                placeholder="Any"
-              />
-              <TextField
-                label="Oldest age"
-                className="min-w-[140px]"
-                type="number"
-                min={0}
-                value={values.maxAge}
-                onChange={(e) => set("maxAge", e.target.value)}
-                error={fieldError("maxAge")}
-                placeholder="Any"
-              />
             </div>
             {/* Audience and who can see it, side by side; the access
                 picker takes the room it needs for a group. */}

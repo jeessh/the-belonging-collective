@@ -403,17 +403,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </Group>
 
           <Group title="Who it's for">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <ReadField label="Spots available">
-                {event.capacity != null ? String(event.capacity) : "No limit"}
-              </ReadField>
-              <ReadField label="Youngest age">
-                {event.min_age != null ? String(event.min_age) : "Any"}
-              </ReadField>
-              <ReadField label="Oldest age">
-                {event.max_age != null ? String(event.max_age) : "Any"}
-              </ReadField>
-            </div>
+            <ReadField label="Spots available">
+              {event.capacity != null ? String(event.capacity) : "No limit"}
+            </ReadField>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-8">
               <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
               <ReadField label="Who can see this">

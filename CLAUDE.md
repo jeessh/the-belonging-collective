@@ -215,7 +215,8 @@ can open.
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
 - **The console's "Who it's for" reaches members in full:** spots ("N
-  spots left"), ages (every card), the Youth answer on the event's own page
+  spots left"), ages (every card — the form no longer asks for them;
+  `min_age` / `max_age` already on an event are carried through unchanged), the Youth answer on the event's own page
   only (`audienceLabel` in `ui/EventSummary`, `detail` layout: "Youth · Ages
   12–18", "For youth" — cards, including the admin card, show just the ages), what it offers (the event page's Accessibility list) and
   special access (the pill).
