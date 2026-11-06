@@ -325,7 +325,7 @@ can open.
   card's poster tool, "Print poster" and `PosterSheet` were removed); the
   agency's own uploaded poster and its QR code (`PosterSection`) remain.
   `/host/events/[id]` is a read-only details page that **mirrors the event
-  form**: the same 5fr / 7fr columns, left column fields, right-column
+  form**: the same columns (left fills, right 400px and full height), left column fields, right-column
   `Group`s (EventForm exports `Group`; its `.group-heading` is 20px on both
   pages), headings and field labels (14px, answers 14px too — on the
   details page the labels are medium weight and the answers regular, since

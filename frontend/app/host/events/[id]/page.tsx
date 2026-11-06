@@ -304,9 +304,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // The event form's layout, group for group and in its words, so an
         // event reads back exactly as it was entered — every field, with
         // what an empty one means ("None", "No limit", "Any age").
-        className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"
       >
-        <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
+        <section className={`${CARD} flex min-w-0 flex-col gap-4 self-start`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           {/* The form's frame: 300px tall, full width, cropped to fill — no
               label over it, as on the form. */}
@@ -402,7 +402,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             </ReadField>
           </Group>
 
-          <Group title="Who it's for">
+          <Group title="Who it's for" className="flex-1">
             <div className="grid gap-4 sm:grid-cols-3">
               <ReadField label="Spots available">
                 {event.capacity != null ? String(event.capacity) : "No limit"}
