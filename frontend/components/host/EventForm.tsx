@@ -666,9 +666,11 @@ export function EventForm({
       {/* Two columns from lg: the event itself and when it is on the left,
           everything that describes it on the right. One column, in that
           order, below lg. */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      {/* Both columns run the same height: the left card stretches to the
+          bottom of the right column's cards. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-6">
-          <section className={`${CARD} flex min-w-0 flex-col gap-5`}>
+          <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-5`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           {/* No label over the picture: it speaks for itself. Its buttons
               still say "Event image" to a screen reader, and a missing one
