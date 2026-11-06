@@ -704,6 +704,32 @@ export function EventForm({
         </div>
 
         <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+          <Group title="Description">
+            <Field
+              label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
+              required
+              aside={
+                <span
+                  className={`text-base ${
+                    values.description.length >= DESCRIPTION_MAX
+                      ? "text-danger-fg"
+                      : "text-fg-muted"
+                  }`}
+                  aria-live="polite"
+                >
+                  {values.description.length}/{DESCRIPTION_MAX}
+                </span>
+              }
+            >
+              <TextArea
+                rows={6}
+                maxLength={DESCRIPTION_MAX}
+                value={values.description}
+                onChange={(e) => set("description", e.target.value)}
+                placeholder="Type out your description here…"
+              />
+            </Field>
+          </Group>
           <Group title="When & where">
             <TextField
               label="Date"
@@ -839,32 +865,6 @@ export function EventForm({
                 </div>
               </Section>
             )}
-          </Group>
-          <Group title="Description">
-            <Field
-              label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
-              required
-              aside={
-                <span
-                  className={`text-base ${
-                    values.description.length >= DESCRIPTION_MAX
-                      ? "text-danger-fg"
-                      : "text-fg-muted"
-                  }`}
-                  aria-live="polite"
-                >
-                  {values.description.length}/{DESCRIPTION_MAX}
-                </span>
-              }
-            >
-              <TextArea
-                rows={6}
-                maxLength={DESCRIPTION_MAX}
-                value={values.description}
-                onChange={(e) => set("description", e.target.value)}
-                placeholder="Type out your description here…"
-              />
-            </Field>
           </Group>
           <Group title="Cost & sign-up">
             {/* Cost and how people join, side by side; the paid details

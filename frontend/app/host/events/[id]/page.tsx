@@ -314,6 +314,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         </div>
 
         <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+          <Group title="Description">
+            <ReadField label="Brief Description">
+              <p className="whitespace-pre-line">{event.description}</p>
+            </ReadField>
+          </Group>
+
           <Group title="When & where">
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
@@ -348,12 +354,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </div>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
-          </Group>
-
-          <Group title="Description">
-            <ReadField label="Brief Description">
-              <p className="whitespace-pre-line">{event.description}</p>
-            </ReadField>
           </Group>
 
           <Group title="Cost & sign-up">

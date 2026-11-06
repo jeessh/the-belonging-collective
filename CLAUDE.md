@@ -364,8 +364,8 @@ can open.
   separate name box. The details page's title is `event.title`.
   **Layout (after a Sweatpals reference): no boxes, picture on the right.**
   From `lg` the create / edit form and the details page are two equal
-  columns: every field on the left in `Group` sections (When & where,
-  Description, Cost & sign-up, Who it's for — a rule above each), the
+  columns: every field on the left in `Group` sections (Description
+  first, then When & where, Cost & sign-up, Who it's for — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
   The buttons are top right in the header: Cancel (through the leave
