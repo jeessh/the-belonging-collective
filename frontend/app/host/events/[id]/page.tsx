@@ -366,7 +366,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             {!event.is_free && (
               <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
             )}
-            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
+            <ReadField label={event.requires_signup ? "Sign-up link" : "External links"}>
               {event.registration_url ? (
                 <a
                   href={event.registration_url}
