@@ -89,7 +89,7 @@ export const AdminEventCard = memo(function AdminEventCard({
     <article
       id={`event-${event.id}`}
       aria-label={event.title}
-      className="event-card relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
+      className="event-card relative grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,7 +102,16 @@ export const AdminEventCard = memo(function AdminEventCard({
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
-        <h3 className="text-2xl font-medium leading-tight text-fg">{event.title}</h3>
+        <h3 className="text-2xl font-medium leading-tight text-fg">
+          {/* The whole card opens the details page: this link's ::after
+              covers the card, and the tools and View more sit above it. */}
+          <Link
+            href={`/host/events/${event.id}`}
+            className="after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:outline-none"
+          >
+            {event.title}
+          </Link>
+        </h3>
         {/* Just who posted it and how many are going — the date, place and
             tags are on the details page (View more). */}
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
@@ -129,14 +138,14 @@ export const AdminEventCard = memo(function AdminEventCard({
       {/* The tools at the top right and View more at the bottom right; on a
           phone the tools sit over the picture's corner and View more takes
           the card's last row, so the words keep the whole width. */}
-      <div className="flex flex-col items-end justify-between gap-4 max-sm:contents">
-        <div className="max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
+      <div className="relative z-10 flex flex-col items-end justify-between gap-4 max-sm:contents">
+        <div className="z-10 max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
           {tools}
         </div>
         <Link
           href={`/host/events/${event.id}`}
           aria-label={`View more about ${event.title}`}
-          className={buttonClass("secondary", "md", "max-sm:col-span-2 max-sm:w-full")}
+          className={buttonClass("secondary", "md", "relative z-10 max-sm:col-span-2 max-sm:w-full")}
         >
           View more
           <ArrowRight aria-hidden="true" className="size-4" />

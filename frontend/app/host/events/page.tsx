@@ -210,7 +210,9 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    // Centred with wide margins, at most 1200px of content, like the event
+    // pages; the cards don't stretch across a big screen.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
           {scope === "mine"
