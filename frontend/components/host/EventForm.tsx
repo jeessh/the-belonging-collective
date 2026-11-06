@@ -952,7 +952,7 @@ export function EventForm({
               </Section>
             )}
           </Group>
-          <Group title="Cost & sign-up">
+          <Group title="Tags">
             {/* Cost and how people join, side by side; the paid details
                 go under the row. */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

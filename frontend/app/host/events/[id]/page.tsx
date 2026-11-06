@@ -391,7 +391,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           <ConsoleCounts event={event} />
           </Group>
 
-          <Group title="Cost & sign-up">
+          <Group title="Tags">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
               <ReadField label="How people join">
