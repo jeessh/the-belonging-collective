@@ -287,7 +287,7 @@ can open.
   superadmin) beside the chosen group's members on Requests / Approved /
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
   surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
-  the form's "Who can see this" — Everyone or a group of the *program's*
+  the form's "Who can see this" — a Special access checkbox; ticked, a group of the *program's*
   organization (`hostId`), with inline group creation — and
   `components/host/PosterField.tsx` / `PosterSection.tsx` are the printable
   poster (`uploadPoster`, PDF or image) and the details page's QR code. The
