@@ -176,7 +176,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        subtitle={<PostedBy event={event} />}
+        subtitle={<PostedBy event={event} showPublished />}
         status={<EventStatus state={archived ? "unpublished" : "published"} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={

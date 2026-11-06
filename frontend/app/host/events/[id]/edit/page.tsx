@@ -130,7 +130,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           backHref: `/host/events/${event.id}`,
           backLabel: "Back to event details",
           onBack,
-          subtitle: <PostedBy event={event} />,
+          subtitle: <PostedBy event={event} showPublished />,
           status: <EventStatus state="published" />,
           actions: (
             <Button
