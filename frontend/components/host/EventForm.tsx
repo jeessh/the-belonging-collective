@@ -818,7 +818,6 @@ export function EventForm({
             </Section>
           )}
           </section>
-          <EventTips />
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
@@ -1217,34 +1216,5 @@ export function EventForm({
         </Modal>
       )}
     </form>
-  );
-}
-
-/** "Tips for a great event", under the picture on create and edit: what
-    makes a listing members can act on. */
-function EventTips() {
-  const tips = [
-    ["Be descriptive", "A clear name tells people at a glance what the event is."],
-    [
-      "Say what to expect",
-      "Start with what happens, then the details: where to go, what to bring, who it suits.",
-    ],
-    [
-      "Mention the support",
-      "Ramps, quiet spaces, ASL, a support person welcome — members filter by these.",
-    ],
-  ] as const;
-  return (
-    <aside aria-labelledby="event-tips" className={`${CARD} flex flex-col gap-4 bg-surface-subtle/60`}>
-      <h2 id="event-tips" className="text-base font-medium uppercase tracking-wide text-fg-muted">
-        Tips for a great event
-      </h2>
-      {tips.map(([title, text]) => (
-        <div key={title} className="flex flex-col gap-1">
-          <p className="text-base font-medium text-fg">{title}</p>
-          <p className="text-base text-fg-muted">{text}</p>
-        </div>
-      ))}
-    </aside>
   );
 }

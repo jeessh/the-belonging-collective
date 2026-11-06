@@ -364,8 +364,7 @@ can open.
   **Cards and a floating action bar** (after a Meetup reference): every
   part of the event form and of the details page is a white card
   (`EventForm`'s `CARD`, which `Group` uses — hairline edge, soft shadow,
-  8px corners); under the picture on create / edit sits a "Tips for a
-  great event" card. Publish / Save lives only in a bar pinned to the foot
+  8px corners). Publish / Save lives only in a bar pinned to the foot
   of the window (`sticky bottom-4`): Cancel (the back link, through the
   leave guard) on the left, the submit on the right — the header has no
   submit button any more.
