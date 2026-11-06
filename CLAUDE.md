@@ -299,7 +299,7 @@ can open.
   only the title, `host/PostedBy`, "Posted on Oct 18, 2026" (`created_at`)
   and "N going" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
-  more. Every icon on the card is 16px at a 1.75 line, one rule on `.event-card`
+  more. Its icons follow the console's one icon rule (below)
   the round edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
@@ -399,6 +399,11 @@ can open.
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.
+- **One icon for the whole console:** every Lucide icon is 16px with a
+  1.5px line (`globals.css`, non-scaling stroke) — buttons, side panel,
+  menus, fields, cards, tags, counts. Large illustrations (`size-8` /
+  `size-12`) keep their size, same line; `.icon-exempt` opts out (the
+  checkbox tick). Don't size console icons one by one.
 - **One smaller type and control scale for the whole console.** `AdminShell`
   puts `.console` on every console page, and `globals.css` maps the shared
   components' member-app sizes onto it: 12px small, 14px body (and tables),

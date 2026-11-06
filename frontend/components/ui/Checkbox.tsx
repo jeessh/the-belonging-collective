@@ -38,7 +38,7 @@ export function Checkbox({
         <Check
           aria-hidden="true"
           strokeWidth={3}
-          className={`pointer-events-none absolute text-white opacity-0 peer-checked:opacity-100 ${
+          className={`icon-exempt pointer-events-none absolute text-white opacity-0 peer-checked:opacity-100 ${
             dense ? "size-3" : "size-3.5"
           }`}
         />

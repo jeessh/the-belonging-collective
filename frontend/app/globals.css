@@ -245,14 +245,27 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .console :is(.min-h-11, .min-h-12, .min-h-14):not(.print-target *) { min-height: 36px; }
 .console .py-3:not(.print-target *) { padding-top: 6px; padding-bottom: 6px; }
 .console .px-6:not(.print-target *) { padding-left: 16px; padding-right: 16px; }
-.console svg.size-6:not(.print-target *) { width: 20px; height: 20px; }
 .console :is(button, a).py-2:not(.print-target *) { padding-top: 6px; padding-bottom: 6px; }
 /* Round icon buttons (the event cards' edit / share / print / un-publish). */
 .console :is(button, a).size-11:not(.print-target *) { width: 36px; height: 36px; }
 
-/* The back button (ui/BackButton) in the console: body-size words and a
-   16px arrow, still 36px tall like the other controls. */
-.console .back-button svg:not(.print-target *) { width: 16px; height: 16px; }
+/*
+ * One icon for the whole console: every Lucide icon is 16px with a 1.5px line
+ * — buttons, the side panel, menus, fields, cards, counts, tags, the back
+ * arrow. The line is drawn non-scaling, so the few large illustrations (the
+ * image drop's arrow, a poster's file icon: `size-8` / `size-12`) keep their
+ * size but carry the same 1.5px line. `.icon-exempt` opts out (the checkbox's
+ * tick, which has to stay bold to read at 12px).
+ */
+.console svg.lucide:not(.print-target *):not(.icon-exempt) { stroke-width: 1.5; }
+.console svg.lucide:not(.print-target *):not(.icon-exempt)
+  :is(path, line, polyline, polygon, circle, ellipse, rect) {
+  vector-effect: non-scaling-stroke;
+}
+.console svg.lucide:not(.print-target *):not(.icon-exempt, .size-8, .size-12) {
+  width: 16px;
+  height: 16px;
+}
 
 
 /*
@@ -288,14 +301,8 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
    counts, the filter groups (`.info-icon`, on the icon or its wrapper), 8px
    from their text. Icons on buttons are actions and keep their own size. */
 .console :is(.field-icon, .info-icon):not(.print-target *) { color: #838383; }
-.console :is(.field-icon, .info-icon) > svg:not(.print-target *),
-.console svg.info-icon:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.5; }
 .console :has(> .info-icon):not(.print-target *) { column-gap: 8px; }
 
-/* Every icon on a console event card — the round tools, the tag pills, the
-   facts, the counts, View more — one size and one line weight, so they read
-   as one set (a thicker line looks like a bigger icon). */
-.console .event-card svg:not(.print-target *) { width: 16px; height: 16px; stroke-width: 1.75; }
 .console input:is([type="date"], [type="time"])::-webkit-calendar-picker-indicator { display: none; }
 .console input:is([type="date"], [type="time"]):not(.print-target *) { cursor: pointer; }
 
