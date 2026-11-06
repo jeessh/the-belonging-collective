@@ -414,16 +414,18 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 {event.max_age != null ? String(event.max_age) : "Any"}
               </ReadField>
             </div>
-            <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-8">
+              <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
+              <ReadField label="Who can see this">
+                {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+              </ReadField>
+            </div>
             <ReadField label="What does it offer?">
               <IconList
                 items={event.accessibility_tags
                   .filter((t) => !isDerivedTag(t))
                   .map((t) => ({ key: t, icon: tagIcon(t), label: tagLabel(t) }))}
               />
-            </ReadField>
-            <ReadField label="Who can see this">
-              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
             </ReadField>
           </Group>
 

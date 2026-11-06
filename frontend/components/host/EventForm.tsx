@@ -1084,31 +1084,35 @@ export function EventForm({
                 placeholder="Any"
               />
             </div>
-            <Section title="Who is it for?">
-              <SegmentedToggle<"youth" | "everyone">
-                size="sm"
-                className="self-start"
-                label="Audience"
-                value={values.isYouth ? "youth" : "everyone"}
-                onChange={(v) => set("isYouth", v === "youth")}
-                segments={[
-                  { value: "everyone", label: "Everyone" },
-                  { value: "youth", label: "Youth" },
-                ]}
-              />
-            </Section>
-            <Section
-              title="Who can see this"
-            >
-              <AccessPicker
-                hostId={hostId}
-                mode={values.accessMode}
-                groupId={values.accessGroupId}
-                onChange={(accessMode, accessGroupId) =>
-                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
-                }
-              />
-            </Section>
+            {/* Audience and who can see it, side by side; the access
+                picker takes the room it needs for a group. */}
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-8">
+              <Section title="Who is it for?">
+                <SegmentedToggle<"youth" | "everyone">
+                  size="sm"
+                  className="self-start"
+                  label="Audience"
+                  value={values.isYouth ? "youth" : "everyone"}
+                  onChange={(v) => set("isYouth", v === "youth")}
+                  segments={[
+                    { value: "everyone", label: "Everyone" },
+                    { value: "youth", label: "Youth" },
+                  ]}
+                />
+              </Section>
+              <Section
+                title="Who can see this"
+              >
+                <AccessPicker
+                  hostId={hostId}
+                  mode={values.accessMode}
+                  groupId={values.accessGroupId}
+                  onChange={(accessMode, accessGroupId) =>
+                    onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
+                  }
+                />
+              </Section>
+            </div>
           </Group>
         </div>
       </div>
