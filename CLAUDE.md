@@ -361,10 +361,10 @@ can open.
   buttons), whose title is the name input (reads as a heading, shows it's
   editable on hover / focus, carries the required error); the form has no
   separate name box. The details page's title is `event.title`.
-  **Cards and a floating action bar** (after a Meetup reference): every
-  part of the event form and of the details page is a white card
-  (`EventForm`'s `CARD`, which `Group` uses — hairline edge, soft shadow,
-  8px corners). Publish / Save lives only in a bar pinned to the foot
+  **Cards and a floating action bar** (after a Meetup reference): each
+  column of the event form and of the details page is one white card
+  (`EventForm`'s `CARD` — hairline edge, soft shadow, 8px corners); the
+  right column's sections (`Group`) share it, a divider between each. Publish / Save lives only in a bar pinned to the foot
   of the window (`sticky bottom-4`): Cancel (the back link, through the
   leave guard) on the left, the submit on the right — the header has no
   submit button any more.

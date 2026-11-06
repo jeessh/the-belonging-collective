@@ -349,7 +349,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           <ConsoleCounts event={event} />
         </section>
 
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className={`${CARD} flex min-w-0 flex-col gap-6`}>
           <Group title="Description">
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>

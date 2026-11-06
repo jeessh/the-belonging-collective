@@ -423,7 +423,8 @@ export const CARD =
 
 export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
+    // Sections share one card (the column's), a divider between each.
+    <section className="flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -820,7 +821,7 @@ export function EventForm({
           </section>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className={`${CARD} flex min-w-0 flex-col gap-6`}>
           <Group title="Description">
             <Field
               label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
