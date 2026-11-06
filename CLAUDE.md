@@ -391,7 +391,7 @@ can open.
   carries them through unchanged). Cost & sign-up opens with Cost and How people join
   side by side (form and details page; "How is it paid?" under the row).
   Links live under Description (form and details page): the
-  sign-up / external link, then "Add a link" adds a label + address row, up to
+  sign-up / external link with "Add a link" beside it, which adds a label + address row, up to
   `LINKS_MAX` (3), each with a remove button; the details page reads them
   back there as "Other links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity

@@ -732,7 +732,10 @@ export function EventForm({
             {/* Shown for drop-ins too: many carry a posting link, and hiding
                 the field would blank it on the next save. */}
             <div className="flex flex-col gap-2">
+              {/* "Add a link" sits beside the box, lined up with it. */}
+              <div className="flex items-end gap-2">
               <TextField
+                className="min-w-0 flex-1"
                 label={values.requiresSignup ? "Sign-up link" : "External links (optional)"}
                 type="text"
                 inputMode="url"
@@ -743,6 +746,17 @@ export function EventForm({
                   signupHint?.tone === "error" ? signupHint.message : null
                 }
               />
+              {linkRows < LINKS_MAX && (
+                <Button
+                  className="shrink-0"
+                  leadingIcon={<Plus />}
+                  aria-label={`Add a link (${LINKS_MAX - linkRows} of ${LINKS_MAX} left)`}
+                  onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
+                >
+                  Add a link
+                </Button>
+              )}
+              </div>
               {/* A caution, not a refusal: some agencies really do have one
                   page, and blocking that gets the link left out entirely. */}
               <p
@@ -801,19 +815,6 @@ export function EventForm({
                   ))}
                 </div>
               </Section>
-            )}
-            {linkRows < LINKS_MAX && (
-              <Button
-                className="self-start"
-                leadingIcon={<Plus />}
-                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
-              >
-                Add a link
-                <span className="text-fg-muted">
-                  {" "}
-                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
-                </span>
-              </Button>
             )}
           </Group>
           <Group title="Event details">
