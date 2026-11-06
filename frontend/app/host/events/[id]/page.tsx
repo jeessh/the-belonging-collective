@@ -407,12 +407,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Spots available">
               {event.capacity != null ? String(event.capacity) : "No limit"}
             </ReadField>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-8">
-              <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
-              <ReadField label="Who can see this">
-                {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
-              </ReadField>
-            </div>
+            <ReadField label="Who can see this">
+              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+            </ReadField>
             <ReadField label="What does it offer?">
               <IconList
                 items={event.accessibility_tags
