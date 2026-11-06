@@ -377,7 +377,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 {event.requires_signup ? "Registration" : "Drop-in"}
               </ReadField>
             </div>
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8">
+            <div className="flex flex-col gap-4">
               <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
               <ReadField label={event.is_virtual ? "Meeting link" : "Address"}>
                 {meetingUrl(event) ? (
