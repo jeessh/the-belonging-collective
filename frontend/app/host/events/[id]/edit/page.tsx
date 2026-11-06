@@ -106,7 +106,8 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col">
+    // Wider margins than other console pages: the form gets room to breathe.
+    <div className="flex flex-col sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <EventForm
         id={FORM_ID}
         mode="edit"

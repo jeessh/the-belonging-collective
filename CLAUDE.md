@@ -435,8 +435,10 @@ can open.
   (`ImageDrop square`); with no picture it is a plain grey 300px box with one "Upload image" button (drop still works).
   Editing passes `imageFallback={eventImage(event)}`, so an event without a
   cover of its own shows the picture members see (another of its images or
-  the topic's stock photo) with Change / Remove; Remove leaves the grey box,
-  and saving without an upload still shows the stock photo. There is no
+  the topic's stock photo). A picture in the form has one control: a dark,
+  see-through **Replace image** button in its middle (dropping a file on it
+  works too) — no Change / Remove under it. The create and edit pages have
+  wider margins than other console pages. There is no
   "* Required" key over the form — the asterisks on the fields say it. The
   right column's dividers
   are `border-line/40`.

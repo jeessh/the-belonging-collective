@@ -89,7 +89,39 @@ export function ImageDrop({
 
   return (
     <div>
-      {shown ? (
+      {shown && square ? (
+        // The event form: the picture fills its frame and one dark,
+        // see-through button in its middle replaces it. Dropping a file on
+        // the picture replaces it too.
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            void handleFiles(e.dataTransfer.files);
+          }}
+          className={`relative h-[300px] w-full overflow-hidden rounded-control ${
+            dragOver ? "ring-2 ring-primary-border" : ""
+          }`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={shown} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            aria-label={`${label}: replace image`}
+            className="absolute left-1/2 top-1/2 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-control bg-black/55 px-4 py-2 text-base font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/70 disabled:opacity-70"
+          >
+            <ImageUp aria-hidden="true" className="size-4" />
+            {busy ? "Uploading…" : "Replace image"}
+          </button>
+        </div>
+      ) : shown ? (
         <div className="flex flex-col items-start gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
