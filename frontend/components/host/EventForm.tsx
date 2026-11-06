@@ -666,7 +666,7 @@ export function EventForm({
       {/* Two columns from lg: the event itself and when it is on the left,
           everything that describes it on the right. One column, in that
           order, below lg. */}
-      <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-6">
           <section className={`${CARD} flex min-w-0 flex-col gap-5`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
@@ -1114,7 +1114,7 @@ export function EventForm({
 
       {/* The action bar floats at the foot of the window while the form
           scrolls under it: Cancel on the left, Publish / Save on the right. */}
-      <div className="sticky bottom-4 z-30 max-w-[1200px]">
+      <div className="sticky bottom-4 z-30">
         <div className="flex items-center justify-between gap-3 rounded-card border border-line/70 bg-surface/95 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur sm:px-6">
           <Link
             href={header.backHref}

@@ -56,7 +56,7 @@ export function EventAnalyticsPanel({ eventId }: { eventId: string }) {
   const repeating = data.dates.length > 1;
 
   return (
-    <div className="flex max-w-[1200px] flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <p className="text-base text-fg-muted">
         Since it was posted on {shortDate(data.posted_at)}
         {repeating ? `, across all ${data.dates.length} dates` : ""}.

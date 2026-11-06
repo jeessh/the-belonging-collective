@@ -240,7 +240,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         <div
           role="tablist"
           aria-label="Event"
-          className="-mt-2 flex max-w-[1200px] gap-6 border-b border-line"
+          className="-mt-2 flex gap-6 border-b border-line"
         >
           {(
             [
@@ -304,7 +304,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // The event form's layout, group for group and in its words, so an
         // event reads back exactly as it was entered — every field, with
         // what an empty one means ("None", "No limit", "Any age").
-        className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       >
         <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
