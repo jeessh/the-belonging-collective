@@ -297,7 +297,7 @@ can open.
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
-  the component sheet's "Admin – Listed Event" (the image filling the card's height, its width 30% of the card (at least 140px) from `sm`, and beside it
+  the component sheet's "Admin – Listed Event" (square image, and beside it
   only the title, `host/PostedBy`, "Posted on Oct 18, 2026" (`created_at`)
   and "N going" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
