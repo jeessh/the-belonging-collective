@@ -322,4 +322,4 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
    the group is drawn — the event form and the details page that mirrors it.
    Without this the form's own rule made it 20px there and the general
    text-xl remap 16px on the details page. */
-.console h2.group-heading:not(.print-target *) { font-size: 20px; line-height: 1.3; }
+.console h2.group-heading:not(.print-target *) { font-size: 16px; line-height: 1.4; }
