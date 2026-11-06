@@ -13,7 +13,7 @@ import {
   Printer,
   RotateCcw,
   Link2,
-  Share2,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
@@ -30,7 +30,7 @@ import { Glyph } from "@/components/ui/Glyph";
 import { Group } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
 import { eventUrl } from "@/components/CopyLinkButton";
-import { copyText } from "@/lib/clipboard";
+import { ShareModal } from "@/components/member/ShareModal";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
@@ -65,6 +65,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [unpublishing, setUnpublishing] = useState(false);
   // Un-published: read from /events/archived/{id}, shown with Restore.
   const [archived, setArchived] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // Details | Analytics. ?tab=analytics opens on the numbers, so the tab
   // survives a reload and can be linked to.
   const [tab, setTab] = useState<"details" | "analytics">("details");
@@ -152,14 +153,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       setRestoring(false);
     }
   }
-  async function share() {
-    if (!event) return;
-    if (!(await copyText(eventUrl(event.id), show))) return;
-    show({
-      title: `Link to '${event.title}' copied.`,
-      description: "Paste it wherever you're sharing.",
-    });
-  }
 
   function print() {
     // Mark just the event, print, then put the page back — the global print
@@ -184,13 +177,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             {/* Share and print are icons (with tooltips saying what they do);
                 Edit keeps its word. */}
             {!archived && (
-              <Tooltip text="Copy a link to this event to share">
+              <Tooltip text="Share by email or link">
                 {(tip) => (
                   <Button
                     aria-label={`Share ${event.title}`}
                     aria-describedby={tip}
-                    onClick={() => void share()}
-                    leadingIcon={<Share2 />}
+                    onClick={() => setSharing(true)}
+                    leadingIcon={<Send />}
                   />
                 )}
               </Tooltip>
@@ -432,6 +425,15 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       </div>
       )}
 
+      {sharing && (
+        <ShareModal
+          title="Share this event?"
+          eventIds={[event.id]}
+          organizer
+          link={{ getUrl: async () => eventUrl(event.id) }}
+          onClose={() => setSharing(false)}
+        />
+      )}
       {unpublishing && (
         <UnpublishModal
           event={event}

@@ -1,17 +1,16 @@
 "use client";
 
-import { memo, type ReactNode } from "react";
+import { memo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArchiveX, CalendarPlus, Pencil, Send, Bookmark } from "lucide-react";
 import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
-import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
-import { useToast } from "@/components/ui/Toast";
 import { PostedBy } from "@/components/host/PostedBy";
 import { savedLine } from "@/components/host/ConsoleCounts";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
+import { ShareModal } from "@/components/member/ShareModal";
 
 /**
  * The component sheet's "Admin – Listed Event": a square image, the title
@@ -32,17 +31,10 @@ export const AdminEventCard = memo(function AdminEventCard({
   canManage: boolean;
   onUnpublish: (event: Event) => void;
 }) {
-  const { show } = useToast();
   const saved = event.saved_count ?? 0;
 
-  async function share() {
-    const url = eventUrl(event.id);
-    if (!(await copyText(url, show))) return;
-    show({
-      title: `Link to '${event.title}' copied.`,
-      description: "Paste it wherever you're sharing.",
-    });
-  }
+  // Share opens the members' share sheet: email or copy the link.
+  const [sharing, setSharing] = useState(false);
 
   const tools = (
     <div className="flex items-center gap-1">
@@ -62,9 +54,9 @@ export const AdminEventCard = memo(function AdminEventCard({
       )}
       <Tool
         label={`Share ${event.title}`}
-        tip="Copy a link to this event to share"
+        tip="Share by email or link"
         align={canManage ? "center" : "end"}
-        onClick={() => void share()}
+        onClick={() => setSharing(true)}
       >
         <Send aria-hidden="true" className="size-4" />
       </Tool>
@@ -142,6 +134,15 @@ export const AdminEventCard = memo(function AdminEventCard({
           {tools}
         </div>
       </div>
+      {sharing && (
+        <ShareModal
+          title="Share this event?"
+          eventIds={[event.id]}
+          organizer
+          link={{ getUrl: async () => eventUrl(event.id) }}
+          onClose={() => setSharing(false)}
+        />
+      )}
     </article>
   );
 });

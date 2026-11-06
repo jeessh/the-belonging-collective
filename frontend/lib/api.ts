@@ -275,6 +275,10 @@ export const shareByEmail = (body: {
   for_member?: string | null;
 }) => api<null>("/share/email", { method: "POST", body: JSON.stringify(body) });
 
+/** The console's Share by email: the same cards, under the organizer's name. */
+export const shareByEmailAsOrganizer = (body: { to: string; event_ids: string[] }) =>
+  api<null>("/share/email/organizer", { method: "POST", body: JSON.stringify(body) });
+
 /** The member's private calendar-feed handle; the same token every time. */
 /** The feed's token, and whether a calendar has fetched it lately. */
 export const createCalendarFeed = () =>

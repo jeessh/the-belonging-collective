@@ -195,7 +195,9 @@ can open.
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
-  and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email`
+  and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  the console's `POST /share/email/organizer`: the same cards under the
+  organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
   button) from MAIL_FROM under "{first name} via …", Reply-To the member,
   signed-in members only, 20 a day. A caregiver sharing a member's list
