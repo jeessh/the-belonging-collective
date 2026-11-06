@@ -319,6 +319,40 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>
             </ReadField>
+            <ReadField label={event.requires_signup ? "Sign-up link" : "External links"}>
+              {event.registration_url ? (
+                <a
+                  href={event.registration_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all underline underline-offset-4"
+                >
+                  {event.registration_url}
+                </a>
+              ) : (
+                "None"
+              )}
+            </ReadField>
+            <ReadField label="Other links">
+              {event.links?.length ? (
+                <ol className="flex list-decimal flex-col gap-1 pl-5">
+                  {event.links.map((l) => (
+                    <li key={l.url}>
+                      <a
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                "None"
+              )}
+            </ReadField>
           </Group>
 
           <Group title="When & where">
@@ -367,40 +401,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             {!event.is_free && (
               <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
             )}
-            <ReadField label={event.requires_signup ? "Sign-up link" : "External links"}>
-              {event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {event.registration_url}
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="Other links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
           </Group>
 
           <Group title="Who it's for">

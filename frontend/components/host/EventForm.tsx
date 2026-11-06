@@ -729,6 +729,92 @@ export function EventForm({
                 placeholder="Type out your description here…"
               />
             </Field>
+            {/* Shown for drop-ins too: many carry a posting link, and hiding
+                the field would blank it on the next save. */}
+            <div className="flex flex-col gap-2">
+              <TextField
+                label={values.requiresSignup ? "Sign-up link" : "External links (optional)"}
+                type="text"
+                inputMode="url"
+                value={values.registrationUrl}
+                onChange={(e) => set("registrationUrl", e.target.value)}
+                placeholder="yourorg.ca/register"
+                error={
+                  signupHint?.tone === "error" ? signupHint.message : null
+                }
+              />
+              {/* A caution, not a refusal: some agencies really do have one
+                  page, and blocking that gets the link left out entirely. */}
+              <p
+                role="status"
+                className={
+                  signupHint?.tone === "warn"
+                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                    : "sr-only"
+                }
+              >
+                {signupHint?.tone === "warn" ? signupHint.message : ""}
+              </p>
+            </div>
+            {/* Other links (a flyer, a map, the agency's page) live with the
+                sign-up link, added one at a time, up to LINKS_MAX. */}
+            {linkRows > 0 && (
+              <Section title="Other links">
+                <div className="flex flex-col gap-3">
+                  {values.links.slice(0, linkRows).map((link, i) => (
+                    <div
+                      key={i}
+                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                    >
+                      {/* The placeholder says which box is the label: "Link 1"
+                          read as "put link 1 here", so addresses ended up in it. */}
+                      <TextField
+                        label={`Link ${i + 1} label`}
+                        className="[&>label]:sr-only"
+                        value={link.label}
+                        onChange={(e) => setLink(i, { label: e.target.value })}
+                        placeholder="Link label, e.g. Flyer"
+                      />
+                      <TextField
+                        label={`Link ${i + 1} address`}
+                        className="[&>label]:sr-only"
+                        // type="text": the browser's url validation rejects
+                        // "yourorg.ca"; the API adds https:// when it's missing.
+                        type="text"
+                        inputMode="url"
+                        value={link.url}
+                        onChange={(e) => setLink(i, { url: e.target.value })}
+                        placeholder="Web address, e.g. yourorg.ca/page"
+                        error={
+                          checkPostingLink(link.url)?.tone === "error"
+                            ? "That doesn't look like a web address."
+                            : null
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+            {linkRows < LINKS_MAX && (
+              <Button
+                className="self-start"
+                leadingIcon={<Plus />}
+                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
+              >
+                Add a link
+                <span className="text-fg-muted">
+                  {" "}
+                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
+                </span>
+              </Button>
+            )}
           </Group>
           <Group title="When & where">
             <TextField
@@ -981,92 +1067,6 @@ export function EventForm({
                   )}
                 </div>
               </Section>
-            )}
-            {/* Shown for drop-ins too: many carry a posting link, and hiding
-                the field would blank it on the next save. */}
-            <div className="flex flex-col gap-2">
-              <TextField
-                label={values.requiresSignup ? "Sign-up link" : "External links (optional)"}
-                type="text"
-                inputMode="url"
-                value={values.registrationUrl}
-                onChange={(e) => set("registrationUrl", e.target.value)}
-                placeholder="yourorg.ca/register"
-                error={
-                  signupHint?.tone === "error" ? signupHint.message : null
-                }
-              />
-              {/* A caution, not a refusal: some agencies really do have one
-                  page, and blocking that gets the link left out entirely. */}
-              <p
-                role="status"
-                className={
-                  signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
-                    : "sr-only"
-                }
-              >
-                {signupHint?.tone === "warn" ? signupHint.message : ""}
-              </p>
-            </div>
-            {/* Other links (a flyer, a map, the agency's page) live with the
-                sign-up link, added one at a time, up to LINKS_MAX. */}
-            {linkRows > 0 && (
-              <Section title="Other links">
-                <div className="flex flex-col gap-3">
-                  {values.links.slice(0, linkRows).map((link, i) => (
-                    <div
-                      key={i}
-                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
-                    >
-                      {/* The placeholder says which box is the label: "Link 1"
-                          read as "put link 1 here", so addresses ended up in it. */}
-                      <TextField
-                        label={`Link ${i + 1} label`}
-                        className="[&>label]:sr-only"
-                        value={link.label}
-                        onChange={(e) => setLink(i, { label: e.target.value })}
-                        placeholder="Link label, e.g. Flyer"
-                      />
-                      <TextField
-                        label={`Link ${i + 1} address`}
-                        className="[&>label]:sr-only"
-                        // type="text": the browser's url validation rejects
-                        // "yourorg.ca"; the API adds https:// when it's missing.
-                        type="text"
-                        inputMode="url"
-                        value={link.url}
-                        onChange={(e) => setLink(i, { url: e.target.value })}
-                        placeholder="Web address, e.g. yourorg.ca/page"
-                        error={
-                          checkPostingLink(link.url)?.tone === "error"
-                            ? "That doesn't look like a web address."
-                            : null
-                        }
-                      />
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove link ${i + 1}`}
-                        leadingIcon={<X />}
-                        onClick={() => removeLink(i)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
-            {linkRows < LINKS_MAX && (
-              <Button
-                className="self-start"
-                leadingIcon={<Plus />}
-                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
-              >
-                Add a link
-                <span className="text-fg-muted">
-                  {" "}
-                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
-                </span>
-              </Button>
             )}
           </Group>
           <Group title="Who it's for">
