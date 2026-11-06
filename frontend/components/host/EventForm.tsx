@@ -986,7 +986,7 @@ export function EventForm({
                 the field would blank it on the next save. */}
             <div className="flex flex-col gap-2">
               <TextField
-                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+                label={values.requiresSignup ? "Sign-up link" : "Posting link (optional)"}
                 type="text"
                 inputMode="url"
                 value={values.registrationUrl}
