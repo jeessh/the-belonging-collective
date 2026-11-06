@@ -1,32 +1,20 @@
 "use client";
 
-import { placeLabel } from "@/lib/place";
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
-import {
-  ArchiveX,
-  ArrowRight,
-  Cake,
-  CalendarDays,
-  MapPin,
-  Pencil,
-  Send,
-  Ticket,
-} from "lucide-react";
+import { ArchiveX, ArrowRight, Pencil, Send, Users } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
-import { whenLine } from "@/lib/time";
 import { useToast } from "@/components/ui/Toast";
-import { EventTags, ageLabel } from "@/components/ui/EventSummary";
-import { ConsoleCounts } from "@/components/host/ConsoleCounts";
+import { PostedBy } from "@/components/host/PostedBy";
 import { buttonClass } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
 
 /**
- * The component sheet's "Admin – Listed Event": a square image, the facts
- * beside it, the program's tools at the top right and View more (the
+ * The component sheet's "Admin – Listed Event": a square image, the title
+ * with who posted it and how many are going beside it, the program's tools at the top right and View more (the
  * details page) at the bottom right.
  *
  * The tools respect ownership. Edit and un-publish are only for the
@@ -44,10 +32,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   onUnpublish: (event: Event) => void;
 }) {
   const { show } = useToast();
-  const when = whenLine(event);
-  const where =
-    placeLabel(event);
-  const ages = ageLabel(event);
+  const going = event.saved_count ?? 0;
 
   async function share() {
     const url = eventUrl(event.id);
@@ -116,27 +101,15 @@ export const AdminEventCard = memo(function AdminEventCard({
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
-        <div className="flex flex-wrap gap-2">
-          <EventTags event={event} />
-        </div>
         <h3 className="text-xl font-medium leading-tight text-fg">{event.title}</h3>
-        {/* The member card's facts (ui/EventSummary), in its order and
-            words: when (the date, the time under it), where, ages, spots,
-            and "N going" — plus the clicks only the console sees. */}
-        <div className="flex flex-col gap-2 text-lg text-fg">
-          <Fact icon={<CalendarDays />}>
-            <span className="whitespace-nowrap">{when.rel}</span>
-            {when.date && <span className="whitespace-nowrap"> · {when.date}</span>}
-            {when.time && <span className="block text-fg-muted">{when.time}</span>}
-          </Fact>
-          <Fact icon={<MapPin />}>{where}</Fact>
-          {ages && <Fact icon={<Cake />}>{ages}</Fact>}
-          {typeof event.spots_left === "number" && (
-            <Fact icon={<Ticket />}>
-              {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left
-            </Fact>
-          )}
-          <ConsoleCounts event={event} />
+        {/* Just who posted it and how many are going — the date, place and
+            tags are on the details page (View more). */}
+        <div className="flex flex-col gap-2 text-lg text-fg-muted">
+          <PostedBy event={event} />
+          <p className="flex items-center gap-3 text-fg">
+            <Users aria-hidden="true" className="info-icon size-6 shrink-0 text-fg-muted" />
+            {going} going
+          </p>
         </div>
       </div>
 
@@ -194,16 +167,5 @@ function Tool({
         </button>
       )}
     </Tooltip>
-  );
-}
-
-function Fact({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <p className="flex items-start gap-3">
-      <span aria-hidden="true" className="info-icon mt-0.5 shrink-0 text-fg-icon [&>svg]:size-6">
-        {icon}
-      </span>
-      <span className="min-w-0">{children}</span>
-    </p>
   );
 }
