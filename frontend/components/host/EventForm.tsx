@@ -421,17 +421,9 @@ function Section({
 export const CARD =
   "rounded-card border border-line/70 bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_6px_20px_rgba(0,0,0,0.04)] sm:p-6";
 
-export function Group({
-  title,
-  className = "",
-  children,
-}: {
-  title: string;
-  className?: string;
-  children: ReactNode;
-}) {
+export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={`${CARD} flex min-w-0 flex-col gap-4 ${className}`}>
+    <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -674,10 +666,7 @@ export function EventForm({
       {/* Two columns from lg: the event itself and when it is on the left,
           everything that describes it on the right. One column, in that
           order, below lg. */}
-      {/* From lg: the left column takes the room, the right one is 400px and
-          runs the full height (its last card grows to the bottom); the left
-          card keeps its own height. */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="flex min-w-0 flex-col gap-6">
           <section className={`${CARD} flex min-w-0 flex-col gap-5`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
@@ -1061,7 +1050,7 @@ export function EventForm({
               </Button>
             )}
           </Group>
-          <Group title="Who it's for" className="flex-1">
+          <Group title="Who it's for">
             <div className="flex flex-wrap gap-4">
               <TextField
                 label="Spots available (blank for no limit)"
