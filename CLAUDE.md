@@ -280,7 +280,9 @@ can open.
   the per-program table (sortable), a date range (presets + custom; default
   the last 90 days), a superadmin org filter and Download CSV — a plain
   link to `/analytics.csv`, so the browser downloads it with the cookie.
-  Console cards and the details page show "N going · M clicks" through
+  Console cards and the details page say "N people saved this event · M
+  clicks" (`savedLine`, `saved_count`, never "going"; analytics says "Saved
+  now") through
   `components/host/ConsoleCounts.tsx` (`EventOut.click_count`, filled only
   for a signed-in organizer).
 - `/host/access` is special access: the org's groups (every org's, for a
@@ -299,7 +301,7 @@ can open.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
   the component sheet's "Admin – Listed Event" (square image, and beside it
   only the title, `host/PostedBy`, "Posted on Oct 18, 2026" (`created_at`)
-  and "N going" — shown at zero too. No
+  and "N people saved this event" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
   more. Its icons follow the console's one icon rule (below)
   the square (8px-cornered) edit / share / un-publish (archive

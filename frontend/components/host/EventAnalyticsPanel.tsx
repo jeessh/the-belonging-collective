@@ -48,7 +48,7 @@ export function EventAnalyticsPanel({ eventId }: { eventId: string }) {
   if (!data) return <p className="text-lg text-fg-muted">Loading…</p>;
 
   const tiles = [
-    { label: "Going", value: data.totals.going, note: "have it saved right now" },
+    { label: "Saved now", value: data.totals.going, note: "members who have it saved" },
     { label: "Saves", value: data.totals.saves, note: "including ones later un-saved" },
     { label: "Members who saved", value: data.totals.unique_savers, note: "unique people" },
     { label: "Registration clicks", value: data.totals.clicks, note: "links followed" },
@@ -97,13 +97,13 @@ export function EventAnalyticsPanel({ eventId }: { eventId: string }) {
               By date
             </h2>
             <p className="text-base text-fg-muted">
-              &ldquo;Going&rdquo; is who has that date saved right now.
+              &ldquo;Saved now&rdquo; is who has that date saved right now.
             </p>
           </div>
           <TableCard
             stackOnPhone={false}
             caption="Each date of this event with its saves, current attendance and registration clicks."
-            head={["Date", "Saves", "Going", "Clicks"]}
+            head={["Date", "Saves", "Saved now", "Clicks"]}
           >
             {data.dates.length === 0 ? (
               <EmptyRow colSpan={4} text="No dates yet." />

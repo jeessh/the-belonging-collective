@@ -2,19 +2,20 @@
 
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
-import { ArchiveX, CalendarPlus, Pencil, Send, Users } from "lucide-react";
+import { ArchiveX, CalendarPlus, Pencil, Send, Bookmark } from "lucide-react";
 import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
 import { useToast } from "@/components/ui/Toast";
 import { PostedBy } from "@/components/host/PostedBy";
+import { savedLine } from "@/components/host/ConsoleCounts";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
 
 /**
  * The component sheet's "Admin – Listed Event": a square image, the title
- * with who posted it and how many are going beside it, the program's tools at the top right and View more (the
+ * with who posted it and how many have saved it beside it, the program's tools at the top right and View more (the
  * details page) at the bottom right.
  *
  * The tools respect ownership. Edit and un-publish are only for the
@@ -32,7 +33,7 @@ export const AdminEventCard = memo(function AdminEventCard({
   onUnpublish: (event: Event) => void;
 }) {
   const { show } = useToast();
-  const going = event.saved_count ?? 0;
+  const saved = event.saved_count ?? 0;
 
   async function share() {
     const url = eventUrl(event.id);
@@ -111,7 +112,7 @@ export const AdminEventCard = memo(function AdminEventCard({
             {event.title}
           </Link>
         </h3>
-        {/* Just who posted it and how many are going — the date, place and
+        {/* Just who posted it and how many have saved it — the date, place and
             tags are on the details page (View more). */}
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
           <PostedBy event={event} />
@@ -128,8 +129,8 @@ export const AdminEventCard = memo(function AdminEventCard({
             </p>
           )}
           <p className="flex items-center gap-3 text-fg">
-            <Users aria-hidden="true" className="info-icon size-6 shrink-0 text-fg-muted" />
-            {going} going
+            <Bookmark aria-hidden="true" className="info-icon size-6 shrink-0 text-fg-muted" />
+            {savedLine(saved)}
           </p>
         </div>
       </div>
