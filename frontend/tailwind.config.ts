@@ -49,6 +49,9 @@ const config: Config = {
         // fill (the guest toast's CTA) and `active` the option toggle's thumb.
         primary: {
           DEFAULT: "#94EAFF",
+          // The primary button's resting fill: a lighter cyan, so it leads
+          // without weighing on the page (DEFAULT is its hover).
+          light: "#CCF5FF",
           border: "#00CDFF",
           soft: "#E5FAFF",
           strong: "#38D0F5",
