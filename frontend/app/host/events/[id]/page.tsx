@@ -171,7 +171,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    // Centred with wide margins, like the create / edit pages it mirrors.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <PageHeader
         title={event.title}
         titleClassName="event-title"

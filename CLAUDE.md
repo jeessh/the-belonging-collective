@@ -441,7 +441,8 @@ can open.
   the topic's stock photo). A picture in the form has one control: a dark,
   see-through **Replace image** button in its middle (dropping a file on it
   works too) — no Change / Remove under it. The create and edit pages have
-  wider margins than other console pages and are centred (1200px content). There is no
+  wider margins than other console pages and are centred (1200px content);
+  the details page too. There is no
   "* Required" key over the form — the asterisks on the fields say it. The
   right column's dividers
   are `border-line/40`.
