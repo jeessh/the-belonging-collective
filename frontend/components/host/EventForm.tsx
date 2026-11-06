@@ -1022,6 +1022,18 @@ export function EventForm({
                 </div>
               </Section>
             )}
+            <Section
+              title="Who can see this"
+            >
+              <AccessPicker
+                hostId={hostId}
+                mode={values.accessMode}
+                groupId={values.accessGroupId}
+                onChange={(accessMode, accessGroupId) =>
+                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
+                }
+              />
+            </Section>
             {mode === "create" && (
               <Section title="Repeats">
                 <div className="flex flex-wrap items-end gap-4">
@@ -1099,20 +1111,6 @@ export function EventForm({
                   </FilterChip>
                 ))}
               </div>
-            </Section>
-          </Group>
-          <Group title="Who it's for">
-            <Section
-              title="Who can see this"
-            >
-              <AccessPicker
-                hostId={hostId}
-                mode={values.accessMode}
-                groupId={values.accessGroupId}
-                onChange={(accessMode, accessGroupId) =>
-                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
-                }
-              />
             </Section>
           </Group>
 

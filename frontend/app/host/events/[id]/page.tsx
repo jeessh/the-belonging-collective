@@ -396,6 +396,9 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           {!event.is_free && (
             <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
           )}
+          <ReadField label="Who can see this">
+            {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+          </ReadField>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
           </Group>
@@ -421,11 +424,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             </ReadField>
           </Group>
 
-          <Group title="Who it's for">
-            <ReadField label="Who can see this">
-              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
-            </ReadField>
-          </Group>
 
         </div>
       </article>

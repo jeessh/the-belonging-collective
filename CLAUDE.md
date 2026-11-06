@@ -368,8 +368,8 @@ can open.
   columns: every field on the left in `Group` sections (Description
   first, then Event details (date, time, where — the venue toggle beside its
   address / meeting link — cost and how people join, the paid details,
-  repeats), Event tags (topics, what it offers), Who it's for (who can
-  see this — no Spots available field any more; `capacity` already on an
+  who can see this, repeats), Event tags (topics, what it offers). No
+  Who it's for section and no Spots available field any more; `capacity` already on an
   event is carried through, so its one-hour holds and "N spots left" go on) — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
