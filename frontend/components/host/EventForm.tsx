@@ -1102,18 +1102,6 @@ export function EventForm({
             </Section>
           </Group>
           <Group title="Who it's for">
-            <div className="flex flex-wrap gap-4">
-              <TextField
-                label="Spots available (blank for no limit)"
-                className="min-w-[220px] flex-1"
-                type="number"
-                min={1}
-                value={values.capacity}
-                onChange={(e) => set("capacity", e.target.value)}
-                error={fieldError("capacity")}
-                placeholder="20"
-              />
-            </div>
             <Section
               title="Who can see this"
             >

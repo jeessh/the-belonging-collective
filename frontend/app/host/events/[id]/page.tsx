@@ -422,9 +422,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </Group>
 
           <Group title="Who it's for">
-            <ReadField label="Spots available">
-              {event.capacity != null ? String(event.capacity) : "No limit"}
-            </ReadField>
             <ReadField label="Who can see this">
               {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
             </ReadField>
