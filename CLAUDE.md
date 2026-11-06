@@ -184,7 +184,9 @@ can open.
   count (`_public_view` blanks it for anyone else). `saved_count` is
   otherwise sent to everyone, signed in or not (just a count, no names —
   the shared-list page too), and
-  `ui/GoingCount` shows "N going" — nothing at zero. There is no "See who
+  `ui/GoingCount` shows "N people saved this event" (bookmark icon; the
+  sidebar chip "N SAVED") — nothing at zero. Members and console say it
+  the same way; nothing says "going" any more. There is no "See who
   else is going" sign-in nudge any more, and sign-out keeps the counts.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
