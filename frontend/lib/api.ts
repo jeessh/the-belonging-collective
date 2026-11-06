@@ -77,6 +77,8 @@ export type EventLink = { label: string; url: string };
 
 export type Event = {
   id: string;
+  /** When it was posted (the console's cards say so). */
+  created_at?: string;
   host_id: string;
   host_name: string;
   host_logo_url?: string | null;

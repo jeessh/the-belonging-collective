@@ -2,7 +2,8 @@
 
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
-import { ArchiveX, ArrowRight, Pencil, Send, Users } from "lucide-react";
+import { ArchiveX, ArrowRight, CalendarPlus, Pencil, Send, Users } from "lucide-react";
+import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
@@ -106,6 +107,18 @@ export const AdminEventCard = memo(function AdminEventCard({
             tags are on the details page (View more). */}
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
           <PostedBy event={event} />
+          {event.created_at && (
+            <p className="flex items-center gap-3">
+              <CalendarPlus aria-hidden="true" className="info-icon size-6 shrink-0 text-fg-muted" />
+              Posted on{" "}
+              {new Date(event.created_at).toLocaleDateString("en-CA", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                timeZone: TIME_ZONE,
+              })}
+            </p>
+          )}
           <p className="flex items-center gap-3 text-fg">
             <Users aria-hidden="true" className="info-icon size-6 shrink-0 text-fg-muted" />
             {going} going

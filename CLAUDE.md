@@ -296,7 +296,8 @@ can open.
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
   the component sheet's "Admin – Listed Event" (square image, and beside it
-  only the title, `host/PostedBy` and "N going" — shown at zero too. No
+  only the title, `host/PostedBy`, "Posted on Oct 18, 2026" (`created_at`)
+  and "N going" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
   more. Every icon on the card is 16px at a 1.75 line, one rule on `.event-card`
   the round edit / share / un-publish (archive
