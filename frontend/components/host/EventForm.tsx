@@ -599,7 +599,17 @@ export function EventForm({
               {/* The event's name is the page title, and it's typed right
                   here: it reads as a heading, and shows it's editable on
                   hover and focus. */}
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-2">
+                {/* The box is as wide as the name (a hidden copy of the text
+                    sets the width), so the pencil and the status tag sit
+                    right beside it rather than at the far edge. */}
+                <span className="inline-grid min-w-0 max-w-full">
+                  <span
+                    aria-hidden="true"
+                    className="event-title invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent px-2 py-1 font-medium"
+                  >
+                    {(values.title || "Name of Event") + " "}
+                  </span>
                 <input
                   aria-label="Name of Event"
                   aria-required="true"
@@ -609,10 +619,11 @@ export function EventForm({
                   onChange={(e) => set("title", e.target.value)}
                   placeholder="Name of Event"
                   autoComplete="off"
-                  className={`event-title -ml-2 min-w-0 flex-1 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
+                  className={`event-title col-start-1 row-start-1 -ml-2 w-full min-w-0 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
                     fieldError("title") ? "border-danger-border" : "border-transparent"
                   }`}
                 />
+                </span>
                 {/* Creating, the pencil says the empty title takes typing;
                     editing, Save Edits sits right beside it and says enough. */}
                 {mode === "create" && (
@@ -636,12 +647,6 @@ export function EventForm({
         tabIndex={-1}
         className="flex flex-col gap-2 outline-none"
       >
-        {inSeries && (
-          <p className="text-base text-fg-muted">
-            Changes apply to this date and every later date in the series. The
-            date and time change for this date only.
-          </p>
-        )}
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
