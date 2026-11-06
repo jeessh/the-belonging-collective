@@ -89,9 +89,9 @@ export const AdminEventCard = memo(function AdminEventCard({
     <article
       id={`event-${event.id}`}
       aria-label={event.title}
-      className="event-card relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
+      className="event-card relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-[minmax(140px,30%)_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
     >
-      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
+      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-auto sm:h-full sm:min-h-[140px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={eventImage(event)}
