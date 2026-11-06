@@ -101,7 +101,7 @@ export const AdminEventCard = memo(function AdminEventCard({
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
-        <h3 className="text-xl font-medium leading-tight text-fg">{event.title}</h3>
+        <h3 className="text-2xl font-medium leading-tight text-fg">{event.title}</h3>
         {/* Just who posted it and how many are going — the date, place and
             tags are on the details page (View more). */}
         <div className="flex flex-col gap-2 text-lg text-fg-muted">
