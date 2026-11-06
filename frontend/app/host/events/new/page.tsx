@@ -72,8 +72,9 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   }
 
   return (
-    // Wider margins than other console pages: the form gets room to breathe.
-    <div className="flex flex-col sm:px-4 sm:py-2 lg:px-12 lg:py-4">
+    // Wider margins than other console pages, centred: the form (1200px at
+    // most) sits in the middle of the page.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <EventForm
         id={FORM_ID}
         mode="create"
