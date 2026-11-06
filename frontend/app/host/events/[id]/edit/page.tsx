@@ -9,6 +9,9 @@ import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
 import { EventStatus } from "@/components/host/EventStatus";
 import { eventImage } from "@/lib/eventImage";
+import { ArchiveX } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
 import {
   EventForm,
   payloadFrom,
@@ -37,6 +40,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [values, setValues] = useState<EventFormValues | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unpublishing, setUnpublishing] = useState(false);
   const { onBack, dialog } = useLeaveGuard(
     !!event &&
       !!values &&
@@ -128,9 +132,30 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           onBack,
           subtitle: <PostedBy event={event} />,
           status: <EventStatus state="published" />,
+          actions: (
+            <Button
+              variant="danger"
+              trailingIcon={<ArchiveX />}
+              disabled={busy}
+              onClick={() => setUnpublishing(true)}
+            >
+              Un-publish
+            </Button>
+          ),
         }}
       />
       {dialog}
+      {unpublishing && (
+        <UnpublishModal
+          event={event}
+          onClose={() => setUnpublishing(false)}
+          onDone={() => {
+            setUnpublishing(false);
+            unpublishedToast(show, event, () => router.push(`/host/events/${event.id}`));
+            router.push("/host/events");
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -368,8 +368,9 @@ can open.
   Description, Cost & sign-up, Who it's for — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
-  Cancel | Publish / Save (wide) close the fields column, sticky at the
-  window's foot; the header has no submit button.
+  The buttons are top right in the header: Cancel (through the leave
+  guard), Un-publish on edit (`UnpublishModal`, then back to the list with
+  the Undo toast), and the primary Publish / Save at the far right.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event

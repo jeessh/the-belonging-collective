@@ -595,7 +595,24 @@ export function EventForm({
           backLabel={header.backLabel}
           onBack={header.onBack}
           subtitle={header.subtitle}
-          actions={header.actions}
+          actions={
+            // Top right: Cancel, the page's own (Un-publish on edit), then
+            // the primary — Publish / Save — at the far right.
+            <>
+              <Link href={header.backHref} onClick={header.onBack} className={buttonClass("ghost")}>
+                Cancel
+              </Link>
+              {header.actions}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={submitting}
+                trailingIcon={<Upload />}
+              >
+                {submitting ? submittingLabel : submitLabel}
+              </Button>
+            </>
+          }
           title={
             <div className="flex flex-col gap-1">
               <h1 className="sr-only">
@@ -667,7 +684,7 @@ export function EventForm({
       {/* Two columns from lg, no boxes: every field on the left, in
           sections with a rule between them, and the picture on the right,
           large, staying in view as the form scrolls. One column below lg,
-          the picture first. Cancel / Publish close the fields column. */}
+          the picture first. The buttons are in the header, top right. */}
       <div className="grid max-w-[1200px] items-start gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-6 lg:order-2 lg:sticky lg:top-6">
           {/* No label over the picture: it speaks for itself. Its buttons
@@ -1096,24 +1113,6 @@ export function EventForm({
             </div>
           </Group>
 
-          <div className="sticky bottom-4 z-30 flex items-center gap-3 rounded-card bg-surface/95 py-2 backdrop-blur">
-            <Link
-              href={header.backHref}
-              onClick={header.onBack}
-              className={buttonClass("secondary")}
-            >
-              Cancel
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              className="flex-1"
-              disabled={submitting}
-              trailingIcon={<Upload />}
-            >
-              {submitting ? submittingLabel : submitLabel}
-            </Button>
-          </div>
         </div>
       </div>
       {topicsOpen && (
