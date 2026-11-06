@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
@@ -747,14 +748,17 @@ export function EventForm({
                 }
               />
               {linkRows < LINKS_MAX && (
-                <Button
-                  className="shrink-0"
-                  leadingIcon={<Plus />}
-                  aria-label={`Add a link (${LINKS_MAX - linkRows} of ${LINKS_MAX} left)`}
-                  onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
-                >
-                  Add a link
-                </Button>
+                <Tooltip text={`Add a link (${LINKS_MAX - linkRows} of ${LINKS_MAX} left)`} align="end">
+                  {(tip) => (
+                    <Button
+                      className="shrink-0"
+                      leadingIcon={<Plus />}
+                      aria-label="Add a link"
+                      aria-describedby={tip}
+                      onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
+                    />
+                  )}
+                </Tooltip>
               )}
               </div>
               {/* A caution, not a refusal: some agencies really do have one
