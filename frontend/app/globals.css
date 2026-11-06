@@ -318,7 +318,7 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .console .form-dense :is(h2 span, h3) { font-size: 16px; }
 .console .form-dense .gap-5 { gap: 16px; }
 
-/* A group's heading ("Description", "Cost & sign-up", …) is 16px wherever
+/* A group's heading ("Description", "Cost & sign-up", …) is 20px wherever
    the group is drawn — the event form and the details page that mirrors it.
    Without this the form's own rule made it 20px there and the general
    text-xl remap 16px on the details page. */
