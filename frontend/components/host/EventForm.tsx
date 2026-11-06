@@ -288,7 +288,7 @@ export function missingRequired(
   // Only new programs: older ones were posted before an image was required,
   // and refusing every edit to them until one is found helps nobody.
   if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
-  if (v.categories.length === 0) need("categories", "a topic");
+  if (v.categories.length === 0) need("categories", "a topic", "Pick at least one topic.");
   if (v.links.some((l) => !!l.label.trim() !== !!l.url.trim()))
     need("links", "both a label and an address for each link");
   if (v.links.some((l) => checkPostingLink(l.url)?.tone === "error"))
@@ -494,14 +494,7 @@ export function EventForm({
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
   const problems = missingRequired(values, mode);
-  // Topics are chosen in the dialog Publish / Save opens, so the summary
-  // over the form never asks for one.
-  const formProblems = problems.filter((p) => p.field !== "categories");
-  const missing = formProblems.map((p) => p.text);
-  // The topics dialog: opened by Publish / Save once everything else is in.
-  const [topicsOpen, setTopicsOpen] = useState(false);
-  // 1 = topics, 2 = what it offers.
-  const [publishStep, setPublishStep] = useState<1 | 2>(1);
+  const missing = problems.map((p) => p.text);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
     showMissing
@@ -574,7 +567,7 @@ export function EventForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (formProblems.length) {
+        if (problems.length) {
           setShowMissing(true);
           // The summary names everything still needed; take people to it.
           requestAnimationFrame(() => {
@@ -583,11 +576,7 @@ export function EventForm({
           });
           return;
         }
-        // Everything else is in: ask what it's about, then publish / save.
-        if (!submitting) {
-          setPublishStep(1);
-          setTopicsOpen(true);
-        }
+        if (!submitting) onSubmit();
       }}
     >
       <div className="mb-4">
@@ -918,51 +907,6 @@ export function EventForm({
                 />
               )}
             </div>
-            {mode === "create" && (
-              <Section title="Repeats">
-                <div className="flex flex-wrap items-end gap-4">
-                  {/* The section's "Repeats" is its label; no second one. */}
-                  <Select
-                    aria-label="Repeats"
-                    className="min-w-[200px]"
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {values.frequency !== "once" && !values.repeatForever && (
-                    <TextField
-                      label="How many times"
-                      required
-                      className="min-w-[170px]"
-                      type="number"
-                      min={2}
-                      max={104}
-                      value={values.occurrenceCount}
-                      onChange={(e) => set("occurrenceCount", e.target.value)}
-                      error={fieldError("occurrenceCount")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.frequency !== "once" && (
-                    // A drop-in that has run every Friday for nine years has no
-                    // session count to give.
-                    <Checkbox
-                      label="It keeps going"
-                      className="min-h-12"
-                      checked={values.repeatForever}
-                      onChange={(e) => set("repeatForever", e.target.checked)}
-                    />
-                  )}
-                </div>
-              </Section>
-            )}
-          </Group>
-          <Group title="Event tags">
             {/* Cost and how people join, side by side; the paid details
                 go under the row. */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1078,6 +1022,82 @@ export function EventForm({
                 </div>
               </Section>
             )}
+            {mode === "create" && (
+              <Section title="Repeats">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* The section's "Repeats" is its label; no second one. */}
+                  <Select
+                    aria-label="Repeats"
+                    className="min-w-[200px]"
+                    value={values.frequency}
+                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {values.frequency !== "once" && !values.repeatForever && (
+                    <TextField
+                      label="How many times"
+                      required
+                      className="min-w-[170px]"
+                      type="number"
+                      min={2}
+                      max={104}
+                      value={values.occurrenceCount}
+                      onChange={(e) => set("occurrenceCount", e.target.value)}
+                      error={fieldError("occurrenceCount")}
+                      placeholder="8"
+                    />
+                  )}
+                  {values.frequency !== "once" && (
+                    // A drop-in that has run every Friday for nine years has no
+                    // session count to give.
+                    <Checkbox
+                      label="It keeps going"
+                      className="min-h-12"
+                      checked={values.repeatForever}
+                      onChange={(e) => set("repeatForever", e.target.checked)}
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
+          </Group>
+          <Group title="Event tags">
+            <Section title="Topics" required>
+              <div role="group" aria-label="Topics" className="flex flex-wrap gap-2">
+                {categories.map((c) => (
+                  <FilterChip
+                    key={c.slug}
+                    selected={values.categories.includes(c.slug)}
+                    onClick={() => toggle("categories", c.slug)}
+                  >
+                    <Glyph icon={categoryStyle(c.slug).icon} />
+                    &nbsp;{c.label}
+                  </FilterChip>
+                ))}
+              </div>
+              {fieldError("categories") && (
+                <p className="text-base text-danger-fg">{fieldError("categories")}</p>
+              )}
+            </Section>
+            <Section title="What does it offer?">
+              <div role="group" aria-label="What it offers" className="flex flex-wrap gap-2">
+                {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
+                  <FilterChip
+                    key={slug}
+                    selected={values.accessibilityTags.includes(slug)}
+                    onClick={() => toggle("accessibilityTags", slug)}
+                  >
+                    <Glyph icon={icon} />
+                    &nbsp;{label}
+                  </FilterChip>
+                ))}
+              </div>
+            </Section>
           </Group>
           <Group title="Who it's for">
             <div className="flex flex-wrap gap-4">
@@ -1108,88 +1128,6 @@ export function EventForm({
 
         </div>
       </div>
-      {topicsOpen && (
-        <Modal
-          title={
-            publishStep === 1
-              ? "What's this event about?"
-              : "What does it offer?"
-          }
-          subtitle={
-            publishStep === 1
-              ? "Step 1 of 2. Pick one or more topics. Members choose these as interests, so this is how the right people find it."
-              : "Step 2 of 2. Pick anything that applies, or none. Members with these needs see it sooner."
-          }
-          onClose={() => setTopicsOpen(false)}
-        >
-          {publishStep === 1 ? (
-            <div
-              role="group"
-              aria-label="Topics"
-              className="form-dense mt-6 flex flex-wrap gap-2"
-            >
-              {categories.map((c) => (
-                <FilterChip
-                  key={c.slug}
-                  selected={values.categories.includes(c.slug)}
-                  onClick={() => toggle("categories", c.slug)}
-                >
-                  <Glyph icon={categoryStyle(c.slug).icon} />
-                  &nbsp;{c.label}
-                </FilterChip>
-              ))}
-            </div>
-          ) : (
-            <div
-              role="group"
-              aria-label="What it offers"
-              className="form-dense mt-6 flex flex-wrap gap-2"
-            >
-              {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
-                <FilterChip
-                  key={slug}
-                  selected={values.accessibilityTags.includes(slug)}
-                  onClick={() => toggle("accessibilityTags", slug)}
-                >
-                  <Glyph icon={icon} />
-                  &nbsp;{label}
-                </FilterChip>
-              ))}
-            </div>
-          )}
-          <div className="mt-8 flex flex-wrap justify-end gap-3">
-            {publishStep === 1 ? (
-              <>
-                <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
-                <Button
-                  variant="primary"
-                  disabled={values.categories.length === 0}
-                  onClick={() => setPublishStep(2)}
-                >
-                  Next
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={() => setPublishStep(1)} disabled={submitting}>
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  disabled={submitting}
-                  trailingIcon={<Upload />}
-                  onClick={() => {
-                    setTopicsOpen(false);
-                    onSubmit();
-                  }}
-                >
-                  {submitting ? submittingLabel : submitLabel}
-                </Button>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
     </form>
   );
 }

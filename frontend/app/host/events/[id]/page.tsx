@@ -387,28 +387,30 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               )}
             </ReadField>
           </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
+            <ReadField label="How people join">
+              {event.requires_signup ? "Registration" : "Drop-in"}
+            </ReadField>
+          </div>
+          {!event.is_free && (
+            <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
+          )}
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
           </Group>
 
           <Group title="Event tags">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
-              <ReadField label="How people join">
-                {event.requires_signup ? "Registration" : "Drop-in"}
-              </ReadField>
-            </div>
-            {!event.is_free && (
-              <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
-            )}
-          </Group>
-
-          <Group title="Who it's for">
-            <ReadField label="Spots available">
-              {event.capacity != null ? String(event.capacity) : "No limit"}
-            </ReadField>
-            <ReadField label="Who can see this">
-              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+            <ReadField label="Topics">
+              <IconList
+                items={(event.categories?.length ? event.categories : [event.category])
+                  .filter((slug): slug is string => !!slug)
+                  .map((slug) => ({
+                    key: slug,
+                    icon: categoryStyle(slug).icon,
+                    label: topicLabel(slug),
+                  }))}
+              />
             </ReadField>
             <ReadField label="What does it offer?">
               <IconList
@@ -419,16 +421,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             </ReadField>
           </Group>
 
-          <Group title="Topics">
-            <IconList
-              items={(event.categories?.length ? event.categories : [event.category])
-                .filter((slug): slug is string => !!slug)
-                .map((slug) => ({
-                  key: slug,
-                  icon: categoryStyle(slug).icon,
-                  label: topicLabel(slug),
-                }))}
-            />
+          <Group title="Who it's for">
+            <ReadField label="Spots available">
+              {event.capacity != null ? String(event.capacity) : "No limit"}
+            </ReadField>
+            <ReadField label="Who can see this">
+              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+            </ReadField>
           </Group>
 
         </div>

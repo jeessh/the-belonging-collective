@@ -367,8 +367,9 @@ can open.
   From `lg` the create / edit form and the details page are two equal
   columns: every field on the left in `Group` sections (Description
   first, then Event details (date, time, where — the venue toggle beside its
-  address / meeting link — and repeats), Event tags (cost, how people
-  join), Who it's for — a rule above each), the
+  address / meeting link — cost and how people join, the paid details,
+  repeats), Event tags (topics, what it offers), Who it's for (spots,
+  who can see this) — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
   The buttons are top right in the header: Cancel (through the leave
@@ -381,11 +382,9 @@ can open.
   on one row: "Address", required, or "Meeting link", optional — both are
   `events.location`; `lib/place.ts` shows a link as "Online" on every card
   and as "Join online" on the event page), and repeats; on the right `Group`s for Description, Cost & sign-up and Who
-  it's for. **Topics are not on the form**: Publish / Save checks every
-  other field first, then opens a two-step dialog: "What's this event
-  about?" (the topic chips, already picked on edit; Next waits for one,
-  Keep editing closes it), then "What does it offer?" (the access-need
-  chips, optional; Back | Publish / Save). Neither is on the form. **There is no Details & links group** — the form has
+  it's for. **Topics and "What does it offer?" are the Event tags section** (topic
+  chips, required — "Pick at least one topic."; then the access-need
+  chips); Publish / Save submits straight away, no dialog. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
   carries them through unchanged). Cost & sign-up opens with Cost and How people join
