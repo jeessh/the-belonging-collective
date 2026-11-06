@@ -839,7 +839,7 @@ export function EventForm({
               }
             >
               <TextArea
-                rows={3}
+                rows={6}
                 maxLength={DESCRIPTION_MAX}
                 value={values.description}
                 onChange={(e) => set("description", e.target.value)}
