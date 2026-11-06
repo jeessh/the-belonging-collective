@@ -27,7 +27,7 @@ import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/Ad
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConsoleCounts } from "@/components/host/ConsoleCounts";
 import { Glyph } from "@/components/ui/Glyph";
-import { Group } from "@/components/host/EventForm";
+import { CARD, Group } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
 import { eventUrl } from "@/components/CopyLinkButton";
 import { copyText } from "@/lib/clipboard";
@@ -306,7 +306,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // what an empty one means ("None", "No limit", "Any age").
         className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       >
-        <div className="flex min-w-0 flex-col gap-4">
+        <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           {/* The form's frame: 300px tall, full width, cropped to fill — no
               label over it, as on the form. */}
@@ -347,7 +347,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           </div>
           <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
-        </div>
+        </section>
 
         <div className="flex min-w-0 flex-col gap-6">
           <Group title="Description">

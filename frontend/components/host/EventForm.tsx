@@ -7,6 +7,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -24,7 +25,7 @@ import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
@@ -415,11 +416,14 @@ function Section({
 
 /** One titled part of the form (and of the details page, which mirrors it):
     a heading over its fields, a faint rule above. */
+/** A white card with a hairline edge and a soft shadow: each part of the
+    event form and of the details page sits in one. */
+export const CARD =
+  "rounded-card border border-line/70 bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_6px_20px_rgba(0,0,0,0.04)] sm:p-6";
+
 export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    // A faint rule between groups: it separates without competing with the
-    // fields.
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line/40 pt-5 first:border-t-0 first:pt-0">
+    <section className={`${CARD} flex min-w-0 flex-col gap-4`}>
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -663,7 +667,8 @@ export function EventForm({
           everything that describes it on the right. One column, in that
           order, below lg. */}
       <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className={`${CARD} flex min-w-0 flex-col gap-5`}>
           <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
           {/* No label over the picture: it speaks for itself. Its buttons
               still say "Event image" to a screen reader, and a missing one
@@ -812,6 +817,8 @@ export function EventForm({
               </div>
             </Section>
           )}
+          </section>
+          <EventTips />
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
@@ -1106,17 +1113,26 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="flex max-w-[1200px] flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="max-sm:w-full"
-          disabled={submitting}
-          trailingIcon={<Upload />}
-        >
-          {submitting ? submittingLabel : submitLabel}
-        </Button>
+      {/* The action bar floats at the foot of the window while the form
+          scrolls under it: Cancel on the left, Publish / Save on the right. */}
+      <div className="sticky bottom-4 z-30 max-w-[1200px]">
+        <div className="flex items-center justify-between gap-3 rounded-card border border-line/70 bg-surface/95 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur sm:px-6">
+          <Link
+            href={header.backHref}
+            onClick={header.onBack}
+            className={buttonClass("ghost")}
+          >
+            Cancel
+          </Link>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={submitting}
+            trailingIcon={<Upload />}
+          >
+            {submitting ? submittingLabel : submitLabel}
+          </Button>
+        </div>
       </div>
       {topicsOpen && (
         <Modal
@@ -1201,5 +1217,34 @@ export function EventForm({
         </Modal>
       )}
     </form>
+  );
+}
+
+/** "Tips for a great event", under the picture on create and edit: what
+    makes a listing members can act on. */
+function EventTips() {
+  const tips = [
+    ["Be descriptive", "A clear name tells people at a glance what the event is."],
+    [
+      "Say what to expect",
+      "Start with what happens, then the details: where to go, what to bring, who it suits.",
+    ],
+    [
+      "Mention the support",
+      "Ramps, quiet spaces, ASL, a support person welcome — members filter by these.",
+    ],
+  ] as const;
+  return (
+    <aside aria-labelledby="event-tips" className={`${CARD} flex flex-col gap-4 bg-surface-subtle/60`}>
+      <h2 id="event-tips" className="text-base font-medium uppercase tracking-wide text-fg-muted">
+        Tips for a great event
+      </h2>
+      {tips.map(([title, text]) => (
+        <div key={title} className="flex flex-col gap-1">
+          <p className="text-base font-medium text-fg">{title}</p>
+          <p className="text-base text-fg-muted">{text}</p>
+        </div>
+      ))}
+    </aside>
   );
 }

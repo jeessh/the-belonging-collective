@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
@@ -128,17 +126,6 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           onBack,
           subtitle: <PostedBy event={event} />,
           status: <EventStatus state="published" />,
-          actions: (
-            <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
-              disabled={busy}
-              trailingIcon={<Upload />}
-            >
-              {busy ? "Saving…" : "Save Edits"}
-            </Button>
-          ),
         }}
       />
       {dialog}
