@@ -305,9 +305,9 @@ can open.
   the round edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
-  does, and **View more →** at the bottom right, and the **whole card** opens the details page too (the title
-  link's `::after` covers the card; the tools and View more sit above it on
-  `z-10`), with a hover state — darker edge, faint fill, soft shadow).
+  does, and **View more →** at the bottom right, and the **whole card** opens the details page — there is no View
+  more button (the title link's `::after` covers the card; the tools sit
+  above it on `z-10`), with a hover state — darker edge, faint fill, soft shadow).
   `/host/events` is centred, 1200px of content at most, wide margins. `ui/Tooltip` shows on
   hover and keyboard focus, is the control's `aria-describedby`, and closes
   on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion

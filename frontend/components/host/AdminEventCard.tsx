@@ -2,14 +2,13 @@
 
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
-import { ArchiveX, ArrowRight, CalendarPlus, Pencil, Send, Users } from "lucide-react";
+import { ArchiveX, CalendarPlus, Pencil, Send, Users } from "lucide-react";
 import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { eventImage } from "@/lib/eventImage";
 import { useToast } from "@/components/ui/Toast";
 import { PostedBy } from "@/components/host/PostedBy";
-import { buttonClass } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { eventUrl } from "@/components/CopyLinkButton";
 
@@ -135,21 +134,12 @@ export const AdminEventCard = memo(function AdminEventCard({
         </div>
       </div>
 
-      {/* The tools at the top right and View more at the bottom right; on a
-          phone the tools sit over the picture's corner and View more takes
-          the card's last row, so the words keep the whole width. */}
-      <div className="relative z-10 flex flex-col items-end justify-between gap-4 max-sm:contents">
+      {/* The tools at the top right (over the picture's corner on a
+          phone); the card itself is the way to the details page. */}
+      <div className="relative z-10 flex flex-col items-end max-sm:contents">
         <div className="z-10 max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
           {tools}
         </div>
-        <Link
-          href={`/host/events/${event.id}`}
-          aria-label={`View more about ${event.title}`}
-          className={buttonClass("secondary", "md", "relative z-10 max-sm:col-span-2 max-sm:w-full")}
-        >
-          View more
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
       </div>
     </article>
   );
