@@ -374,7 +374,7 @@ def _rows(out, from_: date, to: date) -> list[list]:
             "First date",
             "Organization",
             "Saves",
-            "Currently going",
+            "Currently saved",
             "Registration-link clicks",
             "Status",
         ],
