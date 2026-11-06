@@ -302,7 +302,7 @@ can open.
   and "N going" — shown at zero too. No
   date, place, tags, ages or spots: those are on the details page, View
   more. Its icons follow the console's one icon rule (below)
-  the round edit / share / un-publish (archive
+  the square (8px-cornered) edit / share / un-publish (archive
   icon, never a trash can: nothing is deleted) tools at the top right — over
   the picture's corner on a phone — each with a `ui/Tooltip` saying what it
   does, and **View more →** at the bottom right, and the **whole card** opens the details page — there is no View
@@ -464,7 +464,7 @@ can open.
   `rounded-sm` … `rounded-3xl` and the named `control` / `field` / `card`
   radii all to 8px, and the branded emails (`core/mail.py`) match.
   `rounded-full` stays round (avatars, the round tool buttons, badges,
-  pills); the browser-tab icon keeps its own shape.
+  pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
 - **One back control everywhere: `ui/BackButton`** — an arrow and its
   words ("← Back to events", "← Back"), a link or a button, on its own line
   **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).

@@ -137,7 +137,7 @@ export const AdminEventCard = memo(function AdminEventCard({
       {/* The tools at the top right (over the picture's corner on a
           phone); the card itself is the way to the details page. */}
       <div className="relative z-10 flex flex-col items-end max-sm:contents">
-        <div className="z-10 max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-full max-sm:bg-surface/90 max-sm:p-1">
+        <div className="z-10 max-sm:absolute max-sm:right-6 max-sm:top-6 max-sm:rounded-control max-sm:bg-surface/90 max-sm:p-1">
           {tools}
         </div>
       </div>
@@ -145,9 +145,9 @@ export const AdminEventCard = memo(function AdminEventCard({
   );
 });
 
-// The sheet's small round tool button (36px in the console's scale).
+// The small square tool button (36px in the console's scale, 8px corners).
 const TOOL =
-  "grid size-11 shrink-0 place-items-center rounded-full bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
+  "grid size-11 shrink-0 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
 
 function Tool({
   label,
