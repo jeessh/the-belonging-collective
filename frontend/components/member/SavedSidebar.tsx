@@ -250,7 +250,10 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 transition-opacity ${
+                        // No side padding, and -1px over the (transparent)
+                        // drop-zone edge: the items start where the "Saved
+                        // Events" heading does.
+                        className={`-mx-px flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-4 transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
