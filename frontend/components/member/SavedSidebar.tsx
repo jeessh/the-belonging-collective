@@ -478,19 +478,20 @@ function Thumb({
     <button
       type="button"
       onClick={() => onOpen(event)}
-      className="group flex w-full shrink-0 flex-col gap-2 rounded-control text-left"
+      // The thumbnail on the left, the title (24px) and date beside it.
+      className="group flex w-full shrink-0 items-start gap-4 rounded-control text-left"
     >
       <span
         aria-hidden="true"
-        className="relative block h-[150px] w-full overflow-hidden rounded-control bg-surface-subtle"
+        className="relative block size-20 shrink-0 overflow-hidden rounded-control bg-surface-subtle"
       >
         {img}
       </span>
-      <span className="flex flex-col items-start gap-1">
-        <span className="text-lg font-medium leading-snug text-fg">
+      <span className="flex min-w-0 flex-col items-start gap-1">
+        <span className="line-clamp-3 text-2xl font-medium leading-tight text-fg">
           {event.title}
         </span>
-        <span className="text-base text-fg-muted">
+        <span className="text-lg text-fg-muted">
           {longDate(event.starts_at) || "Date to be announced"}
         </span>
       </span>
