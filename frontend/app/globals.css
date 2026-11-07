@@ -170,16 +170,10 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
   .scroll-fade-x::-webkit-scrollbar {
     display: none;
   }
-  /* Whiteboard, for the saved panel: an off-white enamel with the faintest
-     sheen across it and a soft shadow where it meets its metal frame. */
+  /* Whiteboard, for the saved panel: a flat off-white enamel with a soft
+     shadow where it meets its metal frame. */
   .whiteboard {
     background-color: #f7f8f9;
-    background-image: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 255, 255, 0) 35%,
-      rgba(225, 230, 236, 0.35) 100%
-    );
     box-shadow: inset 0 1px 6px rgba(40, 50, 60, 0.12);
   }
   /* Scrolls, but draws no scrollbar (the saved panel's board). */
