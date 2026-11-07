@@ -34,8 +34,8 @@ export type AvatarChoice = {
 };
 
 /** Who you are and whose list saves go into: the account button and, for a
-    caregiver with linked members, "Saving for". Centred at the bottom of
-    the event column (there is no top bar), so both menus open upward. */
+    caregiver with linked members, "Saving for". On the left of the bar over
+    the event column. */
 export function FeedAccount({
   name,
   avatar,
@@ -60,7 +60,7 @@ export function FeedAccount({
         onSignIn={onSignIn}
         onSignOut={onSignOut}
       />
-      {care && care.members.length > 0 && <CareSwitcher {...care} openUp />}
+      {care && care.members.length > 0 && <CareSwitcher {...care} />}
     </div>
   );
 }
@@ -250,7 +250,7 @@ function AccountButton({
         <div
           role="menu"
           aria-label="Account"
-          className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
+          className="absolute left-0 top-full z-50 mt-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
         >
           <Link
             role="menuitem"

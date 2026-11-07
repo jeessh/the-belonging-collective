@@ -126,14 +126,12 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
-- **There is no top bar.** The saved panel runs the full height; the
-  feed's Accessibility Tools menu sits beside the Card / List toggle
-  (`a11yMenu` in EventsView), and the account button and "Saving for"
-  (`FeedAccount` in `member/FeedHeader.tsx`) sit centred in a row at the
-  bottom of the event column, their menus opening upward — except that
-  while the saved panel is open (`careInPanel`), "Saving for"
-  (`CareSwitcher`) sits right under the panel's heading and Close button
-  instead, opening downward.
+- **The bar spans the event column only; the saved panel runs the full
+  height.** The bar (in EventsView) has the account button (`FeedAccount`
+  in `member/FeedHeader.tsx`) on the left and Accessibility Tools
+  (`a11yMenu`) on the right. "Saving for" (`CareSwitcher`) sits beside the
+  account — except while the saved panel is open (`careInPanel`), when it
+  sits under the panel's heading and Close button, the board's full width.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the

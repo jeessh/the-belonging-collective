@@ -1152,10 +1152,10 @@ export function EventsView({
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
   // "Saving for" sits under the saved panel's heading while it is open;
-  // folded, on a phone or on All Saved Events it joins the account row.
+  // folded, on a phone or on All Saved Events it sits beside the account.
   const careInPanel = !phone && view !== "saved" && sidebarOpen;
 
-  // Accessibility Tools, beside the Card / List toggle.
+  // Accessibility Tools, on the right of the bar over the event column.
   const a11yMenu = (
     <AccessibilityMenu
         open={a11yOpen}
@@ -1263,6 +1263,18 @@ export function EventsView({
         )}
 
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* The bar over the event column: who you are on the left,
+              Accessibility Tools on the right. */}
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9">
+            <FeedAccount
+              name={name}
+              avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+              care={careInPanel ? null : careChoice}
+              onSignIn={() => toSignIn()}
+              onSignOut={() => void doLogout()}
+            />
+            {a11yMenu}
+          </header>
           <div className="relative flex min-h-0 flex-1 flex-col">
           {/* The saved list opens over the main column, which has the whole
               width while it is up. */}
@@ -1321,8 +1333,6 @@ export function EventsView({
                     heading
                   )}
                 </h1>
-                <div className="flex items-center gap-3">
-                {a11yMenu}
                 <div data-tour="view">
                   <SegmentedToggle
                     label="View"
@@ -1332,7 +1342,6 @@ export function EventsView({
                     value={viewMode}
                     onChange={changeView}
                   />
-                </div>
                 </div>
               </div>
 
@@ -1571,16 +1580,6 @@ export function EventsView({
                 </div>
               </div>
             )}
-          </div>
-          {/* Who you are and "Saving for", centred under the events. */}
-          <div className="flex shrink-0 justify-center border-t border-line bg-surface px-4 py-3">
-            <FeedAccount
-              name={name}
-              avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-              care={careInPanel ? null : careChoice}
-              onSignIn={() => toSignIn()}
-              onSignOut={() => void doLogout()}
-            />
           </div>
           </div>
         </section>
