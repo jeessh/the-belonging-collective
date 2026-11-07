@@ -1412,6 +1412,7 @@ export function EventsView({
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
+                dropTarget={dropRef}
               />
             ) : !current ? (
               <p className="py-16 text-center text-2xl text-fg-muted">

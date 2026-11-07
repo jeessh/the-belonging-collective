@@ -1,6 +1,8 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import {
   Bookmark,
   BookX,
@@ -25,6 +27,12 @@ import { Modal } from "@/components/Modal";
 import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import {
+  BOARD_CARD_W,
+  MINI_CARD,
+  MiniCardFace,
+  SHADOW_HELD,
+} from "@/components/member/SavedSidebar";
+import {
   FilterPanel,
   NO_HOST_FILTERS,
   applyHostFilters,
@@ -48,6 +56,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onSave,
   onUnsave,
   onRegister,
+  dropTarget,
 }: {
   events: Event[];
   saved: Set<string>;
@@ -56,6 +65,8 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onUnsave: (event: Event) => void;
   /** An event that needs registering: ask to confirm, then register. */
   onRegister: (event: Event) => void;
+  /** The saved panel: dropping a dragged card on it saves the event. */
+  dropTarget: RefObject<HTMLDivElement>;
 }) {
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [query, setQuery] = useState("");
@@ -113,6 +124,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
                 onSave={() => onSave(ev)}
                 onUnsave={() => onUnsave(ev)}
                 onRegister={() => onRegister(ev)}
+                dropTarget={dropTarget}
               />
             ))}
           </div>
@@ -146,6 +158,7 @@ function MemberEventCard({
   onSave,
   onUnsave,
   onRegister,
+  dropTarget,
 }: {
   event: Event;
   saved: boolean;
@@ -153,20 +166,58 @@ function MemberEventCard({
   onSave: () => void;
   onUnsave: () => void;
   onRegister: () => void;
+  dropTarget: RefObject<HTMLDivElement>;
 }) {
   const when = whenLine(event);
   const [sharing, setSharing] = useState(false);
 
+  // Drag the card onto the saved panel to save it, as in card view: a mini
+  // card follows the pointer while the card itself stays put (the list
+  // scrolls, so it would be clipped at the column's edge) and springs back.
+  // Not on a phone, where a finger on the list is scrolling.
+  const canDragQuery = useMediaQuery("(min-width: 640px)");
+  const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+  const dragged = useRef(false);
+
   // A special-access program needs approval before it can be saved; its
   // details say how to ask.
   const canSave = !event.access_group || event.access_status === "approved";
+  const draggable = canDragQuery && canSave && !saved;
+  const clientPoint = (e: MouseEvent | TouchEvent | PointerEvent) =>
+    "clientX" in e
+      ? { x: e.clientX, y: e.clientY }
+      : { x: e.changedTouches[0]?.clientX ?? 0, y: e.changedTouches[0]?.clientY ?? 0 };
   const tool =
     "grid size-11 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
 
   return (
-    <article
+    <motion.article
       aria-label={event.title}
-      className="relative grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5"
+      drag={draggable}
+      dragSnapToOrigin
+      dragElastic={0.15}
+      dragMomentum={false}
+      whileDrag={{ opacity: 0.45 }}
+      onDragStart={() => {
+        dragged.current = true;
+      }}
+      onDrag={(e) => setGhost(clientPoint(e))}
+      onDragEnd={(e) => {
+        const p = clientPoint(e);
+        setGhost(null);
+        const zone = dropTarget.current?.getBoundingClientRect();
+        const over =
+          !!zone && p.x >= zone.left && p.x <= zone.right && p.y >= zone.top && p.y <= zone.bottom;
+        if (over) {
+          if (event.requires_signup) onRegister();
+          else onSave();
+        }
+        // The click that ends a drag mustn't also open the details.
+        setTimeout(() => {
+          dragged.current = false;
+        }, 0);
+      }}
+      className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5`}
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -185,7 +236,9 @@ function MemberEventCard({
               the card; the icons and Save sit above it. */}
           <button
             type="button"
-            onClick={onOpen}
+            onClick={() => {
+              if (!dragged.current) onOpen();
+            }}
             className="text-left after:absolute after:inset-0 after:rounded-card after:content-['']"
           >
             {event.title}
@@ -210,7 +263,10 @@ function MemberEventCard({
         </div>
       </div>
 
-      <div className="relative z-10 col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-between">
+      <div
+        onPointerDownCapture={(e) => e.stopPropagation()}
+        className="relative z-10 col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-between"
+      >
         {/* Share and Google Calendar as icons, each saying what it does in
             a tooltip, then Save. */}
         <div className="flex items-center gap-2 max-sm:order-2">
@@ -269,6 +325,25 @@ function MemberEventCard({
           ))}
       </div>
 
+      {ghost &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              left: ghost.x - BOARD_CARD_W / 2,
+              top: ghost.y - 60,
+              width: BOARD_CARD_W,
+              zIndex: 60,
+              rotate: "-2deg",
+              boxShadow: SHADOW_HELD,
+            }}
+            className={`pointer-events-none ${MINI_CARD}`}
+          >
+            <MiniCardFace event={event} />
+          </div>,
+          document.body,
+        )}
       {sharing && (
         <ShareModal
           title="Share this event?"
@@ -277,6 +352,6 @@ function MemberEventCard({
           onClose={() => setSharing(false)}
         />
       )}
-    </article>
+    </motion.article>
   );
 }
