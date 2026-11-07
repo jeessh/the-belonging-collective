@@ -213,14 +213,17 @@ export const SavedSidebar = memo(
             exit={{ opacity: 0 }}
             transition={ease}
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-            className={`absolute inset-y-0 left-0 flex flex-col ${open ? "gap-6 pt-6" : ""}`}
+            // Open, the whole panel is the cork board, in a wooden frame.
+            className={`absolute inset-y-0 left-0 flex flex-col ${
+              open ? "cork gap-6 border-[6px] border-[#8a5a30] pt-6" : ""
+            }`}
           >
             {open ? (
               <>
                 <div className="flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
                     <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
-                    <p className="truncate text-xl text-fg-muted">
+                    <p className="truncate text-xl text-fg">
                       {owner ? `For ${owner} · ` : ""}
                       {countLabel}
                     </p>
@@ -242,32 +245,29 @@ export const SavedSidebar = memo(
                     ref={attachDrop}
                     // No tint while a card is dragged over: the card itself
                     // shrinks into a mini card on its way in (EventsView).
-                    className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
-                      events.length === 0
-                          ? "border-fg-muted bg-surface"
-                          : // The dashed outline only marks the empty drop zone; once
-                            // there are saved events the list stands on its own. The
-                            // border stays (transparent) so nothing shifts on drag.
-                            "border-transparent bg-surface"
+                    // The dashed outline only marks the empty drop zone; the
+                    // border stays (transparent) so nothing shifts.
+                    className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border-2 border-dashed ${
+                      events.length === 0 ? "border-fg/50" : "border-transparent"
                     }`}
                   >
                     {events.length > 0 && (
                       <div
-                        className="cork no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-card border-[6px] border-[#8a5a30]"
+                        className="no-scrollbar -mx-px min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
                       >
                         <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
                       </div>
                     )}
                     {events.length === 0 && (
                       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-                        <CirclePlus aria-hidden="true" className="size-10 text-fg-muted" />
-                        <p className="text-xl text-fg-muted">Saved Events go Here</p>
+                        <CirclePlus aria-hidden="true" className="size-10 text-fg" />
+                        <p className="text-xl text-fg">Saved Events go Here</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-line px-6 py-4">
+                <div className="flex flex-col gap-4 border-t border-[#8a5a30]/40 px-6 py-4">
                   <Button
                     variant="secondary"
                     size="lg"
