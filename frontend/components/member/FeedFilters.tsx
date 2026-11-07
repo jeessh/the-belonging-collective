@@ -185,6 +185,11 @@ export const FeedFilters = memo(function FeedFilters({
           onScroll={update}
           className="-my-1.5 flex min-w-0 flex-1 gap-3 overflow-x-auto scroll-fade-x py-1.5 pr-12 max-sm:-mx-4 max-sm:scroll-px-4 max-sm:pl-4 lg:gap-[19px]"
         >
+          {/* "All": selected while nothing narrows the feed; pressing it
+              clears every chip. */}
+          <FilterChip selected={chips.size === 0} onClick={onClearChips}>
+            All
+          </FilterChip>
           {all.map(({ key, label }) => {
             const on = chips.has(key);
             return (
