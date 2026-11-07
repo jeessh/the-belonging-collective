@@ -163,11 +163,14 @@ can open.
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
 - **Card view has a 48px cursor** (`.big-cursor` in globals.css, put on
-  the feed column while `viewMode === "card"`): just the ordinary arrow,
-  twice the size, everywhere in the column — no hand or grab states; text
-  boxes keep the text cursor. A 48px PNG with a 96px Retina copy through
-  `image-set` (`public/cursors`, drawn by `frontend/scripts/make-cursors.py`,
-  Pillow); SVG cursors blur.
+  the feed column while `viewMode === "card"`): the usual cursors at twice
+  the size — arrow, a pointing hand over anything clickable, an open hand
+  over the draggable card and a closed one while it's held (`.card-grab`,
+  `.is-grabbing` while lifted); text boxes keep the text cursor. The hands
+  are Lucide's pointer / hand / hand-grab, filled white with a black edge.
+  48px PNGs with 96px Retina copies through `image-set` (`public/cursors`,
+  drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
+  command is in the file); SVG cursors blur.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←

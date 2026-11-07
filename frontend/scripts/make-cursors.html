@@ -1,0 +1,40 @@
+<!doctype html>
+<!--
+  Draws card view's big cursors (public/cursors): the ordinary arrow, a
+  pointing hand, an open hand and a closed one, each 48px plus a 96px
+  Retina copy. The hands are Lucide's pointer / hand / hand-grab icons,
+  filled white with a black edge. Regenerate with:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+      --dump-dom "file://$PWD/scripts/make-cursors.html" | python3 scripts/save-cursors.py public/cursors
+-->
+<meta charset="utf-8">
+<pre id="out"></pre>
+<script>
+const shapes = {
+  arrow: { fill: true, d: ["M4.5 2.5V19l4.2-4 2.8 6.2 2.8-1.2-2.8-6.1h5.8Z"] },
+  pointer: { d: ["M22 14a8 8 0 0 1-8 8","M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2","M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1","M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10","M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"] },
+  grab: { palm: "M6.5 6H18V15.5H6.5Z", d: ["M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2","M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2","M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8","M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"] },
+  grabbing: { d: ["M18 11.5V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1.4","M14 10V8a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2","M10 9.9V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v5","M6 14a2 2 0 0 0-2-2a2 2 0 0 0-2 2","M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8 2 2 0 1 1 4 0"] },
+};
+// The palm, under the fingers: filled white so the hand has no see-through gap.
+const PALM = "M6.5 10H18V15.5H6.5Z";
+const lines = [];
+for (const [name, s] of Object.entries(shapes)) for (const px of [48, 96]) {
+  const c = document.createElement("canvas"); c.width = c.height = px;
+  const g = c.getContext("2d"); g.scale(px / 24, px / 24); g.lineCap = g.lineJoin = "round";
+  const P = s.d.map((d) => new Path2D(d));
+  if (s.fill) {
+    // The arrow: black, with a white edge.
+    g.strokeStyle = "#fff"; g.lineWidth = 2.4; P.forEach((p) => g.stroke(p));
+    g.fillStyle = "#000"; P.forEach((p) => g.fill(p));
+  } else {
+    // A hand: a black silhouette, a white one inside it, then the icon's lines.
+    g.fillStyle = g.strokeStyle = "#000"; g.lineWidth = 4; P.forEach((p) => { g.fill(p); g.stroke(p); });
+    g.fillStyle = g.strokeStyle = "#fff"; g.lineWidth = 2.2; P.forEach((p) => { g.fill(p); g.stroke(p); });
+    g.fill(new Path2D(s.palm ?? PALM)); // close the gap between the fingers and the palm
+    g.strokeStyle = "#000"; g.lineWidth = 1.25; P.forEach((p) => g.stroke(p));
+  }
+  lines.push(`${name}${px === 96 ? "@2x" : ""} ${c.toDataURL("image/png").split(",")[1]}`);
+}
+document.getElementById("out").textContent = lines.join("\n");
+</script>

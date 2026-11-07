@@ -1422,7 +1422,11 @@ export function EventsView({
                           if (dy > SWIPE_THRESHOLD) next();
                           else if (dy < -SWIPE_THRESHOLD) prev();
                         }}
-                        className={`${dragActive ? "shadow-lift" : ""} rounded-card`}
+                        // An open hand over the card, a closed one while it's
+                        // held (globals.css `.card-grab`).
+                        className={`${flying ? "" : "card-grab"} ${lift ? "is-grabbing" : ""} ${
+                          dragActive ? "shadow-lift" : ""
+                        } rounded-card`}
                       >
                         <FeedCard
                           event={current}

@@ -326,17 +326,38 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 
 /*
  * Card view's bigger cursor (EventsView puts `.big-cursor` on the feed
- * column while the card is showing): the ordinary arrow at twice the
- * system size, everywhere in the column, with no hand or grab states.
- * 48px with a 96px copy for Retina (public/cursors, drawn by
- * scripts/make-cursors.py). The hotspot is the arrow's tip. Text boxes
- * keep the text cursor.
+ * column while the card is showing): the usual cursors at twice the system
+ * size — the arrow, a pointing hand over anything clickable, an open hand
+ * over the draggable card and a closed one while it's held. 48px with a
+ * 96px Retina copy (public/cursors, drawn by scripts/make-cursors.html).
+ * Hotspots in CSS pixels. Text boxes keep the text cursor.
  */
 .big-cursor,
 .big-cursor * {
   cursor: url("/cursors/arrow.png") 9 5, auto;
   cursor: -webkit-image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
   cursor: image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
+}
+/* Before the clickable rule below, so the card's buttons keep the pointing hand. */
+.big-cursor .card-grab,
+.big-cursor .card-grab * {
+  cursor: url("/cursors/grab.png") 24 24, grab;
+  cursor: -webkit-image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
+  cursor: image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
+}
+.big-cursor .card-grab:active,
+.big-cursor .card-grab:active *,
+.big-cursor .card-grab.is-grabbing,
+.big-cursor .card-grab.is-grabbing * {
+  cursor: url("/cursors/grabbing.png") 24 24, grabbing;
+  cursor: -webkit-image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
+  cursor: image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
+}
+.big-cursor :is(a, button, [role="button"], label, select, summary),
+.big-cursor :is(a, button, [role="button"], label, summary) * {
+  cursor: url("/cursors/pointer.png") 16 3, pointer;
+  cursor: -webkit-image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 16 3, pointer;
+  cursor: image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 16 3, pointer;
 }
 .big-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) {
   cursor: text;
