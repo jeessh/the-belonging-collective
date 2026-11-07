@@ -249,7 +249,7 @@ export const SavedSidebar = memo(
                     // The dashed outline only marks the empty drop zone; the
                     // border stays (transparent) so nothing shifts.
                     className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border-2 border-dashed ${
-                      events.length === 0 ? "border-fg/50" : "border-transparent"
+                      events.length === 0 ? "border-line" : "border-transparent"
                     }`}
                   >
                     {events.length > 0 && (
