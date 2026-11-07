@@ -40,5 +40,5 @@ shapes={
  "grabbing": lambda px: hand(px,(5.6,10.2,14.4,11.3,4.6),[(8,12,8,9.4),(11.2,11.5,11.2,8.4),(14.4,11.5,14.4,8.4),(17.6,12,17.6,9.4)],(4.2,13,7,15.6),(6.4,12.4,12.8,8.3,3.8)),
 }
 for name,f in shapes.items():
-    f(48).save(f"{out}/{name}.png"); f(96).save(f"{out}/{name}@2x.png")
+    f(48).save(f"{out}/{name}.png")
 print("ok")

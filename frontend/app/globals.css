@@ -328,16 +328,15 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
  * Card view's bigger cursor (EventsView puts `.big-cursor` on the feed
  * column while the card is showing): about twice the system size, for
  * people who lose track of a small one. Solid shapes with an outline, so
- * they show on light and dark alike, as PNGs at 48px and 96px
- * (public/cursors; image-set hands a Retina screen the sharp one — an SVG
- * cursor is drawn at 1x and blurs). Hotspots in CSS pixels: the arrow's
+ * they show on light and dark alike, as 48px PNGs (public/cursors). One
+ * size on purpose: an image-set cursor's 2x version came out distorted in
+ * Chrome on a Mac, and an SVG cursor is drawn at 1x and blurs. Hotspots in
+ * CSS pixels: the arrow's
  * tip, the fingertip, a hand's middle. Text boxes keep the text cursor.
  */
 .big-cursor,
 .big-cursor * {
   cursor: url("/cursors/arrow.png") 9 5, auto;
-  cursor: -webkit-image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
-  cursor: image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
 }
 /* The card can be dragged to the saved column: an open hand over it, a
    closed one while it's held or dragged (`.is-grabbing` while lifted).
@@ -345,22 +344,16 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .big-cursor .card-grab,
 .big-cursor .card-grab * {
   cursor: url("/cursors/grab.png") 24 24, grab;
-  cursor: -webkit-image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
-  cursor: image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
 }
 .big-cursor .card-grab:active,
 .big-cursor .card-grab:active *,
 .big-cursor .card-grab.is-grabbing,
 .big-cursor .card-grab.is-grabbing * {
   cursor: url("/cursors/grabbing.png") 24 24, grabbing;
-  cursor: -webkit-image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
-  cursor: image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
 }
 .big-cursor :is(a, button, [role="button"], label, select, summary),
 .big-cursor :is(a, button, [role="button"], label, summary) * {
   cursor: url("/cursors/pointer.png") 17 3, pointer;
-  cursor: -webkit-image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 17 3, pointer;
-  cursor: image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 17 3, pointer;
 }
 .big-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) {
   cursor: text;
