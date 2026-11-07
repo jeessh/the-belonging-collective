@@ -552,6 +552,8 @@ export function EventForm({
 
   const paid = values.pricingModel !== "free";
   const priceTemplate = templateFor(values.pricingModel);
+  // The attendee limit's switch: on when the event already has one.
+  const [limitOn, setLimitOn] = useState(() => values.capacity.trim() !== "");
   const signupHint = values.requiresSignup
     ? checkPostingLink(values.registrationUrl)
     : null;
@@ -1066,20 +1068,52 @@ export function EventForm({
                 </div>
               )}
             </div>
-            {/* An optional cap on how many people can come. Saving still never
-                refuses anyone: the first saves each hold a spot for an hour
-                while spots last (core/holds). */}
-            <TextField
-              label="Attendee limit (optional)"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              className="max-w-[260px]"
-              value={values.capacity}
-              onChange={(e) => set("capacity", e.target.value)}
-              error={fieldError("capacity")}
-              placeholder="No limit"
-            />
+            {/* An optional cap on how many people can come: a switch, and the
+                number only while it's on (turning it off clears it). Saving
+                still never refuses anyone: the first saves each hold a spot
+                for an hour while spots last (core/holds). */}
+            <div className="field flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={limitOn}
+                  aria-labelledby={`${id}-limit-label`}
+                  onClick={() => {
+                    const next = !limitOn;
+                    setLimitOn(next);
+                    if (!next) set("capacity", "");
+                  }}
+                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-border ${
+                    limitOn ? "bg-primary-strong" : "bg-line"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+                      limitOn ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                <span id={`${id}-limit-label`} className="field-label text-lg font-medium text-fg">
+                  Attendee limit
+                </span>
+              </div>
+              {limitOn && (
+                <TextField
+                  label="Most people who can come"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  required
+                  className="max-w-[260px]"
+                  value={values.capacity}
+                  onChange={(e) => set("capacity", e.target.value)}
+                  error={fieldError("capacity")}
+                  placeholder="20"
+                />
+              )}
+            </div>
             <Section
               title="Who can see this"
             >

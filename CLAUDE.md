@@ -516,7 +516,8 @@ can open.
   carries them through unchanged). Cost has its own row ("How is it paid?" under it), then **How people
   join** on its own row with the **Sign-up link** beside it once Registration
   is chosen (a drop-in that already has a link shows it as Posting link),
-  then an optional **Attendee limit** (`capacity` — drives the
+  then an optional **Attendee limit** — a switch (`limitOn`; off clears
+  it) that reveals the number when on (`capacity` — drives the
   one-hour holds; members aren't shown spots); Repeats sits right under
   the date and time (create only). The details page mirrors all of this.
   Under Description are **External links (optional)** — `links` rows of label + address,
