@@ -212,7 +212,7 @@ export const SavedSidebar = memo(
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
             // Open, the whole panel is a whiteboard, with a metal edge on the right.
             className={`absolute inset-y-0 left-0 flex flex-col ${
-              open ? "whiteboard gap-6 border-r-[6px] border-[#B9C0C7] pt-6" : ""
+              open ? "whiteboard gap-6 border-r-[3px] border-[#B9C0C7] pt-6" : ""
             }`}
           >
             {open ? (
