@@ -250,10 +250,11 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        // No side padding, and -1px over the (transparent)
-                        // drop-zone edge: the items start where the "Saved
-                        // Events" heading does.
-                        className={`-mx-px flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-4 transition-opacity ${
+                        // Reaches 9px past the drop zone (its 1px transparent
+                        // edge + each card's 8px padding), so a card's
+                        // picture and words start where the "Saved Events"
+                        // heading does while its hover fill reaches past them.
+                        className={`-mx-[9px] flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
@@ -479,7 +480,8 @@ function Thumb({
       type="button"
       onClick={() => onOpen(event)}
       // The thumbnail on the left, the title (20px) and date beside it.
-      className="group flex w-full shrink-0 items-start gap-4 rounded-control text-left"
+      // A card: on hover / focus a grey fill and a soft edge.
+      className="group flex w-full shrink-0 items-start gap-4 rounded-control border border-transparent p-2 text-left transition-colors duration-150 ease-out hover:border-line hover:bg-surface-subtle focus-visible:border-line focus-visible:bg-surface-subtle"
     >
       <span
         aria-hidden="true"
