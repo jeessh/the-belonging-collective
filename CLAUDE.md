@@ -118,8 +118,7 @@ can open.
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
   bottom — miniature feed cards (picture and title) each held by a
-  coloured strip of washi tape (`Magnet` — named for what it was:
-  see-through, zigzag-torn ends, a slight tilt per card), in two even columns
+  coloured square magnet (`Magnet`), in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight
@@ -189,9 +188,9 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card is held up like a flyer (`FeedCard`: a red strip of tape (`Magnet`)
-  at the top and a soft shadow, kept straight); and while the card is on
-  the move (`lift` — drag, ← hold, flight) its tape lifts off (`unpinned`). The card's text and buttons are untouched.
+  card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
+  top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
+  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
