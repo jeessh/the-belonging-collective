@@ -2,11 +2,20 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArchiveX, Bookmark, CalendarPlus, MoreHorizontal, Pencil, Send } from "lucide-react";
+import {
+  ArchiveX,
+  Bookmark,
+  CalendarPlus,
+  MoreHorizontal,
+  Pencil,
+  RotateCcw,
+  Send,
+} from "lucide-react";
 import { TIME_ZONE } from "@/lib/time";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { PostedBy } from "@/components/host/PostedBy";
+import { EventStatus, type EventState } from "@/components/host/EventStatus";
 import { savedLine } from "@/components/host/ConsoleCounts";
 import { eventUrl } from "@/components/CopyLinkButton";
 import { ShareModal } from "@/components/member/ShareModal";
@@ -25,11 +34,19 @@ export const AdminEventCard = memo(function AdminEventCard({
   event,
   canManage,
   onUnpublish,
+  state = "published",
+  onRestore,
+  restoring = false,
 }: {
   event: Event;
   canManage: boolean;
   onUnpublish: (event: Event) => void;
+  /** The tag beside the title; an un-published card's menu offers Restore. */
+  state?: EventState;
+  onRestore?: () => void;
+  restoring?: boolean;
 }) {
+  const retired = state === "unpublished";
   const saved = event.saved_count ?? 0;
 
   // Share opens the members' share sheet: email or copy the link.
@@ -77,6 +94,24 @@ export const AdminEventCard = memo(function AdminEventCard({
           aria-label={`Actions for ${event.title}`}
           className="absolute right-0 top-full z-30 mt-2 flex w-48 flex-col rounded-control border border-line bg-surface p-1 text-fg shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
         >
+          {retired ? (
+            canManage && (
+              <button
+                type="button"
+                role="menuitem"
+                className={item}
+                disabled={restoring}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRestore?.();
+                }}
+              >
+                <RotateCcw aria-hidden="true" className="size-4 shrink-0" />
+                {restoring ? "Restoring…" : "Restore"}
+              </button>
+            )
+          ) : (
+          <>
           {canManage && (
             <Link
               role="menuitem"
@@ -113,6 +148,8 @@ export const AdminEventCard = memo(function AdminEventCard({
               Un-publish
             </button>
           )}
+          </>
+          )}
         </div>
       )}
     </div>
@@ -135,6 +172,7 @@ export const AdminEventCard = memo(function AdminEventCard({
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h3 className="text-2xl font-medium leading-tight text-fg">
           {/* The whole card opens the details page: this link's ::after
               covers the card, and the tools and View more sit above it. */}
@@ -145,6 +183,8 @@ export const AdminEventCard = memo(function AdminEventCard({
             {event.title}
           </Link>
         </h3>
+          <EventStatus state={state} />
+        </div>
         {/* Just who posted it and how many have saved it — the date, place and
             tags are on the details page (View more). */}
         <div className="flex flex-col gap-2 text-lg text-fg-muted">

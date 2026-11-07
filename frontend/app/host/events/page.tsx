@@ -33,7 +33,7 @@ export default function ProgramsPage() {
   return <AdminShell>{(ctx) => <PostedEvents ctx={ctx} />}</AdminShell>;
 }
 
-type Scope = "mine" | "all" | "unpublished";
+type Scope = "mine" | "all";
 
 function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
@@ -57,9 +57,11 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   const [unpublishing, setUnpublishing] = useState<Event | null>(null);
   // `?scope=unpublished` opens on that tab — where an un-published event's
   // details page goes back to. Read after mount: the server has no URL.
+  // An old ?scope=unpublished link lands on Your Events, where un-published
+  // events now sit beside the published ones.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("scope") === "unpublished")
-      setScope("unpublished");
+      setScope("mine");
   }, []);
   const chosen = DIMENSIONS.reduce(
     (n, d) => n + (filters[d.key]?.length ?? 0),
@@ -99,13 +101,19 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     };
   }, [router]);
 
+  // Your Events also lists your un-published events (tagged, with Restore).
   useEffect(() => {
-    if (scope !== "unpublished") return;
+    if (scope !== "mine") return;
     let alive = true;
     setArchived(null);
     setArchivedError(false);
     api<Event[]>("/events/archived")
-      .then((rows) => alive && setArchived(oneCardPerProgram(rows)))
+      .then(
+        (rows) =>
+          alive &&
+          // A superadmin's archive is everyone's; Your Events is your own.
+          setArchived(oneCardPerProgram(rows.filter((ev) => ev.host_id === ctx.org.id))),
+      )
       .catch((e) => {
         if (!alive) return;
         if (e instanceof ApiError && e.status === 401) {
@@ -117,7 +125,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     return () => {
       alive = false;
     };
-  }, [scope, router]);
+  }, [scope, router, ctx.org.id]);
 
   // The same restore Undo calls: every date of the program comes back. The
   // calendar is re-read so the program is there under Your Events again.
@@ -162,15 +170,23 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   // a run that has finished falls back to its first date. Filters and search
   // apply first, so a filter that matches only some dates still surfaces the
   // program.
-  const shown = useMemo(() => {
+  const live = useMemo(() => {
     const matching = applyHostFilters(inScope, filters, query);
     return oneCardPerProgram([
       ...matching.filter(isUpcoming),
       ...matching.filter((ev) => !isUpcoming(ev)),
     ]);
   }, [inScope, filters, query]);
+  // Under Your Events, the un-published ones follow, through the same
+  // filters and search.
+  const retiredShown = useMemo(
+    () => (scope === "mine" && archived ? applyHostFilters(archived, filters, query) : []),
+    [scope, archived, filters, query],
+  );
+  const shown = useMemo(() => [...live, ...retiredShown], [live, retiredShown]);
 
-  const nothingPosted = !loading && scope === "mine" && inScope.length === 0;
+  const nothingPosted =
+    !loading && scope === "mine" && inScope.length === 0 && (archived ?? []).length === 0;
 
   // The printed week: every dated session in the next seven days for the
   // organization in view — your own under "Your Events", otherwise whichever
@@ -215,11 +231,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
-          {scope === "mine"
-            ? "Your Events"
-            : scope === "unpublished"
-              ? "Un-published"
-              : "All Events"}
+          {scope === "mine" ? "Your Events" : "All Events"}
         </h1>
         <SegmentedToggle<Scope>
           size="sm"
@@ -235,68 +247,10 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
           segments={[
             { value: "mine", label: "Your Events" },
             { value: "all", label: "All Events" },
-            { value: "unpublished", label: "Un-published" },
           ]}
         />
       </div>
 
-      {scope === "unpublished" ? (
-        <div className="flex flex-col gap-4">
-          <p className="text-lg text-fg-muted">
-            Events taken off the member feed. Nothing was deleted: restore one
-            and every date of it is back.
-          </p>
-          {archivedError ? (
-            <p role="alert" className="text-lg text-danger-fg">
-              Couldn&apos;t load un-published events. Please refresh and try again.
-            </p>
-          ) : archived === null ? (
-            <p className="text-lg text-fg-muted">Loading…</p>
-          ) : archived.length === 0 ? (
-            <p className="text-xl text-fg-muted">Nothing is un-published.</p>
-          ) : (
-            <ul className="flex flex-col gap-4">
-              {archived.map((ev) => (
-                <li
-                  key={ev.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-4 sm:p-6"
-                >
-                  <div className="min-w-0">
-                    <p className="break-words text-xl font-medium text-fg">{ev.title}</p>
-                    <p className="text-base text-fg-muted">
-                      {[
-                        longDate(ev.starts_at) || "No date",
-                        ev.recurrence,
-                        ctx.isSuper ? ev.host_name : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      href={`/host/events/${ev.id}`}
-                      aria-label={`View more about ${ev.title}`}
-                      className={buttonClass("secondary", "md")}
-                    >
-                      View more
-                      <ArrowRight aria-hidden="true" className="size-4" />
-                    </Link>
-                    <Button
-                      leadingIcon={<RotateCcw />}
-                      disabled={restoring !== null}
-                      onClick={() => void restore(ev)}
-                      aria-label={`Restore ${ev.title}`}
-                    >
-                      {restoring === ev.id ? "Restoring…" : "Restore"}
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : (
       <div className="flex flex-col items-start gap-8 lg:flex-row">
         <div className="hidden w-[280px] shrink-0 lg:block">
           <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
@@ -374,13 +328,15 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                   event={ev}
                   canManage={ctx.isSuper || ev.host_id === ctx.org.id}
                   onUnpublish={setUnpublishing}
+                  state={retiredShown.includes(ev) ? "unpublished" : "published"}
+                  onRestore={() => void restore(ev)}
+                  restoring={restoring === ev.id}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
-      )}
 
       <WeeklySheet
         id="weekly-list"
