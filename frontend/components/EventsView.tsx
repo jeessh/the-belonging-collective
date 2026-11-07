@@ -1231,7 +1231,7 @@ export function EventsView({
           >
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
-            <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col gap-5 sm:gap-6">
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
                   {space.logo_url && (
