@@ -402,7 +402,11 @@ can open.
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
   surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
   the form's "Who can see this" — a Special access checkbox; ticked, a group of the *program's*
-  organization (`hostId`), with inline group creation — and
+  organization (`hostId`); **New group** opens a dialog (`NewGroupModal`):
+  the group's name plus, optionally, community members by email (up to 50,
+  added with no approval through `addPeopleToGroup` — in at once with an
+  account, invited without), then a summary; the new group is chosen for
+  the event — and
   `components/host/PosterField.tsx` / `PosterSection.tsx` are the printable
   poster (`uploadPoster`, PDF or image) and the details page's QR code. The
   QR encodes the program's public page, never the poster file, and is drawn
