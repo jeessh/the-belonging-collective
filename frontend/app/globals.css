@@ -328,8 +328,8 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
  * Card view's bigger cursor (EventsView puts `.big-cursor` on the feed
  * column while the card is showing): the usual cursors at twice the system
  * size — the arrow, a pointing hand over anything clickable, an open hand
- * over the draggable card and a closed one while it's held. 48px with a
- * 96px Retina copy (public/cursors, drawn by scripts/make-cursors.html).
+ * over the draggable card and a closed one while it's held. 40px with an
+ * 80px Retina copy (public/cursors, drawn by scripts/make-cursors.html).
  * Hotspots in CSS pixels. Text boxes keep the text cursor.
  */
 .big-cursor,
