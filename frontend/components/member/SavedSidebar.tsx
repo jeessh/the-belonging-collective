@@ -263,7 +263,7 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden transition-opacity ${
+                        className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >

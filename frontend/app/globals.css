@@ -170,6 +170,13 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
   .scroll-fade-x::-webkit-scrollbar {
     display: none;
   }
+  /* Scrolls, but draws no scrollbar (the saved panel's board). */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* A glyph centred in a ring.
