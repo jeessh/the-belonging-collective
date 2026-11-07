@@ -25,6 +25,12 @@ const RAIL_WIDTH = 100;
    across, slightly askew, and free to be dragged anywhere in the box.
    Double-click opens one (Enter / Space from the keyboard). Where each
    card was left is remembered in this browser (`tbc.saved_board`). */
+/* The open panel's two buttons, as sticky notes stuck to the cork: a
+   strip of tape on top, a slight tilt, a curled-paper shadow. */
+const STICKY =
+  "relative flex min-h-[104px] flex-1 flex-col items-start justify-between gap-2 rounded-[2px] p-3 pt-4 text-left text-lg font-medium leading-tight text-[#2B2405] shadow-[0_12px_14px_-10px_rgba(40,25,5,0.55),0_2px_4px_rgba(40,25,5,0.15)] transition-transform duration-150 ease-out hover:-translate-y-1 hover:rotate-0 focus-visible:rotate-0 motion-reduce:transition-none";
+const TAPE =
+  "pointer-events-none absolute -top-2 left-1/2 h-4 w-12 -translate-x-1/2 -rotate-3 bg-white/55 shadow-[0_1px_1px_rgba(0,0,0,0.08)]";
 export const BOARD_CARD_W = 136;
 const BOARD_ROW_H = 176;
 const BOARD_GAP = 12;
@@ -172,18 +178,31 @@ export const SavedSidebar = memo(
     );
     const calendar =
       signedIn && owner ? (
-        <a
-          href={calendarUrl}
-          className={buttonClass("secondary", open ? "lg" : "md", open ? "w-full" : RAIL)}
+        open ? (
+          <a href={calendarUrl} className={`${STICKY} rotate-2 bg-[#CFE6FF]`}>
+            <span aria-hidden="true" className={TAPE} />
+            {calendarInner}
+          </a>
+        ) : (
+          <a href={calendarUrl} className={buttonClass("secondary", "md", RAIL)}>
+            {calendarInner}
+          </a>
+        )
+      ) : open ? (
+        <button
+          type="button"
+          onClick={signedIn ? () => void subscribe() : onSignIn}
+          className={`${STICKY} rotate-2 bg-[#CFE6FF]`}
         >
+          <span aria-hidden="true" className={TAPE} />
           {calendarInner}
-        </a>
+        </button>
       ) : (
         <Button
           variant="secondary"
-          size={open ? "lg" : "md"}
+          size="md"
           onClick={signedIn ? () => void subscribe() : onSignIn}
-          className={open ? "w-full" : RAIL}
+          className={RAIL}
         >
           {calendarInner}
         </Button>
@@ -222,7 +241,9 @@ export const SavedSidebar = memo(
               <>
                 <div className="flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
+                    <h2 className="text-2xl font-medium text-white [text-shadow:0_1px_3px_rgba(40,20,0,0.65)]">
+                      Saved Events
+                    </h2>
                     <p className="truncate text-xl text-fg">
                       {owner ? `For ${owner} · ` : ""}
                       {countLabel}
@@ -267,16 +288,16 @@ export const SavedSidebar = memo(
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-[#8a5a30]/40 px-6 py-4">
-                  <Button
-                    variant="secondary"
-                    size="lg"
+                <div className="flex gap-4 px-6 pb-6 pt-1">
+                  <button
+                    type="button"
                     onClick={onOpenSaved}
-                    leadingIcon={<Bookmark className="fill-primary-strong text-primary-strong" />}
-                    className="w-full"
+                    className={`${STICKY} -rotate-2 bg-[#FFE97A]`}
                   >
+                    <span aria-hidden="true" className={TAPE} />
+                    <Bookmark aria-hidden="true" className="size-6 fill-[#2B2405]" />
                     See Saved Events
-                  </Button>
+                  </button>
                   {calendar}
                 </div>
               </>

@@ -113,7 +113,9 @@ can open.
   (`Arrivals`), and the panel keeps its list mounted under the drag message
   so an arrival animates. The open panel is a bulletin board (an
   experiment, `Board` in SavedSidebar): the whole panel is cork (`.cork` in
-  globals.css) in a wooden frame — heading, buttons and all — miniature feed cards (picture and title) each held by a
+  globals.css) in a wooden frame — a white "Saved Events" heading (dark
+  text-shadow), and See Saved Events / Google Calendar as two taped,
+  tilted sticky notes (yellow, blue; `STICKY`) side by side at the bottom — miniature feed cards (picture and title) each held by a
   coloured push pin, two across and slightly tilted, that can be dragged anywhere in
   the box (framer-motion `drag`, kept inside it); double-click opens one,
   Enter / Space from the keyboard. Positions are remembered per browser in
