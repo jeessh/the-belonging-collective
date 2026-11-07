@@ -297,9 +297,10 @@ can open.
   "Free", which the tag already says) (registration is the tag beside the title). `EventDetails`
   labels the organizer's link "Sign up on …" when sign-up
   is needed. Cards stay to when and where.
-- **Tags beside the title: "Free" and "Registration required"** (`eventTags`
-  in `ui/Tag`, the `signup` kind — only when `requires_signup`; a drop-in
-  gets no tag; plus Special access and For you where they apply). Paid, Drop-in and
+- **Tags beside the title: "Free" or "Paid", and "Registration required"**
+  (`eventTags` in `ui/Tag`; Free / Paid from the `price` dimension, so it
+  always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in
+  gets no tag; plus Special access and For you where they apply). Drop-in and
   In-person / Virtual are no longer pills on any surface — the facts and
   filters still carry them. `EventSummary` draws title + tags as one
   wrapping row (`heading`), the event page included.
