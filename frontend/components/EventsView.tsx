@@ -1327,19 +1327,21 @@ export function EventsView({
                   heading, switch and filter label pushed the card's Save
                   below the fold, behind the saved bar. */}
               <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
-                {/* In the card view the page heading stays "Programs" for a
-                    screen reader — the live region already reads "n of m" per
-                    card, and a heading that changes on every arrow is noise. */}
-                <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
-                  {viewMode === "card" ? (
-                    <>
-                      <span className="sr-only">Programs</span>
-                      <span aria-hidden="true">{heading}</span>
-                    </>
-                  ) : (
-                    heading
-                  )}
-                </h1>
+                {/* "Discover Events", with the count under it. In the card view
+                    a screen reader skips the "Event n of m" line — the live
+                    region already reads it per card, and a line that changes
+                    on every arrow is noise. */}
+                <div className="flex min-w-0 flex-col gap-1">
+                  <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                    Discover Events
+                  </h1>
+                  <p
+                    className="text-xl text-fg-muted"
+                    aria-hidden={viewMode === "card" ? true : undefined}
+                  >
+                    {heading}
+                  </p>
+                </div>
                 <div data-tour="view">
                   <SegmentedToggle
                     label="View"
