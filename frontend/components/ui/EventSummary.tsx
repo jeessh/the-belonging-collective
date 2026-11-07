@@ -105,7 +105,11 @@ export function EventSummary({
   recommended = false,
   fixedDates = false,
   className = "",
+  aboveTitle,
 }: {
+  /** Above the title in the text column (the event dialog's Google
+      Calendar / Share / Print). */
+  aboveTitle?: ReactNode;
   event: Event;
   layout?: "card" | "detail" | "row" | "tile";
   /** The going slot — usually a `GoingCount`. */
@@ -307,6 +311,7 @@ export function EventSummary({
             {img}
           </div>
           <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5" : "gap-4"}`}>
+            {aboveTitle}
             {heading}
             {facts}
           </div>

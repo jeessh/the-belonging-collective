@@ -41,7 +41,7 @@ function Poster({ url }: { url: string }) {
 
 /**
  * The full listing, drawn as the design's Expanded Card: the summary, the
- * tools (Google Calendar / Share / Print) in its facts column under the saved count, then
+ * tools (Google Calendar / Share / Print) above the title in its text column, then
  * DETAILS, POSTER and LINKS. No hooks, so the
  * server-rendered public page, the dialog over the feed and the print
  * preview all draw the same thing; each hands in its own `tools`, `going`
@@ -60,7 +60,7 @@ export function EventDetails({
 }: {
   event: Event;
   going?: ReactNode;
-  /** Google Calendar / Share / Print, under the saved count. */
+  /** Google Calendar / Share / Print, above the title. */
   tools?: ReactNode;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
@@ -114,17 +114,11 @@ export function EventDetails({
       <EventSummary
         event={event}
         layout="detail"
-        // Add to Google Calendar, Share and Print go in the facts column,
-        // right under the "N people saved this event" line.
-        going={
-          tools ? (
-            <div className="flex flex-col items-start gap-4">
-              {going}
-              <div className="flex flex-wrap items-center gap-3">{tools}</div>
-            </div>
-          ) : (
-            going
-          )
+        going={going}
+        // Add to Google Calendar, Share and Print sit above the title, at
+        // the top of the text column.
+        aboveTitle={
+          tools ? <div className="flex flex-wrap items-center gap-3">{tools}</div> : undefined
         }
         titleAs={titleAs}
         titleId={titleId}
