@@ -250,11 +250,12 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        // Reaches 10px past the drop zone (its 1px transparent
-                        // edge, then each card's 1px edge and 8px padding), so a card's
-                        // picture and words start where the "Saved Events"
-                        // heading does while its hover fill reaches past them.
-                        className={`-mx-[10px] flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 transition-opacity ${
+                        // Out to the panel's edges (its 24px padding plus the
+                        // drop zone's 1px transparent edge), so each card's
+                        // hover fill runs the panel's full width; the card's
+                        // own 24px padding keeps its picture and words under
+                        // the "Saved Events" heading.
+                        className={`-mx-[25px] flex min-h-0 flex-1 flex-col overflow-y-auto py-2 transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
@@ -480,8 +481,8 @@ function Thumb({
       type="button"
       onClick={() => onOpen(event)}
       // The thumbnail on the left, the title (20px) and date beside it.
-      // A card: on hover / focus a grey fill and a soft edge.
-      className="group flex w-full shrink-0 items-start gap-4 rounded-control border border-transparent p-2 text-left transition-colors duration-150 ease-out hover:border-line hover:bg-surface-subtle focus-visible:border-line focus-visible:bg-surface-subtle"
+      // A full-width row: on hover / focus a grey fill from edge to edge.
+      className="group flex w-full shrink-0 items-start gap-4 px-6 py-3 text-left transition-colors duration-150 ease-out hover:bg-surface-subtle focus-visible:bg-surface-subtle"
     >
       <span
         aria-hidden="true"
