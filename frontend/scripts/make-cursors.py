@@ -14,7 +14,7 @@ def rrect(d,k,x,y,w,h,r,fill):
 BLACK=(0,0,0,255); WHITE=(255,255,255,255)
 def hand(px,palm,fingers,thumb,inner):
     im,k=canvas(px); d=ImageDraw.Draw(im)
-    W=3.6; O=1.61
+    W=3.5; O=1.25
     x,y,w,h,r=palm
     rrect(d,k,x-O/2,y-O/2,w+O,h+O,r+O/2,BLACK)
     rrect(d,k,x+O/2,y+O/2,w-O,h-O,max(r-O/2,0),WHITE)
@@ -36,9 +36,13 @@ open_palm=(6.2,11,13.3,11.2,4.2); open_inner=(7.0,13.2,11.7,8.2,3.4)
 shapes={
  "arrow": arrow,
  "pointer": lambda px: hand(px,open_palm,[(8.6,12,8.6,2.8),(11.9,12,11.9,9.2),(15.1,12,15.1,9.6),(18.2,12.5,18.2,10.4)],(4.1,13.6,7.4,17.4),open_inner),
- "grab": lambda px: hand(px,open_palm,[(7.9,13,7.9,8.6),(11.1,12,11.1,4.2),(14.3,12,14.3,3.4),(17.5,12.5,17.5,5.6)],(4.1,13.6,7.4,17.4),open_inner),
- "grabbing": lambda px: hand(px,(5.6,10.2,14.4,11.3,4.6),[(8,12,8,9.4),(11.2,11.5,11.2,8.4),(14.4,11.5,14.4,8.4),(17.6,12,17.6,9.4)],(4.2,13,7,15.6),(6.4,12.4,12.8,8.3,3.8)),
+ # An open right hand, palm out: index beside the thumb, middle tallest,
+ # ring a little shorter, pinky shortest, thumb angled out.
+ "grab": lambda px: hand(px,open_palm,[(7.9,12.5,7.9,4.6),(11.1,12,11.1,3.0),(14.3,12,14.3,3.9),(17.5,12.5,17.5,6.4)],(3.6,12.6,7.3,16.9),open_inner),
+ # The same hand closed: knuckles in a gentle arc, the thumb tucked across.
+ "grabbing": lambda px: hand(px,(5.6,10.2,14.4,11.3,4.6),[(8,11.8,8,9.0),(11.2,11.5,11.2,8.3),(14.4,11.5,14.4,8.6),(17.6,12,17.6,9.8)],(4.0,13.4,7.2,15.8),(6.4,12.4,12.8,8.3,3.8)),
 }
 for name,f in shapes.items():
     f(48).save(f"{out}/{name}.png")
+    if len(sys.argv) > 2: f(192).save(f"{sys.argv[2]}/{name}-preview.png")
 print("ok")
