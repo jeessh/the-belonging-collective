@@ -200,7 +200,9 @@ export const SavedSidebar = memo(
         initial={false}
         animate={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
         transition={ease}
-        className="relative shrink-0 overflow-hidden border-r border-line bg-surface"
+        // One 2px dark-blue edge on the right, open or folded; the top bar
+        // under the feed's header uses the same colour.
+        className="relative shrink-0 overflow-hidden border-r-2 border-[#2B4C7E] bg-surface"
       >
         <AnimatePresence initial={false}>
           <motion.div
@@ -210,9 +212,9 @@ export const SavedSidebar = memo(
             exit={{ opacity: 0 }}
             transition={ease}
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-            // Open, the whole panel is a whiteboard, with a metal edge on the right.
+            // Open, the whole panel is a whiteboard (its edge is the aside's).
             className={`absolute inset-y-0 left-0 flex flex-col ${
-              open ? "whiteboard gap-6 border-r-2 border-[#B9C0C7] pt-6" : ""
+              open ? "whiteboard gap-6 pt-6" : ""
             }`}
           >
             {open ? (
