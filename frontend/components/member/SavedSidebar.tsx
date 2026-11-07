@@ -200,9 +200,9 @@ export const SavedSidebar = memo(
         initial={false}
         animate={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
         transition={ease}
-        // One 2px dark-blue edge on the right, open or folded; the top bar
-        // under the feed's header uses the same colour.
-        className="relative shrink-0 overflow-hidden border-r-2 border-[#2B4C7E] bg-surface"
+        // One 2px grey edge on the right, open or folded; the top bar's
+        // bottom line is the same grey.
+        className="relative shrink-0 overflow-hidden border-r-2 border-line bg-surface"
       >
         <AnimatePresence initial={false}>
           <motion.div
