@@ -12,14 +12,14 @@ import {
 } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
-import { Switch } from "@/components/ui/Switch";
 import { TextField } from "@/components/ui/TextField";
 import { Field, Select, TextArea } from "@/components/AdminTable";
 
 export type AccessMode = "everyone" | "group";
 
 /**
- * Special access: a switch — off, everyone; on, the group picker below it. Only members approved into one of the
+ * Special access: a group picker — None, everyone; a group, only its
+ * approved members. Only members approved into one of the
  * organization's special-access groups. Groups are the program's own
  * organization's — a superadmin editing another agency's program sees that
  * agency's list, which is what the API accepts.
@@ -57,34 +57,33 @@ export function AccessPicker({
   return (
     // In a light grey box with a lock, so it reads as its own setting.
     <div className="flex w-full flex-col items-start gap-4 rounded-card border border-line/60 bg-surface-subtle/70 p-4">
-      {/* Off, everyone can see it; on, the group picker shows. */}
+      {/* No switch: the group picker is the choice — "None" means everyone
+          can see it, a group restricts it to that group's members. */}
       <div className="flex flex-col gap-1">
-        <Switch
-          label={
-            <span className="inline-flex items-center gap-2">
-              <Lock aria-hidden="true" className="text-fg-icon" />
-              Special access
-            </span>
-          }
-          checked={mode === "group"}
-          onChange={(on) => (on ? onChange("group", groupId) : onChange("everyone", null))}
-        />
+        <p className="inline-flex items-center gap-2 text-lg font-medium text-fg">
+          <Lock aria-hidden="true" className="text-fg-icon" />
+          Special access
+        </p>
         <p className="text-base text-fg-muted">
-          Only members approved into a group can see it. Off, everyone can.
+          Choose a group to show it only to that group&rsquo;s approved members.
+          Leave it on None and everyone can see it.
         </p>
       </div>
 
-      {mode === "group" && (
-        <div className="flex w-full flex-col gap-3">
+      <div className="flex w-full flex-col gap-3">
           <div className="flex flex-wrap items-end gap-3">
-            <Field label="Group" required className="min-w-[240px] flex-1 sm:max-w-[420px]">
+            <Field label="Group" className="min-w-[240px] flex-1 sm:max-w-[420px]">
               <Select
-                value={groupId ?? ""}
-                onChange={(e) => onChange("group", e.target.value || null)}
+                value={mode === "group" ? (groupId ?? "") : ""}
+                onChange={(e) =>
+                  e.target.value
+                    ? onChange("group", e.target.value)
+                    : onChange("everyone", null)
+                }
                 disabled={groups === null}
               >
                 <option value="">
-                  {groups === null ? "Loading…" : "Choose a group"}
+                  {groups === null ? "Loading…" : "None — everyone can see it"}
                 </option>
                 {(groups ?? []).map((g) => (
                   <option key={g.id} value={g.id}>
@@ -116,13 +115,7 @@ export function AccessPicker({
               }}
             />
           )}
-
-          <p className="text-base text-fg-muted">
-            Only approved members see it in the feed. Anyone with the link or
-            QR code can still open its page and ask to join.
-          </p>
         </div>
-      )}
     </div>
   );
 }

@@ -401,8 +401,9 @@ can open.
   superadmin) beside the chosen group's members on Requests / Approved /
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
   surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
-  the form's **Special access** switch (`ui/Switch` with a lock, in a light
-  grey box; there is no "Who can see this" heading) — on, a group of the *program's*
+  the form's **Special access** box (light grey, a lock, no switch and no
+  "Who can see this" heading): a Group picker whose first option, "None —
+  everyone can see it", means public, else a group of the *program's*
   organization (`hostId`); **New group** opens a dialog (`NewGroupModal`):
   the group's name plus, optionally, community members by email (up to 50,
   added with no approval through `addPeopleToGroup` — in at once with an
