@@ -134,14 +134,17 @@ export function EventSummary({
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
   // 18, the saved tile's 24 over 20.
-  const meta = card
-    ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
+  // The feed card's facts are 20px at every size, on a 1.4 line.
+  const meta = feed
+    ? "text-xl leading-[1.4]"
+    : card
+    ? "text-xl sm:text-2xl"
     : tile
       ? "text-xl"
       : "text-lg";
   // The fact icons (when, where, ages, spots) are a neutral grey: they mark
   // the facts, the words carry them.
-  const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
+  const icon = feed ? "size-7" : card ? "size-7 sm:size-9" : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -186,13 +189,14 @@ export function EventSummary({
   );
 
   const facts = (
-    <div className={`flex flex-col gap-3 ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}>
+    // On the feed card: 16px between facts, the date and its time 4px apart.
+    <div className={`flex flex-col ${feed ? "gap-4" : "gap-3"} ${meta}`}>
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
-        <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
+        <div className={`min-w-0 ${feed ? "flex flex-col gap-1" : ""}`}>
           {/* Each part stays whole, so a narrow column breaks between
               "In 52 weeks" and "· September 24, 2027", never around
               the dot. */}
@@ -282,7 +286,7 @@ export function EventSummary({
           >
             {img}
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5" : "gap-4"}`}>
             {heading}
             {facts}
           </div>
