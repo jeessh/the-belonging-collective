@@ -136,8 +136,8 @@ can open.
   `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
   groups only, member-app sizes; it replaces the chip row), search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
-  people saved this event"; the whole card opens the details) whose ⋯ menu
-  holds Share and Add to Google Calendar, beside Save / Unsave (through
+  people saved this event"; the whole card opens the details) with Share and Add to Google
+  Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).

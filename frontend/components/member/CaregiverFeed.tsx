@@ -1,12 +1,11 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   Bookmark,
   BookX,
   CalendarDays,
   MapPin,
-  MoreHorizontal,
   Send,
   SlidersHorizontal,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { Button } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
@@ -34,8 +34,8 @@ import { placeLabel } from "@/lib/place";
 /**
  * The Advanced experience's list (a caregiver's): the console's event
  * management layout — the filter panel on the left, search over the cards,
- * one card per event with a ⋯ menu — restricted to what a member can do.
- * Nothing here edits a program: the card opens its details, the menu
+ * one card per event — restricted to what a member can do.
+ * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
  * whoever "Saving for" names. A special-access program the member isn't
  * approved for has no Save here; its details offer Request access.
@@ -148,30 +148,13 @@ function MemberEventCard({
   onUnsave: () => void;
 }) {
   const when = whenLine(event);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const away = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [menuOpen]);
 
   // A special-access program needs approval before it can be saved; its
   // details say how to ask.
   const canSave = !event.access_group || event.access_status === "approved";
-  const item =
-    "flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-lg hover:bg-surface-subtle focus-visible:bg-surface-subtle";
+  const tool =
+    "grid size-11 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active";
 
   return (
     <article
@@ -192,7 +175,7 @@ function MemberEventCard({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 className="text-2xl font-medium leading-tight text-fg">
           {/* The whole card opens the details: this button's ::after covers
-              the card; the menu and Save sit above it. */}
+              the card; the icons and Save sit above it. */}
           <button
             type="button"
             onClick={onOpen}
@@ -221,50 +204,36 @@ function MemberEventCard({
       </div>
 
       <div className="relative z-10 col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-between">
-        <div ref={menuRef} className="relative max-sm:order-2">
-          <button
-            type="button"
-            aria-label={`More actions for ${event.title}`}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((o) => !o)}
-            className="grid size-11 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active"
-          >
-            <MoreHorizontal aria-hidden="true" className="size-6" />
-          </button>
-          {menuOpen && (
-            <div
-              role="menu"
-              aria-label={`Actions for ${event.title}`}
-              className="absolute right-0 top-full z-30 mt-2 flex w-64 flex-col rounded-control border border-line bg-surface p-1 text-fg shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-            >
+        {/* Share and Google Calendar as icons, each saying what it does in
+            a tooltip, then Save. */}
+        <div className="flex items-center gap-2 max-sm:order-2">
+          <Tooltip text="Share by email or link" align="end">
+            {(tip) => (
               <button
                 type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setSharing(true);
-                }}
+                aria-label={`Share ${event.title}`}
+                aria-describedby={tip}
+                onClick={() => setSharing(true)}
+                className={tool}
               >
-                <Send aria-hidden="true" className="size-5 shrink-0" />
-                Share
+                <Send aria-hidden="true" className="size-6" />
               </button>
-              {googleCalendarUrl(event) !== null && (
+            )}
+          </Tooltip>
+          {googleCalendarUrl(event) !== null && (
+            <Tooltip text="Add to Google Calendar" align="end">
+              {(tip) => (
                 <button
                   type="button"
-                  role="menuitem"
-                  className={item}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    openGoogleCalendar(event);
-                  }}
+                  aria-label={`Add ${event.title} to Google Calendar`}
+                  aria-describedby={tip}
+                  onClick={() => openGoogleCalendar(event)}
+                  className={tool}
                 >
                   <GoogleCalendarIcon />
-                  Add to Google Calendar
                 </button>
               )}
-            </div>
+            </Tooltip>
           )}
         </div>
         {canSave &&
