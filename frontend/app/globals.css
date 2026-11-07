@@ -326,30 +326,41 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 
 /*
  * Card view's bigger cursor (EventsView puts `.big-cursor` on the feed
- * column while the card is showing): a 48px arrow, and a 48px pointing hand
- * over anything clickable — about twice the system size, for people who
- * lose track of a small one. Text boxes keep the text cursor.
+ * column while the card is showing): about twice the system size, for
+ * people who lose track of a small one. Solid shapes with an outline, so
+ * they show on light and dark alike, as PNGs at 48px and 96px
+ * (public/cursors; image-set hands a Retina screen the sharp one — an SVG
+ * cursor is drawn at 1x and blurs). Hotspots in CSS pixels: the arrow's
+ * tip, the fingertip, a hand's middle. Text boxes keep the text cursor.
  */
 .big-cursor,
 .big-cursor * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M4 2L4 19L8.5 14.8L11.4 21.4L14.2 20.2L11.3 13.7L17.5 13.7Z' fill='black' stroke='white' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") 8 4, auto;
+  cursor: url("/cursors/arrow.png") 9 5, auto;
+  cursor: -webkit-image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
+  cursor: image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
 }
 /* The card can be dragged to the saved column: an open hand over it, a
    closed one while it's held or dragged (`.is-grabbing` while lifted).
    Before the clickable rule below, so its buttons keep the pointing hand. */
 .big-cursor .card-grab,
 .big-cursor .card-grab * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15' stroke='black' stroke-width='1.7'/%3E%3C/svg%3E") 24 24, grab;
+  cursor: url("/cursors/grab.png") 24 24, grab;
+  cursor: -webkit-image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
+  cursor: image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
 }
 .big-cursor .card-grab:active,
 .big-cursor .card-grab:active *,
 .big-cursor .card-grab.is-grabbing,
 .big-cursor .card-grab.is-grabbing * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 11.5V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1.4' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M14 10V8a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M10 9.9V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v5' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M6 14a2 2 0 0 0-2-2a2 2 0 0 0-2 2' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8 2 2 0 1 1 4 0' stroke='white' stroke-width='4.2'/%3E%3Cpath d='M18 11.5V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1.4' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M14 10V8a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M10 9.9V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v5' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M6 14a2 2 0 0 0-2-2a2 2 0 0 0-2 2' stroke='black' stroke-width='1.7'/%3E%3Cpath d='M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8 2 2 0 1 1 4 0' stroke='black' stroke-width='1.7'/%3E%3C/svg%3E") 24 24, grabbing;
+  cursor: url("/cursors/grabbing.png") 24 24, grabbing;
+  cursor: -webkit-image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
+  cursor: image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
 }
 .big-cursor :is(a, button, [role="button"], label, select, summary),
 .big-cursor :is(a, button, [role="button"], label, summary) * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 14V4a2 2 0 0 1 4 0v5.5V9a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v1a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L6 14Z' fill='white' stroke='white' stroke-width='3'/%3E%3Cpath d='M22 14a8 8 0 0 1-8 8' stroke='black' stroke-width='1.6'/%3E%3Cpath d='M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2' stroke='black' stroke-width='1.6'/%3E%3Cpath d='M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1' stroke='black' stroke-width='1.6'/%3E%3Cpath d='M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10' stroke='black' stroke-width='1.6'/%3E%3Cpath d='M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15' stroke='black' stroke-width='1.6'/%3E%3C/svg%3E") 16 4, pointer;
+  cursor: url("/cursors/pointer.png") 17 3, pointer;
+  cursor: -webkit-image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 17 3, pointer;
+  cursor: image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 17 3, pointer;
 }
 .big-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) {
   cursor: text;

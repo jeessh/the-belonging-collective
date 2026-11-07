@@ -166,8 +166,10 @@ can open.
   the feed column while `viewMode === "card"`): an arrow, and a pointing
   hand over anything clickable, an open hand over the draggable card and a
   closed one while it's held (`.card-grab`, `.is-grabbing` while lifted);
-  text boxes keep the text cursor. SVG data
-  URIs, hotspots at the arrow's tip and the fingertip.
+  text boxes keep the text cursor. Solid white shapes with a black outline,
+  PNGs at 48px and 96px in `public/cursors` (drawn by
+  `frontend/scripts/make-cursors.py`, Pillow) served through `image-set` so a
+  Retina screen gets the sharp one — SVG cursors render at 1x and blur.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
