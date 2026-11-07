@@ -35,7 +35,6 @@ import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS, isDerivedTag } from "@/lib/accessibility";
 import {
-  PAID_MODELS,
   centsFrom,
   dollarsFrom,
   templateFor,
@@ -927,7 +926,7 @@ export function EventForm({
                 />
               )}
             </div>
-            {/* Cost on its own row; the paid details go under it. */}
+            {/* Cost on its own row — Free or Paid, a label only. */}
             <Section title="Cost">
               {/* The toggle, with the payments note beside it on one row. */}
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -936,8 +935,16 @@ export function EventForm({
                   label="Cost"
                   value={paid ? "paid" : "free"}
                   onChange={(v) =>
-                    // Coming back to paid lands on the commonest shape.
-                    set("pricingModel", v === "free" ? "free" : "per_session")
+                    // Paid is only a label (no payments here): a plain "Paid"
+                    // unless the event already carries a price of its own.
+                    v === "free"
+                      ? set("pricingModel", "free")
+                      : !paid &&
+                        onChange((prev) => ({
+                          ...prev,
+                          pricingModel: "custom",
+                          priceNote: prev.priceNote.trim() || "Paid",
+                        }))
                   }
                   segments={[
                     { value: "free", label: "Free" },
@@ -952,86 +959,6 @@ export function EventForm({
                 </p>
               </div>
             </Section>
-            {paid && (
-              <Section title="How is it paid?" required>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {PAID_MODELS.map((m) => {
-                    const t = templateFor(m);
-                    const on = values.pricingModel === m;
-                    return (
-                      <label
-                        key={m}
-                        className={`flex cursor-pointer items-center gap-3 rounded-control border px-3 py-2 ${
-                          on
-                            ? "border-primary-border bg-primary-soft"
-                            : "border-line hover:bg-surface-subtle"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`${id}-pricing`}
-                          checked={on}
-                          onChange={() => set("pricingModel", m)}
-                          className="size-4 accent-primary-border"
-                        />
-                        <span className="text-lg text-fg">{t.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  {priceTemplate.needsAmount && (
-                    <TextField
-                      label="Price"
-                      required
-                      className="min-w-[150px]"
-                      inputMode="decimal"
-                      value={values.priceAmount}
-                      onChange={(e) => set("priceAmount", e.target.value)}
-                      error={fieldError("priceAmount")}
-                      placeholder="$12.50"
-                    />
-                  )}
-                  {priceTemplate.needsGroup && (
-                    <TextField
-                      label="People it covers"
-                      required
-                      className="min-w-[180px]"
-                      type="number"
-                      min={2}
-                      value={values.priceGroupSize}
-                      onChange={(e) => set("priceGroupSize", e.target.value)}
-                      error={fieldError("priceGroupSize")}
-                      placeholder="4"
-                    />
-                  )}
-                  {priceTemplate.needsSessions && (
-                    <TextField
-                      label="Dates it covers"
-                      required
-                      className="min-w-[180px]"
-                      type="number"
-                      min={2}
-                      value={values.priceSessions}
-                      onChange={(e) => set("priceSessions", e.target.value)}
-                      error={fieldError("priceSessions")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.pricingModel === "custom" && (
-                    <TextField
-                      label="Describe the cost"
-                      required
-                      className="min-w-[280px] flex-1"
-                      value={values.priceNote}
-                      onChange={(e) => set("priceNote", e.target.value)}
-                      error={fieldError("priceNote")}
-                      placeholder="$5 suggested, pay what you can"
-                    />
-                  )}
-                </div>
-              </Section>
-            )}
             {/* How people join, on its own row; choosing Registration puts
                 the sign-up link beside it. A drop-in that already carries a
                 posting link keeps the box, so it can be changed or cleared

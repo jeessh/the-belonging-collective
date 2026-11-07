@@ -370,8 +370,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           {/* As on the form: cost on its own row (paid details under it),
               then how people join with the sign-up link beside it. */}
           <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
-          {!event.is_free && (
-            <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
+          {!event.is_free && event.price_label && event.price_label !== "Paid" && (
+            <ReadField label="Price">{event.price_label}</ReadField>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
             <ReadField label="How people join">

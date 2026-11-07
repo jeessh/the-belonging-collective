@@ -518,8 +518,11 @@ can open.
   chips); Publish / Save submits straight away, no dialog. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
-  carries them through unchanged). Cost has its own row, with a note that the platform doesn't process
-  payments and the cost is for display only ("How is it paid?" under it), then **How people
+  carries them through unchanged). Cost has its own row — Free / Paid only, a label (Paid saves
+  `pricing_model: custom`, note "Paid"; an event that already carries a
+  structured price keeps it, hidden) — with a note beside it that the
+  platform doesn't process payments and the cost is for display only. There
+  are no "How is it paid?" options any more, then **How people
   join** on its own row with the **Sign-up link** beside it once Registration
   is chosen (a drop-in that already has a link shows it as Posting link),
   then, for Registration only (switching to Drop-in clears it), an
