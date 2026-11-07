@@ -111,12 +111,13 @@ can open.
   list before first paint so it never opens-then-folds. Rail and panel are
   one `motion.aside` whose width animates; saved items grow in and fold out
   (`Arrivals`), and the panel keeps its list mounted under the drag message
-  so an arrival animates. The open panel is a bulletin board (an
-  experiment, `Board` in SavedSidebar): the whole panel is cork (`.cork` in
-  globals.css) with a wooden edge on its right — a white "Saved Events" heading and count
-  (dark text-shadow, over a dark gradient down from the top), and See Saved Events / Google Calendar as two taped,
-  tilted sticky notes (yellow, blue; `STICKY`) side by side at the bottom — miniature feed cards (picture and title) each held by a
-  coloured push pin, two across and slightly tilted, that can be dragged anywhere in
+  so an arrival animates. The open panel is a whiteboard (an
+  experiment, `Board` in SavedSidebar): the whole panel is `.whiteboard`
+  (globals.css) with a grey metal edge on its right — a dark "Saved Events"
+  heading and grey count, and See Saved Events / Google Calendar as two
+  straight sticky notes (yellow, blue; `STICKY`) side by side at the
+  bottom — miniature feed cards (picture and title) each held by a
+  coloured square magnet (`Magnet`), two across and very slightly tilted, that can be dragged anywhere in
   the box (framer-motion `drag`, kept inside it); double-click opens one,
   Enter / Space from the keyboard. Positions are remembered per browser in
   `localStorage` (`tbc.saved_board`, try/catch). Its forwarded ref is the drop target every save
@@ -176,12 +177,12 @@ can open.
   tighter gutters. Anything that has to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
-- **The feed side matches the bulletin board, lightly**: the event
+- **The feed side matches the saved board, lightly**: the event
   column is a warm off-white wall (`#FAF6EF`, bar included); the feed
-  card is pinned like a flyer (`FeedCard`: a red push pin at the top, a
-  soft shadow, -0.5° tilt; the deck card behind tilts the other way); and
-  while the card is on the move (`lift` — drag, ← hold, flight) its pin
-  pops off (`unpinned`). The card's text and buttons are untouched.
+  card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
+  top, a soft shadow, -0.5° tilt; the deck card behind tilts the other
+  way); and while the card is on the move (`lift` — drag, ← hold, flight)
+  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand

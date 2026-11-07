@@ -19,18 +19,15 @@ import { useToast } from "@/components/ui/Toast";
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
-/* The bulletin board, an experiment (the open panel's list): a cork board
-   in a wooden frame, each saved program pinned to it as a miniature of the
-   feed card — its picture and title — laid out two
+/* The board, an experiment (the open panel's list): a whiteboard, each
+   saved program held to it by a magnet as a miniature of the feed card — its picture and title — laid out two
    across, slightly askew, and free to be dragged anywhere in the box.
    Double-click opens one (Enter / Space from the keyboard). Where each
    card was left is remembered in this browser (`tbc.saved_board`). */
-/* The open panel's two buttons, as sticky notes stuck to the cork: a
-   strip of tape on top, a slight tilt, a curled-paper shadow. */
+/* The open panel's two buttons, as sticky notes on the whiteboard, with a
+   curled-paper shadow. */
 const STICKY =
-  "relative flex min-h-[104px] flex-1 flex-col items-start justify-between gap-2 rounded-[2px] p-3 pt-4 text-left text-lg font-medium leading-tight text-[#2B2405] shadow-[0_12px_14px_-10px_rgba(40,25,5,0.55),0_2px_4px_rgba(40,25,5,0.15)] transition-transform duration-150 ease-out hover:-translate-y-1 hover:rotate-0 focus-visible:rotate-0 motion-reduce:transition-none";
-const TAPE =
-  "pointer-events-none absolute -top-2 left-1/2 h-4 w-12 -translate-x-1/2 -rotate-3 bg-white/55 shadow-[0_1px_1px_rgba(0,0,0,0.08)]";
+  "relative flex min-h-[104px] flex-1 flex-col items-start justify-between gap-2 rounded-[2px] p-3 pt-4 text-left text-lg font-medium leading-tight text-[#2B2405] shadow-[0_12px_14px_-10px_rgba(40,25,5,0.55),0_2px_4px_rgba(40,25,5,0.15)] transition-transform duration-150 ease-out hover:-translate-y-1 motion-reduce:transition-none";
 export const BOARD_CARD_W = 136;
 const BOARD_ROW_H = 176;
 const BOARD_GAP = 12;
@@ -183,8 +180,7 @@ export const SavedSidebar = memo(
     const calendar =
       signedIn && owner ? (
         open ? (
-          <a href={calendarUrl} className={`${STICKY} rotate-2 bg-[#CFE6FF]`}>
-            <span aria-hidden="true" className={TAPE} />
+          <a href={calendarUrl} className={`${STICKY} bg-[#CFE6FF]`}>
             {calendarInner}
           </a>
         ) : (
@@ -196,9 +192,8 @@ export const SavedSidebar = memo(
         <button
           type="button"
           onClick={signedIn ? () => void subscribe() : onSignIn}
-          className={`${STICKY} rotate-2 bg-[#CFE6FF]`}
+          className={`${STICKY} bg-[#CFE6FF]`}
         >
-          <span aria-hidden="true" className={TAPE} />
           {calendarInner}
         </button>
       ) : (
@@ -236,25 +231,19 @@ export const SavedSidebar = memo(
             exit={{ opacity: 0 }}
             transition={ease}
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-            // Open, the whole panel is the cork board, with a wooden edge on the right.
+            // Open, the whole panel is a whiteboard, with a metal edge on the right.
             className={`absolute inset-y-0 left-0 flex flex-col ${
-              open ? "cork gap-6 border-r-[6px] border-[#8a5a30] pt-6" : ""
+              open ? "whiteboard gap-6 border-r-[6px] border-[#B9C0C7] pt-6" : ""
             }`}
           >
             {open ? (
               <>
-                {/* A soft dark wash down from the top, so the white heading
-                    and count read clearly against the cork. */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/65 via-black/35 to-transparent"
-                />
                 <div className="relative flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-medium text-white [text-shadow:0_1px_3px_rgba(40,20,0,0.65)]">
+                    <h2 className="text-2xl font-medium text-fg">
                       Saved Events
                     </h2>
-                    <p className="truncate text-xl text-white [text-shadow:0_1px_3px_rgba(40,20,0,0.65)]">
+                    <p className="truncate text-xl text-fg-muted">
                       {owner ? `For ${owner} · ` : ""}
                       {countLabel}
                     </p>
@@ -303,10 +292,9 @@ export const SavedSidebar = memo(
                   <button
                     type="button"
                     onClick={onOpenSaved}
-                    className={`${STICKY} -rotate-2 bg-[#FFE97A]`}
+                    className={`${STICKY} bg-[#FFE97A]`}
                   >
-                    <span aria-hidden="true" className={TAPE} />
-                    <Bookmark aria-hidden="true" className="size-6 fill-[#2B2405]" />
+                            <Bookmark aria-hidden="true" className="size-6 fill-[#2B2405]" />
                     See Saved Events
                   </button>
                   {calendar}
@@ -509,7 +497,7 @@ function writeBoard(spots: Record<string, Spot>) {
   }
 }
 
-/** Push-pin colours; each program keeps the same one. */
+/** Magnet colours; each program keeps the same one. */
 const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
 
 function hash(id: string): number {
@@ -518,9 +506,22 @@ function hash(id: string): number {
   return Math.abs(h);
 }
 
-/** A small, steady tilt per program (-2.4° to 2.4°), so the board looks laid by hand. */
+/** A small, steady tilt per program (-1.2° to 1.2°), so the board looks laid by hand. */
 function tilt(id: string): number {
-  return ((hash(id) % 7) - 3) * 0.8;
+  return ((hash(id) % 7) - 3) * 0.4;
+}
+
+/** A square fridge magnet: a rounded square of colour with a little shine. */
+export function Magnet({ colour, className = "" }: { colour: string; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-[4px] shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${className}`}
+      style={{
+        background: `linear-gradient(145deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%), ${colour}`,
+      }}
+    />
+  );
 }
 
 /** The open panel's saved programs, as cards to arrange freely. */
@@ -631,14 +632,8 @@ function BoardCard({
       style={{ x, y, left: spot.x, top: spot.y, width: BOARD_CARD_W, zIndex: z }}
       className={`absolute cursor-grab touch-none select-none active:cursor-grabbing ${MINI_CARD}`}
     >
-      {/* The push pin holding it to the cork. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-full shadow-[1px_2px_3px_rgba(0,0,0,0.4)]"
-        style={{
-          background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.75) 0 2px, ${PINS[hash(event.id) % PINS.length]} 3px)`,
-        }}
-      />
+      {/* The magnet holding it to the whiteboard. */}
+      <Magnet colour={PINS[hash(event.id) % PINS.length]} />
       <MiniCardFace event={event} />
     </motion.button>
   );
