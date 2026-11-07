@@ -60,7 +60,7 @@ export function FeedAccount({
         onSignIn={onSignIn}
         onSignOut={onSignOut}
       />
-      {care && care.members.length > 0 && <CareSwitcher {...care} />}
+      {care && care.members.length > 0 && <CareSwitcher {...care} openUp />}
     </div>
   );
 }
@@ -69,7 +69,15 @@ export function FeedAccount({
  * "Saving for: Me ▾". Compact on purpose — it sits in the header next to the
  * name — and it only appears for a caregiver who has someone linked.
  */
-function CareSwitcher({ members, selected, onSelect }: CareChoice) {
+export function CareSwitcher({
+  members,
+  selected,
+  onSelect,
+  openUp = false,
+}: CareChoice & {
+  /** At the bottom of the screen the menu opens upward. */
+  openUp?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -118,7 +126,7 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
           aria-label="Save programs for"
           // Right-anchored on a phone, where the switcher sits near the
           // middle and a left-anchored menu would run off the edge.
-          className="absolute bottom-full right-0 z-50 mb-2 min-w-[220px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto"
+          className={`absolute right-0 z-50 min-w-[220px] ${openUp ? "bottom-full mb-2" : "top-full mt-2"} overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto`}
         >
           <button
             role="menuitemradio"

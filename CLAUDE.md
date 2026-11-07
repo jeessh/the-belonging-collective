@@ -130,7 +130,10 @@ can open.
   feed's Accessibility Tools menu sits beside the Card / List toggle
   (`a11yMenu` in EventsView), and the account button and "Saving for"
   (`FeedAccount` in `member/FeedHeader.tsx`) sit centred in a row at the
-  bottom of the event column, their menus opening upward.
+  bottom of the event column, their menus opening upward — except that
+  while the saved panel is open (`careInPanel`), "Saving for"
+  (`CareSwitcher`) sits right under the panel's heading and Close button
+  instead, opening downward.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the

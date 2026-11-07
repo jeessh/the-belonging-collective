@@ -62,7 +62,7 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
-import { AccessibilityMenu, FeedAccount } from "@/components/member/FeedHeader";
+import { AccessibilityMenu, CareSwitcher, FeedAccount } from "@/components/member/FeedHeader";
 import {
   BOARD_CARD_W,
   MINI_CARD,
@@ -1151,6 +1151,10 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
+  // "Saving for" sits under the saved panel's heading while it is open;
+  // folded, on a phone or on All Saved Events it joins the account row.
+  const careInPanel = !phone && view !== "saved" && sidebarOpen;
+
   // Accessibility Tools, beside the Card / List toggle.
   const a11yMenu = (
     <AccessibilityMenu
@@ -1241,6 +1245,11 @@ export function EventsView({
           <SavedSidebar
             ref={dropRef}
             layout={sidebarOpen ? "panel" : "rail"}
+            careSwitcher={
+              careInPanel && careChoice && careChoice.members.length > 0 ? (
+                <CareSwitcher {...careChoice} />
+              ) : null
+            }
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
             signedIn={signedIn}
@@ -1568,7 +1577,7 @@ export function EventsView({
             <FeedAccount
               name={name}
               avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-              care={careChoice}
+              care={careInPanel ? null : careChoice}
               onSignIn={() => toSignIn()}
               onSignOut={() => void doLogout()}
             />

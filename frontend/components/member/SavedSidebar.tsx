@@ -60,6 +60,9 @@ type Props = {
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
   onSignIn: () => void;
+  /** "Saving for", under the open panel's heading (a caregiver with
+      linked members only). */
+  careSwitcher?: ReactNode;
 };
 
 /**
@@ -84,6 +87,7 @@ export const SavedSidebar = memo(
       onOpenSaved,
       onOpenEvent,
       onSignIn,
+      careSwitcher = null,
     },
     dropRef,
   ) {
@@ -266,6 +270,7 @@ export const SavedSidebar = memo(
                     Close
                   </Button>
                 </div>
+                {careSwitcher && <div className="relative z-10 -mt-3 px-6">{careSwitcher}</div>}
 
                 <div className="flex min-h-0 flex-1 flex-col px-6">
                   <div
