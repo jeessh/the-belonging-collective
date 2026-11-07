@@ -2,7 +2,6 @@ import { placeLabel } from "@/lib/place";
 import type { ReactNode } from "react";
 import {
   CalendarDays,
-  CircleDollarSign,
   MapPin,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -222,19 +221,8 @@ export function EventSummary({
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
-      {/* The event's own page and dialog read back the rest of what the
-          organizer set: what it costs (how to join is the tag beside the title). Cards keep to when and where. */}
-      {/* "Free" / "Paid" are already the tag beside the title; an event
-          with an actual price says it here. */}
-      {layout === "detail" && event.price_label && event.price_label !== "Free" && event.price_label !== "Paid" && (
-        <div className="flex items-start gap-3">
-          <CircleDollarSign
-            aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
-          />
-          <p className="min-w-0 text-fg">{event.price_label}</p>
-        </div>
-      )}
+      {/* Only three facts on any summary: when, where and the saved
+          count. Cost and registration are the tags beside the title. */}
       {going && <div className={meta}>{going}</div>}
     </div>
   );

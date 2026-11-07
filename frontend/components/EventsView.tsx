@@ -1432,13 +1432,13 @@ export function EventsView({
                   {feed.length - i - 1 >= 2 && (
                     <div
                       aria-hidden
-                      className="absolute inset-x-10 -bottom-7 top-16 rounded-card border-2 border-line-card bg-[#F7F7F7] shadow-[0_2px_6px_rgba(0,0,0,0.08)] sm:inset-x-16 sm:-bottom-9"
+                      className="absolute inset-x-10 -bottom-6 top-16 rounded-card border border-line-card/80 bg-[#FAFAFA] shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:inset-x-16 sm:-bottom-7"
                     />
                   )}
                   {feed.length - i - 1 >= 1 && (
                     <div
                       aria-hidden
-                      className="absolute inset-x-5 -bottom-3.5 top-12 rounded-card border-2 border-line-card bg-surface shadow-[0_2px_8px_rgba(0,0,0,0.10)] sm:inset-x-8 sm:-bottom-[18px]"
+                      className="absolute inset-x-5 -bottom-3 top-12 rounded-card border border-line-card bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.07)] sm:inset-x-8 sm:-bottom-3.5"
                     />
                   )}
                   <motion.div

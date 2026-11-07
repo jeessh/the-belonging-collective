@@ -303,13 +303,11 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
-- **The dialog / event page reads back everything the form sets.**
-  `EventSummary`'s `detail` layout adds, under when and where (not how
-  often it repeats — members don't need it): the cost (`event.price_label`,
-  built server-side by `core/pricing.describe`; hidden when it is just
-  "Free", which the tag already says) (registration is the tag beside the title). `EventDetails`
-  labels the organizer's link "Sign up on …" when sign-up
-  is needed. Cards stay to when and where.
+- **Every event summary shows three facts and no more: when, where and
+  the saved count** (`EventSummary`, every layout — feed card, list, dialog,
+  event page, print). Cost and registration are the tags beside the title;
+  there is no price line, no repeats line, no ages or spots. `EventDetails`
+  labels the organizer's link "Sign up on …" when sign-up is needed.
 - **Tags beside the title: "Free" or "Paid", and "Registration required"**
   (`eventTags` in `ui/Tag`; Free / Paid from the `price` dimension, so it
   always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in
