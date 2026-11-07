@@ -250,11 +250,11 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        // Reaches 9px past the drop zone (its 1px transparent
-                        // edge + each card's 8px padding), so a card's
+                        // Reaches 10px past the drop zone (its 1px transparent
+                        // edge, then each card's 1px edge and 8px padding), so a card's
                         // picture and words start where the "Saved Events"
                         // heading does while its hover fill reaches past them.
-                        className={`-mx-[9px] flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 transition-opacity ${
+                        className={`-mx-[10px] flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
