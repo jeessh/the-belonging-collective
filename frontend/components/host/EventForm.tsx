@@ -1036,7 +1036,14 @@ export function EventForm({
                     size="sm"
                     label="Registration"
                     value={values.requiresSignup ? "registration" : "dropin"}
-                    onChange={(v) => set("requiresSignup", v === "registration")}
+                    onChange={(v) => {
+                      set("requiresSignup", v === "registration");
+                      // A drop-in has no attendee limit.
+                      if (v === "dropin") {
+                        setLimitOn(false);
+                        set("capacity", "");
+                      }
+                    }}
                     segments={[
                       { value: "dropin", label: "Drop-in" },
                       { value: "registration", label: "Registration" },
@@ -1072,52 +1079,54 @@ export function EventForm({
                 </div>
               )}
             </div>
-            {/* An optional cap on how many people can come: a switch, and the
+            {/* Registration only: an optional cap on how many people can come — a switch, and the
                 number only while it's on (turning it off clears it). Saving
                 still never refuses anyone: the first saves each hold a spot
                 for an hour while spots last (core/holds). */}
-            <div className="field flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={limitOn}
-                  aria-labelledby={`${id}-limit-label`}
-                  onClick={() => {
-                    const next = !limitOn;
-                    setLimitOn(next);
-                    if (!next) set("capacity", "");
-                  }}
-                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-border ${
-                    limitOn ? "bg-primary-strong" : "bg-line"
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform ${
-                      limitOn ? "translate-x-4" : "translate-x-0"
+            {values.requiresSignup && (
+              <div className="field flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={limitOn}
+                    aria-labelledby={`${id}-limit-label`}
+                    onClick={() => {
+                      const next = !limitOn;
+                      setLimitOn(next);
+                      if (!next) set("capacity", "");
+                    }}
+                    className={`relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-border ${
+                      limitOn ? "bg-primary-strong" : "bg-line"
                     }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+                        limitOn ? "translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span id={`${id}-limit-label`} className="field-label text-lg font-medium text-fg">
+                    Attendee limit
+                  </span>
+                </div>
+                {limitOn && (
+                  <TextField
+                    label="Most people who can come"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    required
+                    className="max-w-[260px]"
+                    value={values.capacity}
+                    onChange={(e) => set("capacity", e.target.value)}
+                    error={fieldError("capacity")}
+                    placeholder="20"
                   />
-                </button>
-                <span id={`${id}-limit-label`} className="field-label text-lg font-medium text-fg">
-                  Attendee limit
-                </span>
+                )}
               </div>
-              {limitOn && (
-                <TextField
-                  label="Most people who can come"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  required
-                  className="max-w-[260px]"
-                  value={values.capacity}
-                  onChange={(e) => set("capacity", e.target.value)}
-                  error={fieldError("capacity")}
-                  placeholder="20"
-                />
-              )}
-            </div>
+            )}
             <Section
               title="Who can see this"
             >

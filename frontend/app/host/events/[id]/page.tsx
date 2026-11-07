@@ -392,9 +392,11 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 )}
               </ReadField>
           </div>
-          <ReadField label="Attendee limit">
-            {event.capacity != null ? `${event.capacity} people` : "No limit"}
-          </ReadField>
+          {event.requires_signup && (
+            <ReadField label="Attendee limit">
+              {event.capacity != null ? `${event.capacity} people` : "No limit"}
+            </ReadField>
+          )}
           <ReadField label="Who can see this">
             {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
           </ReadField>
