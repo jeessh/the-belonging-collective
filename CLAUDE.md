@@ -113,7 +113,7 @@ can open.
   (`Arrivals`), and the panel keeps its list mounted under the drag message
   so an arrival animates. The open panel is a whiteboard (an
   experiment, `Board` in SavedSidebar): the whole panel is `.whiteboard`
-  (globals.css) with a grey metal edge on its right — a dark "Saved Events"
+  (globals.css; a subtle grey, #F1F1F1) with a grey metal edge on its right — a dark "Saved Events"
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
   bottom — miniature feed cards (picture and title) each held by a
