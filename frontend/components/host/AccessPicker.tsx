@@ -9,14 +9,15 @@ import {
   type AccessGroup,
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { Field, Select } from "@/components/AdminTable";
 
 export type AccessMode = "everyone" | "group";
 
 /**
- * "Who can see this": everyone, or only members approved into one of the
+ * "Who can see this": a Special access checkbox — unticked, everyone; ticked,
+ * the group picker below it. Only members approved into one of the
  * organization's special-access groups. Groups are the program's own
  * organization's — a superadmin editing another agency's program sees that
  * agency's list, which is what the API accepts.
@@ -71,15 +72,13 @@ export function AccessPicker({
 
   return (
     <div className="flex flex-col items-start gap-4">
-      <SegmentedToggle<AccessMode>
-        size="sm"
-        label="Who can see this"
-        value={mode}
-        onChange={(next) => onChange(next, next === "group" ? groupId : null)}
-        segments={[
-          { value: "everyone", label: "Everyone" },
-          { value: "group", label: "Special access" },
-        ]}
+      {/* Unticked, everyone can see it; ticked, the group picker shows. */}
+      <Checkbox
+        label="Special access: only members approved into a group can see it"
+        checked={mode === "group"}
+        onChange={(e) =>
+          e.target.checked ? onChange("group", groupId) : onChange("everyone", null)
+        }
       />
 
       {mode === "group" && (

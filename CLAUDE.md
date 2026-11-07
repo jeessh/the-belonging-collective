@@ -111,18 +111,56 @@ can open.
   list before first paint so it never opens-then-folds. Rail and panel are
   one `motion.aside` whose width animates; saved items grow in and fold out
   (`Arrivals`), and the panel keeps its list mounted under the drag message
-  so an arrival animates. Its forwarded ref is the drop target every save
+  so an arrival animates. The open panel is a whiteboard (an
+  experiment, `Board` in SavedSidebar): the whole panel is `.whiteboard`
+  (globals.css; white) with a grey metal edge on its right — a dark "Saved Events"
+  heading and grey count, and See Saved Events / Google Calendar as the
+  standard secondary `Button`s (large, full width, stacked) at the
+  bottom — miniature feed cards (picture and title) each held by a
+  coloured square magnet (`Magnet`), in two even columns
+  (a plain grid, 16px apart; no dragging or saved positions any more),
+  **newest save first, at the top left** (the list has no saved-at time,
+  so `Board` remembers arrival order in a ref; the mini card's flight
+  lands there); a click opens one. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
-- The feed's account button and menu (`FeedHeader`'s `AccountButton`) are
-  the console's (`host/ConsoleHeader`) size for size — a 32px picture, the
-  name (14px medium) over the account type ("Caregiver" / "Community
-  member", `Me.is_caregiver`, 12px grey), a 16px chevron, and a 224px menu
-  of rounded 14px items with 16px icons. Change one, change the other.
+- **The feed's heading is "Discover Events"** (`h1`), with the counter
+  under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
+  screen readers there since the live region reads it; "47 Unique Events"
+  in list view).
+- **The bar spans the event column only; the saved panel runs the full
+  height.** The bar (in EventsView) has the account button (`FeedAccount`
+  in `member/FeedHeader.tsx`) on the left and Accessibility Tools
+  (`a11yMenu`) on the right. "Saving for" (`CareSwitcher`) sits beside the
+  account — except while the saved panel is open (`careInPanel`), when it
+  sits under the panel's heading and Close button, the board's full width.
+- The feed's account button (`FeedAccount`'s `AccountButton`) is the
+  member header's one size: a 36px picture and **just the name** (no
+  account-type line) at 20px, the size of "Accessibility Tools" and the
+  "Saving for" switcher beside it, a 20px chevron; its menu items are
+  18px with 20px icons, like the header's other menus.
+- **The experience: Simplified or Advanced.** The sign-up flow's account
+  step is "Choose your experience": **Simplified** (a community member;
+  the feed opens on the one card) or **Advanced** (a caregiver; the list).
+  It is `is_caregiver` plus `preferred_view`, written together — at sign-up
+  (`is_caregiver` on the sign-up call, then `PATCH /users/me
+  {preferred_view}`) and from the "Your experience" toggle at the top of
+  Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
+  {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
+  Me). The View toggle still switches card / list on its own.
+  **Advanced in List view is the console's layout** (`member/CaregiverFeed`):
+  `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
+  groups only, member-app sizes; it replaces the chip row), search, and a
+  card per event like `AdminEventCard` (image, tags, when, where, "N
+  people saved this event"; the whole card opens the details) with Share and Add to Google
+  Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through
+  `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
+  member's actions: nothing edits; a special-access program not yet
+  approved has no Save (its details offer Request access).
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
@@ -144,6 +182,28 @@ can open.
   tighter gutters. Anything that has to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
+- **The feed side matches the saved board, lightly**: the event
+  column stays plain white; the feed
+  card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
+  top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
+  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
+- **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
+  the feed column while `viewMode === "card"`): the usual cursors at twice
+  the size — arrow, a pointing hand over anything clickable, an open hand
+  over the draggable card and a closed one while it's held (`.card-grab`,
+  `.is-grabbing` while lifted); text boxes keep the text cursor. The hands
+  are Lucide's pointer / hand / hand-grab, filled white with the icon's black lines (no outer white edge); the arrow is solid black.
+  40px PNGs with 80px Retina copies through `image-set` (`public/cursors`,
+  drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
+  command is in the file); SVG cursors blur.
+- **An event that needs registering, with the organizer's link, says
+  Register.** When `requires_signup` and `registration_mode === "external"`
+  with a `registration_url` (the form sets external whenever a sign-up link
+  is given), the feed card's Save button becomes **Register** (primary,
+  external-link icon), opening the link through `openRegistration` (new tab,
+  counted as a registration click). The dialog shows Register beside
+  Save / Un-Save. Saving such an event still works by drag, ← hold, voice
+  or the dialog.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
@@ -155,6 +215,12 @@ can open.
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
+  **Dragged toward the saved board (not on a phone), the card turns into a
+  mini card**: a `MiniCardFace` ghost (portalled, `ghostT` etc. in
+  EventsView) follows the pointer and fades in as the big card fades out,
+  fully at the board's edge (`MORPH_DISTANCE`); let go and that mini card
+  flies onto the board, or the big card comes back. The sidebar no longer
+  tints blue or says "Drag events here" during a drag (no `active` prop).
   While the card travels (drag, ← hold, flight) it is **lifted**: `position:
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the
@@ -172,6 +238,12 @@ can open.
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
+- **A repeating program reaches the member feed a month ahead**
+  (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
+  `feed`, so card, list and Advanced views alike): its next date must start
+  within `RECURRING_WINDOW_DAYS` (30). "Repeating" is `series_total > 1` or a
+  `recurrence` phrase — every row has a `series_id`, one-offs included, so
+  that alone means nothing. One-time events show however far off.
 - **"For you this week"** (`recommendedThisWeek` in `lib/feed.ts`): up to six
   programs with `matchScore > 0` starting in the next seven days, one per
   program, for a signed-in member with at least one interest or need. It is a
@@ -184,16 +256,24 @@ can open.
   count (`_public_view` blanks it for anyone else). `saved_count` is
   otherwise sent to everyone, signed in or not (just a count, no names —
   the shared-list page too), and
-  `ui/GoingCount` shows "N going" — nothing at zero. There is no "See who
+  `ui/GoingCount` shows "N people saved this event" (bookmark icon; the
+  sidebar shows no count) — at zero too ("0 people saved this event");
+  nothing only where the count is withheld. Members and console say it
+  the same way; nothing says "going" any more. There is no "See who
   else is going" sign-in nudge any more, and sign-out keeps the counts.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
-  LINKS (`event.links` plus the organizer's `registration_url`) — for the
+  LINKS (`event.links` plus the organizer's `registration_url`; one
+  bordered card per link — label, site name, external-link icon, the whole
+  card clickable — two to a row from `sm`) — for the
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
-  preview. Each hands in its own `tools` (`member/EventTools`: Share / Print)
-  and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email`
+  preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
+  Calendar / Share / Print — a row above the title, at the top of the
+  text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  the console's `POST /share/email/organizer`: the same cards under the
+  organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
   button) from MAIL_FROM under "{first name} via …", Reply-To the member,
   signed-in members only, 20 a day. A caregiver sharing a member's list
@@ -210,12 +290,32 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **The dialog / event page reads back everything the form sets.**
+  `EventSummary`'s `detail` layout adds, under when and where (not how
+  often it repeats — members don't need it): the cost (`event.price_label`,
+  built server-side by `core/pricing.describe`; hidden when it is just
+  "Free", which the tag already says) (registration is the tag beside the title). `EventDetails`
+  labels the organizer's link "Sign up on …" when sign-up
+  is needed. Cards stay to when and where.
+- **Tags beside the title: "Free" or "Paid", and "Registration required"**
+  (`eventTags` in `ui/Tag`; Free / Paid from the `price` dimension, so it
+  always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in
+  gets no tag; plus Special access and For you where they apply). Drop-in and
+  In-person / Virtual are no longer pills on any surface — the facts and
+  filters still carry them. `EventSummary` draws title + tags as one
+  wrapping row (`heading`), the event page included.
+- **Icon sizes in the member app:** facts on the feed card and the event
+  dialog / page are 28px beside 20px text (`EventSummary` `icon`; the
+  dialog's and page's `GoingCount` pass `size-7`), smaller rows 24px, and
+  every button icon 24px (`Button`). All draw a 2px line (see below).
 - The fact icons on every event summary (`ui/EventSummary` — feed card, list
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
 - **The console's "Who it's for" reaches members in full:** spots ("N
-  spots left"), ages (every card), the Youth answer on the event's own page
+  spots left"), ages (every card — the form no longer asks for them;
+  `min_age` / `max_age` already on an event are carried through unchanged), the Youth answer (no longer asked on the form — `is_youth` already on an
+  event is carried through) on the event's own page
   only (`audienceLabel` in `ui/EventSummary`, `detail` layout: "Youth · Ages
   12–18", "For youth" — cards, including the admin card, show just the ages), what it offers (the event page's Accessibility list) and
   special access (the pill).
@@ -224,7 +324,8 @@ can open.
   drew 4px), so globals.css draws `svg.lucide` outside `.console` with
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
-- `components/SavedEvents.tsx` ("All Saved Events") has no fetch of its own:
+- `components/SavedEvents.tsx` ("All Saved Events") is one continuous
+  scrolling grid — no Back / Next paging. It has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".
@@ -278,14 +379,16 @@ can open.
   the per-program table (sortable), a date range (presets + custom; default
   the last 90 days), a superadmin org filter and Download CSV — a plain
   link to `/analytics.csv`, so the browser downloads it with the cookie.
-  Console cards and the details page show "N going · M clicks" through
+  Console cards and the details page say "N people saved this event · M
+  clicks" (`savedLine`, `saved_count`, never "going"; analytics says "Saved
+  now") through
   `components/host/ConsoleCounts.tsx` (`EventOut.click_count`, filled only
   for a signed-in organizer).
 - `/host/access` is special access: the org's groups (every org's, for a
   superadmin) beside the chosen group's members on Requests / Approved /
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
   surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
-  the form's "Who can see this" — Everyone or a group of the *program's*
+  the form's "Who can see this" — a Special access checkbox; ticked, a group of the *program's*
   organization (`hostId`), with inline group creation — and
   `components/host/PosterField.tsx` / `PosterSection.tsx` are the printable
   poster (`uploadPoster`, PDF or image) and the details page's QR code. The
@@ -295,19 +398,25 @@ can open.
   `EventSummary` draws it in the shared tag row, so console cards and member
   surfaces show the same thing.
 - Programs are cards, not table rows: `components/host/AdminEventCard.tsx` is
-  the component sheet's "Admin – Listed Event" (square image, facts beside —
-  the member card's facts in its order and words: the date with the time
-  under it, place, ages, spots left, "N going", plus the console's clicks
-  (`ConsoleCounts`); every icon on the card — tools, tags, facts, counts,
-  View more — is 16px at a 1.75 line, one rule on `.event-card`
-  the round edit / share / un-publish (archive
-  icon, never a trash can: nothing is deleted) tools at the top right — over
-  the picture's corner on a phone — each with a `ui/Tooltip` saying what it
-  does, and **View more →** at the bottom right, the card's one way to the
-  details page; the card itself isn't clickable). `ui/Tooltip` shows on
+  the component sheet's "Admin – Listed Event" (square image, and beside it
+  only the title, `host/PostedBy`, "Posted on Oct 18, 2026" (`created_at`)
+  and "N people saved this event" — shown at zero too. No
+  date, place, tags, ages or spots: those are on the details page, View
+  more. Its icons follow the console's one icon rule (below)
+  one square ⋯ button at the top right — over the picture's corner on
+  a phone — opening a menu of Edit, Share (the share sheet) and Un-publish
+  (red, archive icon — never a trash can: nothing is deleted); Edit and
+  Un-publish only for the owner or a superadmin. Escape or a click away
+  closes it, and **View more →** at the bottom right, and the **whole card** opens the details page — there is no View
+  more button (the title link's `::after` covers the card; the tools sit
+  above it on `z-10`), with a hover state — darker edge, faint fill, soft shadow).
+  `/host/events` is centred, 1200px of content at most, wide margins. `ui/Tooltip` shows on
   hover and keyboard focus, is the control's `aria-describedby`, and closes
   on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion
-  `FilterPanel` (`ui/Checkbox` rows; its reset row reads "No filters" so it
+  `FilterPanel` (console-only groups first — Status, Your Events only, since
+  All Events lists published events alone; Date posted, cumulative "Past 7
+  / 30 / 90 days" or older; Posted by, the person or the organization —
+  then the feed's dimensions) (`ui/Checkbox` rows; its reset row reads "No filters" so it
   isn't confused with the toggle), with a Your Events / All Events toggle.
   **A filter matches every option a program is in** (`Dimension.all`,
   `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
@@ -335,20 +444,25 @@ can open.
   organization is the header's subtitle — "Posted by …" here, "Posting
   under …" on create (`PageHeader subtitle`); the header's buttons share the
   title's row and don't wrap from `lg`. Header: Share (icon) / Print (icon) / Edit / Un-publish (just the word);
-  the link reads "Sign-up link" or, for a drop-in, "Posting link". **An un-published
+  the link reads "Sign-up link" or, for a drop-in, "External links" ("(optional)" on the form). **There is no Un-published tab any more**: Your Events lists the
+  organization's un-published events after its published ones (from
+  `GET /events/archived`, filtered to the org), every card tagged
+  Published / Un-published (`EventStatus`), an un-published card's ⋯ menu
+  offering Restore. **An un-published
   program opens there too**, for its organization or a superadmin, from
   "View more" on the Un-published tab: `GET /events/archived/{id}` (same
   rule as the list; the public `GET /events/{id}` still 404s), shown with a
   notice and **Restore** in place of Edit / Un-publish, and without Copy
   link, the poster or its QR code (its public page is gone). Its back arrow
-  returns to `/host/events?scope=unpublished`. `/host/events/[id]/edit`
+  returns to `/host/events?scope=unpublished`, which now lands on Your Events. `/host/events/[id]/edit`
   shares `EventForm` with create.
   **The event's name is the page title** on every event page (28px,
   `.event-title`; the header's buttons on the title's row at the right,
   top-aligned). Under the title, `host/PostedBy` says who posted it and from where,
   with their picture: "Posted by Sam Lee · Karis Disability Services" for a
   staff login (initials avatar — organizer logins have no photo), just the
-  organization with its logo for the shared login or an imported event.
+  organization with its logo for the shared login or an imported event —
+  then "· Published on Oct 18, 2026" (`showPublished`, from `created_at`).
   `EventOut.created_by_name` / `created_by_picture` are filled for signed-in
   organizers only (one query per page in `_public_view`); members never
   see who on a team posted what. Beside the title a status tag (`host/EventStatus`, on
@@ -361,6 +475,19 @@ can open.
   buttons), whose title is the name input (reads as a heading, shows it's
   editable on hover / focus, carries the required error); the form has no
   separate name box. The details page's title is `event.title`.
+  **Layout (after a Sweatpals reference): no boxes, picture on the right.**
+  From `lg` the create / edit form and the details page are two equal
+  columns: every field on the left in `Group` sections (Description
+  first, then Event details (date, time, where — the venue toggle beside its
+  address / meeting link — cost and how people join, the paid details,
+  who can see this, repeats), Event tags (topics, what it offers). No
+  Who it's for section and no Spots available field any more; `capacity` already on an
+  event is carried through, so its one-hour holds and "N spots left" go on) — a rule above each), the
+  event picture on the right, 520px tall and `sticky` so it stays in view
+  (`ImageDrop frameClassName`). One column below `lg`, the picture first.
+  The buttons are top right in the header: Cancel (through the leave
+  guard), Un-publish on edit (`UnpublishModal`, then back to the list with
+  the Undo toast), and the primary Publish / Save at the far right.
   **`EventForm` is one page in two columns** (from `lg`; one column, same
   order, below): on the left, under an "Event details" heading (same size as
   the right column's group headings — on the details page too), the event
@@ -368,17 +495,19 @@ can open.
   on one row: "Address", required, or "Meeting link", optional — both are
   `events.location`; `lib/place.ts` shows a link as "Online" on every card
   and as "Join online" on the event page), and repeats; on the right `Group`s for Description, Cost & sign-up and Who
-  it's for. **Topics are not on the form**: Publish / Save checks every
-  other field first, then opens a two-step dialog: "What's this event
-  about?" (the topic chips, already picked on edit; Next waits for one,
-  Keep editing closes it), then "What does it offer?" (the access-need
-  chips, optional; Back | Publish / Save). Neither is on the form. **There is no Details & links group** — the form has
+  it's for. **Topics and "What does it offer?" are the Event tags section** (topic
+  chips, required — "Pick at least one topic."; then the access-need
+  chips); Publish / Save submits straight away, no dialog. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
-  carries them through unchanged). Links live in Cost & sign-up under the
-  sign-up / posting link: "Add a link" adds a label + address row, up to
-  `LINKS_MAX` (3), each with a remove button; the details page reads them
-  back there as "Other links". **The console calls the topic list
+  carries them through unchanged). Cost & sign-up opens with Cost and How people join
+  side by side (form and details page; "How is it paid?" under the row).
+  Links live under Description: the Sign-up link (Registration
+  events; a drop-in shows its old Posting link box only if it has one),
+  then **External links (optional)** — `links` rows of label + address,
+  the first always shown with a + button beside it (tooltip "Add a link")
+  that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
+  page reads them back as "External links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
   (`lib/activities.ts`: Class, Workshop, …) with no UI, empty on every live
@@ -393,10 +522,17 @@ can open.
   account menu (a capture-phase click listener, since client-side navigation
   never fires `beforeunload`) — plus the browser's own warning on reload.
   Accounts stay table-first — `components/AdminTable.tsx` backs
-  `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
+  `/host/admins` (Organizations) and `/host/users` (Community Members). `/host/events`' search box
+  fills the row beside its buttons (one row from `md`; `SearchField`'s grey
+  is a half-strength `surface-subtle`). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.
+- **One icon for the whole console:** every Lucide icon is 16px with a
+  1.5px line (`globals.css`, non-scaling stroke) — buttons, side panel,
+  menus, fields, cards, tags, counts. Large illustrations (`size-8` /
+  `size-12`) keep their size, same line; `.icon-exempt` opts out (the
+  checkbox tick). Don't size console icons one by one.
 - **One smaller type and control scale for the whole console.** `AdminShell`
   puts `.console` on every console page, and `globals.css` maps the shared
   components' member-app sizes onto it: 12px small, 14px body (and tables),
@@ -421,8 +557,11 @@ can open.
   (`ImageDrop square`); with no picture it is a plain grey 300px box with one "Upload image" button (drop still works).
   Editing passes `imageFallback={eventImage(event)}`, so an event without a
   cover of its own shows the picture members see (another of its images or
-  the topic's stock photo) with Change / Remove; Remove leaves the grey box,
-  and saving without an upload still shows the stock photo. There is no
+  the topic's stock photo). A picture in the form has one control: a dark,
+  see-through **Replace image** button in its middle (dropping a file on it
+  works too) — no Change / Remove under it. The create and edit pages have
+  wider margins than other console pages and are centred (1200px content);
+  the details page too. There is no
   "* Required" key over the form — the asterisks on the fields say it. The
   right column's dividers
   are `border-line/40`.
@@ -437,7 +576,7 @@ can open.
   `rounded-sm` … `rounded-3xl` and the named `control` / `field` / `card`
   radii all to 8px, and the branded emails (`core/mail.py`) match.
   `rounded-full` stays round (avatars, the round tool buttons, badges,
-  pills); the browser-tab icon keeps its own shape.
+  pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
 - **One back control everywhere: `ui/BackButton`** — an arrow and its
   words ("← Back to events", "← Back"), a link or a button, on its own line
   **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).
@@ -580,6 +719,37 @@ can open.
   platform without the other agencies' programs. By-id routes are untouched,
   so a program's own link opens either way. The console's account menu links
   to the organization's page.
+
+## Importing a calendar (`/host/import`, superadmins)
+- **Bring an organization's existing calendar in as events** — KW Hab's
+  Teamup community calendar (`https://ics.teamup.com/feed/ksakacjdxmrwoqtzym/0.ics`),
+  or any iCal feed / `.ics` file (Google, Outlook). "Import events" on Event
+  Management (superadmins only).
+- **Preview, then commit — nothing is written until Import.**
+  `POST /imports/calendar/preview {url | ics}` reads it
+  (`core/calendar_import.py`: `fetch` — http(s), public addresses only, ≤ 5 MB;
+  `parse` — pure, upcoming dates only, ≤ 104 dates and two years per program,
+  using the calendar's own dates so skipped (EXDATE) and moved
+  (RECURRENCE-ID) ones come through) and answers one row per program with
+  its matched organization (`match_org`: exact, contained, or initials —
+  "WRFN"), guessed topics (`guess_topics`, keywords → live slugs), a
+  `restricted` flag (an audience "who registered" elsewhere, e.g. LEG Up!)
+  and a likely duplicate (same organization, similar title, same day). The
+  page maps each calendar organization once and each restricted audience
+  once ("Audiences": "People who registered through LEG Up!" → a group of
+  that organization — fills every matching row), then lets the superadmin
+  untick rows and set each one's topic and special-access group. Preview
+  re-reads the groups, so one made meanwhile is offered.
+  `POST /imports/calendar/commit` creates them all-or-nothing: one row per
+  date sharing a series_id, like a console repeating event; free unless the
+  calendar tags it paid; drop-in; "Who: …" and any overflow of a long
+  description under extra details; link lines as Important Links.
+- Teamup's categories mix organizations with flags — "Free Community
+  Events", "Paid Community Events", "Virtual Events" — which set cost and
+  venue instead. Titles' trailing "(audience)" is dropped when it repeats
+  the Who.
+- New dependencies: `icalendar`, `python-dateutil` (requirements.txt). No
+  migration.
 
 ## Holds, member email, sharing
 - **Saving a program with a `capacity` holds a spot for one hour**

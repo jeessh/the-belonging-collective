@@ -1,5 +1,6 @@
 import type { Event } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
+import { TIME_ZONE } from "@/lib/time";
 
 /**
  * "Posted by" under an event's title in the console: the person who posted it
@@ -8,7 +9,14 @@ import { Avatar } from "@/components/ui/Avatar";
  * login (or imported, with no poster on record), it's just the organization,
  * with its logo. Staff logins have no photo, so they get their initials.
  */
-export function PostedBy({ event }: { event: Event }) {
+export function PostedBy({
+  event,
+  showPublished = false,
+}: {
+  event: Event;
+  /** Add "· Published Oct 18, 2026" (an event's own pages). */
+  showPublished?: boolean;
+}) {
   const person =
     event.created_by_name && event.created_by_name !== event.host_name
       ? event.created_by_name
@@ -28,6 +36,19 @@ export function PostedBy({ event }: { event: Event }) {
         Posted by{" "}
         <span className="font-medium text-fg">{person ?? event.host_name}</span>
         {person && <> · {event.host_name}</>}
+        {showPublished && event.created_at && (
+          <>
+            {" · "}Published on{" "}
+            <time dateTime={event.created_at}>
+              {new Date(event.created_at).toLocaleDateString("en-CA", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                timeZone: TIME_ZONE,
+              })}
+            </time>
+          </>
+        )}
       </span>
     </span>
   );

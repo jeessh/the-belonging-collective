@@ -9,8 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  MoveLeft,
-  MoveRight,
   Printer,
   Search,
   Send,
@@ -48,9 +46,8 @@ const TABS = [
   { value: "past" as const, label: "Past Events" },
 ];
 
-// The saved list is the design's Saved Event tiles, two up, three rows to a
-// page; Back / Next turn the page.
-const GRID_PAGE_SIZE = 6;
+// The saved list is the design's Saved Event tiles, two up, on one
+// continuous page that scrolls.
 
 type Props = {
   /** Null when signed out — there is no list to show, only a way to get one. */
@@ -87,7 +84,6 @@ export const SavedEvents = memo(function SavedEvents({
 }: Props) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("upcoming");
-  const [page, setPage] = useState(1);
   const [sub, setSub] = useState<"share" | "print" | null>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const { show } = useToast();
@@ -180,21 +176,8 @@ export const SavedEvents = memo(function SavedEvents({
   if (!open) return null;
 
   const total = oneCardPerProgram(events).length;
-  // Clamped on read rather than in an effect, so an un-save that empties the
-  // last page shows the one before it in the same render.
-  const pageCount = Math.max(1, Math.ceil(shown.length / GRID_PAGE_SIZE));
-  const current = Math.min(page, pageCount);
-  const onPage = shown.slice(
-    (current - 1) * GRID_PAGE_SIZE,
-    current * GRID_PAGE_SIZE,
-  );
   const tabLabel = TABS.find((t) => t.value === tab)!.label;
 
-  function goTo(next: number) {
-    setPage(next);
-    // The heading sits above the cards, so the new page reads from its top.
-    listHeadingRef.current?.focus();
-  }
   const listTitle = owner
     ? `${owner}'s Saved Events`
     : me
@@ -239,10 +222,7 @@ export const SavedEvents = memo(function SavedEvents({
                 <input
                   type="search"
                   value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search for event"
                   className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
                 />
@@ -300,10 +280,7 @@ export const SavedEvents = memo(function SavedEvents({
               className="self-start"
               segments={TABS}
               value={tab}
-              onChange={(next) => {
-                setTab(next);
-                setPage(1);
-              }}
+              onChange={setTab}
             />
 
             {shown.length === 0 ? (
@@ -321,8 +298,7 @@ export const SavedEvents = memo(function SavedEvents({
             ) : (
               <>
                 {/* The toggle already says which list this is; the heading
-                    is for the keyboard and screen reader — it takes focus on
-                    a page change and names the list. */}
+                    is for the keyboard and screen reader and names the list. */}
                 <h2
                   ref={listHeadingRef}
                   tabIndex={-1}
@@ -331,41 +307,10 @@ export const SavedEvents = memo(function SavedEvents({
                   {tabLabel}
                 </h2>
                 <ul className="grid gap-6 cq-xl:grid-cols-2">
-                  {onPage.map((ev) => (
+                  {shown.map((ev) => (
                     <SavedCard key={ev.id} event={ev} onOpen={onOpen} />
                   ))}
                 </ul>
-                {/* Pinned to the foot of the panel, so Back / Next are on
-                    screen however tall the cards are. */}
-                {pageCount > 1 && (
-                  <nav
-                    aria-label="Saved events pages"
-                    className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-4 border-t border-line bg-surface px-4 py-4 sm:-mx-6 sm:-mb-6 sm:gap-6 sm:px-6 lg:-mx-9 lg:-mb-9 lg:px-9 lg:py-6"
-                  >
-                    <Button
-                      size="lg"
-                      className={ACTION}
-                      disabled={current === 1}
-                      onClick={() => goTo(current - 1)}
-                      leadingIcon={<MoveLeft />}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className={ACTION}
-                      disabled={current === pageCount}
-                      onClick={() => goTo(current + 1)}
-                      trailingIcon={<MoveRight />}
-                    >
-                      Next
-                    </Button>
-                    <p role="status" aria-live="polite" className="sr-only">
-                      Page {current} of {pageCount}
-                    </p>
-                  </nav>
-                )}
               </>
             )}
           </>

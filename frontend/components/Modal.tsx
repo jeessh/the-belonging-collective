@@ -39,7 +39,11 @@ export function Modal({
   size = "md",
   closeOutside = false,
   tone = "default",
+  snug = false,
 }: {
+  /** A little less padding (24 / 32px rather than 24 / 48px): the event
+      dialog, which has a lot to show. */
+  snug?: boolean;
   /**
    * The heading. Pass null when the heading is inside `children` (with
    * `labelId` naming it), as the event dialog does.
@@ -146,7 +150,7 @@ export function Modal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none sm:p-12`}
+          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`}
         >
           {title == null ? null : typeof title === "string" ? (
             <h2

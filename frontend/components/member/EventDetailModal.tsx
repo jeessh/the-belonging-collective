@@ -66,13 +66,14 @@ export function EventDetailModal({
         labelId={TITLE_ID}
         size="lg"
         closeOutside
+        snug
         onClose={close}
       >
         <EventDetails
           event={event}
           titleAs="h2"
           titleId={TITLE_ID}
-          going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
+          going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
           tools={<EventTools event={event} />}
           hint={external ? hostnameOf(event.registration_url) : undefined}
@@ -124,7 +125,7 @@ export function EventDetailModal({
                   onClick={() => onOpenRegistration(event)}
                   trailingIcon={<ExternalLink />}
                 >
-                  Register for Event
+                  Register
                 </Button>
               )}
             </>

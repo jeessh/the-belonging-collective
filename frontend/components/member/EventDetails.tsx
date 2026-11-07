@@ -1,10 +1,10 @@
 import { meetingUrl } from "@/lib/place";
 import type { ReactNode } from "react";
-import { ExternalLink, FileText, Paperclip } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
-import { EventSummary, EventTags } from "@/components/ui/EventSummary";
+import { EventSummary } from "@/components/ui/EventSummary";
 import { HoldInfo } from "@/components/member/HoldInfo";
 import { Glyph } from "@/components/ui/Glyph";
 
@@ -14,7 +14,7 @@ const LINK_BOX =
   "divide-y divide-line overflow-hidden rounded-control border border-line";
 const LINK_ROW =
   "flex min-h-14 items-center justify-between gap-4 px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
-const HEADING = "text-base uppercase tracking-wide text-fg-muted";
+const HEADING = "text-base font-medium uppercase tracking-wide text-fg-muted";
 
 /** The agency's flyer: a thumbnail when it is a picture, a file icon for a PDF. */
 function Poster({ url }: { url: string }) {
@@ -23,7 +23,7 @@ function Poster({ url }: { url: string }) {
     <a href={url} target="_blank" rel="noopener noreferrer" className={LINK_ROW}>
       <span className="flex min-w-0 items-center gap-4">
         {pdf ? (
-          <FileText aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
+          <FileText aria-hidden="true" className="size-6 shrink-0 text-fg-icon" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -40,8 +40,9 @@ function Poster({ url }: { url: string }) {
 }
 
 /**
- * The full listing, drawn as the design's Expanded Card: tags beside Share /
- * Print on top, then the summary, DETAILS, POSTER and LINKS. No hooks, so the
+ * The full listing, drawn as the design's Expanded Card: the summary, the
+ * tools (Google Calendar / Share / Print) above the title in its text column, then
+ * DETAILS, POSTER and LINKS. No hooks, so the
  * server-rendered public page, the dialog over the feed and the print
  * preview all draw the same thing; each hands in its own `tools`, `going`
  * and bottom `actions`.
@@ -59,7 +60,7 @@ export function EventDetails({
 }: {
   event: Event;
   going?: ReactNode;
-  /** Share / Print, top right. */
+  /** Google Calendar / Share / Print, above the title. */
   tools?: ReactNode;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
@@ -85,7 +86,9 @@ export function EventDetails({
     ...(event.registration_url
       ? [
           {
-            label: `Event posting on ${hostnameOf(event.registration_url)}`,
+            label: event.requires_signup
+              ? `Sign up on ${hostnameOf(event.registration_url)}`
+              : `Event posting on ${hostnameOf(event.registration_url)}`,
             url: event.registration_url,
           },
         ]
@@ -101,24 +104,22 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      <div
-        className={`flex flex-wrap items-center justify-between gap-4 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
-      >
-        <div className="flex flex-wrap gap-3">
-          <EventTags event={event} />
+      {/* The "saving holds your spot" tip, top right, clear of the dialog's ×. */}
+      {hold && (
+        <div className={`flex justify-end ${insetForClose ? "pr-12 xl:pr-0" : ""}`}>
+          <HoldInfo />
         </div>
-        {(tools || hold) && (
-          <div className="flex items-center gap-3">
-            {hold && <HoldInfo />}
-            {tools}
-          </div>
-        )}
-      </div>
+      )}
 
       <EventSummary
         event={event}
         layout="detail"
         going={going}
+        // Add to Google Calendar, Share and Print sit above the title, at
+        // the top of the text column.
+        aboveTitle={
+          tools ? <div className="flex flex-wrap items-center gap-3">{tools}</div> : undefined
+        }
         titleAs={titleAs}
         titleId={titleId}
         fixedDates={fixedDates}
@@ -169,20 +170,26 @@ export function EventDetails({
       {links.length > 0 && (
         <section className="flex flex-col gap-3">
           <h3 className={HEADING}>Links</h3>
-          <ul className={LINK_BOX}>
+          {/* One card per link, two to a row at most; the whole card is
+              the link, with an external-link icon at its end. */}
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {links.map((link, i) => (
-              <li key={`${link.url}-${i}`}>
+              <li key={`${link.url}-${i}`} className="min-w-0">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={LINK_ROW}
+                  className="group flex h-full min-h-[72px] items-center justify-between gap-4 rounded-card border border-line bg-surface px-4 py-3 transition-[border-color,background-color,box-shadow] hover:border-fg-icon-muted hover:bg-surface-subtle/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
                 >
-                  <span className="min-w-0 break-words">{link.label}</span>
-                  <Paperclip
-                    aria-hidden="true"
-                    className="size-6 shrink-0 text-fg-icon"
-                  />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="break-words text-lg font-medium text-fg group-hover:underline">
+                      {link.label}
+                    </span>
+                    <span className="truncate text-base text-fg-muted">
+                      {hostnameOf(link.url)}
+                    </span>
+                  </span>
+                  <ExternalLink aria-hidden="true" className="size-6 shrink-0 text-fg-icon" />
                 </a>
               </li>
             ))}

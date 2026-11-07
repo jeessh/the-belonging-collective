@@ -331,7 +331,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
                 </h2>
                 <p className="text-base text-fg-muted">
                   Programs posted in the range, or saved or clicked during it.
-                  &ldquo;Going&rdquo; is who has it saved right now.
+                  &ldquo;Saved now&rdquo; is who has it saved right now.
                 </p>
               </div>
               <TableCard
@@ -348,7 +348,7 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
                         ? [["org", "Organization", "text-left"] as const]
                         : []),
                       ["saves", "Saves", "text-right"],
-                      ["going", "Going", "text-right"],
+                      ["going", "Saved now", "text-right"],
                       ["clicks", "Clicks", "text-right"],
                     ] as const
                   ).map(([key, label, align]) => (

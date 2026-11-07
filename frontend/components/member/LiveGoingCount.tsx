@@ -28,5 +28,5 @@ export function LiveGoingCount({
       alive = false;
     };
   }, [eventId]);
-  return <GoingCount count={count} signInHref={signInHref} />;
+  return <GoingCount count={count} signInHref={signInHref} iconClassName="size-7" />;
 }

@@ -15,13 +15,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_user, get_db
+from types import SimpleNamespace
+
+from app.api.deps import get_current_host, get_current_user, get_db
 from app.api.routes.care import _member_for
 from app.core import mail, member_mail
 from app.core.access import visible_to_member
 from app.core.config import settings
 from app.core.rate_limit import enforce, record
 from app.models.event import Event
+from app.models.host import Host
 from app.models.user import User
 
 router = APIRouter(tags=["share"])
@@ -80,6 +83,46 @@ def share_by_email(
         list_url = f"{settings.FRONTEND_ORIGIN}/shared/{user.share_token}"
     record(db, key, window=SHARE_WINDOW)
     if not member_mail.send_share(user, str(body.to), events, list_url):
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "Couldn't send that email. Please try again.",
+        )
+
+
+class OrganizerShareIn(BaseModel):
+    to: EmailStr
+    event_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
+
+
+@router.post("/share/email/organizer", status_code=status.HTTP_204_NO_CONTENT)
+def share_by_email_as_organizer(
+    body: OrganizerShareIn,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """The console's Share: the same designed cards, sent under the
+    organizer's name (the person's, for a staff login), replies to their
+    address. Any live program — a program's own page is open to anyone, so
+    passing it on gives nothing away. Same daily cap as members."""
+    if not mail.configured():
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email isn't set up on this site yet. Copy the link instead.",
+        )
+    key = f"host:{host.id}:share"
+    enforce(db, {key: SHARE_LIMIT}, window=SHARE_WINDOW)
+    events = (
+        db.query(Event)
+        .options(joinedload(Event.host), selectinload(Event.images))
+        .filter(Event.id.in_(body.event_ids), Event.deleted_at.is_(None))
+        .order_by(Event.starts_at.asc().nullslast(), Event.id.asc())
+        .all()
+    )
+    if not events:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+    record(db, key, window=SHARE_WINDOW)
+    sender = SimpleNamespace(first_name=host.name, email=host.email)
+    if not member_mail.send_share(sender, str(body.to), events, None):
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY,
             "Couldn't send that email. Please try again.",

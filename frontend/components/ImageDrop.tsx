@@ -25,6 +25,7 @@ export function ImageDrop({
   compact = false,
   square = false,
   fallback,
+  frameClassName = "h-[300px]",
 }: {
   label: string;
   /** The current URL, "" for none. */
@@ -48,6 +49,8 @@ export function ImageDrop({
    * stock photo to members, since there's still nothing of the event's own).
    */
   fallback?: string;
+  /** The `square` frame's height (the event form makes it taller from lg). */
+  frameClassName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -89,7 +92,39 @@ export function ImageDrop({
 
   return (
     <div>
-      {shown ? (
+      {shown && square ? (
+        // The event form: the picture fills its frame and one dark,
+        // see-through button in its middle replaces it. Dropping a file on
+        // the picture replaces it too.
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            void handleFiles(e.dataTransfer.files);
+          }}
+          className={`relative w-full overflow-hidden rounded-control ${frameClassName} ${
+            dragOver ? "ring-2 ring-primary-border" : ""
+          }`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={shown} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            aria-label={`${label}: replace image`}
+            className="absolute left-1/2 top-1/2 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-control bg-black/55 px-4 py-2 text-base font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/70 disabled:opacity-70"
+          >
+            <ImageUp aria-hidden="true" className="size-4" />
+            {busy ? "Uploading…" : "Replace image"}
+          </button>
+        </div>
+      ) : shown ? (
         <div className="flex flex-col items-start gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -135,7 +170,7 @@ export function ImageDrop({
             setDragOver(false);
             void handleFiles(e.dataTransfer.files);
           }}
-          className={`flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-control border px-6 text-center transition-colors ${
+          className={`flex flex-col items-center justify-center gap-3 rounded-control border px-6 text-center transition-colors ${frameClassName} ${
             dragOver ? "border-primary-border bg-primary-soft" : "border-transparent bg-surface-subtle"
           }`}
         >

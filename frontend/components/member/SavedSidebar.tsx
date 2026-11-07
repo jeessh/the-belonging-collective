@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, memo, useCallback, type ReactNode } from "react";
+import { forwardRef, memo, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
@@ -11,15 +11,21 @@ import {
 import { apiMessage, type Event, type GoogleCalendarState } from "@/lib/api";
 import { googleCalendarButton } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
-import { TIME_ZONE, longDate } from "@/lib/time";
+import { TIME_ZONE } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { GoingCount } from "@/components/ui/GoingCount";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
-const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
+const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
+/* The board, an experiment (the open panel's list): a whiteboard, each
+   saved program held to it by a magnet as a miniature of the feed card —
+   its picture and title — in two even columns. A click opens one. */
+export const BOARD_CARD_W = 136;
+// Soft, spread-out shadows: one at rest, a deeper one for the card in flight.
+const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
+export const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -31,8 +37,6 @@ type Props = {
   onToggle: () => void;
   /** Saved programs, soonest first, one per program. */
   events: Event[];
-  /** A card is being dragged (or held) toward the zone. */
-  active: boolean;
   signedIn: boolean;
   /** "Sam R." when a caregiver is saving for someone; null for their own. */
   owner?: string | null;
@@ -43,6 +47,9 @@ type Props = {
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
   onSignIn: () => void;
+  /** "Saving for", under the open panel's heading (a caregiver with
+      linked members only). */
+  careSwitcher?: ReactNode;
 };
 
 /**
@@ -50,7 +57,7 @@ type Props = {
  * the feed, or the bar under it on a phone.
  *
  * The forwarded ref is the drop target — the dashed zone when open (outlined
- * only while empty or while a card is dragged toward it), the
+ * only while empty), the
  * thumbnail column when collapsed to the rail, the thumbnail strip on the
  * bar — so the fly-to-save animation always has somewhere to aim.
  */
@@ -60,7 +67,6 @@ export const SavedSidebar = memo(
       layout,
       onToggle,
       events,
-      active,
       signedIn,
       owner = null,
       calendarUrl,
@@ -68,6 +74,7 @@ export const SavedSidebar = memo(
       onOpenSaved,
       onOpenEvent,
       onSignIn,
+      careSwitcher = null,
     },
     dropRef,
   ) {
@@ -110,11 +117,7 @@ export const SavedSidebar = memo(
         >
           <div
             ref={attachDrop}
-            className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed px-2 transition-colors ${
-              active
-                ? "border-primary-border bg-primary-soft"
-                : "border-transparent"
-            }`}
+            className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed border-transparent px-2"
           >
             <span className="sr-only">
               {owner ? `${title}: ` : ""}
@@ -207,15 +210,21 @@ export const SavedSidebar = memo(
             exit={{ opacity: 0 }}
             transition={ease}
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-            className={`absolute inset-y-0 left-0 flex flex-col ${open ? "gap-6 pt-6" : ""}`}
+            // Open, the whole panel is a whiteboard, with a metal edge on the right.
+            className={`absolute inset-y-0 left-0 flex flex-col ${
+              open ? "whiteboard gap-6 border-r-2 border-[#B9C0C7] pt-6" : ""
+            }`}
           >
             {open ? (
               <>
-                <div className="flex items-center justify-between gap-3 px-6">
+                <div className="relative flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-medium text-fg">Saved Events</h2>
+                    <h2 className="text-2xl font-medium text-fg">
+                      Saved Events
+                    </h2>
                     <p className="truncate text-xl text-fg-muted">
-                      {owner ? `For ${owner} · ` : ""}
+                      {/* Just the count — "Saving for" right below already
+                          says whose list it is. */}
                       {countLabel}
                     </p>
                   </div>
@@ -230,59 +239,36 @@ export const SavedSidebar = memo(
                     Close
                   </Button>
                 </div>
+                {careSwitcher && <div className="relative z-10 -mt-3 px-6">{careSwitcher}</div>}
 
                 <div className="flex min-h-0 flex-1 flex-col px-6">
                   <div
                     ref={attachDrop}
-                    className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
-                      active
-                        ? "border-primary-border bg-primary-soft"
-                        : events.length === 0
-                          ? "border-fg-muted bg-surface"
-                          : // The dashed outline only marks the empty drop zone; once
-                            // there are saved events the list stands on its own. The
-                            // border stays (transparent) so nothing shifts on drag.
-                            "border-transparent bg-surface"
+                    // No tint while a card is dragged over: the card itself
+                    // shrinks into a mini card on its way in (EventsView).
+                    // The dashed outline only marks the empty drop zone; the
+                    // border stays (transparent) so nothing shifts.
+                    className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border-2 border-dashed ${
+                      events.length === 0 ? "border-fg/50" : "border-transparent"
                     }`}
                   >
-                    {/* The list stays mounted while a card is on its way —
-                        faded under the drop message rather than swapped for
-                        it — so the program that lands grows in (Arrivals)
-                        instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 transition-opacity ${
-                          active ? "opacity-0" : ""
-                        }`}
+                        className="no-scrollbar -mx-px min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
                       >
-                        <Arrivals
-                          events={events}
-                          reduceMotion={reduceMotion}
-                          render={(ev) => (
-                            <Thumb event={ev} onOpen={onOpenEvent} layout="panel" />
-                          )}
-                        />
+                        <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
                       </div>
                     )}
-                    {(events.length === 0 || active) && (
-                      <div
-                        className={`flex flex-col items-center justify-center gap-3 p-6 text-center ${
-                          events.length > 0 ? "absolute inset-0" : "flex-1"
-                        }`}
-                      >
-                        <CirclePlus
-                          aria-hidden="true"
-                          className={`size-10 ${active ? "text-fg" : "text-fg-muted"}`}
-                        />
-                        <p className={`text-xl ${active ? "text-fg" : "text-fg-muted"}`}>
-                          {active ? "Drag events here" : "Saved Events go Here"}
-                        </p>
+                    {events.length === 0 && (
+                      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                        <CirclePlus aria-hidden="true" className="size-10 text-fg" />
+                        <p className="text-xl text-fg">Saved Events go Here</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-line px-6 py-4">
+                <div className="flex flex-col gap-4 px-6 pb-6 pt-1">
                   <Button
                     variant="secondary"
                     size="lg"
@@ -304,15 +290,13 @@ export const SavedSidebar = memo(
                     aria-expanded={false}
                     className={RAIL}
                   >
-                    <ChevronsRight aria-hidden="true" className="size-7" />
+                    <ChevronsRight aria-hidden="true" className="size-6" />
                     Open
                   </Button>
                 </div>
                 <div
                   ref={attachDrop}
-                  className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3 transition-colors ${
-                    active ? "bg-primary-soft" : ""
-                  }`}
+                  className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3"
                 >
                   <span className="sr-only">
                     {owner ? `${title}: ` : ""}
@@ -422,7 +406,7 @@ function Thumb({
 }: {
   event: Event;
   onOpen: (event: Event) => void;
-  layout: "panel" | "row" | "rail";
+  layout: "row" | "rail";
 }) {
   const image = eventImage(event);
   // Hover (and keyboard focus) darkens the photo: the thumbnail opens.
@@ -435,7 +419,6 @@ function Thumb({
       className="absolute inset-0 h-full w-full object-cover transition duration-150 ease-out group-hover:brightness-75 group-focus-visible:brightness-75"
     />
   );
-  const going = <GoingCount count={event.saved_count} variant="tag" />;
 
   if (layout === "rail") {
     return (
@@ -472,28 +455,112 @@ function Thumb({
       </button>
     );
   }
+  return null;
+}
+
+/** Magnet colours; each program keeps the same one. */
+const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
+
+function hash(id: string): number {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return Math.abs(h);
+}
+
+/** A square fridge magnet: a rounded square of colour with a little shine. */
+export function Magnet({ colour, className = "" }: { colour: string; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-[4px] shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${className}`}
+      style={{
+        background: `linear-gradient(145deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%), ${colour}`,
+      }}
+    />
+  );
+}
+
+/** The open panel's saved programs: two even columns of mini cards. */
+function Board({
+  events,
+  onOpen,
+  reduceMotion,
+}: {
+  events: Event[];
+  onOpen: (event: Event) => void;
+  reduceMotion: boolean | null;
+}) {
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const };
+
+  // Newest save first, at the top left. The list has no saved-at time, so
+  // the board remembers the order cards arrived in: whatever appears that
+  // wasn't there before goes in front (a whole first load keeps its own
+  // order), and an un-saved card simply drops out.
+  const order = useRef<string[]>([]);
+  const ids = events.map((ev) => ev.id);
+  const known = new Set(order.current);
+  const fresh = ids.filter((id) => !known.has(id));
+  const live = new Set(ids);
+  order.current = [...fresh, ...order.current.filter((id) => live.has(id))];
+  const byId = new Map(events.map((ev) => [ev.id, ev]));
+  const shown = order.current.map((id) => byId.get(id)!).filter(Boolean);
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(event)}
-      className="group flex w-full shrink-0 flex-col gap-2 rounded-control text-left"
-    >
+    // 16px between the cards both ways; room above each for its magnet.
+    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 px-1 pb-4 pt-4">
+      <AnimatePresence initial={false}>
+        {shown.map((ev) => (
+          <motion.button
+            key={ev.id}
+            type="button"
+            layout={!reduceMotion}
+            onClick={() => onOpen(ev)}
+            aria-label={`Open ${ev.title}`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={transition}
+            style={{ boxShadow: SHADOW_REST }}
+            className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
+          >
+            {/* The magnet holding it to the whiteboard. */}
+            <Magnet colour={PINS[hash(ev.id) % PINS.length]} />
+            <MiniCardFace event={ev} />
+          </motion.button>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** The mini card's frame: white, the feed card's border, a little padding. */
+export const MINI_CARD =
+  "flex flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left";
+
+/** What a mini card shows: the picture and the title. Shared with the
+    feed card's drag, which turns into one on its way to the board. */
+export function MiniCardFace({ event }: { event: Event }) {
+  return (
+    <>
       <span
         aria-hidden="true"
-        className="relative block h-[150px] w-full overflow-hidden rounded-control bg-surface-subtle"
+        className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"
       >
-        {img}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={eventImage(event)}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </span>
-      <span className="flex flex-col items-start gap-1">
-        <span className="text-lg font-medium leading-snug text-fg">
-          {event.title}
-        </span>
-        <span className="text-base text-fg-muted">
-          {longDate(event.starts_at) || "Date to be announced"}
-        </span>
-        {going}
+      {/* Always two lines tall (clamped at two), so every card is the same
+          height whatever its title. */}
+      <span className="line-clamp-2 h-[2.5em] px-0.5 text-base font-medium leading-tight text-fg">
+        {event.title}
       </span>
-    </button>
+    </>
   );
 }

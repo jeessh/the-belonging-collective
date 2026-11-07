@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
-import { Button } from "@/components/ui/Button";
 import { EventStatus } from "@/components/host/EventStatus";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -74,7 +72,9 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col">
+    // Wider margins than other console pages, centred: the form (1200px at
+    // most) sits in the middle of the page.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <EventForm
         id={FORM_ID}
         mode="create"
@@ -91,18 +91,6 @@ function NewEventForm({ ctx }: { ctx: ConsoleContext }) {
           onBack,
           subtitle: `Posting under ${ctx.org.name}`,
           status: <EventStatus state="draft" />,
-          // Publish here and at the foot of the form, as Edit has Save.
-          actions: (
-            <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
-              disabled={busy}
-              trailingIcon={<Upload />}
-            >
-              {busy ? "Publishing…" : "Publish Event"}
-            </Button>
-          ),
         }}
       />
       {dialog}

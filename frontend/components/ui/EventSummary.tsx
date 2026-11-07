@@ -1,6 +1,12 @@
 import { placeLabel } from "@/lib/place";
 import type { ReactNode } from "react";
-import { Cake, CalendarDays, MapPin, Ticket } from "lucide-react";
+import {
+  Cake,
+  CalendarDays,
+  CircleDollarSign,
+  MapPin,
+  Ticket,
+} from "lucide-react";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { clockTime, whenLine } from "@/lib/time";
@@ -99,7 +105,11 @@ export function EventSummary({
   recommended = false,
   fixedDates = false,
   className = "",
+  aboveTitle,
 }: {
+  /** Above the title in the text column (the event dialog's Google
+      Calendar / Share / Print). */
+  aboveTitle?: ReactNode;
   event: Event;
   layout?: "card" | "detail" | "row" | "tile";
   /** The going slot — usually a `GoingCount`. */
@@ -134,14 +144,19 @@ export function EventSummary({
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
   // 18, the saved tile's 24 over 20.
-  const meta = card
-    ? `text-xl sm:text-2xl ${feed ? "sm:leading-[26px] short:!text-xl" : ""}`
+  // The feed card's facts are 20px at every size, on a 1.4 line.
+  // The event's dialog and page (`detail`) use the feed card's facts too:
+  // 20px text, 28px icons, so the icons match across the member app.
+  const meta = feed
+    ? "text-xl leading-[1.4]"
+    : card
+    ? "text-xl leading-[1.4]"
     : tile
       ? "text-xl"
       : "text-lg";
   // The fact icons (when, where, ages, spots) are a neutral grey: they mark
   // the facts, the words carry them.
-  const icon = card ? `size-7 sm:size-9 ${feed ? "short:!size-7" : ""}` : "size-6";
+  const icon = feed || card ? "size-7" : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -176,14 +191,24 @@ export function EventSummary({
     </Title>
   );
 
+  // The title with its tags beside it (just "Free", and special access /
+  // For you where they apply), on one line when there's room.
+  const heading = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {title}
+      {tags}
+    </div>
+  );
+
   const facts = (
-    <div className={`flex flex-col gap-3 ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}>
+    // On the feed card: 16px between facts, the date and its time 4px apart.
+    <div className={`flex flex-col ${feed ? "gap-4" : "gap-3"} ${meta}`}>
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
-        <div className={`min-w-0 ${feed ? "flex flex-col gap-2 short:!gap-1" : ""}`}>
+        <div className={`min-w-0 ${feed ? "flex flex-col gap-1" : ""}`}>
           {/* Each part stays whole, so a narrow column breaks between
               "In 52 weeks" and "· September 24, 2027", never around
               the dot. */}
@@ -206,6 +231,19 @@ export function EventSummary({
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
+      {/* The event's own page and dialog read back the rest of what the
+          organizer set: what it costs (how to join is the tag beside the title). Cards keep to when and where. */}
+      {/* "Free" is already the tag beside the title; a paid event says
+          how much here. */}
+      {layout === "detail" && event.price_label && event.price_label !== "Free" && (
+        <div className="flex items-start gap-3">
+          <CircleDollarSign
+            aria-hidden="true"
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
+          />
+          <p className="min-w-0 text-fg">{event.price_label}</p>
+        </div>
+      )}
       {ages && (
         <div className="flex items-start gap-3">
           <Cake
@@ -244,8 +282,7 @@ export function EventSummary({
             {img}
           </div>
           <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex flex-wrap gap-3">{tags}</div>
-            {title}
+            {heading}
             {facts}
           </div>
         </div>
@@ -274,9 +311,9 @@ export function EventSummary({
           >
             {img}
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
-            {!detail && <div className="flex flex-wrap gap-3">{tags}</div>}
-            {title}
+          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5" : "gap-4"}`}>
+            {aboveTitle}
+            {heading}
             {facts}
           </div>
         </div>
@@ -305,8 +342,7 @@ export function EventSummary({
           {img}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap gap-3">{tags}</div>
-          {title}
+          {heading}
           {facts}
         </div>
         {actions && (

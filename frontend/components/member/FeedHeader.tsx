@@ -18,6 +18,7 @@ import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
 import { Glyph } from "@/components/ui/Glyph";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -26,64 +27,60 @@ export type CareChoice = {
   onSelect: (member: CarePerson | null) => void;
 };
 
-/**
- * The feed's top bar: who you are on the left, Accessibility Tools on the
- * right. Signed out, the name is the way in.
- */
 /** The member's chosen picture, if any — see components/ui/Avatar. */
 export type AvatarChoice = {
   url?: string | null;
   emblem?: string | null;
 };
 
-export const FeedHeader = memo(function FeedHeader({
+/** Who you are and whose list saves go into: the account button and, for a
+    caregiver with linked members, "Saving for". On the left of the bar over
+    the event column. */
+export function FeedAccount({
   name,
-  role,
   avatar,
   care,
   onSignIn,
   onSignOut,
-  children,
 }: {
-  /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
-  /** "Caregiver" or "Community member", under the name. */
-  role?: string | null;
   avatar?: AvatarChoice | null;
-  /** Only for a caregiver with linked members; the switcher is hidden otherwise. */
   care?: CareChoice | null;
   onSignIn: () => void;
   onSignOut: () => void;
-  /** The Accessibility Tools menu. */
-  children: ReactNode;
 }) {
   return (
-    // 12px above and below at every size (it was 20px on taller screens): a
-    // slimmer bar leaves more of the screen to the programs.
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9">
-      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
-        <AccountButton
-          name={name}
-          role={role}
-          avatar={avatar}
-          // Beside the switcher a phone has room for the picture, not the
-          // name; the menu still carries it.
-          compact={!!care && care.members.length > 0}
-          onSignIn={onSignIn}
-          onSignOut={onSignOut}
-        />
-        {care && care.members.length > 0 && <CareSwitcher {...care} />}
-      </div>
-      {children}
-    </header>
+    <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-3">
+      <AccountButton
+        name={name}
+        avatar={avatar}
+        // Beside the switcher a phone has room for the picture, not the
+        // name; the menu still carries it.
+        compact={!!care && care.members.length > 0}
+        onSignIn={onSignIn}
+        onSignOut={onSignOut}
+      />
+      {care && care.members.length > 0 && <CareSwitcher {...care} />}
+    </div>
   );
-});
+}
 
 /**
  * "Saving for: Me ▾". Compact on purpose — it sits in the header next to the
  * name — and it only appears for a caregiver who has someone linked.
  */
-function CareSwitcher({ members, selected, onSelect }: CareChoice) {
+export function CareSwitcher({
+  members,
+  selected,
+  onSelect,
+  openUp = false,
+  fill = false,
+}: CareChoice & {
+  /** At the bottom of the screen the menu opens upward. */
+  openUp?: boolean;
+  /** As wide as its container (the saved panel), the chevron at the end. */
+  fill?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -108,21 +105,25 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
     "flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle";
 
   return (
-    <div ref={wrapRef} className="relative shrink-0">
+    <div ref={wrapRef} className={`relative shrink-0 ${fill ? "w-full" : ""}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Saving for ${current}`}
-        className={`inline-flex min-h-11 max-w-[11rem] items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-lg ${
+        className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
+          fill ? "w-full" : "max-w-[11rem]"
+        } ${
           selected
             ? "border-primary-border bg-primary-soft"
             : "border-line bg-surface hover:bg-surface-subtle"
         }`}
       >
         <span className="hidden text-fg-muted sm:inline">Saving for:</span>
-        <span className="truncate font-medium text-fg">{current}</span>
+        <span className={`truncate font-medium text-fg ${fill ? "flex-1 text-left" : ""}`}>
+          {current}
+        </span>
         <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />
       </button>
 
@@ -132,7 +133,7 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
           aria-label="Save programs for"
           // Right-anchored on a phone, where the switcher sits near the
           // middle and a left-anchored menu would run off the edge.
-          className="absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto"
+          className={`absolute right-0 z-50 min-w-[220px] ${fill ? "w-full" : ""} ${openUp ? "bottom-full mb-2" : "top-full mt-2"} overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto`}
         >
           <button
             role="menuitemradio"
@@ -185,15 +186,12 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
  */
 function AccountButton({
   name,
-  role,
   avatar,
   compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
-  /** The account type, as a smaller line under the name. */
-  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Hide the name below `sm`; the picture stands in for it. */
   compact?: boolean;
@@ -227,31 +225,24 @@ function AccountButton({
         onClick={() => (signedIn ? setOpen((v) => !v) : onSignIn())}
         aria-haspopup={signedIn ? "menu" : undefined}
         aria-expanded={signedIn ? open : undefined}
-        // The console's account button (host/ConsoleHeader), size for size:
-        // a 32px picture, the name over the account type, a small chevron.
+        // The member header's one text size: the picture and the name at
+        // the size of "Accessibility Tools" beside them (20px, a 20px
+        // chevron). Just the name — no account-type line under it.
         className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control px-2 text-left transition-colors hover:bg-surface-subtle"
       >
         <Avatar
           name={name}
           src={avatar?.url}
           emblem={avatar?.emblem}
-          size={32}
+          size={36}
         />
-        {/* The name over the account type ("Caregiver" / "Community
-            member"), as the console's account button puts a person over
-            their organization. */}
         <span
-          className={`flex min-w-0 flex-col leading-tight ${compact ? "max-sm:sr-only" : ""}`}
+          className={`truncate text-xl ${signedIn ? "text-fg" : "text-fg-muted"} ${compact ? "max-sm:sr-only" : ""}`}
         >
-          <span
-            className={`truncate text-sm ${signedIn ? "font-medium text-fg" : "text-fg-muted"}`}
-          >
-            {name ?? "Not Logged In"}
-          </span>
-          {signedIn && role && <span className="truncate text-xs text-fg-muted">{role}</span>}
+          {name ?? "Not Logged In"}
         </span>
         {signedIn && (
-          <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-fg-icon" />
+          <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />
         )}
       </button>
 
@@ -259,15 +250,15 @@ function AccountButton({
         <div
           role="menu"
           aria-label="Account"
-          className="absolute left-0 top-full z-50 mt-2 w-56 rounded-control border border-line bg-surface p-1 shadow-lift"
+          className="absolute left-0 top-full z-50 mt-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
         >
           <Link
             role="menuitem"
             href="/profile"
             onClick={() => setOpen(false)}
-            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+            className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-lg text-fg hover:bg-surface-subtle"
           >
-            <UserRound aria-hidden="true" className="size-4" />
+            <UserRound aria-hidden="true" className="size-5" />
             Profile
           </Link>
           <button
@@ -277,9 +268,9 @@ function AccountButton({
               setOpen(false);
               onSignOut();
             }}
-            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+            className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-lg text-fg hover:bg-surface-subtle"
           >
-            <LogOut aria-hidden="true" className="size-4" />
+            <LogOut aria-hidden="true" className="size-5" />
             Sign out
           </button>
         </div>
@@ -315,7 +306,12 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   listView = false,
   onSignIn,
   onShowTour,
+  advanced = false,
+  onChangeExperience,
 }: {
+  /** Signed in: the member's experience — Advanced is a caregiver account. */
+  advanced?: boolean;
+  onChangeExperience?: (advanced: boolean) => void;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   ttsEnabled: boolean;
@@ -404,6 +400,27 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           // the last of the topics under it.
           className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift max-sm:max-h-[calc(100dvh-12rem)]"
         >
+          {signedIn && onChangeExperience && (
+            <>
+              <h2 className="text-xl font-medium text-fg">Your experience</h2>
+              <p className="text-base text-fg-muted">
+                {advanced
+                  ? "Every event in a list, and saving for someone you support."
+                  : "One event at a time, big and clear."}
+              </p>
+              <SegmentedToggle<"simplified" | "advanced">
+                className="mt-3 w-full"
+                label="Your experience"
+                value={advanced ? "advanced" : "simplified"}
+                onChange={(v) => onChangeExperience(v === "advanced")}
+                segments={[
+                  { value: "simplified", label: "Simplified" },
+                  { value: "advanced", label: "Advanced" },
+                ]}
+              />
+              <div className="mt-6" />
+            </>
+          )}
           <h2 className="text-xl font-medium text-fg">Accessibility</h2>
           <div className="mt-1 flex flex-col divide-y divide-line-card">
             <MenuToggle

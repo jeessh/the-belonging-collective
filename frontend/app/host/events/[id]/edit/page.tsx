@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
 import { AdminShell, loginAgainHref, type ConsoleContext } from "@/components/AdminShell";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
 import { EventStatus } from "@/components/host/EventStatus";
 import { eventImage } from "@/lib/eventImage";
+import { ArchiveX } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { UnpublishModal, unpublishedToast } from "@/components/host/UnpublishModal";
 import {
   EventForm,
   payloadFrom,
@@ -39,6 +40,7 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [values, setValues] = useState<EventFormValues | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unpublishing, setUnpublishing] = useState(false);
   const { onBack, dialog } = useLeaveGuard(
     !!event &&
       !!values &&
@@ -108,7 +110,9 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col">
+    // Wider margins than other console pages, centred: the form (1200px at
+    // most) sits in the middle of the page.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <EventForm
         id={FORM_ID}
         mode="edit"
@@ -126,22 +130,32 @@ function EditEvent({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           backHref: `/host/events/${event.id}`,
           backLabel: "Back to event details",
           onBack,
-          subtitle: <PostedBy event={event} />,
+          subtitle: <PostedBy event={event} showPublished />,
           status: <EventStatus state="published" />,
           actions: (
             <Button
-              type="submit"
-              form={FORM_ID}
-              variant="primary"
+              variant="danger"
+              trailingIcon={<ArchiveX />}
               disabled={busy}
-              trailingIcon={<Upload />}
+              onClick={() => setUnpublishing(true)}
             >
-              {busy ? "Saving…" : "Save Edits"}
+              Un-publish
             </Button>
           ),
         }}
       />
       {dialog}
+      {unpublishing && (
+        <UnpublishModal
+          event={event}
+          onClose={() => setUnpublishing(false)}
+          onDone={() => {
+            setUnpublishing(false);
+            unpublishedToast(show, event, () => router.push(`/host/events/${event.id}`));
+            router.push("/host/events");
+          }}
+        />
+      )}
     </div>
   );
 }

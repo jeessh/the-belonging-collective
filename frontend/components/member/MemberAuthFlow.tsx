@@ -9,7 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { CircleCheck, Mic } from "lucide-react";
-import { ApiError, api, apiMessage, shortName } from "@/lib/api";
+import { ApiError, api, apiMessage, shortName, updateMe } from "@/lib/api";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
 import { NAME_MAX } from "@/lib/names";
@@ -218,6 +218,9 @@ export function MemberAuthFlow({
           is_caregiver: caregiver,
         }),
       });
+      // The experience decides the view the feed opens in: Simplified, one
+      // card at a time; Advanced, the list.
+      await updateMe({ preferred_view: caregiver ? "list" : "card" }).catch(() => {});
       rememberAccount(email);
       // A caregiver's own account is half the job; the other half is the
       // person they support, offered now and again on the profile page.
@@ -333,8 +336,8 @@ export function MemberAuthFlow({
     case "who":
       view = {
         back: back("chooser"),
-        title: "Account type",
-        subtitle: "Choose the one that fits you.",
+        title: "Choose your experience",
+        subtitle: "You can change this any time in Accessibility Tools.",
         body: (
           <form
             onSubmit={(e) => {
@@ -368,16 +371,16 @@ export function MemberAuthFlow({
               </div>
             )}
             <fieldset className="flex flex-col gap-4">
-              <legend className="sr-only">Account type</legend>
+              <legend className="sr-only">Your experience</legend>
               <RoleCard
-                name="Community Member"
-                hint="Finds and saves programs to go to."
+                name="Simplified"
+                hint="One event at a time, big and clear. For community members."
                 checked={!caregiver}
                 onChange={() => setCaregiver(false)}
               />
               <RoleCard
-                name="Caregiver"
-                hint="Saves programs for someone they support."
+                name="Advanced"
+                hint="Every event in a list, and saving for someone you support. For caregivers."
                 checked={caregiver}
                 onChange={() => setCaregiver(true)}
               />

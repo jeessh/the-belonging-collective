@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
-import { ApiError, apiMessage, shareByEmail } from "@/lib/api";
+import { ApiError, apiMessage, shareByEmail, shareByEmailAsOrganizer } from "@/lib/api";
 
 /**
  * Share by email or by link, as the design draws it. Send has the site mail
@@ -25,8 +25,11 @@ export function ShareModal({
   withListLink = false,
   forMember = null,
   link,
+  organizer = false,
   onClose,
 }: {
+  /** Opened from the console: sent under the organizer's name. */
+  organizer?: boolean;
   title: string;
   /** The programs the email shows, one card each. */
   eventIds: string[];
@@ -69,12 +72,15 @@ export function ShareModal({
     }
     setSending(true);
     try {
-      await shareByEmail({
-        to: email.trim(),
-        event_ids: eventIds,
-        with_list_link: withListLink,
-        for_member: forMember,
-      });
+      if (organizer)
+        await shareByEmailAsOrganizer({ to: email.trim(), event_ids: eventIds });
+      else
+        await shareByEmail({
+          to: email.trim(),
+          event_ids: eventIds,
+          with_list_link: withListLink,
+          for_member: forMember,
+        });
     } catch (err) {
       setSending(false);
       setEmailError(

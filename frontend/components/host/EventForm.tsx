@@ -7,6 +7,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -24,7 +25,8 @@ import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { Modal } from "@/components/Modal";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { AccessPicker, type AccessMode } from "@/components/host/AccessPicker";
@@ -286,7 +288,7 @@ export function missingRequired(
   // Only new programs: older ones were posted before an image was required,
   // and refusing every edit to them until one is found helps nobody.
   if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
-  if (v.categories.length === 0) need("categories", "a topic");
+  if (v.categories.length === 0) need("categories", "a topic", "Pick at least one topic.");
   if (v.links.some((l) => !!l.label.trim() !== !!l.url.trim()))
     need("links", "both a label and an address for each link");
   if (v.links.some((l) => checkPostingLink(l.url)?.tone === "error"))
@@ -415,11 +417,15 @@ function Section({
 
 /** One titled part of the form (and of the details page, which mirrors it):
     a heading over its fields, a faint rule above. */
+/** A white card with a hairline edge and a soft shadow: each part of the
+    event form and of the details page sits in one. */
+export const CARD =
+  "rounded-card border border-line/70 bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_6px_20px_rgba(0,0,0,0.04)] sm:p-6";
+
 export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    // A faint rule between groups: it separates without competing with the
-    // fields.
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line/40 pt-5 first:border-t-0 first:pt-0">
+    // Sections share one card (the column's), a divider between each.
+    <section className="flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -488,14 +494,7 @@ export function EventForm({
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
   const problems = missingRequired(values, mode);
-  // Topics are chosen in the dialog Publish / Save opens, so the summary
-  // over the form never asks for one.
-  const formProblems = problems.filter((p) => p.field !== "categories");
-  const missing = formProblems.map((p) => p.text);
-  // The topics dialog: opened by Publish / Save once everything else is in.
-  const [topicsOpen, setTopicsOpen] = useState(false);
-  // 1 = topics, 2 = what it offers.
-  const [publishStep, setPublishStep] = useState<1 | 2>(1);
+  const missing = problems.map((p) => p.text);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
     showMissing
@@ -568,7 +567,7 @@ export function EventForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (formProblems.length) {
+        if (problems.length) {
           setShowMissing(true);
           // The summary names everything still needed; take people to it.
           requestAnimationFrame(() => {
@@ -577,11 +576,7 @@ export function EventForm({
           });
           return;
         }
-        // Everything else is in: ask what it's about, then publish / save.
-        if (!submitting) {
-          setPublishStep(1);
-          setTopicsOpen(true);
-        }
+        if (!submitting) onSubmit();
       }}
     >
       <div className="mb-4">
@@ -590,7 +585,24 @@ export function EventForm({
           backLabel={header.backLabel}
           onBack={header.onBack}
           subtitle={header.subtitle}
-          actions={header.actions}
+          actions={
+            // Top right: Cancel, the page's own (Un-publish on edit), then
+            // the primary — Publish / Save — at the far right.
+            <>
+              <Link href={header.backHref} onClick={header.onBack} className={buttonClass("ghost")}>
+                Cancel
+              </Link>
+              {header.actions}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={submitting}
+                trailingIcon={<Upload />}
+              >
+                {submitting ? submittingLabel : submitLabel}
+              </Button>
+            </>
+          }
           title={
             <div className="flex flex-col gap-1">
               <h1 className="sr-only">
@@ -599,7 +611,17 @@ export function EventForm({
               {/* The event's name is the page title, and it's typed right
                   here: it reads as a heading, and shows it's editable on
                   hover and focus. */}
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-2">
+                {/* The box is as wide as the name (a hidden copy of the text
+                    sets the width), so the pencil and the status tag sit
+                    right beside it rather than at the far edge. */}
+                <span className="inline-grid min-w-0 max-w-full">
+                  <span
+                    aria-hidden="true"
+                    className="event-title invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent px-2 py-1 font-medium"
+                  >
+                    {(values.title || "Name of Event") + " "}
+                  </span>
                 <input
                   aria-label="Name of Event"
                   aria-required="true"
@@ -609,10 +631,11 @@ export function EventForm({
                   onChange={(e) => set("title", e.target.value)}
                   placeholder="Name of Event"
                   autoComplete="off"
-                  className={`event-title -ml-2 min-w-0 flex-1 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
+                  className={`event-title col-start-1 row-start-1 -ml-2 w-full min-w-0 rounded-control border bg-transparent px-2 py-1 font-medium text-fg placeholder:text-fg-muted hover:border-line focus:border-line focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#5b5bd6] ${
                     fieldError("title") ? "border-danger-border" : "border-transparent"
                   }`}
                 />
+                </span>
                 {/* Creating, the pencil says the empty title takes typing;
                     editing, Save Edits sits right beside it and says enough. */}
                 {mode === "create" && (
@@ -636,12 +659,6 @@ export function EventForm({
         tabIndex={-1}
         className="flex flex-col gap-2 outline-none"
       >
-        {inSeries && (
-          <p className="text-base text-fg-muted">
-            Changes apply to this date and every later date in the series. The
-            date and time change for this date only.
-          </p>
-        )}
         {showMissing && missing.length > 0 && (
           <p role="alert" className="text-lg font-medium text-danger-fg">
             Still needed: {missing.join(", ")}.
@@ -654,159 +671,29 @@ export function EventForm({
         )}
       </div>
 
-      {/* Two columns from lg: the event itself and when it is on the left,
-          everything that describes it on the right. One column, in that
-          order, below lg. */}
-      <div className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="flex min-w-0 flex-col gap-5">
-          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
-          <Section title="Event image" required={mode === "create"}>
+      {/* Two columns from lg, no boxes: every field on the left, in
+          sections with a rule between them, and the picture on the right,
+          large, staying in view as the form scrolls. One column below lg,
+          the picture first. The buttons are in the header, top right. */}
+      <div className="grid max-w-[1200px] items-start gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6 lg:order-2 lg:sticky lg:top-6">
+          {/* No label over the picture: it speaks for itself. Its buttons
+              still say "Event image" to a screen reader, and a missing one
+              on create is in the "Still needed" summary. */}
+          <div className="field">
             <ImageDrop
               compact
               square
+              frameClassName="h-[300px] lg:h-[520px]"
               fallback={imageFallback}
               label="Event image"
               value={values.coverImageUrl}
               onChange={(v) => set("coverImageUrl", v)}
             />
-          </Section>
-          <TextField
-            label="Date"
-            placeholder="DD/MM/YYYY"
-            required
-            type="date"
-            icon={<CalendarDays />}
-            value={values.date}
-            error={fieldError("date")}
-            // Chrome's date field takes a six-digit year; min/max bound the
-            // spinner and the clamp catches typing.
-            min="2000-01-01"
-            max="2100-12-31"
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
-              set("date", v);
-            }}
-          />
-          <div className="field flex flex-col gap-2">
-            <p className="field-label text-lg font-medium text-fg">
-              Time
-              <RequiredMark />
-            </p>
-            <div className="flex items-start gap-2">
-              <TextField
-                label="Start time"
-                placeholder="9:00 AM"
-                className="min-w-0 flex-1 [&>label]:sr-only"
-                type="time"
-                icon={<Clock />}
-                required
-                value={values.time}
-                error={fieldError("time")}
-                onChange={(e) => set("time", e.target.value)}
-              />
-              {/* Centred on the boxes (36px), whatever errors show under them. */}
-              <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
-                <span className="h-px w-3 bg-fg-icon-muted" />
-              </span>
-              <TextField
-                label="End time"
-                placeholder="11:00 AM"
-                className="min-w-0 flex-1 [&>label]:sr-only"
-                type="time"
-                icon={<Clock />}
-                value={values.endTime}
-                error={fieldError("endTime")}
-                onChange={(e) => set("endTime", e.target.value)}
-              />
-            </div>
           </div>
-          {/* Venue and its address / meeting link, side by side. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
-            <Section title="Where">
-              <SegmentedToggle<"virtual" | "inperson">
-                size="sm"
-                className="self-start"
-                label="Venue"
-                value={values.isVirtual ? "virtual" : "inperson"}
-                onChange={(v) => setVenue(v === "virtual")}
-                segments={[
-                  { value: "virtual", label: "Virtual" },
-                  { value: "inperson", label: "In-Person" },
-                ]}
-              />
-            </Section>
-            {values.isVirtual ? (
-              <TextField
-                key="meeting"
-                label="Meeting link"
-                inputMode="url"
-                autoComplete="off"
-                icon={<Link2 />}
-                value={values.location}
-                error={fieldError("location")}
-                onChange={(e) => set("location", e.target.value)}
-                placeholder="https://meet.google.com/…"
-              />
-            ) : (
-              <TextField
-                key="address"
-                label="Address"
-                required
-                icon={<MapPin />}
-                value={values.location}
-                error={fieldError("location")}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Street address or building"
-              />
-            )}
-          </div>
-          {mode === "create" && (
-            <Section title="Repeats">
-              <div className="flex flex-wrap items-end gap-4">
-                {/* The section's "Repeats" is its label; no second one. */}
-                <Select
-                  aria-label="Repeats"
-                  className="min-w-[200px]"
-                  value={values.frequency}
-                  onChange={(e) => set("frequency", e.target.value as Frequency)}
-                >
-                  {FREQUENCIES.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </Select>
-                {values.frequency !== "once" && !values.repeatForever && (
-                  <TextField
-                    label="How many times"
-                    required
-                    className="min-w-[170px]"
-                    type="number"
-                    min={2}
-                    max={104}
-                    value={values.occurrenceCount}
-                    onChange={(e) => set("occurrenceCount", e.target.value)}
-                    error={fieldError("occurrenceCount")}
-                    placeholder="8"
-                  />
-                )}
-                {values.frequency !== "once" && (
-                  // A drop-in that has run every Friday for nine years has no
-                  // session count to give.
-                  <Checkbox
-                    label="It keeps going"
-                    className="min-h-12"
-                    checked={values.repeatForever}
-                    onChange={(e) => set("repeatForever", e.target.checked)}
-                  />
-                )}
-              </div>
-            </Section>
-          )}
         </div>
 
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-8 lg:order-1">
           <Group title="Description">
             <Field
               label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
@@ -825,32 +712,236 @@ export function EventForm({
               }
             >
               <TextArea
-                rows={3}
+                rows={6}
                 maxLength={DESCRIPTION_MAX}
                 value={values.description}
                 onChange={(e) => set("description", e.target.value)}
                 placeholder="Type out your description here…"
               />
             </Field>
-          </Group>
-          <Group title="Cost & sign-up">
-            <Section title="Cost">
-              <div className="flex flex-col items-start gap-4">
-                <SegmentedToggle<"free" | "paid">
-                  size="sm"
-                  label="Cost"
-                  value={paid ? "paid" : "free"}
-                  onChange={(v) =>
-                    // Coming back to paid lands on the commonest shape.
-                    set("pricingModel", v === "free" ? "free" : "per_session")
-                  }
-                  segments={[
-                    { value: "free", label: "Free" },
-                    { value: "paid", label: "Paid" },
-                  ]}
-                />
+            {/* The sign-up link, for an event people register for. A drop-in
+                that already carries a posting link keeps the box, so it can
+                be changed or cleared rather than silently kept. */}
+            {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
+            <div className="flex flex-col gap-2">
+              <TextField
+                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+                type="text"
+                inputMode="url"
+                value={values.registrationUrl}
+                onChange={(e) => set("registrationUrl", e.target.value)}
+                placeholder="yourorg.ca/register"
+                error={
+                  signupHint?.tone === "error" ? signupHint.message : null
+                }
+              />
+              {/* A caution, not a refusal: some agencies really do have one
+                  page, and blocking that gets the link left out entirely. */}
+              <p
+                role="status"
+                className={
+                  signupHint?.tone === "warn"
+                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                    : "sr-only"
+                }
+              >
+                {signupHint?.tone === "warn" ? signupHint.message : ""}
+              </p>
+            </div>
+            )}
+            {/* External links (a flyer, a map, the agency's page): a label
+                and an address per row, the first row always there with + to
+                add another beside it, up to LINKS_MAX; later rows have ×. */}
+            <Section title="External links (optional)">
+              <div className="flex flex-col gap-3">
+                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
+                  <div
+                    key={i}
+                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                  >
+                    {/* The placeholder says which box is the label: "Link 1"
+                        read as "put link 1 here", so addresses ended up in it. */}
+                    <TextField
+                      label={`Link ${i + 1} label`}
+                      className="[&>label]:sr-only"
+                      value={link.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Link label, e.g. Flyer"
+                    />
+                    <TextField
+                      label={`Link ${i + 1} address`}
+                      className="[&>label]:sr-only"
+                      // type="text": the browser's url validation rejects
+                      // "yourorg.ca"; the API adds https:// when it's missing.
+                      type="text"
+                      inputMode="url"
+                      value={link.url}
+                      onChange={(e) => setLink(i, { url: e.target.value })}
+                      placeholder="Web address, e.g. yourorg.ca/page"
+                      error={
+                        checkPostingLink(link.url)?.tone === "error"
+                          ? "That doesn't look like a web address."
+                          : null
+                      }
+                    />
+                    {i === 0 ? (
+                      Math.max(linkRows, 1) < LINKS_MAX && (
+                        <Tooltip
+                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
+                          align="end"
+                        >
+                          {(tip) => (
+                            <Button
+                              leadingIcon={<Plus />}
+                              aria-label="Add a link"
+                              aria-describedby={tip}
+                              onClick={() =>
+                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
+                              }
+                            />
+                          )}
+                        </Tooltip>
+                      )
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </Section>
+          </Group>
+          <Group title="Event details">
+            <TextField
+              label="Date"
+              placeholder="DD/MM/YYYY"
+              required
+              type="date"
+              icon={<CalendarDays />}
+              value={values.date}
+              error={fieldError("date")}
+              // Chrome's date field takes a six-digit year; min/max bound the
+              // spinner and the clamp catches typing.
+              min="2000-01-01"
+              max="2100-12-31"
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
+                set("date", v);
+              }}
+            />
+            <div className="field flex flex-col gap-2">
+              <p className="field-label text-lg font-medium text-fg">
+                Time
+                <RequiredMark />
+              </p>
+              <div className="flex items-start gap-2">
+                <TextField
+                  label="Start time"
+                  placeholder="9:00 AM"
+                  className="min-w-0 flex-1 [&>label]:sr-only"
+                  type="time"
+                  icon={<Clock />}
+                  required
+                  value={values.time}
+                  error={fieldError("time")}
+                  onChange={(e) => set("time", e.target.value)}
+                />
+                {/* Centred on the boxes (36px), whatever errors show under them. */}
+                <span aria-hidden="true" className="flex h-9 shrink-0 items-center">
+                  <span className="h-px w-3 bg-fg-icon-muted" />
+                </span>
+                <TextField
+                  label="End time"
+                  placeholder="11:00 AM"
+                  className="min-w-0 flex-1 [&>label]:sr-only"
+                  type="time"
+                  icon={<Clock />}
+                  value={values.endTime}
+                  error={fieldError("endTime")}
+                  onChange={(e) => set("endTime", e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Venue and its address / meeting link, side by side. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <Section title="Where">
+                <SegmentedToggle<"virtual" | "inperson">
+                  size="sm"
+                  className="self-start"
+                  label="Venue"
+                  value={values.isVirtual ? "virtual" : "inperson"}
+                  onChange={(v) => setVenue(v === "virtual")}
+                  segments={[
+                    { value: "virtual", label: "Virtual" },
+                    { value: "inperson", label: "In-Person" },
+                  ]}
+                />
+              </Section>
+              {values.isVirtual ? (
+                <TextField
+                  key="meeting"
+                  label="Meeting link"
+                  inputMode="url"
+                  autoComplete="off"
+                  icon={<Link2 />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => set("location", e.target.value)}
+                  placeholder="https://meet.google.com/…"
+                />
+              ) : (
+                <TextField
+                  key="address"
+                  label="Address"
+                  required
+                  icon={<MapPin />}
+                  value={values.location}
+                  error={fieldError("location")}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Street address or building"
+                />
+              )}
+            </div>
+            {/* Cost and how people join, side by side; the paid details
+                go under the row. */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Section title="Cost">
+                <div className="flex flex-col items-start gap-4">
+                  <SegmentedToggle<"free" | "paid">
+                    size="sm"
+                    label="Cost"
+                    value={paid ? "paid" : "free"}
+                    onChange={(v) =>
+                      // Coming back to paid lands on the commonest shape.
+                      set("pricingModel", v === "free" ? "free" : "per_session")
+                    }
+                    segments={[
+                      { value: "free", label: "Free" },
+                      { value: "paid", label: "Paid" },
+                    ]}
+                  />
+                </div>
+              </Section>
+              <Section title="How people join">
+                <div className="flex flex-col items-start gap-4">
+                  <SegmentedToggle<"dropin" | "registration">
+                    size="sm"
+                    label="Registration"
+                    value={values.requiresSignup ? "registration" : "dropin"}
+                    onChange={(v) => set("requiresSignup", v === "registration")}
+                    segments={[
+                      { value: "dropin", label: "Drop-in" },
+                      { value: "registration", label: "Registration" },
+                    ]}
+                  />
+                </div>
+              </Section>
+            </div>
             {paid && (
               <Section title="How is it paid?" required>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -931,153 +1022,6 @@ export function EventForm({
                 </div>
               </Section>
             )}
-            <Section title="How people join">
-              <div className="flex flex-col items-start gap-4">
-                <SegmentedToggle<"dropin" | "registration">
-                  size="sm"
-                  label="Registration"
-                  value={values.requiresSignup ? "registration" : "dropin"}
-                  onChange={(v) => set("requiresSignup", v === "registration")}
-                  segments={[
-                    { value: "dropin", label: "Drop-in" },
-                    { value: "registration", label: "Registration" },
-                  ]}
-                />
-              </div>
-            </Section>
-            {/* Shown for drop-ins too: many carry a posting link, and hiding
-                the field would blank it on the next save. */}
-            <div className="flex flex-col gap-2">
-              <TextField
-                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
-                type="text"
-                inputMode="url"
-                value={values.registrationUrl}
-                onChange={(e) => set("registrationUrl", e.target.value)}
-                placeholder="yourorg.ca/register"
-                error={
-                  signupHint?.tone === "error" ? signupHint.message : null
-                }
-              />
-              {/* A caution, not a refusal: some agencies really do have one
-                  page, and blocking that gets the link left out entirely. */}
-              <p
-                role="status"
-                className={
-                  signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
-                    : "sr-only"
-                }
-              >
-                {signupHint?.tone === "warn" ? signupHint.message : ""}
-              </p>
-            </div>
-            {/* Other links (a flyer, a map, the agency's page) live with the
-                sign-up link, added one at a time, up to LINKS_MAX. */}
-            {linkRows > 0 && (
-              <Section title="Other links">
-                <div className="flex flex-col gap-3">
-                  {values.links.slice(0, linkRows).map((link, i) => (
-                    <div
-                      key={i}
-                      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
-                    >
-                      {/* The placeholder says which box is the label: "Link 1"
-                          read as "put link 1 here", so addresses ended up in it. */}
-                      <TextField
-                        label={`Link ${i + 1} label`}
-                        className="[&>label]:sr-only"
-                        value={link.label}
-                        onChange={(e) => setLink(i, { label: e.target.value })}
-                        placeholder="Link label, e.g. Flyer"
-                      />
-                      <TextField
-                        label={`Link ${i + 1} address`}
-                        className="[&>label]:sr-only"
-                        // type="text": the browser's url validation rejects
-                        // "yourorg.ca"; the API adds https:// when it's missing.
-                        type="text"
-                        inputMode="url"
-                        value={link.url}
-                        onChange={(e) => setLink(i, { url: e.target.value })}
-                        placeholder="Web address, e.g. yourorg.ca/page"
-                        error={
-                          checkPostingLink(link.url)?.tone === "error"
-                            ? "That doesn't look like a web address."
-                            : null
-                        }
-                      />
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove link ${i + 1}`}
-                        leadingIcon={<X />}
-                        onClick={() => removeLink(i)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
-            {linkRows < LINKS_MAX && (
-              <Button
-                className="self-start"
-                leadingIcon={<Plus />}
-                onClick={() => setLinkRows((n) => Math.min(n + 1, LINKS_MAX))}
-              >
-                Add a link
-                <span className="text-fg-muted">
-                  {" "}
-                  ({LINKS_MAX - linkRows} of {LINKS_MAX} left)
-                </span>
-              </Button>
-            )}
-          </Group>
-          <Group title="Who it's for">
-            <div className="flex flex-wrap gap-4">
-              <TextField
-                label="Spots available (blank for no limit)"
-                className="min-w-[220px] flex-1"
-                type="number"
-                min={1}
-                value={values.capacity}
-                onChange={(e) => set("capacity", e.target.value)}
-                error={fieldError("capacity")}
-                placeholder="20"
-              />
-              <TextField
-                label="Youngest age"
-                className="min-w-[140px]"
-                type="number"
-                min={0}
-                value={values.minAge}
-                onChange={(e) => set("minAge", e.target.value)}
-                error={fieldError("minAge")}
-                placeholder="Any"
-              />
-              <TextField
-                label="Oldest age"
-                className="min-w-[140px]"
-                type="number"
-                min={0}
-                value={values.maxAge}
-                onChange={(e) => set("maxAge", e.target.value)}
-                error={fieldError("maxAge")}
-                placeholder="Any"
-              />
-            </div>
-            <Section title="Who is it for?">
-              <SegmentedToggle<"youth" | "everyone">
-                size="sm"
-                className="self-start"
-                label="Audience"
-                value={values.isYouth ? "youth" : "everyone"}
-                onChange={(v) => set("isYouth", v === "youth")}
-                segments={[
-                  { value: "everyone", label: "Everyone" },
-                  { value: "youth", label: "Youth" },
-                ]}
-              />
-            </Section>
             <Section
               title="Who can see this"
             >
@@ -1090,104 +1034,88 @@ export function EventForm({
                 }
               />
             </Section>
+            {mode === "create" && (
+              <Section title="Repeats">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* The section's "Repeats" is its label; no second one. */}
+                  <Select
+                    aria-label="Repeats"
+                    className="min-w-[200px]"
+                    value={values.frequency}
+                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {values.frequency !== "once" && !values.repeatForever && (
+                    <TextField
+                      label="How many times"
+                      required
+                      className="min-w-[170px]"
+                      type="number"
+                      min={2}
+                      max={104}
+                      value={values.occurrenceCount}
+                      onChange={(e) => set("occurrenceCount", e.target.value)}
+                      error={fieldError("occurrenceCount")}
+                      placeholder="8"
+                    />
+                  )}
+                  {values.frequency !== "once" && (
+                    // A drop-in that has run every Friday for nine years has no
+                    // session count to give.
+                    <Checkbox
+                      label="It keeps going"
+                      className="min-h-12"
+                      checked={values.repeatForever}
+                      onChange={(e) => set("repeatForever", e.target.checked)}
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
           </Group>
+          <Group title="Event tags">
+            <Section title="Topics" required>
+              <div role="group" aria-label="Topics" className="flex flex-wrap gap-2">
+                {categories.map((c) => (
+                  <FilterChip
+                    light
+                    key={c.slug}
+                    selected={values.categories.includes(c.slug)}
+                    onClick={() => toggle("categories", c.slug)}
+                  >
+                    <Glyph icon={categoryStyle(c.slug).icon} />
+                    &nbsp;{c.label}
+                  </FilterChip>
+                ))}
+              </div>
+              {fieldError("categories") && (
+                <p className="text-base text-danger-fg">{fieldError("categories")}</p>
+              )}
+            </Section>
+            <Section title="What does it offer?">
+              <div role="group" aria-label="What it offers" className="flex flex-wrap gap-2">
+                {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
+                  <FilterChip
+                    light
+                    key={slug}
+                    selected={values.accessibilityTags.includes(slug)}
+                    onClick={() => toggle("accessibilityTags", slug)}
+                  >
+                    <Glyph icon={icon} />
+                    &nbsp;{label}
+                  </FilterChip>
+                ))}
+              </div>
+            </Section>
+          </Group>
+
         </div>
       </div>
-
-      <div className="flex max-w-[1200px] flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="max-sm:w-full"
-          disabled={submitting}
-          trailingIcon={<Upload />}
-        >
-          {submitting ? submittingLabel : submitLabel}
-        </Button>
-      </div>
-      {topicsOpen && (
-        <Modal
-          title={
-            publishStep === 1
-              ? "What's this event about?"
-              : "What does it offer?"
-          }
-          subtitle={
-            publishStep === 1
-              ? "Step 1 of 2. Pick one or more topics. Members choose these as interests, so this is how the right people find it."
-              : "Step 2 of 2. Pick anything that applies, or none. Members with these needs see it sooner."
-          }
-          onClose={() => setTopicsOpen(false)}
-        >
-          {publishStep === 1 ? (
-            <div
-              role="group"
-              aria-label="Topics"
-              className="form-dense mt-6 flex flex-wrap gap-2"
-            >
-              {categories.map((c) => (
-                <FilterChip
-                  key={c.slug}
-                  selected={values.categories.includes(c.slug)}
-                  onClick={() => toggle("categories", c.slug)}
-                >
-                  <Glyph icon={categoryStyle(c.slug).icon} />
-                  &nbsp;{c.label}
-                </FilterChip>
-              ))}
-            </div>
-          ) : (
-            <div
-              role="group"
-              aria-label="What it offers"
-              className="form-dense mt-6 flex flex-wrap gap-2"
-            >
-              {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
-                <FilterChip
-                  key={slug}
-                  selected={values.accessibilityTags.includes(slug)}
-                  onClick={() => toggle("accessibilityTags", slug)}
-                >
-                  <Glyph icon={icon} />
-                  &nbsp;{label}
-                </FilterChip>
-              ))}
-            </div>
-          )}
-          <div className="mt-8 flex flex-wrap justify-end gap-3">
-            {publishStep === 1 ? (
-              <>
-                <Button onClick={() => setTopicsOpen(false)}>Keep editing</Button>
-                <Button
-                  variant="primary"
-                  disabled={values.categories.length === 0}
-                  onClick={() => setPublishStep(2)}
-                >
-                  Next
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={() => setPublishStep(1)} disabled={submitting}>
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  disabled={submitting}
-                  trailingIcon={<Upload />}
-                  onClick={() => {
-                    setTopicsOpen(false);
-                    onSubmit();
-                  }}
-                >
-                  {submitting ? submittingLabel : submitLabel}
-                </Button>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
     </form>
   );
 }

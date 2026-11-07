@@ -13,7 +13,7 @@ import {
   Printer,
   RotateCcw,
   Link2,
-  Share2,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
@@ -30,7 +30,7 @@ import { Glyph } from "@/components/ui/Glyph";
 import { Group } from "@/components/host/EventForm";
 import { useToast } from "@/components/ui/Toast";
 import { eventUrl } from "@/components/CopyLinkButton";
-import { copyText } from "@/lib/clipboard";
+import { ShareModal } from "@/components/member/ShareModal";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
@@ -65,6 +65,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [unpublishing, setUnpublishing] = useState(false);
   // Un-published: read from /events/archived/{id}, shown with Restore.
   const [archived, setArchived] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // Details | Analytics. ?tab=analytics opens on the numbers, so the tab
   // survives a reload and can be linked to.
   const [tab, setTab] = useState<"details" | "analytics">("details");
@@ -152,14 +153,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       setRestoring(false);
     }
   }
-  async function share() {
-    if (!event) return;
-    if (!(await copyText(eventUrl(event.id), show))) return;
-    show({
-      title: `Link to '${event.title}' copied.`,
-      description: "Paste it wherever you're sharing.",
-    });
-  }
 
   function print() {
     // Mark just the event, print, then put the page back — the global print
@@ -171,11 +164,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    // Centred with wide margins, like the create / edit pages it mirrors.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        subtitle={<PostedBy event={event} />}
+        subtitle={<PostedBy event={event} showPublished />}
         status={<EventStatus state={archived ? "unpublished" : "published"} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
@@ -183,13 +177,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             {/* Share and print are icons (with tooltips saying what they do);
                 Edit keeps its word. */}
             {!archived && (
-              <Tooltip text="Copy a link to this event to share">
+              <Tooltip text="Share by email or link">
                 {(tip) => (
                   <Button
                     aria-label={`Share ${event.title}`}
                     aria-describedby={tip}
-                    onClick={() => void share()}
-                    leadingIcon={<Share2 />}
+                    onClick={() => setSharing(true)}
+                    leadingIcon={<Send />}
                   />
                 )}
               </Tooltip>
@@ -304,17 +298,57 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         // The event form's layout, group for group and in its words, so an
         // event reads back exactly as it was entered — every field, with
         // what an empty one means ("None", "No limit", "Any age").
-        className="grid max-w-[1200px] items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        className="grid max-w-[1200px] items-start gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
       >
-        <div className="flex min-w-0 flex-col gap-4">
-          <h2 className="group-heading text-xl font-medium text-fg">Event details</h2>
-          <ReadField label="Event image">
-            {/* The form's frame: 300px tall, full width, cropped to fill. */}
-            <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
-            </div>
-          </ReadField>
+        {/* The form's picture: on the right from lg, large and staying in
+            view; first in one column. */}
+        <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle lg:sticky lg:top-6 lg:order-2 lg:h-[520px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+          <Group title="Description">
+            <ReadField label="Brief Description">
+              <p className="whitespace-pre-line">{event.description}</p>
+            </ReadField>
+            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
+              {event.registration_url ? (
+                <a
+                  href={event.registration_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all underline underline-offset-4"
+                >
+                  {event.registration_url}
+                </a>
+              ) : (
+                "None"
+              )}
+            </ReadField>
+            <ReadField label="External links">
+              {event.links?.length ? (
+                <ol className="flex list-decimal flex-col gap-1 pl-5">
+                  {event.links.map((l) => (
+                    <li key={l.url}>
+                      <a
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                "None"
+              )}
+            </ReadField>
+          </Group>
+
+          <Group title="Event details">
           <ReadField label="Date">
             <Line icon={<CalendarDays />}>
               {longDate(event.starts_at) || "Date to be announced"}
@@ -346,74 +380,34 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               )}
             </ReadField>
           </div>
-          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
-          <ConsoleCounts event={event} />
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-6">
-          <Group title="Description">
-            <ReadField label="Brief Description">
-              <p className="whitespace-pre-line">{event.description}</p>
-            </ReadField>
-          </Group>
-
-          <Group title="Cost & sign-up">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
-            {!event.is_free && (
-              <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
-            )}
             <ReadField label="How people join">
               {event.requires_signup ? "Registration" : "Drop-in"}
             </ReadField>
-            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
-              {event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {event.registration_url}
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="Other links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
+          </div>
+          {!event.is_free && (
+            <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
+          )}
+          <ReadField label="Who can see this">
+            {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+          </ReadField>
+          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
+          <ConsoleCounts event={event} />
           </Group>
 
-          <Group title="Who it's for">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <ReadField label="Spots available">
-                {event.capacity != null ? String(event.capacity) : "No limit"}
-              </ReadField>
-              <ReadField label="Youngest age">
-                {event.min_age != null ? String(event.min_age) : "Any"}
-              </ReadField>
-              <ReadField label="Oldest age">
-                {event.max_age != null ? String(event.max_age) : "Any"}
-              </ReadField>
-            </div>
-            <ReadField label="Who is it for?">{event.is_youth ? "Youth" : "Everyone"}</ReadField>
+          <Group title="Event tags">
+            <ReadField label="Topics">
+              <IconList
+                items={(event.categories?.length ? event.categories : [event.category])
+                  .filter((slug): slug is string => !!slug)
+                  .map((slug) => ({
+                    key: slug,
+                    icon: categoryStyle(slug).icon,
+                    label: topicLabel(slug),
+                  }))}
+              />
+            </ReadField>
             <ReadField label="What does it offer?">
               <IconList
                 items={event.accessibility_tags
@@ -421,22 +415,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                   .map((t) => ({ key: t, icon: tagIcon(t), label: tagLabel(t) }))}
               />
             </ReadField>
-            <ReadField label="Who can see this">
-              {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
-            </ReadField>
           </Group>
 
-          <Group title="Topics">
-            <IconList
-              items={(event.categories?.length ? event.categories : [event.category])
-                .filter((slug): slug is string => !!slug)
-                .map((slug) => ({
-                  key: slug,
-                  icon: categoryStyle(slug).icon,
-                  label: topicLabel(slug),
-                }))}
-            />
-          </Group>
 
         </div>
       </article>
@@ -445,6 +425,15 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       </div>
       )}
 
+      {sharing && (
+        <ShareModal
+          title="Share this event?"
+          eventIds={[event.id]}
+          organizer
+          link={{ getUrl: async () => eventUrl(event.id) }}
+          onClose={() => setSharing(false)}
+        />
+      )}
       {unpublishing && (
         <UnpublishModal
           event={event}

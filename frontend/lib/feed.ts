@@ -82,6 +82,23 @@ export function oneCardPerProgram(events: Event[]): Event[] {
   });
 }
 
+/**
+ * A repeating program only reaches the member feed a month ahead: its next
+ * date has to start within the next 30 days. One-time events show however
+ * far off they are. Personalization still never filters — this is about
+ * when a series is listed at all.
+ */
+export const RECURRING_WINDOW_DAYS = 30;
+
+export function withinRecurringWindow(event: Event, now = Date.now()): boolean {
+  // Every row has a series id, one-offs too; repeating means more than one date.
+  const repeats = (event.series_total ?? 0) > 1 || !!event.recurrence?.trim();
+  if (!repeats || !event.starts_at) return true;
+  const start = Date.parse(event.starts_at);
+  if (Number.isNaN(start)) return true;
+  return start <= now + RECURRING_WINDOW_DAYS * 86_400_000;
+}
+
 export function personalizedFeed(events: Event[], taste: Taste): Event[] {
   return events
     .map((event, index) => ({ event, index, score: matchScore(event, taste) }))

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   animate,
   motion,
@@ -54,6 +55,7 @@ import {
   personalizedFeed,
   programKey,
   recommendedThisWeek,
+  withinRecurringWindow,
 } from "@/lib/feed";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -61,14 +63,23 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
-import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
-import { SavedSidebar } from "@/components/member/SavedSidebar";
+import { AccessibilityMenu, CareSwitcher, FeedAccount } from "@/components/member/FeedHeader";
+import {
+  BOARD_CARD_W,
+  MINI_CARD,
+  MiniCardFace,
+  SHADOW_HELD,
+  SavedSidebar,
+} from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
+import { CaregiverFeed } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
 
+/** How far from the saved board (px) the dragged card starts turning into a mini card. */
+const MORPH_DISTANCE = 320;
 const DROP_THRESHOLD = 150; // drag-left px to save
 const SWIPE_THRESHOLD = 90; // drag up/down px to page
 const HOLD_MS = 1000; // ← held this long saves
@@ -221,6 +232,20 @@ export function EventsView({
   const flyY = useMotionValue(0);
   const cardScale = useMotionValue(1);
   const cardOpacity = useMotionValue(1);
+  // The mini card the feed card turns into as it is dragged toward the
+  // saved board: it follows the pointer, fading in as the card fades out
+  // (desktop and tablet; a phone's drop zone is the bar under the feed).
+  const [ghosting, setGhosting] = useState(false);
+  const ghostX = useMotionValue(0);
+  const ghostY = useMotionValue(0);
+  const ghostT = useMotionValue(0);
+  const ghostScale = useMotionValue(1);
+  const resetGhost = useCallback(() => {
+    ghostT.set(0);
+    ghostScale.set(1);
+    cardOpacity.set(1);
+    setGhosting(false);
+  }, [ghostT, ghostScale, cardOpacity]);
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
@@ -320,8 +345,9 @@ export function EventsView({
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
+    // A repeating program shows only once its next date is within a month.
     const upcoming = events.filter(
-      (ev) => isUpcoming(ev) && passesFilters(ev, chips),
+      (ev) => isUpcoming(ev) && withinRecurringWindow(ev) && passesFilters(ev, chips),
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
   }, [events, chips, taste]);
@@ -644,6 +670,7 @@ export function EventsView({
       // card away in either case would say something untrue.
       if (!signedInRef.current || savedRef.current.has(ev.id)) {
         void animate(x, 0, { duration: 0.2 }).then(() => setLift(null));
+        resetGhost();
         setDragActive(false);
         void attend(ev);
         return;
@@ -655,6 +682,30 @@ export function EventsView({
         setLift(null);
         setDragActive(false);
         await attend(ev, true);
+        return;
+      }
+
+      // Dragged far enough to have become a mini card: that is what flies
+      // into the board, and the big card stays hidden until the save lands.
+      if (ghostT.get() > 0.05) {
+        setFlying(true);
+        cardOpacity.set(0);
+        const drop = target.getBoundingClientRect();
+        const EASE = [0.4, 0, 0.2, 1] as const;
+        await Promise.all([
+          animate(ghostT, 1, { duration: 0.15 }),
+          // Into the top-left slot, where the newest save goes.
+          animate(ghostX, drop.left + 4, { duration: 0.4, ease: EASE }),
+          animate(ghostY, drop.top + 16, { duration: 0.4, ease: EASE }),
+          animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
+        ]);
+        await animate(ghostT, 0, { duration: 0.15 });
+        x.set(0);
+        setLift(null);
+        await attend(ev, true);
+        resetGhost();
+        setDragActive(false);
+        setFlying(false);
         return;
       }
 
@@ -699,6 +750,11 @@ export function EventsView({
       flyY,
       cardScale,
       cardOpacity,
+      ghostT,
+      ghostX,
+      ghostY,
+      ghostScale,
+      resetGhost,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
@@ -788,6 +844,19 @@ export function EventsView({
     setChips(new Set());
     setI(0);
   }, []);
+
+  const advanced = me?.is_caregiver ?? false;
+  // The experience: Simplified (community member, the card) or Advanced
+  // (caregiver, the list). One write sets both.
+  const changeExperience = useCallback(
+    (advanced: boolean) => {
+      const mode: ViewMode = advanced ? "list" : "card";
+      setViewMode(mode);
+      if (!advanced) setCareFor(null);
+      void setPref({ is_caregiver: advanced, preferred_view: mode });
+    },
+    [setPref],
+  );
 
   // The view sticks: on the profile, or in this browser without one.
   const changeView = useCallback(
@@ -1085,6 +1154,44 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
+  // "Saving for" sits under the saved panel's heading while it is open;
+  // folded, on a phone or on All Saved Events it sits beside the account.
+  const careInPanel = !phone && view !== "saved" && sidebarOpen;
+
+  // Accessibility Tools, on the right of the bar over the event column.
+  const a11yMenu = (
+    <AccessibilityMenu
+        open={a11yOpen}
+        onOpenChange={setA11yOpen}
+        ttsEnabled={ttsEnabled}
+        voiceEnabled={voiceEnabled}
+        ttsSupported={ttsSupported}
+        voiceSupported={voiceSupported}
+        onToggleTts={toggleTts}
+        onToggleVoice={toggleVoice}
+        headEnabled={headEnabled}
+        headSupported={headSupported}
+        onToggleHead={toggleHead}
+        listening={voiceEnabled && listening}
+        lastHeard={lastHeard}
+        interests={me?.interest_categories ?? []}
+        onToggleInterest={toggleInterest}
+        accessPrefs={me?.accessibility_prefs ?? []}
+        onToggleAccessPref={toggleAccessPref}
+        signedIn={signedIn}
+        listView={viewMode === "list"}
+        onShowTour={showTour}
+        advanced={me?.is_caregiver ?? false}
+        onChangeExperience={changeExperience}
+        onSignIn={() => {
+          // The sign-in overlay covers this menu; leaving it open left a
+          // hidden dialog still listening for Escape.
+          setA11yOpen(false);
+          toSignIn();
+        }}
+    />
+  );
+
   return (
     <motion.main
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -1131,43 +1238,6 @@ export function EventsView({
         </div>
       )}
 
-      <FeedHeader
-        name={name}
-        role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
-        avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-        care={careChoice}
-        onSignIn={() => toSignIn()}
-        onSignOut={() => void doLogout()}
-      >
-        <AccessibilityMenu
-          open={a11yOpen}
-          onOpenChange={setA11yOpen}
-          ttsEnabled={ttsEnabled}
-          voiceEnabled={voiceEnabled}
-          ttsSupported={ttsSupported}
-          voiceSupported={voiceSupported}
-          onToggleTts={toggleTts}
-          onToggleVoice={toggleVoice}
-          headEnabled={headEnabled}
-          headSupported={headSupported}
-          onToggleHead={toggleHead}
-          listening={voiceEnabled && listening}
-          lastHeard={lastHeard}
-          interests={me?.interest_categories ?? []}
-          onToggleInterest={toggleInterest}
-          accessPrefs={me?.accessibility_prefs ?? []}
-          onToggleAccessPref={toggleAccessPref}
-          signedIn={signedIn}
-          listView={viewMode === "list"}
-          onShowTour={showTour}
-          onSignIn={() => {
-            // The sign-in overlay covers this menu; leaving it open left a
-            // hidden dialog still listening for Escape.
-            setA11yOpen(false);
-            toSignIn();
-          }}
-        />
-      </FeedHeader>
 
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
           bar under it, so it comes after the feed in the DOM as well. */}
@@ -1178,9 +1248,13 @@ export function EventsView({
           <SavedSidebar
             ref={dropRef}
             layout={sidebarOpen ? "panel" : "rail"}
+            careSwitcher={
+              careInPanel && careChoice && careChoice.members.length > 0 ? (
+                <CareSwitcher {...careChoice} fill />
+              ) : null
+            }
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
-            active={dragActive}
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}
@@ -1191,7 +1265,26 @@ export function EventsView({
           />
         )}
 
-        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* The event column, plain white. */}
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
+          {/* The bar over the event column: who you are on the left,
+              Accessibility Tools on the right. */}
+          {/* Same side padding as the feed below (short screens too), and the
+              account button pulled back by its own 8px, so the picture lines
+              up with "Event 1 of 47". */}
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
+            <div className="-ml-2 min-w-0">
+            <FeedAccount
+              name={name}
+              avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+              care={careInPanel ? null : careChoice}
+              onSignIn={() => toSignIn()}
+              onSignOut={() => void doLogout()}
+            />
+            </div>
+            {a11yMenu}
+          </header>
+          <div className="relative flex min-h-0 flex-1 flex-col">
           {/* The saved list opens over the main column, which has the whole
               width while it is up. */}
           <SavedEvents
@@ -1210,12 +1303,15 @@ export function EventsView({
           />
 
           <div
-            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 sm:gap-8 sm:p-6 lg:gap-12 lg:p-9 short:!gap-6 short:!p-6"
+            // Card view gets the 48px cursor (globals.css `.big-cursor`).
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:p-9 short:!gap-10 short:!p-6 ${
+              viewMode === "card" ? "big-cursor" : ""
+            }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
-            <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col gap-5 sm:gap-6">
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
                   {space.logo_url && (
@@ -1233,19 +1329,21 @@ export function EventsView({
                   heading, switch and filter label pushed the card's Save
                   below the fold, behind the saved bar. */}
               <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
-                {/* In the card view the page heading stays "Programs" for a
-                    screen reader — the live region already reads "n of m" per
-                    card, and a heading that changes on every arrow is noise. */}
-                <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
-                  {viewMode === "card" ? (
-                    <>
-                      <span className="sr-only">Programs</span>
-                      <span aria-hidden="true">{heading}</span>
-                    </>
-                  ) : (
-                    heading
-                  )}
-                </h1>
+                {/* "Discover Events", with the count under it. In the card view
+                    a screen reader skips the "Event n of m" line — the live
+                    region already reads it per card, and a line that changes
+                    on every arrow is noise. */}
+                <div className="flex min-w-0 flex-col gap-1">
+                  <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                    Discover Events
+                  </h1>
+                  <p
+                    className="text-xl text-fg-muted"
+                    aria-hidden={viewMode === "card" ? true : undefined}
+                  >
+                    {heading}
+                  </p>
+                </div>
                 <div data-tour="view">
                   <SegmentedToggle
                     label="View"
@@ -1258,12 +1356,14 @@ export function EventsView({
                 </div>
               </div>
 
+              {!(viewMode === "list" && advanced) && (
               <FeedFilters
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
                 interests={taste.interests}
               />
+              )}
             </div>
 
             {status === "error" ? (
@@ -1288,6 +1388,16 @@ export function EventsView({
                   ? `${space.name} hasn't posted any programs yet. Check back soon.`
                   : "No programs yet. Check back soon."}
               </p>
+            ) : viewMode === "list" && advanced ? (
+              // The Advanced experience: the console's layout, a member's
+              // actions. Its own filter panel replaces the chip row.
+              <CaregiverFeed
+                events={feed}
+                saved={saved}
+                onOpen={setDetailFor}
+                onSave={(ev) => void attend(ev)}
+                onUnsave={(ev) => void unsave(ev)}
+              />
             ) : viewMode === "list" ? (
               <ListFeed
                 events={feed}
@@ -1356,7 +1466,10 @@ export function EventsView({
                           touchAction: phone ? "pan-y" : "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
-                        onDragStart={liftCard}
+                        onDragStart={() => {
+                          liftCard();
+                          if (!phone && !reduceMotion) setGhosting(true);
+                        }}
                         // Settled back without a save; a flight drops it itself.
                         onDragTransitionEnd={() => {
                           if (!flyingRef.current) setLift(null);
@@ -1365,9 +1478,21 @@ export function EventsView({
                           // Leftward travel is a save in progress; anything
                           // else leaves the zone alone.
                           const dx = info.offset.x;
-                          setDragTint(
-                            dx < -24 && Math.abs(dx) > Math.abs(info.offset.y),
-                          );
+                          const leftward =
+                            dx < -24 && Math.abs(dx) > Math.abs(info.offset.y);
+                          setDragTint(leftward);
+                          if (!ghosting) return;
+                          // Nearer the saved board, more mini card: none
+                          // until it heads left, all of it at the board's edge.
+                          const zone = dropRef.current?.getBoundingClientRect();
+                          const t =
+                            zone && leftward
+                              ? Math.min(1, Math.max(0, 1 - (info.point.x - zone.right) / MORPH_DISTANCE))
+                              : 0;
+                          ghostX.set(info.point.x - BOARD_CARD_W / 2);
+                          ghostY.set(info.point.y - 60);
+                          ghostT.set(t);
+                          cardOpacity.set(1 - t);
                         }}
                         onDragEnd={(_, info) => {
                           setDragTint(false);
@@ -1384,14 +1509,22 @@ export function EventsView({
                               : false;
                             if (dx < -DROP_THRESHOLD || over) {
                               void flyToDrop(x.get());
+                              return;
                             }
-                            return;
                           }
+                          // Not saved: the big card comes back.
+                          if (ghosting) {
+                            void animate(ghostT, 0, { duration: 0.15 });
+                            void animate(cardOpacity, 1, { duration: 0.15 }).then(resetGhost);
+                          }
+                          if (Math.abs(dx) > Math.abs(dy)) return;
                           // Vertical travel pages, like the ↑ / ↓ buttons.
                           if (dy > SWIPE_THRESHOLD) next();
                           else if (dy < -SWIPE_THRESHOLD) prev();
                         }}
-                        className={`${flying ? "" : "cursor-grab active:cursor-grabbing"} ${
+                        // An open hand over the card, a closed one while it's
+                        // held (globals.css `.card-grab`).
+                        className={`${flying ? "" : "card-grab"} ${lift ? "is-grabbing" : ""} ${
                           dragActive ? "shadow-lift" : ""
                         } rounded-card`}
                       >
@@ -1403,8 +1536,33 @@ export function EventsView({
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
+                          unpinned={!!lift}
+                          onRegister={() => openRegistration(current)}
                         />
                       </motion.div>
+                      {ghosting &&
+                        createPortal(
+                          <motion.div
+                            aria-hidden="true"
+                            style={{
+                              position: "fixed",
+                              left: 0,
+                              top: 0,
+                              x: ghostX,
+                              y: ghostY,
+                              opacity: ghostT,
+                              scale: ghostScale,
+                              rotate: -2,
+                              width: BOARD_CARD_W,
+                              zIndex: 60,
+                              boxShadow: SHADOW_HELD,
+                            }}
+                            className={`pointer-events-none ${MINI_CARD}`}
+                          >
+                            <MiniCardFace event={current} />
+                          </motion.div>,
+                          document.body,
+                        )}
                     </motion.div>
                   </motion.div>
                 </div>
@@ -1436,6 +1594,7 @@ export function EventsView({
               </div>
             )}
           </div>
+          </div>
         </section>
 
         {phone && view !== "saved" && (
@@ -1444,7 +1603,6 @@ export function EventsView({
             layout="bar"
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
-            active={dragActive}
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}

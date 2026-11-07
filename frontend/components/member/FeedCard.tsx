@@ -1,12 +1,13 @@
 "use client";
 
 import { memo } from "react";
-import { Bookmark, BookmarkX, MoveRight } from "lucide-react";
+import { Bookmark, BookmarkX, ExternalLink, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { HoldInfo } from "@/components/member/HoldInfo";
+import { Magnet } from "@/components/member/SavedSidebar";
 
 /**
  * The one card on screen. The buttons stop pointer-down so pressing one is
@@ -20,7 +21,15 @@ export const FeedCard = memo(function FeedCard({
   onSave,
   onUnsave,
   onSignIn,
+  unpinned = false,
+  onRegister,
 }: {
+  /** The organizer's own sign-up page, for an event that needs registering:
+      the card's button says Register and opens it. */
+  onRegister?: () => void;
+  /** The card is on the move (dragged, held or flying to the board): its
+      push pin pops off. */
+  unpinned?: boolean;
   event: Event;
   saved: boolean;
   /** In this week's picks. */
@@ -32,10 +41,23 @@ export const FeedCard = memo(function FeedCard({
   onSignIn: () => void;
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
+  // The admin set "needs sign-up" with a link: Register, not Save.
+  const register =
+    !!onRegister &&
+    event.requires_signup &&
+    event.registration_mode === "external" &&
+    !!event.registration_url;
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    <div className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
+    // Held up like a flyer: a magnet at the top and a soft shadow.
+    <div className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
+      <Magnet
+        colour="#e5484d"
+        className={`!-top-2.5 !size-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
+          unpinned ? "!-translate-y-4 rotate-45 opacity-0" : ""
+        }`}
+      />
       {event.capacity != null && (
         <HoldInfo className="absolute right-2 top-2 sm:right-3 sm:top-3" />
       )}
@@ -44,11 +66,11 @@ export const FeedCard = memo(function FeedCard({
         layout="card"
         recommended={recommended}
         going={
-          // The feed card's fact icons are 36px (EventSummary's `icon`).
+          // The feed card's fact icons are 28px (EventSummary's `icon`).
           <GoingCount
             count={event.saved_count}
             onSignIn={onSignIn}
-            iconClassName="size-7 sm:size-9 short:!size-7"
+            iconClassName="size-7"
           />
         }
         actions={
@@ -67,7 +89,23 @@ export const FeedCard = memo(function FeedCard({
               <span className="sm:hidden">More info</span>
               <span className="max-sm:hidden">More information</span>
             </Button>
-            {saved ? (
+            {register ? (
+              // Registration is on the organizer's own page: the card's
+              // button goes there. Saving still works by dragging the card
+              // left, holding ←, or from More information.
+              <Button
+                variant="primary"
+                size="lg"
+                className={size}
+                onClick={onRegister}
+                onPointerDown={stop}
+                trailingIcon={<ExternalLink />}
+                data-tour="save"
+                aria-label={`Register for ${event.title} (opens the organizer's page)`}
+              >
+                Register
+              </Button>
+            ) : saved ? (
               // Saved: the button undoes it, rather than sitting disabled —
               // a member shouldn't have to open the listing to change their
               // mind. The un-save toast offers Undo.

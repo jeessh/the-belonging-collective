@@ -41,7 +41,7 @@ const ToastContext = createContext<ToastApi | null>(null);
 const DURATION_MS = 5000;
 
 const TONE: Record<ToastTone, string> = {
-  success: "border-toast-success bg-tag-free-bg",
+  success: "border-toast-success bg-toast-success-bg",
   info: "border-toast-info bg-primary-soft",
   alert: "border-toast-alert bg-danger",
 };
@@ -135,7 +135,7 @@ function ToastCard({
       }}
       // An error is read out straight away, not after whatever is speaking.
       role={tone === "alert" ? "alert" : undefined}
-      className={`pointer-events-auto flex w-full max-w-lg items-center gap-4 rounded-control border-[3px] px-5 py-3 shadow-toast ${TONE[tone]}`}
+      className={`pointer-events-auto flex w-full max-w-lg items-center gap-4 rounded-control border-2 px-5 py-3 shadow-toast ${TONE[tone]}`}
     >
       <div className="min-w-0 flex-1">
         <p className="text-xl font-medium leading-snug text-fg">
