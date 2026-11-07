@@ -318,7 +318,10 @@ can open.
   `/host/events` is centred, 1200px of content at most, wide margins. `ui/Tooltip` shows on
   hover and keyboard focus, is the control's `aria-describedby`, and closes
   on Escape — use it rather than `title` for icon-only buttons beside `components/host/PostedEvents.tsx`'s accordion
-  `FilterPanel` (`ui/Checkbox` rows; its reset row reads "No filters" so it
+  `FilterPanel` (console-only groups first — Status, Your Events only, since
+  All Events lists published events alone; Date posted, cumulative "Past 7
+  / 30 / 90 days" or older; Posted by, the person or the organization —
+  then the feed's dimensions) (`ui/Checkbox` rows; its reset row reads "No filters" so it
   isn't confused with the toggle), with a Your Events / All Events toggle.
   **A filter matches every option a program is in** (`Dimension.all`,
   `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity

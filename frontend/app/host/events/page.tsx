@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, Printer, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { ApiError, api, apiMessage, type Event } from "@/lib/api";
-import { DIMENSIONS } from "@/lib/dimensions";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming, longDate } from "@/lib/time";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -63,10 +62,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
     if (new URLSearchParams(window.location.search).get("scope") === "unpublished")
       setScope("mine");
   }, []);
-  const chosen = DIMENSIONS.reduce(
-    (n, d) => n + (filters[d.key]?.length ?? 0),
-    0,
-  );
+  const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   async function load() {
     const PAGE = 200;
@@ -170,18 +166,30 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
   // a run that has finished falls back to its first date. Filters and search
   // apply first, so a filter that matches only some dates still surfaces the
   // program.
+  // Which events are un-published: the status filter and the tags read it.
+  const statusOf = useMemo(() => {
+    const ids = new Set((scope === "mine" ? archived ?? [] : []).map((ev) => ev.id));
+    return (ev: Event) => (ids.has(ev.id) ? ("unpublished" as const) : ("published" as const));
+  }, [scope, archived]);
+  // The filter options cover everything listed, un-published included.
+  const listed = useMemo(
+    () => (scope === "mine" && archived ? [...inScope, ...archived] : inScope),
+    [scope, archived, inScope],
+  );
+
   const live = useMemo(() => {
-    const matching = applyHostFilters(inScope, filters, query);
+    const matching = applyHostFilters(inScope, filters, query, statusOf);
     return oneCardPerProgram([
       ...matching.filter(isUpcoming),
       ...matching.filter((ev) => !isUpcoming(ev)),
     ]);
-  }, [inScope, filters, query]);
+  }, [inScope, filters, query, statusOf]);
   // Under Your Events, the un-published ones follow, through the same
   // filters and search.
   const retiredShown = useMemo(
-    () => (scope === "mine" && archived ? applyHostFilters(archived, filters, query) : []),
-    [scope, archived, filters, query],
+    () =>
+      scope === "mine" && archived ? applyHostFilters(archived, filters, query, statusOf) : [],
+    [scope, archived, filters, query, statusOf],
   );
   const shown = useMemo(() => [...live, ...retiredShown], [live, retiredShown]);
 
@@ -253,7 +261,13 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
 
       <div className="flex flex-col items-start gap-8 lg:flex-row">
         <div className="hidden w-[280px] shrink-0 lg:block">
-          <FilterPanel events={inScope} filters={filters} onChange={setFilters} />
+          <FilterPanel
+            events={listed}
+            filters={filters}
+            onChange={setFilters}
+            statusOf={statusOf}
+            showStatus={scope === "mine"}
+          />
         </div>
 
         <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
@@ -328,7 +342,7 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
                   event={ev}
                   canManage={ctx.isSuper || ev.host_id === ctx.org.id}
                   onUnpublish={setUnpublishing}
-                  state={retiredShown.includes(ev) ? "unpublished" : "published"}
+                  state={statusOf(ev)}
                   onRestore={() => void restore(ev)}
                   restoring={restoring === ev.id}
                 />
@@ -353,9 +367,11 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
           <div className="mt-4">
             <FilterPanel
-              events={inScope}
+              events={listed}
               filters={filters}
               onChange={setFilters}
+              statusOf={statusOf}
+              showStatus={scope === "mine"}
             />
           </div>
           <Button
