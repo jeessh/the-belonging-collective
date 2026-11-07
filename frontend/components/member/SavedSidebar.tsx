@@ -1,7 +1,7 @@
 "use client";
 
-import { forwardRef, memo, useCallback, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { forwardRef, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
   ChevronsLeft,
@@ -19,15 +19,19 @@ import { useToast } from "@/components/ui/Toast";
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
-/* The bookshelf, an experiment (the open panel's list): each saved program
-   is a miniature of the feed card — just its picture and title — standing on a wooden plank, two to a
-   shelf. Each cell draws its own piece of plank, so two side by side make
-   one shelf; the cards in a row stand on its bottom edge. */
-const SHELF_BACK = "flex flex-1 items-end px-3 pt-5";
-const MINI_CARD =
-  "flex w-full flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left shadow-[0_2px_6px_rgba(60,35,10,0.25)] transition-transform duration-200 ease-out group-hover:-translate-y-1.5 group-focus-visible:-translate-y-1.5 motion-reduce:transition-none";
-const PLANK =
-  "block h-3.5 w-full shrink-0 bg-gradient-to-b from-[#C8996A] to-[#9E6F43] shadow-[0_4px_6px_-2px_rgba(60,35,10,0.45)]";
+/* The board, an experiment (the open panel's list): each saved program is
+   a miniature of the feed card — its picture and title — laid out two
+   across, slightly askew, and free to be dragged anywhere in the box.
+   Double-click opens one (Enter / Space from the keyboard). Where each
+   card was left is remembered in this browser (`tbc.saved_board`). */
+const BOARD_CARD_W = 144;
+const BOARD_ROW_H = 176;
+const BOARD_GAP = 12;
+const BOARD_PAD = 12;
+const BOARD_KEY = "tbc.saved_board";
+// Soft, spread-out shadows: one at rest, a deeper one while held.
+const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
+const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -259,29 +263,11 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        // Out to the panel's edges (its 24px padding plus the
-                        // drop zone's 1px transparent edge), so each card's
-                        // hover fill runs the panel's full width; the card's
-                        // own 24px padding keeps its picture and words under
-                        // the "Saved Events" heading.
-                        className={`-mx-[25px] grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto transition-opacity ${
+                        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
-                        <Arrivals
-                          events={events}
-                          reduceMotion={reduceMotion}
-                          render={(ev) => (
-                            <Thumb event={ev} onOpen={onOpenEvent} layout="panel" />
-                          )}
-                        />
-                        {/* An odd count leaves half a shelf: finish it. */}
-                        {events.length % 2 === 1 && (
-                          <div aria-hidden="true" className="flex h-full flex-col">
-                            <span className={SHELF_BACK} />
-                            <span className={PLANK} />
-                          </div>
-                        )}
+                        <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
                       </div>
                     )}
                     {(events.length === 0 || active) && (
@@ -442,7 +428,7 @@ function Thumb({
 }: {
   event: Event;
   onOpen: (event: Event) => void;
-  layout: "panel" | "row" | "rail";
+  layout: "row" | "rail";
 }) {
   const image = eventImage(event);
   // Hover (and keyboard focus) darkens the photo: the thumbnail opens.
@@ -491,26 +477,159 @@ function Thumb({
       </button>
     );
   }
+  return null;
+}
 
-  // The bookshelf: a miniature of the feed card standing on its shelf.
-  // Hover / focus lifts it off the shelf.
+/** A card's place on the board, in the board's own pixels. */
+type Spot = { x: number; y: number };
+
+function readBoard(): Record<string, Spot> {
+  try {
+    const v = JSON.parse(localStorage.getItem(BOARD_KEY) ?? "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBoard(spots: Record<string, Spot>) {
+  try {
+    localStorage.setItem(BOARD_KEY, JSON.stringify(spots));
+  } catch {
+    /* private window or storage off: the board just forgets */
+  }
+}
+
+/** A small, steady tilt per program (-2.4° to 2.4°), so the board looks laid by hand. */
+function tilt(id: string): number {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return ((Math.abs(h) % 7) - 3) * 0.8;
+}
+
+/** The open panel's saved programs, as cards to arrange freely. */
+function Board({
+  events,
+  onOpen,
+  reduceMotion,
+}: {
+  events: Event[];
+  onOpen: (event: Event) => void;
+  reduceMotion: boolean | null;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [spots, setSpots] = useState<Record<string, Spot>>({});
+  useEffect(() => setSpots(readBoard()), []);
+  // The card last picked up sits on top.
+  const [top, setTop] = useState<string[]>([]);
+
+  const slot = (i: number): Spot => ({
+    x: BOARD_PAD + (i % 2) * (BOARD_CARD_W + BOARD_GAP),
+    y: BOARD_PAD + Math.floor(i / 2) * BOARD_ROW_H,
+  });
+  // Tall enough for the starting layout and for wherever a card was left.
+  const height = Math.max(
+    BOARD_PAD * 2 + Math.ceil(events.length / 2) * BOARD_ROW_H,
+    ...events.map((ev) => (spots[ev.id]?.y ?? 0) + BOARD_ROW_H),
+  );
+
+  const place = (id: string, spot: Spot) =>
+    setSpots((prev) => {
+      const next = { ...prev, [id]: spot };
+      writeBoard(next);
+      return next;
+    });
+
   return (
-    <button
+    <div ref={ref} className="relative w-full" style={{ height, minHeight: "100%" }}>
+      <AnimatePresence initial={false}>
+        {events.map((ev, i) => (
+          <BoardCard
+            key={ev.id}
+            event={ev}
+            spot={spots[ev.id] ?? slot(i)}
+            z={top.indexOf(ev.id) + 1}
+            board={ref}
+            reduceMotion={reduceMotion}
+            onLift={() => setTop((t) => [...t.filter((id) => id !== ev.id), ev.id])}
+            onPlace={(spot) => place(ev.id, spot)}
+            onOpen={() => onOpen(ev)}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function BoardCard({
+  event,
+  spot,
+  z,
+  board,
+  reduceMotion,
+  onLift,
+  onPlace,
+  onOpen,
+}: {
+  event: Event;
+  spot: Spot;
+  z: number;
+  board: React.RefObject<HTMLDivElement>;
+  reduceMotion: boolean | null;
+  onLift: () => void;
+  onPlace: (spot: Spot) => void;
+  onOpen: () => void;
+}) {
+  // The drag moves the card by x / y; when it's let go the offset is folded
+  // into its spot and x / y go back to zero.
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  return (
+    <motion.button
       type="button"
-      onClick={() => onOpen(event)}
-      className="group flex h-full w-full flex-col focus-visible:outline-offset-[-4px]"
+      drag
+      dragConstraints={board}
+      dragElastic={0}
+      dragMomentum={false}
+      onDragStart={onLift}
+      onDragEnd={() => {
+        onPlace({
+          x: Math.max(0, spot.x + x.get()),
+          y: Math.max(0, spot.y + y.get()),
+        });
+        x.set(0);
+        y.set(0);
+      }}
+      onPointerDown={onLift}
+      // Double-click opens it; from the keyboard, Enter or Space does.
+      onDoubleClick={onOpen}
+      onClick={(e) => {
+        if (e.detail === 0) onOpen();
+      }}
+      aria-label={`${event.title}. Double-click or press Enter to open.`}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1, rotate: tilt(event.id), boxShadow: SHADOW_REST }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      whileDrag={{ scale: 1.04, rotate: 0, boxShadow: SHADOW_HELD }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+      style={{ x, y, left: spot.x, top: spot.y, width: BOARD_CARD_W, zIndex: z }}
+      className="absolute flex cursor-grab touch-none select-none flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left active:cursor-grabbing"
     >
-      <span className={SHELF_BACK}>
-        <span className={MINI_CARD}>
-          <span aria-hidden="true" className="relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle">
-            {img}
-          </span>
-          <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
-            {event.title}
-          </span>
-        </span>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={eventImage(event)}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </span>
-      <span aria-hidden="true" className={PLANK} />
-    </button>
+      <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
+        {event.title}
+      </span>
+    </motion.button>
   );
 }
