@@ -4,32 +4,35 @@ import { forwardRef, memo, useCallback, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
+  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   CirclePlus,
+  MapPin,
 } from "lucide-react";
 import { apiMessage, type Event, type GoogleCalendarState } from "@/lib/api";
 import { googleCalendarButton } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
-import { TIME_ZONE, longDate } from "@/lib/time";
+import { TIME_ZONE, whenLine } from "@/lib/time";
+import { placeLabel } from "@/lib/place";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
+import { eventTags } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
-/* The bookshelf, an experiment (the open panel's list): the list sits on a
-   warm back wall (SHELF_WALL), each saved program a book — a portrait photo
-   with a spine and a shadow — standing on a wooden plank. Each cell draws
-   its own piece of plank, so two side by side make one shelf. */
-const SHELF_WALL = "bg-[#F4ECE1]";
-const SHELF_BACK =
-  "flex h-[212px] items-end justify-center px-4 pt-5";
-const BOOK =
-  "relative block h-[180px] w-[120px] overflow-hidden rounded-r-[6px] rounded-l-[2px] bg-surface-subtle shadow-[3px_0_8px_rgba(60,35,10,0.35)] transition-transform duration-200 ease-out group-hover:-translate-y-2 group-focus-visible:-translate-y-2 motion-reduce:transition-none";
+/* The bookshelf, an experiment (the open panel's list): each saved program
+   is a miniature of the feed card — picture, title, Free, when, where and
+   the saved count, no buttons — standing on a wooden plank, two to a
+   shelf. Each cell draws its own piece of plank, so two side by side make
+   one shelf; the cards in a row stand on its bottom edge. */
+const SHELF_BACK = "flex flex-1 items-end px-3 pt-5";
+const MINI_CARD =
+  "flex w-full flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left shadow-[0_2px_6px_rgba(60,35,10,0.25)] transition-transform duration-200 ease-out group-hover:-translate-y-1.5 group-focus-visible:-translate-y-1.5 motion-reduce:transition-none";
 const PLANK =
-  "block h-3.5 w-full bg-gradient-to-b from-[#C8996A] to-[#9E6F43] shadow-[0_4px_6px_-2px_rgba(60,35,10,0.45)]";
+  "block h-3.5 w-full shrink-0 bg-gradient-to-b from-[#C8996A] to-[#9E6F43] shadow-[0_4px_6px_-2px_rgba(60,35,10,0.45)]";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -266,7 +269,7 @@ export const SavedSidebar = memo(
                         // hover fill runs the panel's full width; the card's
                         // own 24px padding keeps its picture and words under
                         // the "Saved Events" heading.
-                        className={`-mx-[25px] grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto transition-opacity ${SHELF_WALL} ${
+                        className={`-mx-[25px] grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
@@ -279,7 +282,7 @@ export const SavedSidebar = memo(
                         />
                         {/* An odd count leaves half a shelf: finish it. */}
                         {events.length % 2 === 1 && (
-                          <div aria-hidden="true">
+                          <div aria-hidden="true" className="flex h-full flex-col">
                             <span className={SHELF_BACK} />
                             <span className={PLANK} />
                           </div>
@@ -494,32 +497,54 @@ function Thumb({
     );
   }
 
-  // The bookshelf: the photo as a book standing on a wooden shelf, its
-  // title and date on a label under the shelf. Hover / focus pulls the
-  // book forward off the shelf.
+  // The bookshelf: a miniature of the feed card standing on its shelf.
+  // Hover / focus lifts it off the shelf.
+  const when = whenLine(event);
+  const free = eventTags(event).includes("free");
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
-      className="group flex h-full w-full flex-col text-left focus-visible:outline-offset-[-4px]"
+      className="group flex h-full w-full flex-col focus-visible:outline-offset-[-4px]"
     >
-      <span aria-hidden="true" className={SHELF_BACK}>
-        <span className={BOOK}>
-          {img}
-          {/* The spine: a darker strip down the left edge, a crease beside it. */}
-          <span className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/35 via-black/10 to-transparent" />
-          <span className="absolute inset-y-0 left-3 w-px bg-white/25" />
+      <span className={SHELF_BACK}>
+        <span className={MINI_CARD}>
+          <span aria-hidden="true" className="relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle">
+            {img}
+          </span>
+          <span className="flex flex-col gap-1.5 px-0.5 pb-0.5">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="line-clamp-2 text-base font-medium leading-tight text-fg">
+                {event.title}
+              </span>
+              {free && (
+                <span className="rounded-control bg-tag-free-bg px-1.5 py-px text-[11px] uppercase tracking-wide text-tag-free-fg">
+                  Free
+                </span>
+              )}
+            </span>
+            <span className="flex items-start gap-1.5 text-xs leading-snug text-fg">
+              <CalendarDays aria-hidden="true" className="mt-px size-3.5 shrink-0 text-fg-muted" />
+              <span>
+                {when.rel}
+                {when.date && ` · ${when.date}`}
+                {when.time && <span className="block text-fg-muted">{when.time}</span>}
+              </span>
+            </span>
+            <span className="flex items-start gap-1.5 text-xs leading-snug text-fg">
+              <MapPin aria-hidden="true" className="mt-px size-3.5 shrink-0 text-fg-muted" />
+              <span className="line-clamp-2">{placeLabel(event)}</span>
+            </span>
+            {event.saved_count != null && (
+              <span className="flex items-center gap-1.5 text-xs text-fg">
+                <Bookmark aria-hidden="true" className="size-3.5 shrink-0 text-fg-muted" />
+                {event.saved_count} saved
+              </span>
+            )}
+          </span>
         </span>
       </span>
       <span aria-hidden="true" className={PLANK} />
-      <span className="flex min-w-0 flex-col items-start gap-1 px-4 pb-5 pt-3">
-        <span className="line-clamp-3 text-lg font-medium leading-tight text-fg group-hover:underline">
-          {event.title}
-        </span>
-        <span className="text-base text-fg-muted">
-          {longDate(event.starts_at) || "Date to be announced"}
-        </span>
-      </span>
     </button>
   );
 }
