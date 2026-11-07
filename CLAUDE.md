@@ -167,7 +167,7 @@ can open.
   the size — arrow, a pointing hand over anything clickable, an open hand
   over the draggable card and a closed one while it's held (`.card-grab`,
   `.is-grabbing` while lifted); text boxes keep the text cursor. The hands
-  are Lucide's pointer / hand / hand-grab, filled white with a black edge.
+  are Lucide's pointer / hand / hand-grab, filled white with the icon's black lines (no outer white edge); the arrow is solid black.
   48px PNGs with 96px Retina copies through `image-set` (`public/cursors`,
   drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
   command is in the file); SVG cursors blur.

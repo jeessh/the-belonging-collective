@@ -1,9 +1,9 @@
 <!doctype html>
 <!--
-  Draws card view's big cursors (public/cursors): the ordinary arrow, a
+  Draws card view's big cursors (public/cursors): a solid black arrow, a
   pointing hand, an open hand and a closed one, each 48px plus a 96px
   Retina copy. The hands are Lucide's pointer / hand / hand-grab icons,
-  filled white with a black edge. Regenerate with:
+  filled white, drawn with the icon's black lines. Regenerate with:
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
       --dump-dom "file://$PWD/scripts/make-cursors.html" | python3 scripts/save-cursors.py public/cursors
 -->
@@ -24,15 +24,13 @@ for (const [name, s] of Object.entries(shapes)) for (const px of [48, 96]) {
   const g = c.getContext("2d"); g.scale(px / 24, px / 24); g.lineCap = g.lineJoin = "round";
   const P = s.d.map((d) => new Path2D(d));
   if (s.fill) {
-    // The arrow: black, with a white edge.
-    g.strokeStyle = "#fff"; g.lineWidth = 2.4; P.forEach((p) => g.stroke(p));
+    // The arrow: solid black.
     g.fillStyle = "#000"; P.forEach((p) => g.fill(p));
   } else {
-    // A hand: a black silhouette, a white one inside it, then the icon's lines.
-    g.fillStyle = g.strokeStyle = "#000"; g.lineWidth = 4; P.forEach((p) => { g.fill(p); g.stroke(p); });
-    g.fillStyle = g.strokeStyle = "#fff"; g.lineWidth = 2.2; P.forEach((p) => { g.fill(p); g.stroke(p); });
+    // A hand: filled white, drawn with the icon's own black lines.
+    g.fillStyle = "#fff"; P.forEach((p) => g.fill(p));
     g.fill(new Path2D(s.palm ?? PALM)); // close the gap between the fingers and the palm
-    g.strokeStyle = "#000"; g.lineWidth = 1.25; P.forEach((p) => g.stroke(p));
+    g.strokeStyle = "#000"; g.lineWidth = 1.5; P.forEach((p) => g.stroke(p));
   }
   lines.push(`${name}${px === 96 ? "@2x" : ""} ${c.toDataURL("image/png").split(",")[1]}`);
 }
