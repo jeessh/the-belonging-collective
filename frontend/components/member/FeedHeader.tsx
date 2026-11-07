@@ -61,7 +61,9 @@ export const FeedHeader = memo(function FeedHeader({
   return (
     // 12px above and below at every size (it was 20px on taller screens): a
     // slimmer bar leaves more of the screen to the programs.
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9">
+    // From lg the picture lines up with the saved column's "Saved Events"
+    // heading (24px in): 16px here + the account button's own 8px.
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pl-4 lg:pr-9">
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}
