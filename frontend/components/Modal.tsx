@@ -171,7 +171,7 @@ export function Modal({
           }
           className={
             sheet
-              ? `relative max-h-[90dvh] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-t-[16px] border border-b-0 ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pb-8 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
+              ? `relative max-h-[90dvh] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-t-[16px] border border-b-0 ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
               : `relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`
           }
         >

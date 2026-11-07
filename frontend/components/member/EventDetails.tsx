@@ -195,9 +195,11 @@ export function EventDetails({
         <div
           className={`flex flex-col gap-2 ${
             stickyActions
-              ? // Out to the panel's edges (its 16 / 32px sides, 32px foot),
-                // on white, with a line above, stuck to the bottom.
-                "sticky bottom-0 z-10 -mx-4 -mb-8 border-t border-line bg-surface px-4 py-4 sm:-mx-8 sm:px-8"
+              ? // Out to the panel's sides (16 / 32px), on white with a line
+                // above, stuck to the very bottom: the panel has no bottom
+                // padding of its own (sticky stops above padding, and the
+                // details showed through underneath), so this is its foot.
+                "sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface px-4 pb-6 pt-4 sm:-mx-8 sm:px-8"
               : ""
           }`}
         >
