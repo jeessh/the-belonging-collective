@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   animate,
   motion,
@@ -62,7 +63,13 @@ import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
 import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
-import { SavedSidebar } from "@/components/member/SavedSidebar";
+import {
+  BOARD_CARD_W,
+  MINI_CARD,
+  MiniCardFace,
+  SHADOW_HELD,
+  SavedSidebar,
+} from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
@@ -70,6 +77,8 @@ import { CaregiverFeed } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
 
+/** How far from the saved board (px) the dragged card starts turning into a mini card. */
+const MORPH_DISTANCE = 320;
 const DROP_THRESHOLD = 150; // drag-left px to save
 const SWIPE_THRESHOLD = 90; // drag up/down px to page
 const HOLD_MS = 1000; // ← held this long saves
@@ -222,6 +231,20 @@ export function EventsView({
   const flyY = useMotionValue(0);
   const cardScale = useMotionValue(1);
   const cardOpacity = useMotionValue(1);
+  // The mini card the feed card turns into as it is dragged toward the
+  // saved board: it follows the pointer, fading in as the card fades out
+  // (desktop and tablet; a phone's drop zone is the bar under the feed).
+  const [ghosting, setGhosting] = useState(false);
+  const ghostX = useMotionValue(0);
+  const ghostY = useMotionValue(0);
+  const ghostT = useMotionValue(0);
+  const ghostScale = useMotionValue(1);
+  const resetGhost = useCallback(() => {
+    ghostT.set(0);
+    ghostScale.set(1);
+    cardOpacity.set(1);
+    setGhosting(false);
+  }, [ghostT, ghostScale, cardOpacity]);
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
@@ -645,6 +668,7 @@ export function EventsView({
       // card away in either case would say something untrue.
       if (!signedInRef.current || savedRef.current.has(ev.id)) {
         void animate(x, 0, { duration: 0.2 }).then(() => setLift(null));
+        resetGhost();
         setDragActive(false);
         void attend(ev);
         return;
@@ -656,6 +680,29 @@ export function EventsView({
         setLift(null);
         setDragActive(false);
         await attend(ev, true);
+        return;
+      }
+
+      // Dragged far enough to have become a mini card: that is what flies
+      // into the board, and the big card stays hidden until the save lands.
+      if (ghostT.get() > 0.05) {
+        setFlying(true);
+        cardOpacity.set(0);
+        const drop = target.getBoundingClientRect();
+        const EASE = [0.4, 0, 0.2, 1] as const;
+        await Promise.all([
+          animate(ghostT, 1, { duration: 0.15 }),
+          animate(ghostX, drop.left + drop.width / 2 - BOARD_CARD_W / 2, { duration: 0.4, ease: EASE }),
+          animate(ghostY, drop.top + 24, { duration: 0.4, ease: EASE }),
+          animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
+        ]);
+        await animate(ghostT, 0, { duration: 0.15 });
+        x.set(0);
+        setLift(null);
+        await attend(ev, true);
+        resetGhost();
+        setDragActive(false);
+        setFlying(false);
         return;
       }
 
@@ -700,6 +747,11 @@ export function EventsView({
       flyY,
       cardScale,
       cardOpacity,
+      ghostT,
+      ghostX,
+      ghostY,
+      ghostScale,
+      resetGhost,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
@@ -1196,7 +1248,6 @@ export function EventsView({
             layout={sidebarOpen ? "panel" : "rail"}
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
-            active={dragActive}
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}
@@ -1387,7 +1438,10 @@ export function EventsView({
                           touchAction: phone ? "pan-y" : "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
-                        onDragStart={liftCard}
+                        onDragStart={() => {
+                          liftCard();
+                          if (!phone && !reduceMotion) setGhosting(true);
+                        }}
                         // Settled back without a save; a flight drops it itself.
                         onDragTransitionEnd={() => {
                           if (!flyingRef.current) setLift(null);
@@ -1396,9 +1450,21 @@ export function EventsView({
                           // Leftward travel is a save in progress; anything
                           // else leaves the zone alone.
                           const dx = info.offset.x;
-                          setDragTint(
-                            dx < -24 && Math.abs(dx) > Math.abs(info.offset.y),
-                          );
+                          const leftward =
+                            dx < -24 && Math.abs(dx) > Math.abs(info.offset.y);
+                          setDragTint(leftward);
+                          if (!ghosting) return;
+                          // Nearer the saved board, more mini card: none
+                          // until it heads left, all of it at the board's edge.
+                          const zone = dropRef.current?.getBoundingClientRect();
+                          const t =
+                            zone && leftward
+                              ? Math.min(1, Math.max(0, 1 - (info.point.x - zone.right) / MORPH_DISTANCE))
+                              : 0;
+                          ghostX.set(info.point.x - BOARD_CARD_W / 2);
+                          ghostY.set(info.point.y - 60);
+                          ghostT.set(t);
+                          cardOpacity.set(1 - t);
                         }}
                         onDragEnd={(_, info) => {
                           setDragTint(false);
@@ -1415,9 +1481,15 @@ export function EventsView({
                               : false;
                             if (dx < -DROP_THRESHOLD || over) {
                               void flyToDrop(x.get());
+                              return;
                             }
-                            return;
                           }
+                          // Not saved: the big card comes back.
+                          if (ghosting) {
+                            void animate(ghostT, 0, { duration: 0.15 });
+                            void animate(cardOpacity, 1, { duration: 0.15 }).then(resetGhost);
+                          }
+                          if (Math.abs(dx) > Math.abs(dy)) return;
                           // Vertical travel pages, like the ↑ / ↓ buttons.
                           if (dy > SWIPE_THRESHOLD) next();
                           else if (dy < -SWIPE_THRESHOLD) prev();
@@ -1438,6 +1510,29 @@ export function EventsView({
                           onSignIn={() => toSignIn()}
                         />
                       </motion.div>
+                      {ghosting &&
+                        createPortal(
+                          <motion.div
+                            aria-hidden="true"
+                            style={{
+                              position: "fixed",
+                              left: 0,
+                              top: 0,
+                              x: ghostX,
+                              y: ghostY,
+                              opacity: ghostT,
+                              scale: ghostScale,
+                              rotate: -2,
+                              width: BOARD_CARD_W,
+                              zIndex: 60,
+                              boxShadow: SHADOW_HELD,
+                            }}
+                            className={`pointer-events-none ${MINI_CARD}`}
+                          >
+                            <MiniCardFace event={current} />
+                          </motion.div>,
+                          document.body,
+                        )}
                     </motion.div>
                   </motion.div>
                 </div>
@@ -1477,7 +1572,6 @@ export function EventsView({
             layout="bar"
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
-            active={dragActive}
             signedIn={signedIn}
             owner={listOwner}
             calendarUrl={calendarUrl}

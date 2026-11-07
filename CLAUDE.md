@@ -188,6 +188,12 @@ can open.
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
+  **Dragged toward the saved board (not on a phone), the card turns into a
+  mini card**: a `MiniCardFace` ghost (portalled, `ghostT` etc. in
+  EventsView) follows the pointer and fades in as the big card fades out,
+  fully at the board's edge (`MORPH_DISTANCE`); let go and that mini card
+  flies onto the board, or the big card comes back. The sidebar no longer
+  tints blue or says "Drag events here" during a drag (no `active` prop).
   While the card travels (drag, ← hold, flight) it is **lifted**: `position:
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the

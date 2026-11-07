@@ -25,14 +25,14 @@ const RAIL_WIDTH = 100;
    across, slightly askew, and free to be dragged anywhere in the box.
    Double-click opens one (Enter / Space from the keyboard). Where each
    card was left is remembered in this browser (`tbc.saved_board`). */
-const BOARD_CARD_W = 136;
+export const BOARD_CARD_W = 136;
 const BOARD_ROW_H = 176;
 const BOARD_GAP = 12;
 const BOARD_PAD = 12;
 const BOARD_KEY = "tbc.saved_board";
 // Soft, spread-out shadows: one at rest, a deeper one while held.
 const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
-const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
+export const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -44,8 +44,6 @@ type Props = {
   onToggle: () => void;
   /** Saved programs, soonest first, one per program. */
   events: Event[];
-  /** A card is being dragged (or held) toward the zone. */
-  active: boolean;
   signedIn: boolean;
   /** "Sam R." when a caregiver is saving for someone; null for their own. */
   owner?: string | null;
@@ -63,7 +61,7 @@ type Props = {
  * the feed, or the bar under it on a phone.
  *
  * The forwarded ref is the drop target — the dashed zone when open (outlined
- * only while empty or while a card is dragged toward it), the
+ * only while empty), the
  * thumbnail column when collapsed to the rail, the thumbnail strip on the
  * bar — so the fly-to-save animation always has somewhere to aim.
  */
@@ -73,7 +71,6 @@ export const SavedSidebar = memo(
       layout,
       onToggle,
       events,
-      active,
       signedIn,
       owner = null,
       calendarUrl,
@@ -123,11 +120,7 @@ export const SavedSidebar = memo(
         >
           <div
             ref={attachDrop}
-            className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed px-2 transition-colors ${
-              active
-                ? "border-primary-border bg-primary-soft"
-                : "border-transparent"
-            }`}
+            className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control border border-dashed border-transparent px-2"
           >
             <span className="sr-only">
               {owner ? `${title}: ` : ""}
@@ -247,10 +240,10 @@ export const SavedSidebar = memo(
                 <div className="flex min-h-0 flex-1 flex-col px-6">
                   <div
                     ref={attachDrop}
+                    // No tint while a card is dragged over: the card itself
+                    // shrinks into a mini card on its way in (EventsView).
                     className={`relative flex min-h-0 flex-1 flex-col rounded-2xl border border-dashed transition-colors ${
-                      active
-                        ? "border-primary-border bg-primary-soft"
-                        : events.length === 0
+                      events.length === 0
                           ? "border-fg-muted bg-surface"
                           : // The dashed outline only marks the empty drop zone; once
                             // there are saved events the list stands on its own. The
@@ -258,32 +251,17 @@ export const SavedSidebar = memo(
                             "border-transparent bg-surface"
                     }`}
                   >
-                    {/* The list stays mounted while a card is on its way —
-                        faded under the drop message rather than swapped for
-                        it — so the program that lands grows in (Arrivals)
-                        instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        className={`cork no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-card border-[6px] border-[#8a5a30] transition-opacity ${
-                          active ? "opacity-0" : ""
-                        }`}
+                        className="cork no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-card border-[6px] border-[#8a5a30]"
                       >
                         <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
                       </div>
                     )}
-                    {(events.length === 0 || active) && (
-                      <div
-                        className={`flex flex-col items-center justify-center gap-3 p-6 text-center ${
-                          events.length > 0 ? "absolute inset-0" : "flex-1"
-                        }`}
-                      >
-                        <CirclePlus
-                          aria-hidden="true"
-                          className={`size-10 ${active ? "text-fg" : "text-fg-muted"}`}
-                        />
-                        <p className={`text-xl ${active ? "text-fg" : "text-fg-muted"}`}>
-                          {active ? "Drag events here" : "Saved Events go Here"}
-                        </p>
+                    {events.length === 0 && (
+                      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                        <CirclePlus aria-hidden="true" className="size-10 text-fg-muted" />
+                        <p className="text-xl text-fg-muted">Saved Events go Here</p>
                       </div>
                     )}
                   </div>
@@ -317,9 +295,7 @@ export const SavedSidebar = memo(
                 </div>
                 <div
                   ref={attachDrop}
-                  className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3 transition-colors ${
-                    active ? "bg-primary-soft" : ""
-                  }`}
+                  className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3"
                 >
                   <span className="sr-only">
                     {owner ? `${title}: ` : ""}
@@ -621,7 +597,7 @@ function BoardCard({
       whileDrag={{ scale: 1.04, rotate: 0, boxShadow: SHADOW_HELD }}
       transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
       style={{ x, y, left: spot.x, top: spot.y, width: BOARD_CARD_W, zIndex: z }}
-      className="absolute flex cursor-grab touch-none select-none flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left active:cursor-grabbing"
+      className={`absolute cursor-grab touch-none select-none active:cursor-grabbing ${MINI_CARD}`}
     >
       {/* The push pin holding it to the cork. */}
       <span
@@ -631,6 +607,20 @@ function BoardCard({
           background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.75) 0 2px, ${PINS[hash(event.id) % PINS.length]} 3px)`,
         }}
       />
+      <MiniCardFace event={event} />
+    </motion.button>
+  );
+}
+
+/** The mini card's frame: white, the feed card's border, a little padding. */
+export const MINI_CARD =
+  "flex flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left";
+
+/** What a mini card shows: the picture and the title. Shared with the
+    feed card's drag, which turns into one on its way to the board. */
+export function MiniCardFace({ event }: { event: Event }) {
+  return (
+    <>
       <span
         aria-hidden="true"
         className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"
@@ -646,6 +636,6 @@ function BoardCard({
       <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
         {event.title}
       </span>
-    </motion.button>
+    </>
   );
 }
