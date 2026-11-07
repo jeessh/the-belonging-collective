@@ -1,7 +1,7 @@
 "use client";
 
-import { forwardRef, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useMotionValue, useReducedMotion } from "framer-motion";
+import { forwardRef, memo, useCallback, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
   ChevronsLeft,
@@ -20,20 +20,14 @@ import { useToast } from "@/components/ui/Toast";
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
 /* The board, an experiment (the open panel's list): a whiteboard, each
-   saved program held to it by a magnet as a miniature of the feed card — its picture and title — laid out two
-   across, slightly askew, and free to be dragged anywhere in the box.
-   Double-click opens one (Enter / Space from the keyboard). Where each
-   card was left is remembered in this browser (`tbc.saved_board`). */
+   saved program held to it by a magnet as a miniature of the feed card —
+   its picture and title — in two even columns. A click opens one. */
 /* The open panel's two buttons, as sticky notes on the whiteboard, with a
    curled-paper shadow. */
 const STICKY =
   "relative flex min-h-[104px] flex-1 flex-col items-start justify-between gap-2 rounded-[2px] p-3 pt-4 text-left text-lg font-medium leading-tight text-[#2B2405] shadow-[0_12px_14px_-10px_rgba(40,25,5,0.55),0_2px_4px_rgba(40,25,5,0.15)] transition-transform duration-150 ease-out hover:-translate-y-1 motion-reduce:transition-none";
 export const BOARD_CARD_W = 136;
-const BOARD_ROW_H = 176;
-const BOARD_GAP = 12;
-const BOARD_PAD = 12;
-const BOARD_KEY = "tbc.saved_board";
-// Soft, spread-out shadows: one at rest, a deeper one while held.
+// Soft, spread-out shadows: one at rest, a deeper one for the card in flight.
 const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
 export const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
 const PANEL_WIDTH = 377;
@@ -477,26 +471,6 @@ function Thumb({
   return null;
 }
 
-/** A card's place on the board, in the board's own pixels. */
-type Spot = { x: number; y: number };
-
-function readBoard(): Record<string, Spot> {
-  try {
-    const v = JSON.parse(localStorage.getItem(BOARD_KEY) ?? "{}");
-    return v && typeof v === "object" ? v : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeBoard(spots: Record<string, Spot>) {
-  try {
-    localStorage.setItem(BOARD_KEY, JSON.stringify(spots));
-  } catch {
-    /* private window or storage off: the board just forgets */
-  }
-}
-
 /** Magnet colours; each program keeps the same one. */
 const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
 
@@ -504,11 +478,6 @@ function hash(id: string): number {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
   return Math.abs(h);
-}
-
-/** A small, steady tilt per program (-1.2° to 1.2°), so the board looks laid by hand. */
-function tilt(id: string): number {
-  return ((hash(id) % 7) - 3) * 0.4;
 }
 
 /** A square fridge magnet: a rounded square of colour with a little shine. */
@@ -524,7 +493,7 @@ export function Magnet({ colour, className = "" }: { colour: string; className?:
   );
 }
 
-/** The open panel's saved programs, as cards to arrange freely. */
+/** The open panel's saved programs: two even columns of mini cards. */
 function Board({
   events,
   onOpen,
@@ -534,108 +503,34 @@ function Board({
   onOpen: (event: Event) => void;
   reduceMotion: boolean | null;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [spots, setSpots] = useState<Record<string, Spot>>({});
-  useEffect(() => setSpots(readBoard()), []);
-  // The card last picked up sits on top.
-  const [top, setTop] = useState<string[]>([]);
-
-  const slot = (i: number): Spot => ({
-    x: BOARD_PAD + (i % 2) * (BOARD_CARD_W + BOARD_GAP),
-    y: BOARD_PAD + Math.floor(i / 2) * BOARD_ROW_H,
-  });
-  // Tall enough for the starting layout and for wherever a card was left.
-  const height = Math.max(
-    BOARD_PAD * 2 + Math.ceil(events.length / 2) * BOARD_ROW_H,
-    ...events.map((ev) => (spots[ev.id]?.y ?? 0) + BOARD_ROW_H),
-  );
-
-  const place = (id: string, spot: Spot) =>
-    setSpots((prev) => {
-      const next = { ...prev, [id]: spot };
-      writeBoard(next);
-      return next;
-    });
-
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const };
   return (
-    <div ref={ref} className="relative w-full" style={{ height, minHeight: "100%" }}>
+    // 16px between the cards both ways; room above each for its magnet.
+    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 px-1 pb-4 pt-4">
       <AnimatePresence initial={false}>
-        {events.map((ev, i) => (
-          <BoardCard
+        {events.map((ev) => (
+          <motion.button
             key={ev.id}
-            event={ev}
-            spot={spots[ev.id] ?? slot(i)}
-            z={top.indexOf(ev.id) + 1}
-            board={ref}
-            reduceMotion={reduceMotion}
-            onLift={() => setTop((t) => [...t.filter((id) => id !== ev.id), ev.id])}
-            onPlace={(spot) => place(ev.id, spot)}
-            onOpen={() => onOpen(ev)}
-          />
+            type="button"
+            layout={!reduceMotion}
+            onClick={() => onOpen(ev)}
+            aria-label={`Open ${ev.title}`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={transition}
+            style={{ boxShadow: SHADOW_REST }}
+            className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
+          >
+            {/* The magnet holding it to the whiteboard. */}
+            <Magnet colour={PINS[hash(ev.id) % PINS.length]} />
+            <MiniCardFace event={ev} />
+          </motion.button>
         ))}
       </AnimatePresence>
     </div>
-  );
-}
-
-function BoardCard({
-  event,
-  spot,
-  z,
-  board,
-  reduceMotion,
-  onLift,
-  onPlace,
-  onOpen,
-}: {
-  event: Event;
-  spot: Spot;
-  z: number;
-  board: React.RefObject<HTMLDivElement>;
-  reduceMotion: boolean | null;
-  onLift: () => void;
-  onPlace: (spot: Spot) => void;
-  onOpen: () => void;
-}) {
-  // The drag moves the card by x / y; when it's let go the offset is folded
-  // into its spot and x / y go back to zero.
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  return (
-    <motion.button
-      type="button"
-      drag
-      dragConstraints={board}
-      dragElastic={0}
-      dragMomentum={false}
-      onDragStart={onLift}
-      onDragEnd={() => {
-        onPlace({
-          x: Math.max(0, spot.x + x.get()),
-          y: Math.max(0, spot.y + y.get()),
-        });
-        x.set(0);
-        y.set(0);
-      }}
-      onPointerDown={onLift}
-      // Double-click opens it; from the keyboard, Enter or Space does.
-      onDoubleClick={onOpen}
-      onClick={(e) => {
-        if (e.detail === 0) onOpen();
-      }}
-      aria-label={`${event.title}. Double-click or press Enter to open.`}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1, rotate: tilt(event.id), boxShadow: SHADOW_REST }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      whileDrag={{ scale: 1.04, rotate: 0, boxShadow: SHADOW_HELD }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      style={{ x, y, left: spot.x, top: spot.y, width: BOARD_CARD_W, zIndex: z }}
-      className={`absolute cursor-grab touch-none select-none active:cursor-grabbing ${MINI_CARD}`}
-    >
-      {/* The magnet holding it to the whiteboard. */}
-      <Magnet colour={PINS[hash(event.id) % PINS.length]} />
-      <MiniCardFace event={event} />
-    </motion.button>
   );
 }
 

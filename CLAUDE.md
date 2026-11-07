@@ -117,10 +117,9 @@ can open.
   heading and grey count, and See Saved Events / Google Calendar as two
   straight sticky notes (yellow, blue; `STICKY`) side by side at the
   bottom — miniature feed cards (picture and title) each held by a
-  coloured square magnet (`Magnet`), two across and very slightly tilted, that can be dragged anywhere in
-  the box (framer-motion `drag`, kept inside it); double-click opens one,
-  Enter / Space from the keyboard. Positions are remembered per browser in
-  `localStorage` (`tbc.saved_board`, try/catch). Its forwarded ref is the drop target every save
+  coloured square magnet (`Magnet`), in two even columns
+  (a plain grid, 16px apart; no dragging or saved positions any more); a
+  click opens one. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
@@ -178,7 +177,7 @@ can open.
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
-  column is a warm off-white wall (`#FAF6EF`, bar included); the feed
+  column stays plain white; the feed
   card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
   top, a soft shadow, -0.5° tilt; the deck card behind tilts the other
   way); and while the card is on the move (`lift` — drag, ← hold, flight)
