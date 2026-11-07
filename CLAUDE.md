@@ -485,7 +485,8 @@ can open.
   with their picture: "Posted by Sam Lee · Karis Disability Services" for a
   staff login (initials avatar — organizer logins have no photo), just the
   organization with its logo for the shared login or an imported event —
-  then "· Published on Oct 18, 2026" (`showPublished`, from `created_at`).
+  then "· Published on Oct 18, 2026" (`showPublished`, from `created_at`). Under that, still in the header, the
+  saved count (`ConsoleCounts`: "N people saved this event · M clicks").
   `EventOut.created_by_name` / `created_by_picture` are filled for signed-in
   organizers only (one query per page in `_public_view`); members never
   see who on a team posted what. Beside the title a status tag (`host/EventStatus`, on

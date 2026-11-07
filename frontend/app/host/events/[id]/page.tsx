@@ -169,7 +169,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        subtitle={<PostedBy event={event} showPublished />}
+        // Who posted it, then how many saved it, under the title.
+        subtitle={
+          <span className="flex flex-col items-start gap-2">
+            <PostedBy event={event} showPublished />
+            <ConsoleCounts event={event} />
+          </span>
+        }
         status={<EventStatus state={archived ? "unpublished" : "published"} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
@@ -400,7 +406,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           <ReadField label="Special access">
             {event.access_group ? event.access_group.name : "None — everyone can see it"}
           </ReadField>
-          <ConsoleCounts event={event} />
           </Group>
 
           <Group title="Event tags">
