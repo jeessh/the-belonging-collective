@@ -61,7 +61,7 @@ export function EventDetailModal({
         title={null}
         labelId={TITLE_ID}
         size="lg"
-        closeOutside
+        sheet
         snug
         onClose={close}
       >
