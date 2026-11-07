@@ -173,7 +173,8 @@ function MemberEventCard({
 
   // Drag the card onto the saved panel to save it, as in card view: a mini
   // card follows the pointer while the card itself stays put (the list
-  // scrolls, so it would be clipped at the column's edge) and springs back.
+  // scrolls, so it would be clipped at the column's edge, and it would
+  // slide over the filter panel).
   // Not on a phone, where a finger on the list is scrolling.
   const canDragQuery = useMediaQuery("(min-width: 640px)");
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
@@ -193,11 +194,14 @@ function MemberEventCard({
   return (
     <motion.article
       aria-label={event.title}
+      // The card never moves: zero constraints and no elasticity keep it in
+      // place (it would slide over the filter panel), while the drag events
+      // still drive the mini card that follows the pointer.
       drag={draggable}
-      dragSnapToOrigin
-      dragElastic={0.15}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragElastic={0}
       dragMomentum={false}
-      whileDrag={{ opacity: 0.45 }}
+      whileDrag={{ opacity: 0.6 }}
       onDragStart={() => {
         dragged.current = true;
       }}
@@ -239,7 +243,7 @@ function MemberEventCard({
             onClick={() => {
               if (!dragged.current) onOpen();
             }}
-            className="text-left after:absolute after:inset-0 after:rounded-card after:content-['']"
+            className="text-left after:absolute after:inset-0 after:rounded-card after:content-[''] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-border"
           >
             {event.title}
           </button>

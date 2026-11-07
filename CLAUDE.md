@@ -166,7 +166,9 @@ can open.
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
   **Its cards drag onto the saved panel too** (from `sm`; a phone scrolls):
-  framer `drag` with `dragSnapToOrigin`, the card fading while a portalled
+  framer `drag` held in place (zero `dragConstraints`, no elasticity — the
+  card itself never moves, or it slid over the filter panel), the card
+  fading while a portalled
   `MiniCardFace` follows the pointer; released over `dropTarget` (the feed's
   `dropRef`) it saves — or, needing registration, opens the Register
   confirm. A drag never also opens the details.
