@@ -17,7 +17,7 @@ import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
-const RAIL = "w-full flex-col gap-1 px-1 py-2 text-sm";
+const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
 const PANEL_WIDTH = 377;
 
@@ -308,7 +308,7 @@ export const SavedSidebar = memo(
                     aria-expanded={false}
                     className={RAIL}
                   >
-                    <ChevronsRight aria-hidden="true" className="size-7" />
+                    <ChevronsRight aria-hidden="true" className="size-6" />
                     Open
                   </Button>
                 </div>
