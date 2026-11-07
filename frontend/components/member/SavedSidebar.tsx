@@ -223,7 +223,8 @@ export const SavedSidebar = memo(
                       Saved Events
                     </h2>
                     <p className="truncate text-xl text-fg-muted">
-                      {owner ? `For ${owner} · ` : ""}
+                      {/* Just the count — "Saving for" right below already
+                          says whose list it is. */}
                       {countLabel}
                     </p>
                   </div>
