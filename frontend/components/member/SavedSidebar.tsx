@@ -19,12 +19,13 @@ import { useToast } from "@/components/ui/Toast";
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
-/* The board, an experiment (the open panel's list): each saved program is
-   a miniature of the feed card — its picture and title — laid out two
+/* The bulletin board, an experiment (the open panel's list): a cork board
+   in a wooden frame, each saved program pinned to it as a miniature of the
+   feed card — its picture and title — laid out two
    across, slightly askew, and free to be dragged anywhere in the box.
    Double-click opens one (Enter / Space from the keyboard). Where each
    card was left is remembered in this browser (`tbc.saved_board`). */
-const BOARD_CARD_W = 144;
+const BOARD_CARD_W = 136;
 const BOARD_ROW_H = 176;
 const BOARD_GAP = 12;
 const BOARD_PAD = 12;
@@ -263,7 +264,7 @@ export const SavedSidebar = memo(
                         instead of arriving with a rebuilt list. */}
                     {events.length > 0 && (
                       <div
-                        className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden transition-opacity ${
+                        className={`cork no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-card border-[6px] border-[#8a5a30] transition-opacity ${
                           active ? "opacity-0" : ""
                         }`}
                       >
@@ -500,11 +501,18 @@ function writeBoard(spots: Record<string, Spot>) {
   }
 }
 
-/** A small, steady tilt per program (-2.4° to 2.4°), so the board looks laid by hand. */
-function tilt(id: string): number {
+/** Push-pin colours; each program keeps the same one. */
+const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
+
+function hash(id: string): number {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return ((Math.abs(h) % 7) - 3) * 0.8;
+  return Math.abs(h);
+}
+
+/** A small, steady tilt per program (-2.4° to 2.4°), so the board looks laid by hand. */
+function tilt(id: string): number {
+  return ((hash(id) % 7) - 3) * 0.8;
 }
 
 /** The open panel's saved programs, as cards to arrange freely. */
@@ -615,6 +623,14 @@ function BoardCard({
       style={{ x, y, left: spot.x, top: spot.y, width: BOARD_CARD_W, zIndex: z }}
       className="absolute flex cursor-grab touch-none select-none flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left active:cursor-grabbing"
     >
+      {/* The push pin holding it to the cork. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-full shadow-[1px_2px_3px_rgba(0,0,0,0.4)]"
+        style={{
+          background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.75) 0 2px, ${PINS[hash(event.id) % PINS.length]} 3px)`,
+        }}
+      />
       <span
         aria-hidden="true"
         className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"

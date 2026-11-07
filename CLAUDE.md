@@ -111,9 +111,10 @@ can open.
   list before first paint so it never opens-then-folds. Rail and panel are
   one `motion.aside` whose width animates; saved items grow in and fold out
   (`Arrivals`), and the panel keeps its list mounted under the drag message
-  so an arrival animates. The open panel's list is a board (an
-  experiment, `Board` in SavedSidebar): miniature feed cards (picture and
-  title), two across and slightly tilted, that can be dragged anywhere in
+  so an arrival animates. The open panel's list is a bulletin board (an
+  experiment, `Board` in SavedSidebar): cork (`.cork` in globals.css) in a
+  wooden frame, miniature feed cards (picture and title) each held by a
+  coloured push pin, two across and slightly tilted, that can be dragged anywhere in
   the box (framer-motion `drag`, kept inside it); double-click opens one,
   Enter / Space from the keyboard. Positions are remembered per browser in
   `localStorage` (`tbc.saved_board`, try/catch). Its forwarded ref is the drop target every save
