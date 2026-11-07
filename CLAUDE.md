@@ -112,8 +112,7 @@ can open.
   one `motion.aside` whose width animates; saved items grow in and fold out
   (`Arrivals`), and the panel keeps its list mounted under the drag message
   so an arrival animates. The open panel's list is a bookshelf (an
-  experiment): two miniature feed cards (picture, title, Free, when, where,
-  saved count — no buttons) per wooden shelf, on the panel's own white. Its forwarded ref is the drop target every save
+  experiment): two miniature feed cards (just picture and title) per wooden shelf, on the panel's own white. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on

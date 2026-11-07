@@ -4,28 +4,23 @@ import { forwardRef, memo, useCallback, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
-  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   CirclePlus,
-  MapPin,
 } from "lucide-react";
 import { apiMessage, type Event, type GoogleCalendarState } from "@/lib/api";
 import { googleCalendarButton } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
-import { TIME_ZONE, whenLine } from "@/lib/time";
-import { placeLabel } from "@/lib/place";
+import { TIME_ZONE } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { eventTags } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
 /* The bookshelf, an experiment (the open panel's list): each saved program
-   is a miniature of the feed card — picture, title, Free, when, where and
-   the saved count, no buttons — standing on a wooden plank, two to a
+   is a miniature of the feed card — just its picture and title — standing on a wooden plank, two to a
    shelf. Each cell draws its own piece of plank, so two side by side make
    one shelf; the cards in a row stand on its bottom edge. */
 const SHELF_BACK = "flex flex-1 items-end px-3 pt-5";
@@ -499,8 +494,6 @@ function Thumb({
 
   // The bookshelf: a miniature of the feed card standing on its shelf.
   // Hover / focus lifts it off the shelf.
-  const when = whenLine(event);
-  const free = eventTags(event).includes("free");
   return (
     <button
       type="button"
@@ -512,35 +505,8 @@ function Thumb({
           <span aria-hidden="true" className="relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle">
             {img}
           </span>
-          <span className="flex flex-col gap-1.5 px-0.5 pb-0.5">
-            <span className="flex flex-wrap items-center gap-1.5">
-              <span className="line-clamp-2 text-base font-medium leading-tight text-fg">
-                {event.title}
-              </span>
-              {free && (
-                <span className="rounded-control bg-tag-free-bg px-1.5 py-px text-[11px] uppercase tracking-wide text-tag-free-fg">
-                  Free
-                </span>
-              )}
-            </span>
-            <span className="flex items-start gap-1.5 text-xs leading-snug text-fg">
-              <CalendarDays aria-hidden="true" className="mt-px size-3.5 shrink-0 text-fg-muted" />
-              <span>
-                {when.rel}
-                {when.date && ` · ${when.date}`}
-                {when.time && <span className="block text-fg-muted">{when.time}</span>}
-              </span>
-            </span>
-            <span className="flex items-start gap-1.5 text-xs leading-snug text-fg">
-              <MapPin aria-hidden="true" className="mt-px size-3.5 shrink-0 text-fg-muted" />
-              <span className="line-clamp-2">{placeLabel(event)}</span>
-            </span>
-            {event.saved_count != null && (
-              <span className="flex items-center gap-1.5 text-xs text-fg">
-                <Bookmark aria-hidden="true" className="size-3.5 shrink-0 text-fg-muted" />
-                {event.saved_count} saved
-              </span>
-            )}
+          <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
+            {event.title}
           </span>
         </span>
       </span>
