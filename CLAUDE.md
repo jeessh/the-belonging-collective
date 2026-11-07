@@ -176,6 +176,12 @@ can open.
   tighter gutters. Anything that has to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
+- **The feed side matches the bulletin board, lightly**: the event
+  column is a warm off-white wall (`#FAF6EF`, bar included); the feed
+  card is pinned like a flyer (`FeedCard`: a red push pin at the top, a
+  soft shadow, -0.5° tilt; the deck card behind tilts the other way); and
+  while the card is on the move (`lift` — drag, ← hold, flight) its pin
+  pops off (`unpinned`). The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand

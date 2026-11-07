@@ -1262,13 +1262,14 @@ export function EventsView({
           />
         )}
 
-        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* A warm off-white wall beside the cork board. */}
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#FAF6EF]">
           {/* The bar over the event column: who you are on the left,
               Accessibility Tools on the right. */}
           {/* Same side padding as the feed below (short screens too), and the
               account button pulled back by its own 8px, so the picture lines
               up with "Event 1 of 47". */}
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-[#FAF6EF] px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
             <div className="-ml-2 min-w-0">
             <FeedAccount
               name={name}
@@ -1416,7 +1417,7 @@ export function EventsView({
                       design's blurred Save button on it read as a glitch. */}
                   <div
                     aria-hidden
-                    className="absolute inset-x-8 -bottom-6 top-16 rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
+                    className="absolute inset-x-8 -bottom-6 top-16 rotate-[0.8deg] rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
                   />
                   <motion.div
                     ref={cardWrapRef}
@@ -1530,6 +1531,7 @@ export function EventsView({
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
+                          unpinned={!!lift}
                         />
                       </motion.div>
                       {ghosting &&
