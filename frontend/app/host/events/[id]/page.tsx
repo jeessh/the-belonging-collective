@@ -312,26 +312,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>
             </ReadField>
-            <ReadField label="External links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
           </Group>
 
           <Group title="Event details">
@@ -397,6 +377,26 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {event.capacity != null ? `${event.capacity} people` : "No limit"}
             </ReadField>
           )}
+          <ReadField label="External links">
+            {event.links?.length ? (
+              <ol className="flex list-decimal flex-col gap-1 pl-5">
+                {event.links.map((l) => (
+                  <li key={l.url}>
+                    <a
+                      href={l.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              "None"
+            )}
+          </ReadField>
           <ReadField label="Who can see this">
             {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
           </ReadField>

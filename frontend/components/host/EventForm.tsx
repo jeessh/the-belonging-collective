@@ -720,71 +720,6 @@ export function EventForm({
                 placeholder="Type out your description here…"
               />
             </Field>
-            {/* External links (a flyer, a map, the agency's page): a label
-                and an address per row, the first row always there with + to
-                add another beside it, up to LINKS_MAX; later rows have ×. */}
-            <Section title="External links (optional)">
-              <div className="flex flex-col gap-3">
-                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
-                  <div
-                    key={i}
-                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
-                  >
-                    {/* The placeholder says which box is the label: "Link 1"
-                        read as "put link 1 here", so addresses ended up in it. */}
-                    <TextField
-                      label={`Link ${i + 1} label`}
-                      className="[&>label]:sr-only"
-                      value={link.label}
-                      onChange={(e) => setLink(i, { label: e.target.value })}
-                      placeholder="Link label, e.g. Flyer"
-                    />
-                    <TextField
-                      label={`Link ${i + 1} address`}
-                      className="[&>label]:sr-only"
-                      // type="text": the browser's url validation rejects
-                      // "yourorg.ca"; the API adds https:// when it's missing.
-                      type="text"
-                      inputMode="url"
-                      value={link.url}
-                      onChange={(e) => setLink(i, { url: e.target.value })}
-                      placeholder="Web address, e.g. yourorg.ca/page"
-                      error={
-                        checkPostingLink(link.url)?.tone === "error"
-                          ? "That doesn't look like a web address."
-                          : null
-                      }
-                    />
-                    {i === 0 ? (
-                      Math.max(linkRows, 1) < LINKS_MAX && (
-                        <Tooltip
-                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
-                          align="end"
-                        >
-                          {(tip) => (
-                            <Button
-                              leadingIcon={<Plus />}
-                              aria-label="Add a link"
-                              aria-describedby={tip}
-                              onClick={() =>
-                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
-                              }
-                            />
-                          )}
-                        </Tooltip>
-                      )
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove link ${i + 1}`}
-                        leadingIcon={<X />}
-                        onClick={() => removeLink(i)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Section>
           </Group>
           <Group title="Event details">
             {/* Date, with Repeats beside it on the same row (create only). */}
@@ -1061,6 +996,71 @@ export function EventForm({
                 )}
               </div>
             )}
+            {/* External links (a flyer, a map, the agency's page): a label
+                and an address per row, the first row always there with + to
+                add another beside it, up to LINKS_MAX; later rows have ×. */}
+            <Section title="External links (optional)">
+              <div className="flex flex-col gap-3">
+                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
+                  <div
+                    key={i}
+                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                  >
+                    {/* The placeholder says which box is the label: "Link 1"
+                        read as "put link 1 here", so addresses ended up in it. */}
+                    <TextField
+                      label={`Link ${i + 1} label`}
+                      className="[&>label]:sr-only"
+                      value={link.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Link label, e.g. Flyer"
+                    />
+                    <TextField
+                      label={`Link ${i + 1} address`}
+                      className="[&>label]:sr-only"
+                      // type="text": the browser's url validation rejects
+                      // "yourorg.ca"; the API adds https:// when it's missing.
+                      type="text"
+                      inputMode="url"
+                      value={link.url}
+                      onChange={(e) => setLink(i, { url: e.target.value })}
+                      placeholder="Web address, e.g. yourorg.ca/page"
+                      error={
+                        checkPostingLink(link.url)?.tone === "error"
+                          ? "That doesn't look like a web address."
+                          : null
+                      }
+                    />
+                    {i === 0 ? (
+                      Math.max(linkRows, 1) < LINKS_MAX && (
+                        <Tooltip
+                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
+                          align="end"
+                        >
+                          {(tip) => (
+                            <Button
+                              leadingIcon={<Plus />}
+                              aria-label="Add a link"
+                              aria-describedby={tip}
+                              onClick={() =>
+                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
+                              }
+                            />
+                          )}
+                        </Tooltip>
+                      )
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
             <Section
               title="Who can see this"
             >
