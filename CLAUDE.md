@@ -271,8 +271,8 @@ can open.
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
 - **The dialog / event page reads back everything the form sets.**
-  `EventSummary`'s `detail` layout adds, under when and where: how often it
-  repeats (`repeatLabel(event.recurrence)`), the cost (`event.price_label`,
+  `EventSummary`'s `detail` layout adds, under when and where (not how
+  often it repeats — members don't need it): the cost (`event.price_label`,
   built server-side by `core/pricing.describe`; hidden when it is just
   "Free", which the tag already says) and how to join ("Sign-up needed" /
   "Drop in — no sign-up needed", from `requires_signup`). `EventDetails`
