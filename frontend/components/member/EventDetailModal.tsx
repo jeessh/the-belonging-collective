@@ -66,6 +66,7 @@ export function EventDetailModal({
         labelId={TITLE_ID}
         size="lg"
         closeOutside
+        snug
         onClose={close}
       >
         <EventDetails
