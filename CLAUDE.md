@@ -162,6 +162,10 @@ can open.
   tighter gutters. Anything that has to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
+- **Card view has a 48px cursor** (`.big-cursor` in globals.css, put on
+  the feed column while `viewMode === "card"`): an arrow, and a pointing
+  hand over anything clickable; text boxes keep the text cursor. SVG data
+  URIs, hotspots at the arrow's tip and the fingertip.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
