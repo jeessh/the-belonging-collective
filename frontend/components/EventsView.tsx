@@ -62,7 +62,7 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
-import { AccessibilityMenu, FeedHeader } from "@/components/member/FeedHeader";
+import { AccessibilityMenu, FeedAccount, FeedHeader } from "@/components/member/FeedHeader";
 import {
   BOARD_CARD_W,
   MINI_CARD,
@@ -1151,6 +1151,10 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
+  // While the saved panel is open (beside the feed), the account and
+  // "Saving for" sit on its cork board instead of in the top bar.
+  const accountInBoard = !phone && view !== "saved" && sidebarOpen;
+
   return (
     <motion.main
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -1197,45 +1201,6 @@ export function EventsView({
         </div>
       )}
 
-      <FeedHeader
-        name={name}
-        role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
-        avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-        care={careChoice}
-        onSignIn={() => toSignIn()}
-        onSignOut={() => void doLogout()}
-      >
-        <AccessibilityMenu
-          open={a11yOpen}
-          onOpenChange={setA11yOpen}
-          ttsEnabled={ttsEnabled}
-          voiceEnabled={voiceEnabled}
-          ttsSupported={ttsSupported}
-          voiceSupported={voiceSupported}
-          onToggleTts={toggleTts}
-          onToggleVoice={toggleVoice}
-          headEnabled={headEnabled}
-          headSupported={headSupported}
-          onToggleHead={toggleHead}
-          listening={voiceEnabled && listening}
-          lastHeard={lastHeard}
-          interests={me?.interest_categories ?? []}
-          onToggleInterest={toggleInterest}
-          accessPrefs={me?.accessibility_prefs ?? []}
-          onToggleAccessPref={toggleAccessPref}
-          signedIn={signedIn}
-          listView={viewMode === "list"}
-          onShowTour={showTour}
-          advanced={me?.is_caregiver ?? false}
-          onChangeExperience={changeExperience}
-          onSignIn={() => {
-            // The sign-in overlay covers this menu; leaving it open left a
-            // hidden dialog still listening for Escape.
-            setA11yOpen(false);
-            toSignIn();
-          }}
-        />
-      </FeedHeader>
 
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
           bar under it, so it comes after the feed in the DOM as well. */}
@@ -1246,6 +1211,17 @@ export function EventsView({
           <SavedSidebar
             ref={dropRef}
             layout={sidebarOpen ? "panel" : "rail"}
+            account={
+              accountInBoard ? (
+                <FeedAccount
+                  name={name}
+                  avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+                  care={careChoice}
+                  onSignIn={() => toSignIn()}
+                  onSignOut={() => void doLogout()}
+                />
+              ) : null
+            }
             onToggle={() => setSidebarChoice(!sidebarOpen)}
             events={savedList}
             signedIn={signedIn}
@@ -1259,6 +1235,49 @@ export function EventsView({
         )}
 
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* The top bar spans the event column only; the saved panel beside
+              it runs the full height. */}
+          <FeedHeader
+            showAccount={!accountInBoard}
+            name={name}
+            role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
+            avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+            care={careChoice}
+            onSignIn={() => toSignIn()}
+            onSignOut={() => void doLogout()}
+          >
+            <AccessibilityMenu
+              open={a11yOpen}
+              onOpenChange={setA11yOpen}
+              ttsEnabled={ttsEnabled}
+              voiceEnabled={voiceEnabled}
+              ttsSupported={ttsSupported}
+              voiceSupported={voiceSupported}
+              onToggleTts={toggleTts}
+              onToggleVoice={toggleVoice}
+              headEnabled={headEnabled}
+              headSupported={headSupported}
+              onToggleHead={toggleHead}
+              listening={voiceEnabled && listening}
+              lastHeard={lastHeard}
+              interests={me?.interest_categories ?? []}
+              onToggleInterest={toggleInterest}
+              accessPrefs={me?.accessibility_prefs ?? []}
+              onToggleAccessPref={toggleAccessPref}
+              signedIn={signedIn}
+              listView={viewMode === "list"}
+              onShowTour={showTour}
+              advanced={me?.is_caregiver ?? false}
+              onChangeExperience={changeExperience}
+              onSignIn={() => {
+                // The sign-in overlay covers this menu; leaving it open left a
+                // hidden dialog still listening for Escape.
+                setA11yOpen(false);
+                toSignIn();
+              }}
+            />
+          </FeedHeader>
+          <div className="relative flex min-h-0 flex-1 flex-col">
           {/* The saved list opens over the main column, which has the whole
               width while it is up. */}
           <SavedEvents
@@ -1563,6 +1582,7 @@ export function EventsView({
                 </div>
               </div>
             )}
+          </div>
           </div>
         </section>
 

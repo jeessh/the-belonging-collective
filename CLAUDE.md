@@ -126,6 +126,13 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **The saved panel runs the full height; the top bar spans the event
+  column only** (`FeedHeader` is the first thing in the feed's `<section>`).
+  While the panel is open (not on a phone, not on All Saved Events),
+  `accountInBoard`: the account button and "Saving for" (`FeedAccount`)
+  move onto the cork board, on a white tag above "Saved Events", and the
+  bar keeps only Accessibility Tools (`showAccount={false}`). Folded to the
+  rail, or on a phone, they are back in the bar.
 - The feed's account button (`FeedHeader`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the

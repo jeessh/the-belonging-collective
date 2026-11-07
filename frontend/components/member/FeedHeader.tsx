@@ -44,8 +44,12 @@ export const FeedHeader = memo(function FeedHeader({
   care,
   onSignIn,
   onSignOut,
+  showAccount = true,
   children,
 }: {
+  /** Off while the saved panel is open: the account sits on the cork board
+      there (`FeedAccount`), and this bar keeps just Accessibility Tools. */
+  showAccount?: boolean;
   /** "Sophie L.", or null when nobody is signed in. */
   name: string | null;
   /** "Caregiver" or "Community member", under the name. */
@@ -63,23 +67,56 @@ export const FeedHeader = memo(function FeedHeader({
     // slimmer bar leaves more of the screen to the programs.
     // From lg the picture lines up with the saved column's "Saved Events"
     // heading (24px in): 16px here + the account button's own 8px.
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pl-4 lg:pr-9">
-      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
-        <AccountButton
+    <header
+      className={`flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 ${
+        showAccount ? "justify-between lg:pl-4" : "justify-end lg:pl-9"
+      }`}
+    >
+      {showAccount && (
+        <FeedAccount
           name={name}
           avatar={avatar}
-          // Beside the switcher a phone has room for the picture, not the
-          // name; the menu still carries it.
-          compact={!!care && care.members.length > 0}
+          care={care}
           onSignIn={onSignIn}
           onSignOut={onSignOut}
         />
-        {care && care.members.length > 0 && <CareSwitcher {...care} />}
-      </div>
+      )}
       {children}
     </header>
   );
 });
+
+/** Who you are and whose list saves go into: the account button and, for a
+    caregiver with linked members, "Saving for". In the top bar, or on the
+    saved panel's cork board while it is open. */
+export function FeedAccount({
+  name,
+  avatar,
+  care,
+  onSignIn,
+  onSignOut,
+}: {
+  name: string | null;
+  avatar?: AvatarChoice | null;
+  care?: CareChoice | null;
+  onSignIn: () => void;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-3">
+      <AccountButton
+        name={name}
+        avatar={avatar}
+        // Beside the switcher a phone has room for the picture, not the
+        // name; the menu still carries it.
+        compact={!!care && care.members.length > 0}
+        onSignIn={onSignIn}
+        onSignOut={onSignOut}
+      />
+      {care && care.members.length > 0 && <CareSwitcher {...care} />}
+    </div>
+  );
+}
 
 /**
  * "Saving for: Me ▾". Compact on purpose — it sits in the header next to the
