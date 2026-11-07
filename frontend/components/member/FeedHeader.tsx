@@ -18,6 +18,7 @@ import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
 import { Glyph } from "@/components/ui/Glyph";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -315,7 +316,12 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   listView = false,
   onSignIn,
   onShowTour,
+  advanced = false,
+  onChangeExperience,
 }: {
+  /** Signed in: the member's experience — Advanced is a caregiver account. */
+  advanced?: boolean;
+  onChangeExperience?: (advanced: boolean) => void;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   ttsEnabled: boolean;
@@ -404,6 +410,27 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           // the last of the topics under it.
           className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift max-sm:max-h-[calc(100dvh-12rem)]"
         >
+          {signedIn && onChangeExperience && (
+            <>
+              <h2 className="text-xl font-medium text-fg">Your experience</h2>
+              <p className="text-base text-fg-muted">
+                {advanced
+                  ? "Every event in a list, and saving for someone you support."
+                  : "One event at a time, big and clear."}
+              </p>
+              <SegmentedToggle<"simplified" | "advanced">
+                className="mt-3 w-full"
+                label="Your experience"
+                value={advanced ? "advanced" : "simplified"}
+                onChange={(v) => onChangeExperience(v === "advanced")}
+                segments={[
+                  { value: "simplified", label: "Simplified" },
+                  { value: "advanced", label: "Advanced" },
+                ]}
+              />
+              <div className="mt-6" />
+            </>
+          )}
           <h2 className="text-xl font-medium text-fg">Accessibility</h2>
           <div className="mt-1 flex flex-col divide-y divide-line-card">
             <MenuToggle

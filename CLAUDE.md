@@ -123,6 +123,15 @@ can open.
   name (14px medium) over the account type ("Caregiver" / "Community
   member", `Me.is_caregiver`, 12px grey), a 16px chevron, and a 224px menu
   of rounded 14px items with 16px icons. Change one, change the other.
+- **The experience: Simplified or Advanced.** The sign-up flow's account
+  step is "Choose your experience": **Simplified** (a community member;
+  the feed opens on the one card) or **Advanced** (a caregiver; the list).
+  It is `is_caregiver` plus `preferred_view`, written together — at sign-up
+  (`is_caregiver` on the sign-up call, then `PATCH /users/me
+  {preferred_view}`) and from the "Your experience" toggle at the top of
+  Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
+  {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
+  Me). The View toggle still switches card / list on its own.
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as

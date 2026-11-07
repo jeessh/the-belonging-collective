@@ -95,6 +95,9 @@ class UserPrefsUpdate(BaseModel):
     voice_commands_enabled: bool | None = None
     eye_tracking_enabled: bool | None = None
     preferred_view: Literal["card", "list"] | None = None
+    # The experience: Simplified (community member) or Advanced (caregiver),
+    # chosen at sign-up and changeable in the feed's settings panel.
+    is_caregiver: bool | None = None
     # Full replacement, not a diff — the client owns the list.
     dismissed_program_ids: (
         list[Annotated[str, Field(min_length=1, max_length=DISMISSED_ID_MAX_LEN)]]
