@@ -5,7 +5,6 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardPen,
-  DoorOpen,
   MapPin,
   Ticket,
 } from "lucide-react";
@@ -239,16 +238,11 @@ export function EventSummary({
           <p className="min-w-0 text-fg">{event.price_label}</p>
         </div>
       )}
-      {layout === "detail" && (
+      {/* Only when it needs a sign-up; dropping in is the default. */}
+      {layout === "detail" && event.requires_signup && (
         <div className="flex items-start gap-3">
-          {event.requires_signup ? (
-            <ClipboardPen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
-          ) : (
-            <DoorOpen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
-          )}
-          <p className="min-w-0 text-fg">
-            {event.requires_signup ? "Sign-up needed" : "Drop in — no sign-up needed"}
-          </p>
+          <ClipboardPen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
+          <p className="min-w-0 text-fg">Sign-up needed</p>
         </div>
       )}
       {ages && (
