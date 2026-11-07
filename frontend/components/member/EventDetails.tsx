@@ -5,7 +5,6 @@ import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
 import { EventSummary } from "@/components/ui/EventSummary";
-import { HoldInfo } from "@/components/member/HoldInfo";
 import { Glyph } from "@/components/ui/Glyph";
 
 // The design's LINKS box: one bordered frame, a row per link, the paperclip
@@ -95,8 +94,6 @@ export function EventDetails({
       : []),
   ];
 
-  // The "saving holds your spot" tip, only while there is a spot to hold.
-  const hold = event.capacity != null && event.spots_left !== 0;
   // The same vocabulary as the member's "What you need": what this program
   // offers, so someone who needs it can see it on the listing itself. Cost
   // and drop-in are already the tags on top, so the derived ones stay off.
@@ -104,13 +101,6 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* The "saving holds your spot" tip, top right, clear of the dialog's ×. */}
-      {hold && (
-        <div className={`flex justify-end ${insetForClose ? "pr-12 xl:pr-0" : ""}`}>
-          <HoldInfo />
-        </div>
-      )}
-
       <EventSummary
         event={event}
         layout="detail"

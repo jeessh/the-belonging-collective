@@ -1,15 +1,13 @@
 import { placeLabel } from "@/lib/place";
 import type { ReactNode } from "react";
 import {
-  Cake,
   CalendarDays,
   CircleDollarSign,
   MapPin,
-  Ticket,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
-import { clockTime, whenLine } from "@/lib/time";
+import { whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
 
 /**
@@ -133,14 +131,7 @@ export function EventSummary({
   const when = whenLine(event, { fixed: fixedDates });
   const where = placeLabel(event);
   const image = eventImage(event);
-  // Cards say only the ages; the event's own page (`detail`) also says when
-  // it's a youth program ("Youth · Ages 12–18" / "For youth").
-  const ages = layout === "detail" ? audienceLabel(event) : ageLabel(event);
-  // The member's own hold, while it is still running.
-  const held =
-    event.held_until && new Date(event.held_until).getTime() > Date.now()
-      ? event.held_until
-      : null;
+  // Ages and spots left are no longer shown to members (the data stays).
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
   // 18, the saved tile's 24 over 20.
@@ -242,29 +233,6 @@ export function EventSummary({
             className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">{event.price_label}</p>
-        </div>
-      )}
-      {ages && (
-        <div className="flex items-start gap-3">
-          <Cake
-            aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
-          />
-          <p className="min-w-0 text-fg">{ages}</p>
-        </div>
-      )}
-      {typeof event.spots_left === "number" && (
-        <div className="flex items-start gap-3">
-          <Ticket
-            aria-hidden="true"
-            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
-          />
-          <p className="min-w-0 text-fg">
-            {event.spots_left} {event.spots_left === 1 ? "spot" : "spots"} left
-            {held && (
-              <span className="text-fg-muted"> · Held until {clockTime(held)}</span>
-            )}
-          </p>
         </div>
       )}
       {going && <div className={meta}>{going}</div>}

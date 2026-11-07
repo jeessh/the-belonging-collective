@@ -196,14 +196,17 @@ can open.
   40px PNGs with 80px Retina copies through `image-set` (`public/cursors`,
   drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
   command is in the file); SVG cursors blur.
-- **An event that needs registering, with the organizer's link, says
-  Register.** When `requires_signup` and `registration_mode === "external"`
-  with a `registration_url` (the form sets external whenever a sign-up link
-  is given), the feed card's Save button becomes **Register** (primary,
-  external-link icon), opening the link through `openRegistration` (new tab,
-  counted as a registration click). The dialog shows Register beside
-  Save / Un-Save. Saving such an event still works by drag, ← hold, voice
-  or the dialog.
+- **An event that needs registering says Register, and asks first.** Any
+  event with `requires_signup` shows **Register** in place of Save (feed
+  card, event dialog, public page's `EventActions`) until it is saved;
+  pressing it opens `member/RegisterConfirm` ("Register for …?" · Cancel |
+  Register). Confirming saves it (the card on screen through `flyToDrop`,
+  otherwise `attend`) and, when `registration_mode === "external"` with a
+  `registration_url`, opens that page in a new tab (`openRegistration`,
+  counted as a registration click). Saved, it shows Unsave as usual.
+- **Ages and "spots left" are not shown to members** (any surface), nor the
+  card's (i) "saving holds your spot" tip (`HoldInfo` is no longer drawn).
+  The data and the one-hour holds are untouched.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
@@ -312,8 +315,8 @@ can open.
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;
   the words carry the facts. Button icons keep `fg-icon`.
-- **The console's "Who it's for" reaches members in full:** spots ("N
-  spots left"), ages (every card — the form no longer asks for them;
+- **The console's "Who it's for" reaches members** (ages and spots no longer
+  do — see above; the form no longer asks for ages:
   `min_age` / `max_age` already on an event are carried through unchanged), the Youth answer (no longer asked on the form — `is_youth` already on an
   event is carried through) on the event's own page
   only (`audienceLabel` in `ui/EventSummary`, `detail` layout: "Youth · Ages

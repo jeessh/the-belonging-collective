@@ -63,6 +63,7 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { LoginOverlay } from "@/components/member/LoginOverlay";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
+import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { AccessibilityMenu, CareSwitcher, FeedAccount } from "@/components/member/FeedHeader";
 import {
   BOARD_CARD_W,
@@ -472,6 +473,9 @@ export function EventsView({
 
   // Counting the click before leaving; losing the count must never cost the
   // member the link.
+  // "Register for …?" — the event waiting on the member's confirm.
+  const [registerFor, setRegisterFor] = useState<Event | null>(null);
+
   const openRegistration = useCallback((ev: Event) => {
     if (!ev.registration_url) return;
     window.open(ev.registration_url, "_blank", "noopener,noreferrer");
@@ -1537,7 +1541,7 @@ export function EventsView({
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
                           unpinned={!!lift}
-                          onRegister={() => openRegistration(current)}
+                          onRegister={() => setRegisterFor(current)}
                         />
                       </motion.div>
                       {ghosting &&
@@ -1621,9 +1625,31 @@ export function EventsView({
           onClose={() => setDetailFor(null)}
           onSave={(ev) => void attend(ev)}
           onUnsave={(ev) => void unsave(ev)}
-          onOpenRegistration={openRegistration}
+          onRegister={setRegisterFor}
           onRequestAccess={requestAccessFor}
           onSignIn={() => toSignIn()}
+        />
+      )}
+
+      {registerFor && (
+        <RegisterConfirm
+          event={registerFor}
+          onClose={() => setRegisterFor(null)}
+          onConfirm={() => {
+            const ev = registerFor;
+            setRegisterFor(null);
+            // The organizer's own page, when registering happens there.
+            if (ev.registration_mode === "external" && ev.registration_url) {
+              openRegistration(ev);
+            }
+            // Registered means saved: the card on screen flies to the board,
+            // anything else (the dialog over another card) saves in place.
+            if (viewMode === "card" && !detailFor && current?.id === ev.id) {
+              void flyToDrop();
+            } else {
+              void attend(ev);
+            }
+          }}
         />
       )}
 

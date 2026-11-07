@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, BookX, ExternalLink } from "lucide-react";
+import { Bookmark, BookX, ClipboardPen } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { hostnameOf, mapsUrl } from "@/lib/share";
+import { mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
@@ -25,7 +25,7 @@ export function EventDetailModal({
   onClose,
   onSave,
   onUnsave,
-  onOpenRegistration,
+  onRegister,
   onRequestAccess,
   onSignIn,
 }: {
@@ -34,8 +34,8 @@ export function EventDetailModal({
   onClose: () => void;
   onSave: (event: Event) => void;
   onUnsave: (event: Event) => void;
-  /** Only used when registration lives on the organizer's own site. */
-  onOpenRegistration: (event: Event) => void;
+  /** An event that needs registering: ask to confirm, then register. */
+  onRegister: (event: Event) => void;
   /** A restricted program the member is not yet approved for. */
   onRequestAccess: (event: Event) => Promise<void>;
   /** For "See who else is going" when nobody is signed in. */
@@ -47,10 +47,6 @@ export function EventDetailModal({
   onCloseRef.current = onClose;
   const close = useCallback(() => onCloseRef.current(), []);
 
-  const external =
-    event.requires_signup &&
-    event.registration_mode === "external" &&
-    !!event.registration_url;
   // A virtual event's "location" is a meeting app, not a place to map.
   const maps = event.is_virtual ? null : mapsUrl(event.location);
   // Save is for approved members only; everyone else gets the access control.
@@ -76,7 +72,6 @@ export function EventDetailModal({
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
           tools={<EventTools event={event} />}
-          hint={external ? hostnameOf(event.registration_url) : undefined}
           actions={
             <>
               {maps && (
@@ -108,24 +103,25 @@ export function EventDetailModal({
                 >
                   Un-Save Event
                 </Button>
+              ) : event.requires_signup ? (
+                // Needs registering: Register, confirmed first (which saves
+                // it and opens the organizer's page when there is one).
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => onRegister(event)}
+                  trailingIcon={<ClipboardPen />}
+                >
+                  Register
+                </Button>
               ) : (
                 <Button
-                  variant={external ? "secondary" : "primary"}
+                  variant="primary"
                   size="lg"
                   onClick={() => onSave(event)}
                   trailingIcon={<Bookmark />}
                 >
                   Save Event
-                </Button>
-              )}
-              {external && (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => onOpenRegistration(event)}
-                  trailingIcon={<ExternalLink />}
-                >
-                  Register
                 </Button>
               )}
             </>
