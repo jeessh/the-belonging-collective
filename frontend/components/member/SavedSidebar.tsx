@@ -555,7 +555,9 @@ export function MiniCardFace({ event }: { event: Event }) {
           className="absolute inset-0 h-full w-full object-cover"
         />
       </span>
-      <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
+      {/* Always two lines tall (clamped at two), so every card is the same
+          height whatever its title. */}
+      <span className="line-clamp-2 h-[2.5em] px-0.5 text-base font-medium leading-tight text-fg">
         {event.title}
       </span>
     </>
