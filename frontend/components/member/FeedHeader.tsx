@@ -27,68 +27,15 @@ export type CareChoice = {
   onSelect: (member: CarePerson | null) => void;
 };
 
-/**
- * The feed's top bar: who you are on the left, Accessibility Tools on the
- * right. Signed out, the name is the way in.
- */
 /** The member's chosen picture, if any — see components/ui/Avatar. */
 export type AvatarChoice = {
   url?: string | null;
   emblem?: string | null;
 };
 
-export const FeedHeader = memo(function FeedHeader({
-  name,
-  role,
-  avatar,
-  care,
-  onSignIn,
-  onSignOut,
-  showAccount = true,
-  children,
-}: {
-  /** Off while the saved panel is open: the account sits on the cork board
-      there (`FeedAccount`), and this bar keeps just Accessibility Tools. */
-  showAccount?: boolean;
-  /** "Sophie L.", or null when nobody is signed in. */
-  name: string | null;
-  /** "Caregiver" or "Community member", under the name. */
-  role?: string | null;
-  avatar?: AvatarChoice | null;
-  /** Only for a caregiver with linked members; the switcher is hidden otherwise. */
-  care?: CareChoice | null;
-  onSignIn: () => void;
-  onSignOut: () => void;
-  /** The Accessibility Tools menu. */
-  children: ReactNode;
-}) {
-  return (
-    // 12px above and below at every size (it was 20px on taller screens): a
-    // slimmer bar leaves more of the screen to the programs.
-    // From lg the picture lines up with the saved column's "Saved Events"
-    // heading (24px in): 16px here + the account button's own 8px.
-    <header
-      className={`flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 ${
-        showAccount ? "justify-between lg:pl-4" : "justify-end lg:pl-9"
-      }`}
-    >
-      {showAccount && (
-        <FeedAccount
-          name={name}
-          avatar={avatar}
-          care={care}
-          onSignIn={onSignIn}
-          onSignOut={onSignOut}
-        />
-      )}
-      {children}
-    </header>
-  );
-});
-
 /** Who you are and whose list saves go into: the account button and, for a
-    caregiver with linked members, "Saving for". In the top bar, or on the
-    saved panel's cork board while it is open. */
+    caregiver with linked members, "Saving for". Centred at the bottom of
+    the event column (there is no top bar), so both menus open upward. */
 export function FeedAccount({
   name,
   avatar,
@@ -171,7 +118,7 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
           aria-label="Save programs for"
           // Right-anchored on a phone, where the switcher sits near the
           // middle and a left-anchored menu would run off the edge.
-          className="absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto"
+          className="absolute bottom-full right-0 z-50 mb-2 min-w-[220px] overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto"
         >
           <button
             role="menuitemradio"
@@ -288,7 +235,7 @@ function AccountButton({
         <div
           role="menu"
           aria-label="Account"
-          className="absolute left-0 top-full z-50 mt-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
+          className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
         >
           <Link
             role="menuitem"

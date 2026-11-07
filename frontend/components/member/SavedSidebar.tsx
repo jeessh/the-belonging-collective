@@ -60,9 +60,6 @@ type Props = {
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
   onSignIn: () => void;
-  /** The account button and "Saving for", pinned at the top of the open
-      panel (the top bar drops them while it is open). */
-  account?: ReactNode;
 };
 
 /**
@@ -87,7 +84,6 @@ export const SavedSidebar = memo(
       onOpenSaved,
       onOpenEvent,
       onSignIn,
-      account = null,
     },
     dropRef,
   ) {
@@ -247,18 +243,8 @@ export const SavedSidebar = memo(
                     and count read clearly against the cork. */}
                 <div
                   aria-hidden="true"
-                  className={`pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/50 via-black/25 to-transparent ${
-                    account ? "h-56" : "h-36"
-                  }`}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/65 via-black/35 to-transparent"
                 />
-                {account && (
-                  // On a white tag, so the name reads on the cork.
-                  <div className="relative px-6">
-                    <div className="inline-flex max-w-full rounded-control bg-surface p-1 shadow-[0_2px_6px_rgba(0,0,0,0.25)]">
-                      {account}
-                    </div>
-                  </div>
-                )}
                 <div className="relative flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
                     <h2 className="text-2xl font-medium text-white [text-shadow:0_1px_3px_rgba(40,20,0,0.65)]">

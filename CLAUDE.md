@@ -114,7 +114,7 @@ can open.
   so an arrival animates. The open panel is a bulletin board (an
   experiment, `Board` in SavedSidebar): the whole panel is cork (`.cork` in
   globals.css) with a wooden edge on its right — a white "Saved Events" heading and count
-  (dark text-shadow, over a soft dark gradient down from the top), and See Saved Events / Google Calendar as two taped,
+  (dark text-shadow, over a dark gradient down from the top), and See Saved Events / Google Calendar as two taped,
   tilted sticky notes (yellow, blue; `STICKY`) side by side at the bottom — miniature feed cards (picture and title) each held by a
   coloured push pin, two across and slightly tilted, that can be dragged anywhere in
   the box (framer-motion `drag`, kept inside it); double-click opens one,
@@ -126,14 +126,12 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
-- **The saved panel runs the full height; the top bar spans the event
-  column only** (`FeedHeader` is the first thing in the feed's `<section>`).
-  While the panel is open (not on a phone, not on All Saved Events),
-  `accountInBoard`: the account button and "Saving for" (`FeedAccount`)
-  move onto the cork board, on a white tag above "Saved Events", and the
-  bar keeps only Accessibility Tools (`showAccount={false}`). Folded to the
-  rail, or on a phone, they are back in the bar.
-- The feed's account button (`FeedHeader`'s `AccountButton`) is the
+- **There is no top bar.** The saved panel runs the full height; the
+  feed's Accessibility Tools menu sits beside the Card / List toggle
+  (`a11yMenu` in EventsView), and the account button and "Saving for"
+  (`FeedAccount` in `member/FeedHeader.tsx`) sit centred in a row at the
+  bottom of the event column, their menus opening upward.
+- The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the
   "Saving for" switcher beside it, a 20px chevron; its menu items are
