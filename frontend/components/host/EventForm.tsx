@@ -1070,7 +1070,7 @@ export function EventForm({
                 refuses anyone: the first saves each hold a spot for an hour
                 while spots last (core/holds). */}
             <TextField
-              label="Limit on how many can come (optional)"
+              label="Attendee limit (optional)"
               type="number"
               inputMode="numeric"
               min={1}

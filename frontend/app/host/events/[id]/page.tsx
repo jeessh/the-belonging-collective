@@ -392,7 +392,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 )}
               </ReadField>
           </div>
-          <ReadField label="Limit on how many can come">
+          <ReadField label="Attendee limit">
             {event.capacity != null ? `${event.capacity} people` : "No limit"}
           </ReadField>
           <ReadField label="Who can see this">
