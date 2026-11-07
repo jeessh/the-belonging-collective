@@ -7,6 +7,7 @@ import { hostnameOf } from "@/lib/share";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { HoldInfo } from "@/components/member/HoldInfo";
 import { Glyph } from "@/components/ui/Glyph";
+import { categoryLabel, categoryStyle } from "@/lib/categories";
 
 // The design's LINKS box: one bordered frame, a row per link, the paperclip
 // (or the file's own icon) at the row's end.
@@ -85,7 +86,9 @@ export function EventDetails({
     ...(event.registration_url
       ? [
           {
-            label: `Event posting on ${hostnameOf(event.registration_url)}`,
+            label: event.requires_signup
+              ? `Sign up on ${hostnameOf(event.registration_url)}`
+              : `Event posting on ${hostnameOf(event.registration_url)}`,
             url: event.registration_url,
           },
         ]
@@ -98,6 +101,13 @@ export function EventDetails({
   // offers, so someone who needs it can see it on the listing itself. Cost
   // and drop-in are already the tags on top, so the derived ones stay off.
   const access = (event.accessibility_tags ?? []).filter((t) => !isDerivedTag(t));
+  // The organizer's topics, in the order they picked them.
+  const topics =
+    event.categories && event.categories.length > 0
+      ? event.categories
+      : event.category
+        ? [event.category]
+        : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -136,6 +146,23 @@ export function EventDetails({
               {event.notes}
             </p>
           )}
+        </section>
+      )}
+
+      {topics.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className={HEADING}>Topics</h3>
+          <ul className="flex flex-wrap gap-3">
+            {topics.map((slug) => (
+              <li
+                key={slug}
+                className="inline-flex items-center gap-2 rounded-control border border-line bg-surface-subtle px-3 py-1.5 text-lg text-fg"
+              >
+                <Glyph icon={categoryStyle(slug).icon} className="text-fg-icon" />
+                {categoryLabel(slug)}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

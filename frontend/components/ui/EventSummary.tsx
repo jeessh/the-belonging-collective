@@ -1,9 +1,19 @@
 import { placeLabel } from "@/lib/place";
 import type { ReactNode } from "react";
-import { Cake, CalendarDays, MapPin, Ticket } from "lucide-react";
+import {
+  Cake,
+  CalendarDays,
+  CircleDollarSign,
+  ClipboardPen,
+  DoorOpen,
+  MapPin,
+  Repeat,
+  Ticket,
+} from "lucide-react";
 import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { clockTime, whenLine } from "@/lib/time";
+import { repeatLabel } from "@/lib/recurrence";
 import { Tag, eventTags } from "@/components/ui/Tag";
 
 /**
@@ -121,6 +131,7 @@ export function EventSummary({
   const feed = layout === "card";
   const tile = layout === "tile";
   const when = whenLine(event, { fixed: fixedDates });
+  const repeats = repeatLabel(event.recurrence);
   const where = placeLabel(event);
   const image = eventImage(event);
   // Cards say only the ages; the event's own page (`detail`) also says when
@@ -219,6 +230,37 @@ export function EventSummary({
         />
         <p className="min-w-0 text-fg">{where}</p>
       </div>
+      {/* The event's own page and dialog read back the rest of what the
+          organizer set: how often it repeats, what it costs and how to
+          join. Cards keep to when and where. */}
+      {layout === "detail" && repeats && (
+        <div className="flex items-start gap-3">
+          <Repeat aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
+          <p className="min-w-0 text-fg">{repeats}</p>
+        </div>
+      )}
+      {/* "Free" is already the tag beside the title. */}
+      {layout === "detail" && event.price_label && event.price_label !== "Free" && (
+        <div className="flex items-start gap-3">
+          <CircleDollarSign
+            aria-hidden="true"
+            className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
+          />
+          <p className="min-w-0 text-fg">{event.price_label}</p>
+        </div>
+      )}
+      {layout === "detail" && (
+        <div className="flex items-start gap-3">
+          {event.requires_signup ? (
+            <ClipboardPen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
+          ) : (
+            <DoorOpen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
+          )}
+          <p className="min-w-0 text-fg">
+            {event.requires_signup ? "Sign-up needed" : "Drop in — no sign-up needed"}
+          </p>
+        </div>
+      )}
       {ages && (
         <div className="flex items-start gap-3">
           <Cake

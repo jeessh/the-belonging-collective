@@ -179,8 +179,7 @@ can open.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
   card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
-  top, a soft shadow, -0.5° tilt; the deck card behind tilts the other
-  way); and while the card is on the move (`lift` — drag, ← hold, flight)
+  top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
   its magnet pops off (`unpinned`). The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
@@ -268,6 +267,15 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **The dialog / event page reads back everything the form sets.**
+  `EventSummary`'s `detail` layout adds, under when and where: how often it
+  repeats (`repeatLabel(event.recurrence)`), the cost (`event.price_label`,
+  built server-side by `core/pricing.describe`; hidden when it is just
+  "Free", which the tag already says) and how to join ("Sign-up needed" /
+  "Drop in — no sign-up needed", from `requires_signup`). `EventDetails`
+  adds a TOPICS section (the event's `categories`, as chips) before
+  ACCESSIBILITY, and labels the organizer's link "Sign up on …" when sign-up
+  is needed. Cards stay to when and where.
 - **Tags: only "Free", beside the title** (`eventTags` in `ui/Tag`; plus
   Special access and For you where they apply). Paid, Drop-in / Sign-up and
   In-person / Virtual are no longer pills on any surface — the facts and

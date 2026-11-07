@@ -1417,7 +1417,7 @@ export function EventsView({
                       design's blurred Save button on it read as a glitch. */}
                   <div
                     aria-hidden
-                    className="absolute inset-x-8 -bottom-6 top-16 rotate-[0.8deg] rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
+                    className="absolute inset-x-8 -bottom-6 top-16 rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
                   />
                   <motion.div
                     ref={cardWrapRef}
