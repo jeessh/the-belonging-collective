@@ -14,7 +14,7 @@ const LINK_BOX =
   "divide-y divide-line overflow-hidden rounded-control border border-line";
 const LINK_ROW =
   "flex min-h-14 items-center justify-between gap-4 px-4 py-3 text-lg text-blue-700 underline underline-offset-4 hover:bg-surface-subtle";
-const HEADING = "text-base uppercase tracking-wide text-fg-muted";
+const HEADING = "text-base font-medium uppercase tracking-wide text-fg-muted";
 
 /** The agency's flyer: a thumbnail when it is a picture, a file icon for a PDF. */
 function Poster({ url }: { url: string }) {
