@@ -943,6 +943,12 @@ export function EventForm({
                     { value: "paid", label: "Paid" },
                   ]}
                 />
+                {/* Cost is a label for members, nothing more. */}
+                <p className="text-base text-fg-muted">
+                  This platform doesn&rsquo;t process payments. The cost is
+                  only shown to members for their information &mdash; collect
+                  any payment yourselves.
+                </p>
               </div>
             </Section>
             {paid && (
