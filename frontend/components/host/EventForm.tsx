@@ -810,11 +810,13 @@ export function EventForm({
               />
               {mode === "create" && (
                 <Section title="Repeats">
+                  {/* The dropdown fills its half of the row; how many times /
+                      it keeps going wrap under it. */}
                   <div className="flex flex-wrap items-end gap-4">
                     {/* The section's "Repeats" is its label; no second one. */}
                     <Select
                       aria-label="Repeats"
-                      className="min-w-[200px]"
+                      className="w-full"
                       value={values.frequency}
                       onChange={(e) => set("frequency", e.target.value as Frequency)}
                     >
