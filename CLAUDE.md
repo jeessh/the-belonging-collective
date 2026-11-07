@@ -262,7 +262,8 @@ can open.
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
-  Calendar / Share / Print — a row at the top left, above the picture) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  Calendar / Share / Print — a row right under the summary's "N people
+  saved this event") and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
