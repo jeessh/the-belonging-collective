@@ -19,6 +19,17 @@ import { useToast } from "@/components/ui/Toast";
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
 const RAIL_WIDTH = 100;
+/* The bookshelf, an experiment (the open panel's list): the list sits on a
+   warm back wall (SHELF_WALL), each saved program a book — a portrait photo
+   with a spine and a shadow — standing on a wooden plank. Each cell draws
+   its own piece of plank, so two side by side make one shelf. */
+const SHELF_WALL = "bg-[#F4ECE1]";
+const SHELF_BACK =
+  "flex h-[212px] items-end justify-center px-4 pt-5";
+const BOOK =
+  "relative block h-[180px] w-[120px] overflow-hidden rounded-r-[6px] rounded-l-[2px] bg-surface-subtle shadow-[3px_0_8px_rgba(60,35,10,0.35)] transition-transform duration-200 ease-out group-hover:-translate-y-2 group-focus-visible:-translate-y-2 motion-reduce:transition-none";
+const PLANK =
+  "block h-3.5 w-full bg-gradient-to-b from-[#C8996A] to-[#9E6F43] shadow-[0_4px_6px_-2px_rgba(60,35,10,0.45)]";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -255,7 +266,7 @@ export const SavedSidebar = memo(
                         // hover fill runs the panel's full width; the card's
                         // own 24px padding keeps its picture and words under
                         // the "Saved Events" heading.
-                        className={`-mx-[25px] flex min-h-0 flex-1 flex-col overflow-y-auto py-2 transition-opacity ${
+                        className={`-mx-[25px] grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto transition-opacity ${SHELF_WALL} ${
                           active ? "opacity-0" : ""
                         }`}
                       >
@@ -266,6 +277,13 @@ export const SavedSidebar = memo(
                             <Thumb event={ev} onOpen={onOpenEvent} layout="panel" />
                           )}
                         />
+                        {/* An odd count leaves half a shelf: finish it. */}
+                        {events.length % 2 === 1 && (
+                          <div aria-hidden="true">
+                            <span className={SHELF_BACK} />
+                            <span className={PLANK} />
+                          </div>
+                        )}
                       </div>
                     )}
                     {(events.length === 0 || active) && (
@@ -476,25 +494,29 @@ function Thumb({
     );
   }
 
+  // The bookshelf: the photo as a book standing on a wooden shelf, its
+  // title and date on a label under the shelf. Hover / focus pulls the
+  // book forward off the shelf.
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
-      // The thumbnail on the left, the title (20px) and date beside it.
-      // A full-width row: on hover / focus a grey fill from edge to edge.
-      className="group flex w-full shrink-0 items-start gap-4 px-6 py-3 text-left transition-colors duration-150 ease-out hover:bg-surface-subtle focus-visible:bg-surface-subtle"
+      className="group flex h-full w-full flex-col text-left focus-visible:outline-offset-[-4px]"
     >
-      <span
-        aria-hidden="true"
-        className="relative block size-20 shrink-0 overflow-hidden rounded-control bg-surface-subtle"
-      >
-        {img}
+      <span aria-hidden="true" className={SHELF_BACK}>
+        <span className={BOOK}>
+          {img}
+          {/* The spine: a darker strip down the left edge, a crease beside it. */}
+          <span className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/35 via-black/10 to-transparent" />
+          <span className="absolute inset-y-0 left-3 w-px bg-white/25" />
+        </span>
       </span>
-      <span className="flex min-w-0 flex-col items-start gap-1">
-        <span className="line-clamp-3 text-xl font-medium leading-tight text-fg">
+      <span aria-hidden="true" className={PLANK} />
+      <span className="flex min-w-0 flex-col items-start gap-1 px-4 pb-5 pt-3">
+        <span className="line-clamp-3 text-lg font-medium leading-tight text-fg group-hover:underline">
           {event.title}
         </span>
-        <span className="text-lg text-fg-muted">
+        <span className="text-base text-fg-muted">
           {longDate(event.starts_at) || "Date to be announced"}
         </span>
       </span>

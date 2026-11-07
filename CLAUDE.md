@@ -111,7 +111,9 @@ can open.
   list before first paint so it never opens-then-folds. Rail and panel are
   one `motion.aside` whose width animates; saved items grow in and fold out
   (`Arrivals`), and the panel keeps its list mounted under the drag message
-  so an arrival animates. Its forwarded ref is the drop target every save
+  so an arrival animates. The open panel's list is a bookshelf (an
+  experiment): two books — portrait photos with a spine — per wooden shelf
+  on a warm back wall, title and date on a label under each. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
