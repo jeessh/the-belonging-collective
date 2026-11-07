@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Lock, Plus } from "lucide-react";
 import {
   addPeopleToGroup,
   apiMessage,
@@ -55,11 +55,17 @@ export function AccessPicker({
 
 
   return (
-    <div className="flex flex-col items-start gap-4">
+    // In a light grey box with a lock, so it reads as its own setting.
+    <div className="flex w-full flex-col items-start gap-4 rounded-card border border-line/60 bg-surface-subtle/70 p-4">
       {/* Off, everyone can see it; on, the group picker shows. */}
       <div className="flex flex-col gap-1">
         <Switch
-          label="Special access"
+          label={
+            <span className="inline-flex items-center gap-2">
+              <Lock aria-hidden="true" className="text-fg-icon" />
+              Special access
+            </span>
+          }
           checked={mode === "group"}
           onChange={(on) => (on ? onChange("group", groupId) : onChange("everyone", null))}
         />
