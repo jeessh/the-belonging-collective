@@ -5,6 +5,7 @@ import {
   Bookmark,
   BookX,
   CalendarDays,
+  ClipboardPen,
   MapPin,
   Send,
   SlidersHorizontal,
@@ -32,7 +33,7 @@ import {
 import { placeLabel } from "@/lib/place";
 
 /**
- * The Advanced experience's list (a caregiver's): the console's event
+ * The feed's List view (for everyone): the console's event
  * management layout — the filter panel on the left, search over the cards,
  * one card per event — restricted to what a member can do.
  * Nothing here edits a program: the card opens its details, its icons
@@ -46,12 +47,15 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onOpen,
   onSave,
   onUnsave,
+  onRegister,
 }: {
   events: Event[];
   saved: Set<string>;
   onOpen: (event: Event) => void;
   onSave: (event: Event) => void;
   onUnsave: (event: Event) => void;
+  /** An event that needs registering: ask to confirm, then register. */
+  onRegister: (event: Event) => void;
 }) {
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [query, setQuery] = useState("");
@@ -108,6 +112,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
                 onOpen={() => onOpen(ev)}
                 onSave={() => onSave(ev)}
                 onUnsave={() => onUnsave(ev)}
+                onRegister={() => onRegister(ev)}
               />
             ))}
           </div>
@@ -140,12 +145,14 @@ function MemberEventCard({
   onOpen,
   onSave,
   onUnsave,
+  onRegister,
 }: {
   event: Event;
   saved: boolean;
   onOpen: () => void;
   onSave: () => void;
   onUnsave: () => void;
+  onRegister: () => void;
 }) {
   const when = whenLine(event);
   const [sharing, setSharing] = useState(false);
@@ -240,6 +247,15 @@ function MemberEventCard({
           (saved ? (
             <Button onClick={onUnsave} trailingIcon={<BookX />} className="max-sm:order-1 max-sm:flex-1">
               Unsave
+            </Button>
+          ) : event.requires_signup ? (
+            <Button
+              variant="primary"
+              onClick={onRegister}
+              trailingIcon={<ClipboardPen />}
+              className="max-sm:order-1 max-sm:flex-1"
+            >
+              Register
             </Button>
           ) : (
             <Button

@@ -74,7 +74,6 @@ import {
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
-import { ListFeed } from "@/components/member/ListFeed";
 import { CaregiverFeed } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
@@ -1042,15 +1041,6 @@ export function EventsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id, view, viewMode]);
 
-  // The section is a heading, not a live region.
-  const picks = recommendedShown.length;
-  useEffect(() => {
-    if (picks > 0) {
-      setSrMessage(
-        `For you this week, ${picks} ${picks === 1 ? "program" : "programs"}.`,
-      );
-    }
-  }, [picks]);
 
   // ---- text-to-speech: read the current event when it changes ----
   useEffect(() => {
@@ -1379,7 +1369,7 @@ export function EventsView({
                 </div>
               </div>
 
-              {!(viewMode === "list" && advanced) && (
+              {viewMode !== "list" && (
               <FeedFilters
                 chips={chips}
                 onToggleChip={toggleChip}
@@ -1411,23 +1401,17 @@ export function EventsView({
                   ? `${space.name} hasn't posted any programs yet. Check back soon.`
                   : "No programs yet. Check back soon."}
               </p>
-            ) : viewMode === "list" && advanced ? (
-              // The Advanced experience: the console's layout, a member's
-              // actions. Its own filter panel replaces the chip row.
+            ) : viewMode === "list" ? (
+              // List view is the console's Event Management layout for
+              // everyone: a filter panel, search and a card per event, with
+              // a member's actions. Its filter panel replaces the chip row.
               <CaregiverFeed
                 events={feed}
                 saved={saved}
                 onOpen={setDetailFor}
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
-              />
-            ) : viewMode === "list" ? (
-              <ListFeed
-                events={feed}
-                recommended={recommendedShown}
-                onDismiss={dismissRecommendation}
-                onOpen={setDetailFor}
-                onSignIn={() => toSignIn()}
+                onRegister={setRegisterFor}
               />
             ) : !current ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
