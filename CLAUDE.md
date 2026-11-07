@@ -434,7 +434,8 @@ can open.
   All Events lists published events alone; Date posted, cumulative "Past 7
   / 30 / 90 days" or older; Posted by, the person or the organization —
   then the feed's dimensions) (`ui/Checkbox` rows; its reset row reads "No filters" so it
-  isn't confused with the toggle), with a Your Events / All Events toggle.
+  isn't confused with the toggle), with a Your Events / All Events toggle. The panel is sticky under the
+  console header (`lg:top-[97px]`, scrolling itself if taller than the window).
   **A filter matches every option a program is in** (`Dimension.all`,
   `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
   Type, and both Virtual/In person and Youth under Event Type, because the
