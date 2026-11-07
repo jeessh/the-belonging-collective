@@ -41,9 +41,9 @@ function Poster({ url }: { url: string }) {
 }
 
 /**
- * The full listing, drawn as the design's Expanded Card: the summary, then
- * the tools (Google Calendar / Share / Print), DETAILS, TOPICS, POSTER and
- * LINKS. No hooks, so the
+ * The full listing, drawn as the design's Expanded Card: the tools (Google
+ * Calendar / Share / Print) top left, then the summary, DETAILS, TOPICS,
+ * POSTER and LINKS. No hooks, so the
  * server-rendered public page, the dialog over the feed and the print
  * preview all draw the same thing; each hands in its own `tools`, `going`
  * and bottom `actions`.
@@ -61,7 +61,7 @@ export function EventDetails({
 }: {
   event: Event;
   going?: ReactNode;
-  /** Google Calendar / Share / Print, under the summary. */
+  /** Google Calendar / Share / Print, top left. */
   tools?: ReactNode;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
@@ -112,10 +112,14 @@ export function EventDetails({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* The "saving holds your spot" tip, top right, clear of the dialog's ×. */}
-      {hold && (
-        <div className={`flex justify-end ${insetForClose ? "pr-12 xl:pr-0" : ""}`}>
-          <HoldInfo />
+      {/* Add to Google Calendar, Share and Print at the top left; the
+          "saving holds your spot" tip on the right, clear of the dialog's ×. */}
+      {(tools || hold) && (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
+        >
+          <div className="flex flex-wrap items-center gap-3">{tools}</div>
+          {hold && <HoldInfo />}
         </div>
       )}
 
@@ -127,10 +131,6 @@ export function EventDetails({
         titleId={titleId}
         fixedDates={fixedDates}
       />
-
-      {/* Add to Google Calendar, Share and Print: under the picture and
-          the facts, where the member has just read what it is. */}
-      {tools && <div className="flex flex-wrap items-center gap-3">{tools}</div>}
 
       {(event.description || event.notes) && (
         <section className="flex flex-col gap-3">
