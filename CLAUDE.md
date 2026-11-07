@@ -259,7 +259,7 @@ can open.
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
   LINKS (`event.links` plus the organizer's `registration_url`; one
-  bordered card per link — label, site name, external-link icon, the whole
+  bordered card per link — label (20px regular, like the facts), site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
