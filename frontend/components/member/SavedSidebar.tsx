@@ -478,7 +478,7 @@ function Thumb({
     <button
       type="button"
       onClick={() => onOpen(event)}
-      // The thumbnail on the left, the title (24px) and date beside it.
+      // The thumbnail on the left, the title (20px) and date beside it.
       className="group flex w-full shrink-0 items-start gap-4 rounded-control text-left"
     >
       <span
@@ -488,7 +488,7 @@ function Thumb({
         {img}
       </span>
       <span className="flex min-w-0 flex-col items-start gap-1">
-        <span className="line-clamp-3 text-2xl font-medium leading-tight text-fg">
+        <span className="line-clamp-3 text-xl font-medium leading-tight text-fg">
           {event.title}
         </span>
         <span className="text-lg text-fg-muted">
