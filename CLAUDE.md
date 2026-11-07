@@ -232,6 +232,11 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **Tags: only "Free", beside the title** (`eventTags` in `ui/Tag`; plus
+  Special access and For you where they apply). Paid, Drop-in / Sign-up and
+  In-person / Virtual are no longer pills on any surface — the facts and
+  filters still carry them. `EventSummary` draws title + tags as one
+  wrapping row (`heading`), the event page included.
 - The fact icons on every event summary (`ui/EventSummary` — feed card, list
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;

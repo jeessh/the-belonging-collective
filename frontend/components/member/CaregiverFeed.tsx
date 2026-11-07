@@ -189,9 +189,7 @@ function MemberEventCard({
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
-        <div className="flex flex-wrap gap-2">
-          <EventTags event={event} />
-        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 className="text-2xl font-medium leading-tight text-fg">
           {/* The whole card opens the details: this button's ::after covers
               the card; the menu and Save sit above it. */}
@@ -203,6 +201,8 @@ function MemberEventCard({
             {event.title}
           </button>
         </h3>
+          <EventTags event={event} />
+        </div>
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">
             <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />

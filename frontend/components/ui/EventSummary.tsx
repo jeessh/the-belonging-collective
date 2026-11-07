@@ -176,6 +176,15 @@ export function EventSummary({
     </Title>
   );
 
+  // The title with its tags beside it (just "Free", and special access /
+  // For you where they apply), on one line when there's room.
+  const heading = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {title}
+      {tags}
+    </div>
+  );
+
   const facts = (
     <div className={`flex flex-col gap-3 ${feed ? "lg:gap-4 short:!gap-3" : ""} ${meta}`}>
       <div className="flex items-start gap-3">
@@ -244,8 +253,7 @@ export function EventSummary({
             {img}
           </div>
           <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex flex-wrap gap-3">{tags}</div>
-            {title}
+            {heading}
             {facts}
           </div>
         </div>
@@ -275,8 +283,7 @@ export function EventSummary({
             {img}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-4">
-            {!detail && <div className="flex flex-wrap gap-3">{tags}</div>}
-            {title}
+            {heading}
             {facts}
           </div>
         </div>
@@ -305,8 +312,7 @@ export function EventSummary({
           {img}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap gap-3">{tags}</div>
-          {title}
+          {heading}
           {facts}
         </div>
         {actions && (

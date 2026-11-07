@@ -77,17 +77,12 @@ export function Tag({
 }
 
 /**
- * The three pills every card shows, in the design's order: cost, then
- * registration, then venue. Cost and registration come from the feed's
- * grouping buckets so a FREE pill and the "Free" filter can never disagree;
- * venue reads `is_virtual` directly because that bucket folds youth in.
+ * The pills a card shows beside its title: just "Free", for a free program.
+ * Paid, drop-in / sign-up and in-person / virtual are no longer tagged — the
+ * card's facts and the event's page carry them, and the filters still sort
+ * by them. Cost reads the feed's grouping bucket so the FREE pill and the
+ * "Free" filter can never disagree.
  */
 export function eventTags(event: Event): TagKind[] {
-  const price = dimensionByKey("price").bucket(event).id;
-  const registration = dimensionByKey("registration").bucket(event).id;
-  return [
-    price === "free" ? "free" : "paid",
-    registration === "dropin" ? "dropin" : "signup",
-    event.is_virtual ? "virtual" : "inperson",
-  ];
+  return dimensionByKey("price").bucket(event).id === "free" ? ["free"] : [];
 }

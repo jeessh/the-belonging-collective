@@ -4,7 +4,7 @@ import { ExternalLink, FileText, Paperclip } from "lucide-react";
 import { isDerivedTag, tagIcon, tagLabel } from "@/lib/accessibility";
 import type { Event } from "@/lib/api";
 import { hostnameOf } from "@/lib/share";
-import { EventSummary, EventTags } from "@/components/ui/EventSummary";
+import { EventSummary } from "@/components/ui/EventSummary";
 import { HoldInfo } from "@/components/member/HoldInfo";
 import { Glyph } from "@/components/ui/Glyph";
 
@@ -104,9 +104,8 @@ export function EventDetails({
       <div
         className={`flex flex-wrap items-center justify-between gap-4 ${insetForClose ? "pr-12 xl:pr-0" : ""}`}
       >
-        <div className="flex flex-wrap gap-3">
-          <EventTags event={event} />
-        </div>
+        {/* The Free tag sits beside the title now (EventSummary). */}
+        <span />
         {(tools || hold) && (
           <div className="flex items-center gap-3">
             {hold && <HoldInfo />}
