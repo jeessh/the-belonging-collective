@@ -125,7 +125,7 @@ export function EventDetailModal({
                   onClick={() => onOpenRegistration(event)}
                   trailingIcon={<ExternalLink />}
                 >
-                  Register for Event
+                  Register
                 </Button>
               )}
             </>

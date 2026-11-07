@@ -192,6 +192,14 @@ can open.
   40px PNGs with 80px Retina copies through `image-set` (`public/cursors`,
   drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
   command is in the file); SVG cursors blur.
+- **An event that needs registering, with the organizer's link, says
+  Register.** When `requires_signup` and `registration_mode === "external"`
+  with a `registration_url` (the form sets external whenever a sign-up link
+  is given), the feed card's Save button becomes **Register** (primary,
+  external-link icon), opening the link through `openRegistration` (new tab,
+  counted as a registration click). The dialog shows Register beside
+  Save / Un-Save. Saving such an event still works by drag, ← hold, voice
+  or the dialog.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←

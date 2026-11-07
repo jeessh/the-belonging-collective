@@ -1533,6 +1533,7 @@ export function EventsView({
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
                           unpinned={!!lift}
+                          onRegister={() => openRegistration(current)}
                         />
                       </motion.div>
                       {ghosting &&

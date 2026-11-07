@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Bookmark, BookmarkX, MoveRight } from "lucide-react";
+import { Bookmark, BookmarkX, ExternalLink, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -22,7 +22,11 @@ export const FeedCard = memo(function FeedCard({
   onUnsave,
   onSignIn,
   unpinned = false,
+  onRegister,
 }: {
+  /** The organizer's own sign-up page, for an event that needs registering:
+      the card's button says Register and opens it. */
+  onRegister?: () => void;
   /** The card is on the move (dragged, held or flying to the board): its
       push pin pops off. */
   unpinned?: boolean;
@@ -37,6 +41,12 @@ export const FeedCard = memo(function FeedCard({
   onSignIn: () => void;
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
+  // The admin set "needs sign-up" with a link: Register, not Save.
+  const register =
+    !!onRegister &&
+    event.requires_signup &&
+    event.registration_mode === "external" &&
+    !!event.registration_url;
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
@@ -79,7 +89,23 @@ export const FeedCard = memo(function FeedCard({
               <span className="sm:hidden">More info</span>
               <span className="max-sm:hidden">More information</span>
             </Button>
-            {saved ? (
+            {register ? (
+              // Registration is on the organizer's own page: the card's
+              // button goes there. Saving still works by dragging the card
+              // left, holding ←, or from More information.
+              <Button
+                variant="primary"
+                size="lg"
+                className={size}
+                onClick={onRegister}
+                onPointerDown={stop}
+                trailingIcon={<ExternalLink />}
+                data-tour="save"
+                aria-label={`Register for ${event.title} (opens the organizer's page)`}
+              >
+                Register
+              </Button>
+            ) : saved ? (
               // Saved: the button undoes it, rather than sitting disabled —
               // a member shouldn't have to open the listing to change their
               // mind. The un-save toast offers Undo.
