@@ -76,9 +76,12 @@ const config: Config = {
           "access-bg": "#E4E4E4",
           "access-fg": "#333333",
         },
-        // Toast borders; the fills reuse tag/primary tokens (see ui/Toast).
+        // Toast borders; the info / alert fills reuse tag/primary tokens (see
+        // ui/Toast). Success has its own softer pair — a muted green rather
+        // than the Free tag's bright one.
         toast: {
-          success: "#286A02",
+          success: "#5E8A4C",
+          "success-bg": "#EAF3E4",
           info: "#00CDFF",
           alert: "#FD9BA6",
         },
