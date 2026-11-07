@@ -575,7 +575,9 @@ can open.
   `.field` (TextField, AdminTable's `Field`, the event form's `Section`) with
   a `.field-label` — regular weight, `#4d4d4d`, lighter than answers and
   darker than placeholders. Spacing is one rule: 6px label→control, 16px
-  field→field (any container holding fields), 12px inside a fieldset. A
+  field→field (any container holding fields), 12px inside a fieldset —
+  except the event form, whose sections (`.event-group`) space their
+  inputs and components 24px apart. A
   field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
   grey, 10px from the edge; date and time boxes hide the browser's picker
   button and open the picker on click (`TextField`). The event screens' information icons (a

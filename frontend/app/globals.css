@@ -299,6 +299,9 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .console fieldset.field:not(.print-target *) { row-gap: 12px; }
 .console fieldset.field > legend:not(.print-target *) { margin-bottom: 6px; }
 .console :is(form, div, section):has(> .field):not(.print-target *) { row-gap: 16px; }
+/* The event form breathes a little more: 24px between the inputs and
+   components of a section (heading, fields, rows, switches). */
+.console .form-dense .event-group:not(.print-target *) { row-gap: 24px; }
 
 /*
  * A field's leading icon (date, time, place): small, light and thin, close to

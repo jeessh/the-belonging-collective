@@ -425,7 +425,7 @@ export const CARD =
 export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     // Sections share one card (the column's), a divider between each.
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
+    <section className="event-group flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
