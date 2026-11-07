@@ -65,7 +65,9 @@ export const CaregiverFeed = memo(function CaregiverFeed({
 
   return (
     <div className="flex flex-col items-start gap-8 lg:flex-row">
-      <div className="hidden w-[280px] shrink-0 lg:block">
+      {/* Sticky: it stays in view while the cards scroll (the feed column
+          is the scroller), scrolling itself if it's taller than the window. */}
+      <div className="hidden w-[280px] shrink-0 lg:sticky lg:top-4 lg:block lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
         <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
       </div>
 

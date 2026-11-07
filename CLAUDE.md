@@ -133,7 +133,7 @@ can open.
   {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
   Me). The View toggle still switches card / list on its own.
   **Advanced in List view is the console's layout** (`member/CaregiverFeed`):
-  `host/PostedEvents`' `FilterPanel` on the left (`memberView` — the feed's
+  `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
   groups only, member-app sizes; it replaces the chip row), search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) whose ⋯ menu
