@@ -55,6 +55,7 @@ import {
   personalizedFeed,
   programKey,
   recommendedThisWeek,
+  withinRecurringWindow,
 } from "@/lib/feed";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -344,8 +345,9 @@ export function EventsView({
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
+    // A repeating program shows only once its next date is within a month.
     const upcoming = events.filter(
-      (ev) => isUpcoming(ev) && passesFilters(ev, chips),
+      (ev) => isUpcoming(ev) && withinRecurringWindow(ev) && passesFilters(ev, chips),
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
   }, [events, chips, taste]);

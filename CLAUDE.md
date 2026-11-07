@@ -238,6 +238,12 @@ can open.
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
+- **A repeating program reaches the member feed a month ahead**
+  (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
+  `feed`, so card, list and Advanced views alike): its next date must start
+  within `RECURRING_WINDOW_DAYS` (30). "Repeating" is `series_total > 1` or a
+  `recurrence` phrase — every row has a `series_id`, one-offs included, so
+  that alone means nothing. One-time events show however far off.
 - **"For you this week"** (`recommendedThisWeek` in `lib/feed.ts`): up to six
   programs with `matchScore > 0` starting in the next seven days, one per
   program, for a signed-in member with at least one interest or need. It is a
