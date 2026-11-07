@@ -308,6 +308,11 @@ export function EventsView({
     () => new Set(savedEvents.map((ev) => ev.id)),
     [savedEvents],
   );
+  // The programs (series) saved, so the feed can leave every date of them out.
+  const savedPrograms = useMemo(
+    () => new Set(savedEvents.map(programKey)),
+    [savedEvents],
+  );
   // The sidebar: upcoming, soonest first, one per program.
   const savedList = useMemo(
     () =>
@@ -335,8 +340,16 @@ export function EventsView({
   // This week's picks. A section over the list and a tag on the card; never
   // a change to the feed itself.
   const recommended = useMemo(
-    () => (signedIn ? recommendedThisWeek(events, taste, dismissed ?? []) : []),
-    [events, taste, dismissed, signedIn],
+    () =>
+      signedIn
+        ? // Saved programs are on the board, not suggested again.
+          recommendedThisWeek(
+            events.filter((ev) => !savedPrograms.has(programKey(ev))),
+            taste,
+            dismissed ?? [],
+          )
+        : [],
+    [events, taste, dismissed, signedIn, savedPrograms],
   );
   const recommendedKeys = useMemo(
     () => new Set(recommended.map(programKey)),
@@ -346,12 +359,18 @@ export function EventsView({
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
-    // A repeating program shows only once its next date is within a month.
+    // A repeating program shows only once its next date is within a month,
+    // and anything already saved (any date of it) leaves the feed — it's on
+    // the saved board. Un-saving brings it back.
     const upcoming = events.filter(
-      (ev) => isUpcoming(ev) && withinRecurringWindow(ev) && passesFilters(ev, chips),
+      (ev) =>
+        isUpcoming(ev) &&
+        withinRecurringWindow(ev) &&
+        !savedPrograms.has(programKey(ev)) &&
+        passesFilters(ev, chips),
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
-  }, [events, chips, taste]);
+  }, [events, chips, taste, savedPrograms]);
 
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(

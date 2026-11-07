@@ -241,6 +241,12 @@ can open.
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
+- **A saved program leaves the feed** (card, list and Advanced views, and
+  "For you this week"): EventsView's `savedPrograms` (the `programKey`s of
+  `savedEvents`, so every date of a repeating program) is filtered out where
+  `feed` is built. Saving the card on screen therefore advances to the next
+  one (`advanceAfterSave` finds the current id changed and does nothing
+  more); un-saving, or a save that fails and rolls back, brings it back.
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
