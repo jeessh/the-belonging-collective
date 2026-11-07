@@ -1014,8 +1014,10 @@ export function EventForm({
                           : null
                       }
                     />
-                    {i === 0 ? (
-                      Math.max(linkRows, 1) < LINKS_MAX && (
+                    {/* The first row adds rows (+) until there are LINKS_MAX;
+                        then it gets an × like the others, so any link can go. */}
+                    {i === 0 && Math.max(linkRows, 1) < LINKS_MAX ? (
+                      (
                         <Tooltip
                           text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
                           align="end"

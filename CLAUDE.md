@@ -534,7 +534,8 @@ can open.
   After How people join (and the attendee limit), still under Event
   details, are **External links (optional)** — `links` rows of label + address,
   the first always shown with a + button beside it (tooltip "Add a link")
-  that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
+  that adds a row, up to `LINKS_MAX` (3); later rows have ×, and once all
+  three are showing the first row gets an × in place of the + too. The details
   page reads them back as "External links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
