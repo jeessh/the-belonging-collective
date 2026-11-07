@@ -312,20 +312,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>
             </ReadField>
-            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
-              {event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {event.registration_url}
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
             <ReadField label="External links">
               {event.links?.length ? (
                 <ol className="flex list-decimal flex-col gap-1 pl-5">
@@ -380,15 +366,31 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               )}
             </ReadField>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
-            <ReadField label="How people join">
-              {event.requires_signup ? "Registration" : "Drop-in"}
-            </ReadField>
-          </div>
+          {/* As on the form: cost on its own row (paid details under it),
+              then how people join with the sign-up link beside it. */}
+          <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
           {!event.is_free && (
             <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
           )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <ReadField label="How people join">
+              {event.requires_signup ? "Registration" : "Drop-in"}
+            </ReadField>
+              <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
+                {event.registration_url ? (
+                  <a
+                    href={event.registration_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all underline underline-offset-4"
+                  >
+                    {event.registration_url}
+                  </a>
+                ) : (
+                  "None"
+                )}
+              </ReadField>
+          </div>
           <ReadField label="Who can see this">
             {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
           </ReadField>

@@ -513,11 +513,11 @@ can open.
   chips); Publish / Save submits straight away, no dialog. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
-  carries them through unchanged). Cost & sign-up opens with Cost and How people join
-  side by side (form and details page; "How is it paid?" under the row).
-  Links live under Description: the Sign-up link (Registration
-  events; a drop-in shows its old Posting link box only if it has one),
-  then **External links (optional)** — `links` rows of label + address,
+  carries them through unchanged). Cost has its own row ("How is it paid?" under it), then **How people
+  join** on its own row with the **Sign-up link** beside it once Registration
+  is chosen (a drop-in that already has a link shows it as Posting link);
+  the details page mirrors this.
+  Under Description are **External links (optional)** — `links` rows of label + address,
   the first always shown with a + button beside it (tooltip "Add a link")
   that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
   page reads them back as "External links". **The console calls the topic list

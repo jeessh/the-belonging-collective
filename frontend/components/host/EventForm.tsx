@@ -719,36 +719,6 @@ export function EventForm({
                 placeholder="Type out your description here…"
               />
             </Field>
-            {/* The sign-up link, for an event people register for. A drop-in
-                that already carries a posting link keeps the box, so it can
-                be changed or cleared rather than silently kept. */}
-            {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
-            <div className="flex flex-col gap-2">
-              <TextField
-                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
-                type="text"
-                inputMode="url"
-                value={values.registrationUrl}
-                onChange={(e) => set("registrationUrl", e.target.value)}
-                placeholder="yourorg.ca/register"
-                error={
-                  signupHint?.tone === "error" ? signupHint.message : null
-                }
-              />
-              {/* A caution, not a refusal: some agencies really do have one
-                  page, and blocking that gets the link left out entirely. */}
-              <p
-                role="status"
-                className={
-                  signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
-                    : "sr-only"
-                }
-              >
-                {signupHint?.tone === "warn" ? signupHint.message : ""}
-              </p>
-            </div>
-            )}
             {/* External links (a flyer, a map, the agency's page): a label
                 and an address per row, the first row always there with + to
                 add another beside it, up to LINKS_MAX; later rows have ×. */}
@@ -907,41 +877,24 @@ export function EventForm({
                 />
               )}
             </div>
-            {/* Cost and how people join, side by side; the paid details
-                go under the row. */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Section title="Cost">
-                <div className="flex flex-col items-start gap-4">
-                  <SegmentedToggle<"free" | "paid">
-                    size="sm"
-                    label="Cost"
-                    value={paid ? "paid" : "free"}
-                    onChange={(v) =>
-                      // Coming back to paid lands on the commonest shape.
-                      set("pricingModel", v === "free" ? "free" : "per_session")
-                    }
-                    segments={[
-                      { value: "free", label: "Free" },
-                      { value: "paid", label: "Paid" },
-                    ]}
-                  />
-                </div>
-              </Section>
-              <Section title="How people join">
-                <div className="flex flex-col items-start gap-4">
-                  <SegmentedToggle<"dropin" | "registration">
-                    size="sm"
-                    label="Registration"
-                    value={values.requiresSignup ? "registration" : "dropin"}
-                    onChange={(v) => set("requiresSignup", v === "registration")}
-                    segments={[
-                      { value: "dropin", label: "Drop-in" },
-                      { value: "registration", label: "Registration" },
-                    ]}
-                  />
-                </div>
-              </Section>
-            </div>
+            {/* Cost on its own row; the paid details go under it. */}
+            <Section title="Cost">
+              <div className="flex flex-col items-start gap-4">
+                <SegmentedToggle<"free" | "paid">
+                  size="sm"
+                  label="Cost"
+                  value={paid ? "paid" : "free"}
+                  onChange={(v) =>
+                    // Coming back to paid lands on the commonest shape.
+                    set("pricingModel", v === "free" ? "free" : "per_session")
+                  }
+                  segments={[
+                    { value: "free", label: "Free" },
+                    { value: "paid", label: "Paid" },
+                  ]}
+                />
+              </div>
+            </Section>
             {paid && (
               <Section title="How is it paid?" required>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -1022,6 +975,53 @@ export function EventForm({
                 </div>
               </Section>
             )}
+            {/* How people join, on its own row; choosing Registration puts
+                the sign-up link beside it. A drop-in that already carries a
+                posting link keeps the box, so it can be changed or cleared
+                rather than silently kept. */}
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <Section title="How people join">
+                <div className="flex flex-col items-start gap-4">
+                  <SegmentedToggle<"dropin" | "registration">
+                    size="sm"
+                    label="Registration"
+                    value={values.requiresSignup ? "registration" : "dropin"}
+                    onChange={(v) => set("requiresSignup", v === "registration")}
+                    segments={[
+                      { value: "dropin", label: "Drop-in" },
+                      { value: "registration", label: "Registration" },
+                    ]}
+                  />
+                </div>
+              </Section>
+              {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
+                <div className="flex min-w-0 flex-col gap-2">
+                  <TextField
+                    label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+                    type="text"
+                    inputMode="url"
+                    value={values.registrationUrl}
+                    onChange={(e) => set("registrationUrl", e.target.value)}
+                    placeholder="yourorg.ca/register"
+                    error={
+                      signupHint?.tone === "error" ? signupHint.message : null
+                    }
+                  />
+                  {/* A caution, not a refusal: some agencies really do have
+                      one page, and blocking that gets the link left out. */}
+                  <p
+                    role="status"
+                    className={
+                      signupHint?.tone === "warn"
+                        ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                        : "sr-only"
+                    }
+                  >
+                    {signupHint?.tone === "warn" ? signupHint.message : ""}
+                  </p>
+                </div>
+              )}
+            </div>
             <Section
               title="Who can see this"
             >
