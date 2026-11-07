@@ -401,8 +401,17 @@ can open.
   superadmin) beside the chosen group's members on Requests / Approved /
   Declined tabs (Declined also lists revoked). Only Revoke confirms; Archive
   surfaces the API's 409 in the modal. `components/host/AccessPicker.tsx` is
-  the form's "Who can see this" — a Special access checkbox; ticked, a group of the *program's*
-  organization (`hostId`), with inline group creation — and
+  the form's **Special access** box (light grey, a lock, no switch and no
+  "Who can see this" heading): a Group picker whose first option, "None —
+  everyone can see it", means public, else a group of the *program's*
+  organization (`hostId`); **New group** opens a dialog (`NewGroupModal`),
+  and **Add members** (beside a chosen group) opens `AddMembersModal`; both
+  use `PeopleFields` — for a superadmin a searchable checklist of existing
+  members (`GET /users`, which refuses anyone else; then it falls back),
+  plus typed email addresses for everyone — the group's name plus people (up to 50,
+  added with no approval through `addPeopleToGroup` — in at once with an
+  account, invited without), then a summary; the new group is chosen for
+  the event — and
   `components/host/PosterField.tsx` / `PosterSection.tsx` are the printable
   poster (`uploadPoster`, PDF or image) and the details page's QR code. The
   QR encodes the program's public page, never the poster file, and is drawn
@@ -430,7 +439,8 @@ can open.
   All Events lists published events alone; Date posted, cumulative "Past 7
   / 30 / 90 days" or older; Posted by, the person or the organization —
   then the feed's dimensions) (`ui/Checkbox` rows; its reset row reads "No filters" so it
-  isn't confused with the toggle), with a Your Events / All Events toggle.
+  isn't confused with the toggle), with a Your Events / All Events toggle. The panel is sticky under the
+  console header (`lg:top-[97px]`, scrolling itself if taller than the window).
   **A filter matches every option a program is in** (`Dimension.all`,
   `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
   Type, and both Virtual/In person and Youth under Event Type, because the
@@ -475,7 +485,8 @@ can open.
   with their picture: "Posted by Sam Lee · Karis Disability Services" for a
   staff login (initials avatar — organizer logins have no photo), just the
   organization with its logo for the shared login or an imported event —
-  then "· Published on Oct 18, 2026" (`showPublished`, from `created_at`).
+  then "· Published on Oct 18, 2026" (`showPublished`, from `created_at`). Under that, still in the header, the
+  saved count (`ConsoleCounts`: "N people saved this event · M clicks").
   `EventOut.created_by_name` / `created_by_picture` are filled for signed-in
   organizers only (one query per page in `_public_view`); members never
   see who on a team posted what. Beside the title a status tag (`host/EventStatus`, on
@@ -494,8 +505,8 @@ can open.
   first, then Event details (date, time, where — the venue toggle beside its
   address / meeting link — cost and how people join, the paid details,
   who can see this, repeats), Event tags (topics, what it offers). No
-  Who it's for section and no Spots available field any more; `capacity` already on an
-  event is carried through, so its one-hour holds and "N spots left" go on) — a rule above each), the
+  Who it's for section; the capacity is the optional "Attendee limit"
+  under How people join) — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
   The buttons are top right in the header: Cancel (through the leave
@@ -513,13 +524,23 @@ can open.
   chips); Publish / Save submits straight away, no dialog. **There is no Details & links group** — the form has
   no Extra details or Printable poster field any more (an event that already
   has notes or a poster keeps them, and members still see them; the form
-  carries them through unchanged). Cost & sign-up opens with Cost and How people join
-  side by side (form and details page; "How is it paid?" under the row).
-  Links live under Description: the Sign-up link (Registration
-  events; a drop-in shows its old Posting link box only if it has one),
-  then **External links (optional)** — `links` rows of label + address,
+  carries them through unchanged). Cost has its own row — Free / Paid only, a label (Paid saves
+  `pricing_model: custom`, note "Paid"; an event that already carries a
+  structured price keeps it, hidden) — with a note beside it that the
+  platform doesn't process payments and the cost is for display only. There
+  are no "How is it paid?" options any more, then **How people
+  join** on its own row with the **Sign-up link** beside it once Registration
+  is chosen (a drop-in that already has a link shows it as Posting link),
+  then, for Registration only (switching to Drop-in clears it), an
+  optional **Attendee limit** — a switch (`limitOn`; off clears
+  it) that reveals the number when on (`capacity` — drives the
+  one-hour holds; members aren't shown spots); Repeats sits beside the
+  Date on the same row (create only; Date alone when editing). The details page mirrors all of this.
+  After How people join (and the attendee limit), still under Event
+  details, are **External links (optional)** — `links` rows of label + address,
   the first always shown with a + button beside it (tooltip "Add a link")
-  that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
+  that adds a row, up to `LINKS_MAX` (3); later rows have ×, and once all
+  three are showing the first row gets an × in place of the + too. The details
   page reads them back as "External links". **The console calls the topic list
   "Topics"** (form, filter, details page) — what the design called Activity
   Type. `events.activity_type` is something else: an unused "kind of event"
@@ -559,7 +580,9 @@ can open.
   `.field` (TextField, AdminTable's `Field`, the event form's `Section`) with
   a `.field-label` — regular weight, `#4d4d4d`, lighter than answers and
   darker than placeholders. Spacing is one rule: 6px label→control, 16px
-  field→field (any container holding fields), 12px inside a fieldset. A
+  field→field (any container holding fields), 12px inside a fieldset —
+  except the event form, whose sections (`.event-group`) space their
+  inputs and components 24px apart. A
   field's leading icon (`.field-icon`: date, time, place) is 16px, thin and
   grey, 10px from the edge; date and time boxes hide the browser's picker
   button and open the picker on click (`TextField`). The event screens' information icons (a

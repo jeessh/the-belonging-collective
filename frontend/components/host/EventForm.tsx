@@ -23,6 +23,7 @@ import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -35,7 +36,6 @@ import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS, isDerivedTag } from "@/lib/accessibility";
 import {
-  PAID_MODELS,
   centsFrom,
   dollarsFrom,
   templateFor,
@@ -425,7 +425,7 @@ export const CARD =
 export function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     // Sections share one card (the column's), a divider between each.
-    <section className="flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
+    <section className="event-group flex min-w-0 flex-col gap-4 border-t border-line/70 pt-6 first:border-t-0 first:pt-0">
       <h2 className="group-heading text-xl font-medium text-fg">{title}</h2>
       {children}
     </section>
@@ -552,6 +552,8 @@ export function EventForm({
 
   const paid = values.pricingModel !== "free";
   const priceTemplate = templateFor(values.pricingModel);
+  // The attendee limit's switch: on when the event already has one.
+  const [limitOn, setLimitOn] = useState(() => values.capacity.trim() !== "");
   const signupHint = values.requiresSignup
     ? checkPostingLink(values.registrationUrl)
     : null;
@@ -719,121 +721,74 @@ export function EventForm({
                 placeholder="Type out your description here…"
               />
             </Field>
-            {/* The sign-up link, for an event people register for. A drop-in
-                that already carries a posting link keeps the box, so it can
-                be changed or cleared rather than silently kept. */}
-            {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
-            <div className="flex flex-col gap-2">
+          </Group>
+          <Group title="Event details">
+            {/* Date, with Repeats beside it on the same row (create only). */}
+            <div className={`grid grid-cols-1 items-start gap-4 ${mode === "create" ? "sm:grid-cols-2" : ""}`}>
               <TextField
-                label={values.requiresSignup ? "Sign-up link" : "Posting link"}
-                type="text"
-                inputMode="url"
-                value={values.registrationUrl}
-                onChange={(e) => set("registrationUrl", e.target.value)}
-                placeholder="yourorg.ca/register"
-                error={
-                  signupHint?.tone === "error" ? signupHint.message : null
-                }
+                label="Date"
+                placeholder="DD/MM/YYYY"
+                required
+                type="date"
+                icon={<CalendarDays />}
+                value={values.date}
+                error={fieldError("date")}
+                // Chrome's date field takes a six-digit year; min/max bound the
+                // spinner and the clamp catches typing.
+                min="2000-01-01"
+                max="2100-12-31"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
+                  set("date", v);
+                }}
               />
-              {/* A caution, not a refusal: some agencies really do have one
-                  page, and blocking that gets the link left out entirely. */}
-              <p
-                role="status"
-                className={
-                  signupHint?.tone === "warn"
-                    ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
-                    : "sr-only"
-                }
-              >
-                {signupHint?.tone === "warn" ? signupHint.message : ""}
-              </p>
-            </div>
-            )}
-            {/* External links (a flyer, a map, the agency's page): a label
-                and an address per row, the first row always there with + to
-                add another beside it, up to LINKS_MAX; later rows have ×. */}
-            <Section title="External links (optional)">
-              <div className="flex flex-col gap-3">
-                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
-                  <div
-                    key={i}
-                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
-                  >
-                    {/* The placeholder says which box is the label: "Link 1"
-                        read as "put link 1 here", so addresses ended up in it. */}
-                    <TextField
-                      label={`Link ${i + 1} label`}
-                      className="[&>label]:sr-only"
-                      value={link.label}
-                      onChange={(e) => setLink(i, { label: e.target.value })}
-                      placeholder="Link label, e.g. Flyer"
-                    />
-                    <TextField
-                      label={`Link ${i + 1} address`}
-                      className="[&>label]:sr-only"
-                      // type="text": the browser's url validation rejects
-                      // "yourorg.ca"; the API adds https:// when it's missing.
-                      type="text"
-                      inputMode="url"
-                      value={link.url}
-                      onChange={(e) => setLink(i, { url: e.target.value })}
-                      placeholder="Web address, e.g. yourorg.ca/page"
-                      error={
-                        checkPostingLink(link.url)?.tone === "error"
-                          ? "That doesn't look like a web address."
-                          : null
-                      }
-                    />
-                    {i === 0 ? (
-                      Math.max(linkRows, 1) < LINKS_MAX && (
-                        <Tooltip
-                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
-                          align="end"
-                        >
-                          {(tip) => (
-                            <Button
-                              leadingIcon={<Plus />}
-                              aria-label="Add a link"
-                              aria-describedby={tip}
-                              onClick={() =>
-                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
-                              }
-                            />
-                          )}
-                        </Tooltip>
-                      )
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove link ${i + 1}`}
-                        leadingIcon={<X />}
-                        onClick={() => removeLink(i)}
+              {mode === "create" && (
+                <Section title="Repeats">
+                  {/* The dropdown fills its half of the row; how many times /
+                      it keeps going wrap under it. */}
+                  <div className="flex flex-wrap items-end gap-4">
+                    {/* The section's "Repeats" is its label; no second one. */}
+                    <Select
+                      aria-label="Repeats"
+                      className="w-full"
+                      value={values.frequency}
+                      onChange={(e) => set("frequency", e.target.value as Frequency)}
+                    >
+                      {FREQUENCIES.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </Select>
+                    {values.frequency !== "once" && !values.repeatForever && (
+                      <TextField
+                        label="How many times"
+                        required
+                        className="min-w-[170px]"
+                        type="number"
+                        min={2}
+                        max={104}
+                        value={values.occurrenceCount}
+                        onChange={(e) => set("occurrenceCount", e.target.value)}
+                        error={fieldError("occurrenceCount")}
+                        placeholder="8"
+                      />
+                    )}
+                    {values.frequency !== "once" && (
+                      // A drop-in that has run every Friday for nine years has no
+                      // session count to give.
+                      <Checkbox
+                        label="It keeps going"
+                        className="min-h-12"
+                        checked={values.repeatForever}
+                        onChange={(e) => set("repeatForever", e.target.checked)}
                       />
                     )}
                   </div>
-                ))}
-              </div>
-            </Section>
-          </Group>
-          <Group title="Event details">
-            <TextField
-              label="Date"
-              placeholder="DD/MM/YYYY"
-              required
-              type="date"
-              icon={<CalendarDays />}
-              value={values.date}
-              error={fieldError("date")}
-              // Chrome's date field takes a six-digit year; min/max bound the
-              // spinner and the clamp catches typing.
-              min="2000-01-01"
-              max="2100-12-31"
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
-                set("date", v);
-              }}
-            />
+                </Section>
+              )}
+            </div>
             <div className="field flex flex-col gap-2">
               <p className="field-label text-lg font-medium text-fg">
                 Time
@@ -907,33 +862,58 @@ export function EventForm({
                 />
               )}
             </div>
-            {/* Cost and how people join, side by side; the paid details
-                go under the row. */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Section title="Cost">
-                <div className="flex flex-col items-start gap-4">
-                  <SegmentedToggle<"free" | "paid">
-                    size="sm"
-                    label="Cost"
-                    value={paid ? "paid" : "free"}
-                    onChange={(v) =>
-                      // Coming back to paid lands on the commonest shape.
-                      set("pricingModel", v === "free" ? "free" : "per_session")
-                    }
-                    segments={[
-                      { value: "free", label: "Free" },
-                      { value: "paid", label: "Paid" },
-                    ]}
-                  />
-                </div>
-              </Section>
+            {/* Cost on its own row — Free or Paid, a label only. */}
+            <Section title="Cost">
+              {/* The toggle, with the payments note beside it on one row. */}
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <SegmentedToggle<"free" | "paid">
+                  size="sm"
+                  label="Cost"
+                  value={paid ? "paid" : "free"}
+                  onChange={(v) =>
+                    // Paid is only a label (no payments here): a plain "Paid"
+                    // unless the event already carries a price of its own.
+                    v === "free"
+                      ? set("pricingModel", "free")
+                      : !paid &&
+                        onChange((prev) => ({
+                          ...prev,
+                          pricingModel: "custom",
+                          priceNote: prev.priceNote.trim() || "Paid",
+                        }))
+                  }
+                  segments={[
+                    { value: "free", label: "Free" },
+                    { value: "paid", label: "Paid" },
+                  ]}
+                />
+                {/* Cost is a label for members, nothing more. */}
+                <p className="min-w-0 text-base text-fg-muted">
+                  This platform doesn&rsquo;t process payments. The cost is
+                  only shown to members for their information &mdash; collect
+                  any payment yourselves.
+                </p>
+              </div>
+            </Section>
+            {/* How people join, on its own row; choosing Registration puts
+                the sign-up link beside it. A drop-in that already carries a
+                posting link keeps the box, so it can be changed or cleared
+                rather than silently kept. */}
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
               <Section title="How people join">
                 <div className="flex flex-col items-start gap-4">
                   <SegmentedToggle<"dropin" | "registration">
                     size="sm"
                     label="Registration"
                     value={values.requiresSignup ? "registration" : "dropin"}
-                    onChange={(v) => set("requiresSignup", v === "registration")}
+                    onChange={(v) => {
+                      set("requiresSignup", v === "registration");
+                      // A drop-in has no attendee limit.
+                      if (v === "dropin") {
+                        setLimitOn(false);
+                        set("capacity", "");
+                      }
+                    }}
                     segments={[
                       { value: "dropin", label: "Drop-in" },
                       { value: "registration", label: "Registration" },
@@ -941,142 +921,140 @@ export function EventForm({
                   />
                 </div>
               </Section>
-            </div>
-            {paid && (
-              <Section title="How is it paid?" required>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {PAID_MODELS.map((m) => {
-                    const t = templateFor(m);
-                    const on = values.pricingModel === m;
-                    return (
-                      <label
-                        key={m}
-                        className={`flex cursor-pointer items-center gap-3 rounded-control border px-3 py-2 ${
-                          on
-                            ? "border-primary-border bg-primary-soft"
-                            : "border-line hover:bg-surface-subtle"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`${id}-pricing`}
-                          checked={on}
-                          onChange={() => set("pricingModel", m)}
-                          className="size-4 accent-primary-border"
-                        />
-                        <span className="text-lg text-fg">{t.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  {priceTemplate.needsAmount && (
-                    <TextField
-                      label="Price"
-                      required
-                      className="min-w-[150px]"
-                      inputMode="decimal"
-                      value={values.priceAmount}
-                      onChange={(e) => set("priceAmount", e.target.value)}
-                      error={fieldError("priceAmount")}
-                      placeholder="$12.50"
-                    />
-                  )}
-                  {priceTemplate.needsGroup && (
-                    <TextField
-                      label="People it covers"
-                      required
-                      className="min-w-[180px]"
-                      type="number"
-                      min={2}
-                      value={values.priceGroupSize}
-                      onChange={(e) => set("priceGroupSize", e.target.value)}
-                      error={fieldError("priceGroupSize")}
-                      placeholder="4"
-                    />
-                  )}
-                  {priceTemplate.needsSessions && (
-                    <TextField
-                      label="Dates it covers"
-                      required
-                      className="min-w-[180px]"
-                      type="number"
-                      min={2}
-                      value={values.priceSessions}
-                      onChange={(e) => set("priceSessions", e.target.value)}
-                      error={fieldError("priceSessions")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.pricingModel === "custom" && (
-                    <TextField
-                      label="Describe the cost"
-                      required
-                      className="min-w-[280px] flex-1"
-                      value={values.priceNote}
-                      onChange={(e) => set("priceNote", e.target.value)}
-                      error={fieldError("priceNote")}
-                      placeholder="$5 suggested, pay what you can"
-                    />
-                  )}
-                </div>
-              </Section>
-            )}
-            <Section
-              title="Who can see this"
-            >
-              <AccessPicker
-                hostId={hostId}
-                mode={values.accessMode}
-                groupId={values.accessGroupId}
-                onChange={(accessMode, accessGroupId) =>
-                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
-                }
-              />
-            </Section>
-            {mode === "create" && (
-              <Section title="Repeats">
-                <div className="flex flex-wrap items-end gap-4">
-                  {/* The section's "Repeats" is its label; no second one. */}
-                  <Select
-                    aria-label="Repeats"
-                    className="min-w-[200px]"
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+              {(values.requiresSignup || values.registrationUrl.trim() !== "") && (
+                <div className="flex min-w-0 flex-col gap-2">
+                  <TextField
+                    label={values.requiresSignup ? "Sign-up link" : "Posting link"}
+                    type="text"
+                    inputMode="url"
+                    value={values.registrationUrl}
+                    onChange={(e) => set("registrationUrl", e.target.value)}
+                    placeholder="yourorg.ca/register"
+                    error={
+                      signupHint?.tone === "error" ? signupHint.message : null
+                    }
+                  />
+                  {/* A caution, not a refusal: some agencies really do have
+                      one page, and blocking that gets the link left out. */}
+                  <p
+                    role="status"
+                    className={
+                      signupHint?.tone === "warn"
+                        ? "rounded-control bg-tag-dropin-bg px-3 py-2 text-base text-tag-dropin-fg"
+                        : "sr-only"
+                    }
                   >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {values.frequency !== "once" && !values.repeatForever && (
-                    <TextField
-                      label="How many times"
-                      required
-                      className="min-w-[170px]"
-                      type="number"
-                      min={2}
-                      max={104}
-                      value={values.occurrenceCount}
-                      onChange={(e) => set("occurrenceCount", e.target.value)}
-                      error={fieldError("occurrenceCount")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.frequency !== "once" && (
-                    // A drop-in that has run every Friday for nine years has no
-                    // session count to give.
-                    <Checkbox
-                      label="It keeps going"
-                      className="min-h-12"
-                      checked={values.repeatForever}
-                      onChange={(e) => set("repeatForever", e.target.checked)}
-                    />
-                  )}
+                    {signupHint?.tone === "warn" ? signupHint.message : ""}
+                  </p>
                 </div>
-              </Section>
+              )}
+            </div>
+            {/* Registration only: an optional cap on how many people can come — a switch, and the
+                number only while it's on (turning it off clears it). Saving
+                still never refuses anyone: the first saves each hold a spot
+                for an hour while spots last (core/holds). */}
+            {values.requiresSignup && (
+              <div className="field flex flex-col gap-3">
+                <Switch
+                  label="Attendee limit"
+                  checked={limitOn}
+                  onChange={(next) => {
+                    setLimitOn(next);
+                    if (!next) set("capacity", "");
+                  }}
+                />
+                {limitOn && (
+                  <TextField
+                    label="Most people who can come"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    required
+                    className="max-w-[260px]"
+                    value={values.capacity}
+                    onChange={(e) => set("capacity", e.target.value)}
+                    error={fieldError("capacity")}
+                    placeholder="20"
+                  />
+                )}
+              </div>
             )}
+            {/* External links (a flyer, a map, the agency's page): a label
+                and an address per row, the first row always there with + to
+                add another beside it, up to LINKS_MAX; later rows have ×. */}
+            <Section title="External links (optional)">
+              <div className="flex flex-col gap-3">
+                {values.links.slice(0, Math.max(linkRows, 1)).map((link, i) => (
+                  <div
+                    key={i}
+                    className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+                  >
+                    {/* The placeholder says which box is the label: "Link 1"
+                        read as "put link 1 here", so addresses ended up in it. */}
+                    <TextField
+                      label={`Link ${i + 1} label`}
+                      className="[&>label]:sr-only"
+                      value={link.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Link label, e.g. Flyer"
+                    />
+                    <TextField
+                      label={`Link ${i + 1} address`}
+                      className="[&>label]:sr-only"
+                      // type="text": the browser's url validation rejects
+                      // "yourorg.ca"; the API adds https:// when it's missing.
+                      type="text"
+                      inputMode="url"
+                      value={link.url}
+                      onChange={(e) => setLink(i, { url: e.target.value })}
+                      placeholder="Web address, e.g. yourorg.ca/page"
+                      error={
+                        checkPostingLink(link.url)?.tone === "error"
+                          ? "That doesn't look like a web address."
+                          : null
+                      }
+                    />
+                    {/* The first row adds rows (+) until there are LINKS_MAX;
+                        then it gets an × like the others, so any link can go. */}
+                    {i === 0 && Math.max(linkRows, 1) < LINKS_MAX ? (
+                      (
+                        <Tooltip
+                          text={`Add a link (${LINKS_MAX - Math.max(linkRows, 1)} of ${LINKS_MAX} left)`}
+                          align="end"
+                        >
+                          {(tip) => (
+                            <Button
+                              leadingIcon={<Plus />}
+                              aria-label="Add a link"
+                              aria-describedby={tip}
+                              onClick={() =>
+                                setLinkRows((n) => Math.min(Math.max(n, 1) + 1, LINKS_MAX))
+                              }
+                            />
+                          )}
+                        </Tooltip>
+                      )
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove link ${i + 1}`}
+                        leadingIcon={<X />}
+                        onClick={() => removeLink(i)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
+            {/* Special access: a switch; on, the group picker under it. */}
+            <AccessPicker
+              hostId={hostId}
+              mode={values.accessMode}
+              groupId={values.accessGroupId}
+              onChange={(accessMode, accessGroupId) =>
+                onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
+              }
+            />
           </Group>
           <Group title="Event tags">
             <Section title="Topics" required>

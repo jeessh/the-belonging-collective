@@ -224,9 +224,9 @@ export function EventSummary({
       </div>
       {/* The event's own page and dialog read back the rest of what the
           organizer set: what it costs (how to join is the tag beside the title). Cards keep to when and where. */}
-      {/* "Free" is already the tag beside the title; a paid event says
-          how much here. */}
-      {layout === "detail" && event.price_label && event.price_label !== "Free" && (
+      {/* "Free" / "Paid" are already the tag beside the title; an event
+          with an actual price says it here. */}
+      {layout === "detail" && event.price_label && event.price_label !== "Free" && event.price_label !== "Paid" && (
         <div className="flex items-start gap-3">
           <CircleDollarSign
             aria-hidden="true"

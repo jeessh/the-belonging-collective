@@ -260,7 +260,9 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
       </div>
 
       <div className="flex flex-col items-start gap-8 lg:flex-row">
-        <div className="hidden w-[280px] shrink-0 lg:block">
+        {/* Sticky under the console's 73px header while the cards scroll,
+            scrolling itself if it's taller than the window. */}
+        <div className="hidden w-[280px] shrink-0 lg:sticky lg:top-[97px] lg:block lg:max-h-[calc(100dvh-121px)] lg:overflow-y-auto">
           <FilterPanel
             events={listed}
             filters={filters}

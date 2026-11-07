@@ -169,7 +169,13 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       <PageHeader
         title={event.title}
         titleClassName="event-title"
-        subtitle={<PostedBy event={event} showPublished />}
+        // Who posted it, then how many saved it, under the title.
+        subtitle={
+          <span className="flex flex-col items-start gap-2">
+            <PostedBy event={event} showPublished />
+            <ConsoleCounts event={event} />
+          </span>
+        }
         status={<EventStatus state={archived ? "unpublished" : "published"} />}
         backHref={archived ? "/host/events?scope=unpublished" : "/host/events"}
         actions={
@@ -312,40 +318,6 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
             <ReadField label="Brief Description">
               <p className="whitespace-pre-line">{event.description}</p>
             </ReadField>
-            <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
-              {event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {event.registration_url}
-                </a>
-              ) : (
-                "None"
-              )}
-            </ReadField>
-            <ReadField label="External links">
-              {event.links?.length ? (
-                <ol className="flex list-decimal flex-col gap-1 pl-5">
-                  {event.links.map((l) => (
-                    <li key={l.url}>
-                      <a
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline underline-offset-4"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                "None"
-              )}
-            </ReadField>
           </Group>
 
           <Group title="Event details">
@@ -359,6 +331,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {timeRange(event.starts_at, event.ends_at) || "—"}
             </Line>
           </ReadField>
+          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8">
             <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
             <ReadField label={event.is_virtual ? "Meeting link" : "Address"}>
@@ -380,20 +353,59 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               )}
             </ReadField>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
+          {/* As on the form: cost on its own row (paid details under it),
+              then how people join with the sign-up link beside it. */}
+          <ReadField label="Cost">{event.is_free ? "Free" : "Paid"}</ReadField>
+          {!event.is_free && event.price_label && event.price_label !== "Paid" && (
+            <ReadField label="Price">{event.price_label}</ReadField>
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
             <ReadField label="How people join">
               {event.requires_signup ? "Registration" : "Drop-in"}
             </ReadField>
+              <ReadField label={event.requires_signup ? "Sign-up link" : "Posting link"}>
+                {event.registration_url ? (
+                  <a
+                    href={event.registration_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all underline underline-offset-4"
+                  >
+                    {event.registration_url}
+                  </a>
+                ) : (
+                  "None"
+                )}
+              </ReadField>
           </div>
-          {!event.is_free && (
-            <ReadField label="How is it paid?">{event.price_label || "Paid"}</ReadField>
+          {event.requires_signup && (
+            <ReadField label="Attendee limit">
+              {event.capacity != null ? `${event.capacity} people` : "No limit"}
+            </ReadField>
           )}
-          <ReadField label="Who can see this">
-            {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+          <ReadField label="External links">
+            {event.links?.length ? (
+              <ol className="flex list-decimal flex-col gap-1 pl-5">
+                {event.links.map((l) => (
+                  <li key={l.url}>
+                    <a
+                      href={l.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              "None"
+            )}
           </ReadField>
-          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
-          <ConsoleCounts event={event} />
+          <ReadField label="Special access">
+            {event.access_group ? event.access_group.name : "None — everyone can see it"}
+          </ReadField>
           </Group>
 
           <Group title="Event tags">
