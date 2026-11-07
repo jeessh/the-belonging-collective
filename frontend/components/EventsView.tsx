@@ -67,10 +67,12 @@ import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { AccessibilityMenu, CareSwitcher, FeedAccount } from "@/components/member/FeedHeader";
 import {
   BOARD_CARD_W,
+  DragHint,
   MINI_CARD,
   MiniCardFace,
   SHADOW_HELD,
   SavedSidebar,
+  useDragHint,
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
@@ -236,6 +238,8 @@ export function EventsView({
   // saved board: it follows the pointer, fading in as the card fades out
   // (desktop and tablet; a phone's drop zone is the bar under the feed).
   const [ghosting, setGhosting] = useState(false);
+  // The first drag's "drop it on Saved Events" tip, over the mini card.
+  const dragHint = useDragHint();
   const ghostX = useMotionValue(0);
   const ghostY = useMotionValue(0);
   const ghostT = useMotionValue(0);
@@ -1514,6 +1518,7 @@ export function EventsView({
                         }}
                         onDragEnd={(_, info) => {
                           setDragTint(false);
+                          if (ghosting) dragHint.seen();
                           const { x: dx, y: dy } = info.offset;
                           if (Math.abs(dx) > Math.abs(dy)) {
                             // Let go over the zone counts too. The zone is the
@@ -1560,6 +1565,7 @@ export function EventsView({
                       </motion.div>
                       {ghosting &&
                         createPortal(
+                          <>
                           <motion.div
                             aria-hidden="true"
                             style={{
@@ -1578,7 +1584,27 @@ export function EventsView({
                             className={`pointer-events-none ${MINI_CARD}`}
                           >
                             <MiniCardFace event={current} />
-                          </motion.div>,
+                          </motion.div>
+                          {/* The first drag's tip, at full strength from the
+                              start (the mini card itself fades in). */}
+                          {dragHint.show && (
+                            <motion.div
+                              aria-hidden="false"
+                              style={{
+                                position: "fixed",
+                                left: 0,
+                                top: 0,
+                                x: ghostX,
+                                y: ghostY,
+                                width: BOARD_CARD_W,
+                                zIndex: 61,
+                              }}
+                              className="pointer-events-none"
+                            >
+                              <DragHint />
+                            </motion.div>
+                          )}
+                          </>,
                           document.body,
                         )}
                     </motion.div>

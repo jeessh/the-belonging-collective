@@ -172,6 +172,11 @@ can open.
   `MiniCardFace` follows the pointer; released over `dropTarget` (the feed's
   `dropRef`) it saves — or, needing registration, opens the Register
   confirm. A drag never also opens the details.
+  **The first drag shows a tip** (card view and list view alike): "Drop it on
+  Saved Events, on the left, to save it" in a dark bubble over the mini card
+  (`DragHint` / `useDragHint` in SavedSidebar), then never again in that
+  browser (`tbc.drag_hint_seen`, try/catch). In card view it rides its own
+  layer at full strength, since the mini card fades in.
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as

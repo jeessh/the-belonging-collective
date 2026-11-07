@@ -1,8 +1,9 @@
 "use client";
 
-import { forwardRef, memo, useCallback, useRef, type ReactNode } from "react";
+import { forwardRef, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  ArrowLeft,
   Bookmark,
   ChevronsLeft,
   ChevronsRight,
@@ -564,5 +565,51 @@ export function MiniCardFace({ event }: { event: Event }) {
         {event.title}
       </span>
     </>
+  );
+}
+
+/** Whether this browser has had the "drop it on Saved Events" tip. */
+const DRAG_HINT_KEY = "tbc.drag_hint_seen";
+
+/**
+ * The first-drag tip: shown above the mini card the first time a member
+ * drags an event (card or list view), then never again in this browser
+ * (`tbc.drag_hint_seen`, read and written in try/catch). Call `seen()` when
+ * that first drag ends.
+ */
+export function useDragHint(): { show: boolean; seen: () => void } {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      setShow(localStorage.getItem(DRAG_HINT_KEY) !== "1");
+    } catch {
+      setShow(true);
+    }
+  }, []);
+  const seen = useCallback(() => {
+    setShow(false);
+    try {
+      localStorage.setItem(DRAG_HINT_KEY, "1");
+    } catch {
+      /* storage off: it shows again next time, which is harmless */
+    }
+  }, []);
+  return { show, seen };
+}
+
+/** The tip itself: a dark bubble above the dragged mini card. */
+export function DragHint() {
+  return (
+    <span
+      role="status"
+      className="pointer-events-none absolute bottom-full left-1/2 mb-3 flex w-max max-w-[260px] -translate-x-1/2 items-center gap-2 rounded-control bg-fg px-3 py-2 text-base leading-snug text-surface shadow-lift"
+    >
+      <ArrowLeft aria-hidden="true" className="size-5 shrink-0" />
+      Drop it on Saved Events, on the left, to save it
+      <span
+        aria-hidden="true"
+        className="absolute left-1/2 top-full -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-fg"
+      />
+    </span>
   );
 }

@@ -28,9 +28,11 @@ import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import {
   BOARD_CARD_W,
+  DragHint,
   MINI_CARD,
   MiniCardFace,
   SHADOW_HELD,
+  useDragHint,
 } from "@/components/member/SavedSidebar";
 import {
   FilterPanel,
@@ -179,6 +181,7 @@ function MemberEventCard({
   const canDragQuery = useMediaQuery("(min-width: 640px)");
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
   const dragged = useRef(false);
+  const hint = useDragHint();
 
   // A special-access program needs approval before it can be saved; its
   // details say how to ask.
@@ -209,6 +212,7 @@ function MemberEventCard({
       onDragEnd={(e) => {
         const p = clientPoint(e);
         setGhost(null);
+        hint.seen();
         const zone = dropTarget.current?.getBoundingClientRect();
         const over =
           !!zone && p.x >= zone.left && p.x <= zone.right && p.y >= zone.top && p.y <= zone.bottom;
@@ -344,6 +348,7 @@ function MemberEventCard({
             }}
             className={`pointer-events-none ${MINI_CARD}`}
           >
+            {hint.show && <DragHint />}
             <MiniCardFace event={event} />
           </div>,
           document.body,
