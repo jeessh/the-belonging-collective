@@ -1247,7 +1247,7 @@ export function EventsView({
             layout={sidebarOpen ? "panel" : "rail"}
             careSwitcher={
               careInPanel && careChoice && careChoice.members.length > 0 ? (
-                <CareSwitcher {...careChoice} />
+                <CareSwitcher {...careChoice} fill />
               ) : null
             }
             onToggle={() => setSidebarChoice(!sidebarOpen)}

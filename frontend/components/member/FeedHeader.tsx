@@ -74,9 +74,12 @@ export function CareSwitcher({
   selected,
   onSelect,
   openUp = false,
+  fill = false,
 }: CareChoice & {
   /** At the bottom of the screen the menu opens upward. */
   openUp?: boolean;
+  /** As wide as its container (the saved panel), the chevron at the end. */
+  fill?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -102,21 +105,25 @@ export function CareSwitcher({
     "flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg text-fg transition-colors hover:bg-surface-subtle";
 
   return (
-    <div ref={wrapRef} className="relative shrink-0">
+    <div ref={wrapRef} className={`relative shrink-0 ${fill ? "w-full" : ""}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Saving for ${current}`}
-        className={`inline-flex min-h-11 max-w-[11rem] items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
+        className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
+          fill ? "w-full" : "max-w-[11rem]"
+        } ${
           selected
             ? "border-primary-border bg-primary-soft"
             : "border-line bg-surface hover:bg-surface-subtle"
         }`}
       >
         <span className="hidden text-fg-muted sm:inline">Saving for:</span>
-        <span className="truncate font-medium text-fg">{current}</span>
+        <span className={`truncate font-medium text-fg ${fill ? "flex-1 text-left" : ""}`}>
+          {current}
+        </span>
         <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />
       </button>
 
@@ -126,7 +133,7 @@ export function CareSwitcher({
           aria-label="Save programs for"
           // Right-anchored on a phone, where the switcher sits near the
           // middle and a left-anchored menu would run off the edge.
-          className={`absolute right-0 z-50 min-w-[220px] ${openUp ? "bottom-full mb-2" : "top-full mt-2"} overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto`}
+          className={`absolute right-0 z-50 min-w-[220px] ${fill ? "w-full" : ""} ${openUp ? "bottom-full mb-2" : "top-full mt-2"} overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift sm:left-0 sm:right-auto`}
         >
           <button
             role="menuitemradio"
