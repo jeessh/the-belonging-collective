@@ -1265,7 +1265,11 @@ export function EventsView({
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {/* The bar over the event column: who you are on the left,
               Accessibility Tools on the right. */}
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9">
+          {/* Same side padding as the feed below (short screens too), and the
+              account button pulled back by its own 8px, so the picture lines
+              up with "Event 1 of 47". */}
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
+            <div className="-ml-2 min-w-0">
             <FeedAccount
               name={name}
               avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
@@ -1273,6 +1277,7 @@ export function EventsView({
               onSignIn={() => toSignIn()}
               onSignOut={() => void doLogout()}
             />
+            </div>
             {a11yMenu}
           </header>
           <div className="relative flex min-h-0 flex-1 flex-col">
