@@ -837,6 +837,50 @@ export function EventForm({
                 />
               </div>
             </div>
+            {/* Repeats, right under the date and time it repeats. */}
+            {mode === "create" && (
+              <Section title="Repeats">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* The section's "Repeats" is its label; no second one. */}
+                  <Select
+                    aria-label="Repeats"
+                    className="min-w-[200px]"
+                    value={values.frequency}
+                    onChange={(e) => set("frequency", e.target.value as Frequency)}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {values.frequency !== "once" && !values.repeatForever && (
+                    <TextField
+                      label="How many times"
+                      required
+                      className="min-w-[170px]"
+                      type="number"
+                      min={2}
+                      max={104}
+                      value={values.occurrenceCount}
+                      onChange={(e) => set("occurrenceCount", e.target.value)}
+                      error={fieldError("occurrenceCount")}
+                      placeholder="8"
+                    />
+                  )}
+                  {values.frequency !== "once" && (
+                    // A drop-in that has run every Friday for nine years has no
+                    // session count to give.
+                    <Checkbox
+                      label="It keeps going"
+                      className="min-h-12"
+                      checked={values.repeatForever}
+                      onChange={(e) => set("repeatForever", e.target.checked)}
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
             {/* Venue and its address / meeting link, side by side. */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
               <Section title="Where">
@@ -1022,6 +1066,20 @@ export function EventForm({
                 </div>
               )}
             </div>
+            {/* An optional cap on how many people can come. Saving still never
+                refuses anyone: the first saves each hold a spot for an hour
+                while spots last (core/holds). */}
+            <TextField
+              label="Limit on how many can come (optional)"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              className="max-w-[260px]"
+              value={values.capacity}
+              onChange={(e) => set("capacity", e.target.value)}
+              error={fieldError("capacity")}
+              placeholder="No limit"
+            />
             <Section
               title="Who can see this"
             >
@@ -1034,49 +1092,6 @@ export function EventForm({
                 }
               />
             </Section>
-            {mode === "create" && (
-              <Section title="Repeats">
-                <div className="flex flex-wrap items-end gap-4">
-                  {/* The section's "Repeats" is its label; no second one. */}
-                  <Select
-                    aria-label="Repeats"
-                    className="min-w-[200px]"
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {values.frequency !== "once" && !values.repeatForever && (
-                    <TextField
-                      label="How many times"
-                      required
-                      className="min-w-[170px]"
-                      type="number"
-                      min={2}
-                      max={104}
-                      value={values.occurrenceCount}
-                      onChange={(e) => set("occurrenceCount", e.target.value)}
-                      error={fieldError("occurrenceCount")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.frequency !== "once" && (
-                    // A drop-in that has run every Friday for nine years has no
-                    // session count to give.
-                    <Checkbox
-                      label="It keeps going"
-                      className="min-h-12"
-                      checked={values.repeatForever}
-                      onChange={(e) => set("repeatForever", e.target.checked)}
-                    />
-                  )}
-                </div>
-              </Section>
-            )}
           </Group>
           <Group title="Event tags">
             <Section title="Topics" required>

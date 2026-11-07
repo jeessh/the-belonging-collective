@@ -494,8 +494,8 @@ can open.
   first, then Event details (date, time, where — the venue toggle beside its
   address / meeting link — cost and how people join, the paid details,
   who can see this, repeats), Event tags (topics, what it offers). No
-  Who it's for section and no Spots available field any more; `capacity` already on an
-  event is carried through, so its one-hour holds and "N spots left" go on) — a rule above each), the
+  Who it's for section; the capacity is the optional "Limit on how many can
+  come" under How people join) — a rule above each), the
   event picture on the right, 520px tall and `sticky` so it stays in view
   (`ImageDrop frameClassName`). One column below `lg`, the picture first.
   The buttons are top right in the header: Cancel (through the leave
@@ -515,8 +515,10 @@ can open.
   has notes or a poster keeps them, and members still see them; the form
   carries them through unchanged). Cost has its own row ("How is it paid?" under it), then **How people
   join** on its own row with the **Sign-up link** beside it once Registration
-  is chosen (a drop-in that already has a link shows it as Posting link);
-  the details page mirrors this.
+  is chosen (a drop-in that already has a link shows it as Posting link),
+  then an optional **Limit on how many can come** (`capacity` — drives the
+  one-hour holds; members aren't shown spots); Repeats sits right under
+  the date and time (create only). The details page mirrors all of this.
   Under Description are **External links (optional)** — `links` rows of label + address,
   the first always shown with a + button beside it (tooltip "Add a link")
   that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details

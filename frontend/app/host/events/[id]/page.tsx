@@ -345,6 +345,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               {timeRange(event.starts_at, event.ends_at) || "—"}
             </Line>
           </ReadField>
+          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8">
             <ReadField label="Where">{event.is_virtual ? "Virtual" : "In-Person"}</ReadField>
             <ReadField label={event.is_virtual ? "Meeting link" : "Address"}>
@@ -391,10 +392,12 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 )}
               </ReadField>
           </div>
+          <ReadField label="Limit on how many can come">
+            {event.capacity != null ? `${event.capacity} people` : "No limit"}
+          </ReadField>
           <ReadField label="Who can see this">
             {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
           </ReadField>
-          <ReadField label="Repeats">{repeatLabel(event.recurrence) || "Doesn't repeat"}</ReadField>
           <ConsoleCounts event={event} />
           </Group>
 
