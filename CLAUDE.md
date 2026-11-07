@@ -281,12 +281,12 @@ can open.
   `EventSummary`'s `detail` layout adds, under when and where (not how
   often it repeats — members don't need it): the cost (`event.price_label`,
   built server-side by `core/pricing.describe`; hidden when it is just
-  "Free", which the tag already says) and "Sign-up needed" when `requires_signup` (a drop-in says
-  nothing — that is the default). `EventDetails`
+  "Free", which the tag already says) (registration is the tag beside the title). `EventDetails`
   labels the organizer's link "Sign up on …" when sign-up
   is needed. Cards stay to when and where.
-- **Tags: only "Free", beside the title** (`eventTags` in `ui/Tag`; plus
-  Special access and For you where they apply). Paid, Drop-in / Sign-up and
+- **Tags beside the title: "Free" and "Registration required"** (`eventTags`
+  in `ui/Tag`, the `signup` kind — only when `requires_signup`; a drop-in
+  gets no tag; plus Special access and For you where they apply). Paid, Drop-in and
   In-person / Virtual are no longer pills on any surface — the facts and
   filters still carry them. `EventSummary` draws title + tags as one
   wrapping row (`heading`), the event page included.

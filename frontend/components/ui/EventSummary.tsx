@@ -4,7 +4,6 @@ import {
   Cake,
   CalendarDays,
   CircleDollarSign,
-  ClipboardPen,
   MapPin,
   Ticket,
 } from "lucide-react";
@@ -229,7 +228,7 @@ export function EventSummary({
         <p className="min-w-0 text-fg">{where}</p>
       </div>
       {/* The event's own page and dialog read back the rest of what the
-          organizer set: what it costs and how to join. Cards keep to when and where. */}
+          organizer set: what it costs (how to join is the tag beside the title). Cards keep to when and where. */}
       {/* "Free" is already the tag beside the title. */}
       {layout === "detail" && event.price_label && event.price_label !== "Free" && (
         <div className="flex items-start gap-3">
@@ -238,13 +237,6 @@ export function EventSummary({
             className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
           />
           <p className="min-w-0 text-fg">{event.price_label}</p>
-        </div>
-      )}
-      {/* Only when it needs a sign-up; dropping in is the default. */}
-      {layout === "detail" && event.requires_signup && (
-        <div className="flex items-start gap-3">
-          <ClipboardPen aria-hidden="true" className={`mt-0.5 shrink-0 text-fg-muted ${icon}`} />
-          <p className="min-w-0 text-fg">Sign-up needed</p>
         </div>
       )}
       {ages && (

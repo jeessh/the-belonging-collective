@@ -24,7 +24,7 @@ const TAG: Record<
     className: "bg-tag-dropin-bg text-tag-dropin-fg",
   },
   signup: {
-    label: "Sign-up",
+    label: "Registration required",
     className: "bg-tag-signup-bg text-tag-signup-fg",
   },
   inperson: {
@@ -77,12 +77,17 @@ export function Tag({
 }
 
 /**
- * The pills a card shows beside its title: just "Free", for a free program.
+ * The pills a card shows beside its title: "Free" for a free program and
+ * "Registration required" when it needs one (nothing for a drop-in).
  * Paid, drop-in / sign-up and in-person / virtual are no longer tagged — the
  * card's facts and the event's page carry them, and the filters still sort
  * by them. Cost reads the feed's grouping bucket so the FREE pill and the
  * "Free" filter can never disagree.
  */
 export function eventTags(event: Event): TagKind[] {
-  return dimensionByKey("price").bucket(event).id === "free" ? ["free"] : [];
+  const tags: TagKind[] = [];
+  if (dimensionByKey("price").bucket(event).id === "free") tags.push("free");
+  // Only when registering is required; a drop-in says nothing.
+  if (event.requires_signup) tags.push("signup");
+  return tags;
 }
