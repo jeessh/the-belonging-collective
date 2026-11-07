@@ -275,8 +275,7 @@ can open.
   built server-side by `core/pricing.describe`; hidden when it is just
   "Free", which the tag already says) and "Sign-up needed" when `requires_signup` (a drop-in says
   nothing — that is the default). `EventDetails`
-  adds a TOPICS section (the event's `categories`, as chips) before
-  ACCESSIBILITY, and labels the organizer's link "Sign up on …" when sign-up
+  labels the organizer's link "Sign up on …" when sign-up
   is needed. Cards stay to when and where.
 - **Tags: only "Free", beside the title** (`eventTags` in `ui/Tag`; plus
   Special access and For you where they apply). Paid, Drop-in / Sign-up and
