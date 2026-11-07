@@ -520,7 +520,9 @@ can open.
   account menu (a capture-phase click listener, since client-side navigation
   never fires `beforeunload`) — plus the browser's own warning on reload.
   Accounts stay table-first — `components/AdminTable.tsx` backs
-  `/host/admins` (Organizations) and `/host/users` (Community Members). `AdminTable` also holds the
+  `/host/admins` (Organizations) and `/host/users` (Community Members). `/host/events`' search box
+  fills the row beside its buttons (one row from `md`; `SearchField`'s grey
+  is a half-strength `surface-subtle`). `AdminTable` also holds the
   console's field primitives (`Field`, `Select`, `TextArea`, `SearchField`,
   `controlClass`, `RequiredMark`) so a `<select>` or `<textarea>` gets the
   same box as `ui/TextField`; don't restyle a control inline.

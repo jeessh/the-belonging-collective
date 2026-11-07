@@ -191,7 +191,7 @@ export function SearchField({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       icon={<Search />}
-      className={`[&>div]:min-h-14 [&>div]:rounded-control [&>div]:bg-surface-subtle [&>label]:sr-only ${className}`}
+      className={`[&>div]:min-h-14 [&>div]:rounded-control [&>div]:bg-surface-subtle/50 [&>label]:sr-only ${className}`}
     />
   );
 }

@@ -271,15 +271,17 @@ function PostedEvents({ ctx }: { ctx: ConsoleContext }) {
         </div>
 
         <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          {/* One row from md: the search box takes whatever width the
+              buttons leave, and the buttons keep to one line. */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <SearchField
               label="Search for event"
               placeholder="Search for event"
               value={query}
               onChange={setQuery}
-              className="w-full sm:max-w-[428px]"
+              className="w-full min-w-0 md:flex-1"
             />
-            <div className="flex flex-wrap gap-3 max-sm:[&>*]:flex-1">
+            <div className="flex flex-wrap gap-3 max-md:[&>*]:flex-1 md:shrink-0 md:flex-nowrap md:whitespace-nowrap">
               <Button
                 className="lg:hidden"
                 leadingIcon={<SlidersHorizontal />}

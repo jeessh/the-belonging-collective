@@ -72,16 +72,16 @@ export const CaregiverFeed = memo(function CaregiverFeed({
       </div>
 
       <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <SearchField
             label="Search for event"
             placeholder="Search for event"
             value={query}
             onChange={setQuery}
-            className="w-full sm:max-w-[428px]"
+            className="w-full min-w-0 sm:flex-1"
           />
           <Button
-            className="lg:hidden"
+            className="shrink-0 lg:hidden"
             leadingIcon={<SlidersHorizontal />}
             aria-haspopup="dialog"
             onClick={() => setFiltersOpen(true)}
