@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ClipboardPen } from "lucide-react";
 import {
   ApiError,
   api,
@@ -20,11 +20,13 @@ import {
   type AccessState,
 } from "@/components/member/AccessAction";
 import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
+import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { useToast } from "@/components/ui/Toast";
 
 /**
- * The public page's bottom row: the map, Save, and — when registration lives
- * on the organizer's own site — Register, which counts the click. Saving needs
+ * The public page's bottom row: the map, and Save — or, for an event that
+ * needs registering, Register (confirmed first; saves it and opens the
+ * organizer's page, counting the click, when registering happens there). Saving needs
  * an account; following a link never does.
  *
  * A restricted program shows Request access instead of Save until the member
@@ -36,6 +38,8 @@ export function EventActions({ event }: { event: Event }) {
   const params = useSearchParams();
   const toast = useToast();
   const [saved, setSaved] = useState(false);
+  // "Register for …?" open.
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Null for a public program; "none" until the viewer's own read says
@@ -188,9 +192,21 @@ export function EventActions({ event }: { event: Event }) {
           <GoogleMapsIcon />
         </a>
       )}
-      {canSave ? (
+      {canSave && event.requires_signup && !saved ? (
+        // Needs registering: Register, confirmed first — confirming saves it
+        // and opens the organizer's page when registering happens there.
         <Button
-          variant={external || saved ? "secondary" : "primary"}
+          variant="primary"
+          size="lg"
+          onClick={() => setConfirming(true)}
+          disabled={busy}
+          trailingIcon={<ClipboardPen />}
+        >
+          Register
+        </Button>
+      ) : canSave ? (
+        <Button
+          variant={saved ? "secondary" : "primary"}
           size="lg"
           onClick={() => void save()}
           disabled={busy || saved}
@@ -205,15 +221,16 @@ export function EventActions({ event }: { event: Event }) {
           onRequest={() => void ask()}
         />
       )}
-      {external && (
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={openRegistration}
-          trailingIcon={<ExternalLink />}
-        >
-          Register for Event
-        </Button>
+      {confirming && (
+        <RegisterConfirm
+          event={event}
+          onClose={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            if (external) openRegistration();
+            void save();
+          }}
+        />
       )}
       {error && (
         <p role="alert" className="basis-full text-center text-lg text-danger-fg">

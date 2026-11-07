@@ -1,12 +1,11 @@
 "use client";
 
 import { memo } from "react";
-import { Bookmark, BookmarkX, ExternalLink, MoveRight } from "lucide-react";
+import { Bookmark, BookmarkX, ClipboardPen, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
-import { HoldInfo } from "@/components/member/HoldInfo";
 import { Magnet } from "@/components/member/SavedSidebar";
 
 /**
@@ -24,8 +23,9 @@ export const FeedCard = memo(function FeedCard({
   unpinned = false,
   onRegister,
 }: {
-  /** The organizer's own sign-up page, for an event that needs registering:
-      the card's button says Register and opens it. */
+  /** For an event that needs registering: the card's button says Register
+      and this asks to confirm (which saves it and opens the organizer's
+      page when there is one). */
   onRegister?: () => void;
   /** The card is on the move (dragged, held or flying to the board): its
       push pin pops off. */
@@ -41,12 +41,8 @@ export const FeedCard = memo(function FeedCard({
   onSignIn: () => void;
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
-  // The admin set "needs sign-up" with a link: Register, not Save.
-  const register =
-    !!onRegister &&
-    event.requires_signup &&
-    event.registration_mode === "external" &&
-    !!event.registration_url;
+  // The admin set "needs registration": Register (with a confirm), not Save.
+  const register = !!onRegister && event.requires_signup && !saved;
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
@@ -58,9 +54,6 @@ export const FeedCard = memo(function FeedCard({
           unpinned ? "!-translate-y-4 rotate-45 opacity-0" : ""
         }`}
       />
-      {event.capacity != null && (
-        <HoldInfo className="absolute right-2 top-2 sm:right-3 sm:top-3" />
-      )}
       <EventSummary
         event={event}
         layout="card"
@@ -90,18 +83,17 @@ export const FeedCard = memo(function FeedCard({
               <span className="max-sm:hidden">More information</span>
             </Button>
             {register ? (
-              // Registration is on the organizer's own page: the card's
-              // button goes there. Saving still works by dragging the card
-              // left, holding ←, or from More information.
+              // Registering is asked to confirm first (RegisterConfirm);
+              // confirming saves it too.
               <Button
                 variant="primary"
                 size="lg"
                 className={size}
                 onClick={onRegister}
                 onPointerDown={stop}
-                trailingIcon={<ExternalLink />}
+                trailingIcon={<ClipboardPen />}
                 data-tour="save"
-                aria-label={`Register for ${event.title} (opens the organizer's page)`}
+                aria-label={`Register for ${event.title}`}
               >
                 Register
               </Button>
