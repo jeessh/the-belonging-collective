@@ -113,9 +113,8 @@ can open.
   (`Arrivals`), and the panel keeps its list mounted under the drag message
   so an arrival animates. The open panel's list is a bulletin board (an
   experiment, `Board` in SavedSidebar): cork (`.cork` in globals.css) in a
-  wooden frame, mini cards styled as formal invitations (`MiniCardFace`:
-  ivory, gold double rule, round photo, "You're invited to", serif title,
-  date) each held by a coloured push pin, two across and slightly tilted, that can be dragged anywhere in
+  wooden frame, miniature feed cards (picture and title) each held by a
+  coloured push pin, two across and slightly tilted, that can be dragged anywhere in
   the box (framer-motion `drag`, kept inside it); double-click opens one,
   Enter / Space from the keyboard. Positions are remembered per browser in
   `localStorage` (`tbc.saved_board`, try/catch). Its forwarded ref is the drop target every save
