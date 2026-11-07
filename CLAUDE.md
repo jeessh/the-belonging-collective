@@ -118,8 +118,10 @@ can open.
   straight sticky notes (yellow, blue; `STICKY`) side by side at the
   bottom — miniature feed cards (picture and title) each held by a
   coloured square magnet (`Magnet`), in two even columns
-  (a plain grid, 16px apart; no dragging or saved positions any more); a
-  click opens one. Its forwarded ref is the drop target every save
+  (a plain grid, 16px apart; no dragging or saved positions any more),
+  **newest save first, at the top left** (the list has no saved-at time,
+  so `Board` remembers arrival order in a ref; the mini card's flight
+  lands there); a click opens one. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on

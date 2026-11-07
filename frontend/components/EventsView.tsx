@@ -692,8 +692,9 @@ export function EventsView({
         const EASE = [0.4, 0, 0.2, 1] as const;
         await Promise.all([
           animate(ghostT, 1, { duration: 0.15 }),
-          animate(ghostX, drop.left + drop.width / 2 - BOARD_CARD_W / 2, { duration: 0.4, ease: EASE }),
-          animate(ghostY, drop.top + 24, { duration: 0.4, ease: EASE }),
+          // Into the top-left slot, where the newest save goes.
+          animate(ghostX, drop.left + 4, { duration: 0.4, ease: EASE }),
+          animate(ghostY, drop.top + 16, { duration: 0.4, ease: EASE }),
           animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
         ]);
         await animate(ghostT, 0, { duration: 0.15 });

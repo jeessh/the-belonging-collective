@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, memo, useCallback, type ReactNode } from "react";
+import { forwardRef, memo, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bookmark,
@@ -506,11 +506,25 @@ function Board({
   const transition = reduceMotion
     ? { duration: 0 }
     : { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const };
+
+  // Newest save first, at the top left. The list has no saved-at time, so
+  // the board remembers the order cards arrived in: whatever appears that
+  // wasn't there before goes in front (a whole first load keeps its own
+  // order), and an un-saved card simply drops out.
+  const order = useRef<string[]>([]);
+  const ids = events.map((ev) => ev.id);
+  const known = new Set(order.current);
+  const fresh = ids.filter((id) => !known.has(id));
+  const live = new Set(ids);
+  order.current = [...fresh, ...order.current.filter((id) => live.has(id))];
+  const byId = new Map(events.map((ev) => [ev.id, ev]));
+  const shown = order.current.map((id) => byId.get(id)!).filter(Boolean);
+
   return (
     // 16px between the cards both ways; room above each for its magnet.
     <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 px-1 pb-4 pt-4">
       <AnimatePresence initial={false}>
-        {events.map((ev) => (
+        {shown.map((ev) => (
           <motion.button
             key={ev.id}
             type="button"
