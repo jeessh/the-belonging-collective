@@ -162,13 +162,13 @@ can open.
   tighter gutters. Anything that has to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
-- **Card view has a 48px cursor** (`.big-cursor` in globals.css, put on
+- **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
   over the draggable card and a closed one while it's held (`.card-grab`,
   `.is-grabbing` while lifted); text boxes keep the text cursor. The hands
   are Lucide's pointer / hand / hand-grab, filled white with the icon's black lines (no outer white edge); the arrow is solid black.
-  48px PNGs with 96px Retina copies through `image-set` (`public/cursors`,
+  40px PNGs with 80px Retina copies through `image-set` (`public/cursors`,
   drawn by `frontend/scripts/make-cursors.html` in headless Chrome — the
   command is in the file); SVG cursors blur.
 - **Every save path ends in `flyToDrop`** — drag the card left into the

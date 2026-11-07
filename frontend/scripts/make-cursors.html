@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Draws card view's big cursors (public/cursors): a solid black arrow, a
-  pointing hand, an open hand and a closed one, each 48px plus a 96px
+  pointing hand, an open hand and a closed one, each 40px plus an 80px
   Retina copy. The hands are Lucide's pointer / hand / hand-grab icons,
   filled white, drawn with the icon's black lines. Regenerate with:
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
@@ -19,7 +19,7 @@ const shapes = {
 // The palm, under the fingers: filled white so the hand has no see-through gap.
 const PALM = "M6.5 10H18V15.5H6.5Z";
 const lines = [];
-for (const [name, s] of Object.entries(shapes)) for (const px of [48, 96]) {
+for (const [name, s] of Object.entries(shapes)) for (const px of [40, 80]) {
   const c = document.createElement("canvas"); c.width = c.height = px;
   const g = c.getContext("2d"); g.scale(px / 24, px / 24); g.lineCap = g.lineJoin = "round";
   const P = s.d.map((d) => new Path2D(d));
@@ -32,7 +32,7 @@ for (const [name, s] of Object.entries(shapes)) for (const px of [48, 96]) {
     g.fill(new Path2D(s.palm ?? PALM)); // close the gap between the fingers and the palm
     g.strokeStyle = "#000"; g.lineWidth = 1.5; P.forEach((p) => g.stroke(p));
   }
-  lines.push(`${name}${px === 96 ? "@2x" : ""} ${c.toDataURL("image/png").split(",")[1]}`);
+  lines.push(`${name}${px === 80 ? "@2x" : ""} ${c.toDataURL("image/png").split(",")[1]}`);
 }
 document.getElementById("out").textContent = lines.join("\n");
 </script>

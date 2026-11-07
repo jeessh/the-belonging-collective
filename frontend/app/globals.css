@@ -334,30 +334,30 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
  */
 .big-cursor,
 .big-cursor * {
-  cursor: url("/cursors/arrow.png") 9 5, auto;
-  cursor: -webkit-image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
-  cursor: image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 9 5, auto;
+  cursor: url("/cursors/arrow.png") 8 4, auto;
+  cursor: -webkit-image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 8 4, auto;
+  cursor: image-set(url("/cursors/arrow.png") 1x, url("/cursors/arrow@2x.png") 2x) 8 4, auto;
 }
 /* Before the clickable rule below, so the card's buttons keep the pointing hand. */
 .big-cursor .card-grab,
 .big-cursor .card-grab * {
-  cursor: url("/cursors/grab.png") 24 24, grab;
-  cursor: -webkit-image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
-  cursor: image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 24 24, grab;
+  cursor: url("/cursors/grab.png") 20 20, grab;
+  cursor: -webkit-image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 20 20, grab;
+  cursor: image-set(url("/cursors/grab.png") 1x, url("/cursors/grab@2x.png") 2x) 20 20, grab;
 }
 .big-cursor .card-grab:active,
 .big-cursor .card-grab:active *,
 .big-cursor .card-grab.is-grabbing,
 .big-cursor .card-grab.is-grabbing * {
-  cursor: url("/cursors/grabbing.png") 24 24, grabbing;
-  cursor: -webkit-image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
-  cursor: image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 24 24, grabbing;
+  cursor: url("/cursors/grabbing.png") 20 20, grabbing;
+  cursor: -webkit-image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 20 20, grabbing;
+  cursor: image-set(url("/cursors/grabbing.png") 1x, url("/cursors/grabbing@2x.png") 2x) 20 20, grabbing;
 }
 .big-cursor :is(a, button, [role="button"], label, select, summary),
 .big-cursor :is(a, button, [role="button"], label, summary) * {
-  cursor: url("/cursors/pointer.png") 16 3, pointer;
-  cursor: -webkit-image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 16 3, pointer;
-  cursor: image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 16 3, pointer;
+  cursor: url("/cursors/pointer.png") 13 3, pointer;
+  cursor: -webkit-image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 13 3, pointer;
+  cursor: image-set(url("/cursors/pointer.png") 1x, url("/cursors/pointer@2x.png") 2x) 13 3, pointer;
 }
 .big-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) {
   cursor: text;
