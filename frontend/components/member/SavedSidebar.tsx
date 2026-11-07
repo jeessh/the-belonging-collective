@@ -460,7 +460,7 @@ function Thumb({
   return null;
 }
 
-/** Magnet colours; each program keeps the same one. */
+/** Tape colours; each program keeps the same one. */
 const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
 
 function hash(id: string): number {
@@ -469,14 +469,31 @@ function hash(id: string): number {
   return Math.abs(h);
 }
 
-/** A square fridge magnet: a rounded square of colour with a little shine. */
-export function Magnet({ colour, className = "" }: { colour: string; className?: string }) {
+/**
+ * A strip of washi tape holding a card up: a see-through band of colour
+ * across the card's top edge, its ends torn in a zigzag, set at a slight
+ * angle. (Named Magnet for history — it was a fridge magnet.)
+ */
+export function Magnet({
+  colour,
+  className = "",
+  tilt = -3,
+}: {
+  colour: string;
+  className?: string;
+  /** Degrees; each card's tape leans a little differently. */
+  tilt?: number;
+}) {
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-[4px] shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${className}`}
+      className={`pointer-events-none absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 opacity-80 shadow-[0_1px_2px_rgba(0,0,0,0.12)] ${className}`}
       style={{
-        background: `linear-gradient(145deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%), ${colour}`,
+        rotate: `${tilt}deg`,
+        background: `linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 60%), ${colour}`,
+        // Torn ends: a zigzag down each short side.
+        clipPath:
+          "polygon(0 0, 100% 0, 96% 20%, 100% 40%, 96% 60%, 100% 80%, 96% 100%, 0 100%, 4% 80%, 0 60%, 4% 40%, 0 20%)",
       }}
     />
   );
@@ -527,8 +544,8 @@ function Board({
             style={{ boxShadow: SHADOW_REST }}
             className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
           >
-            {/* The magnet holding it to the whiteboard. */}
-            <Magnet colour={PINS[hash(ev.id) % PINS.length]} />
+            {/* The tape holding it to the board. */}
+            <Magnet colour={PINS[hash(ev.id) % PINS.length]} tilt={(hash(ev.id) % 7) - 3} />
             <MiniCardFace event={ev} />
           </motion.button>
         ))}

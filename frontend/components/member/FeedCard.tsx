@@ -46,12 +46,12 @@ export const FeedCard = memo(function FeedCard({
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    // Held up like a flyer: a magnet at the top and a soft shadow.
+    // Held up like a flyer: a strip of tape at the top and a soft shadow.
     <div className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
       <Magnet
         colour="#e5484d"
-        className={`!-top-2.5 !size-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
-          unpinned ? "!-translate-y-4 rotate-45 opacity-0" : ""
+        className={`!-top-3.5 !h-7 !w-24 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
+          unpinned ? "!-translate-y-4 !opacity-0" : ""
         }`}
       />
       <EventSummary
