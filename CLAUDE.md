@@ -153,7 +153,10 @@ can open.
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
   {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
   Me). The View toggle still switches card / list on its own.
-  **Advanced in List view is the console's layout** (`member/CaregiverFeed`):
+  **List view is the console's layout for everyone** — signed out,
+  Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
+  you this week" section are no longer drawn, and Register stands in for
+  Save on events that need it):
   `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
   groups only, member-app sizes; it replaces the chip row), search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
