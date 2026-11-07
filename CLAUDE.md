@@ -281,9 +281,9 @@ can open.
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" panel
-  (`member/EventDetailModal`, a `Modal sheet`: full width, sliding up from
-  the bottom with a handle, up to 90% of the screen and scrolling inside,
-  its content centred at 960px), the public `/events/[id]` page and the print
+  (`member/EventDetailModal`, a `Modal sheet`: sliding up from the bottom
+  with a handle, as wide as its content (960px, centred), up to 90% of the
+  screen and scrolling inside), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
   Calendar / Share / Print — a row above the title, at the top of the
   text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,

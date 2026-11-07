@@ -142,7 +142,7 @@ export function Modal({
       <div
         className={
           sheet
-            ? "fixed inset-0 z-30 flex flex-col items-stretch justify-end bg-fg/40 backdrop-blur-sm"
+            ? "fixed inset-0 z-30 flex flex-col items-center justify-end bg-fg/40 backdrop-blur-sm sm:px-4"
             : "fixed inset-0 z-30 flex flex-col items-center overflow-y-auto bg-fg/40 p-4 backdrop-blur-sm sm:py-8"
         }
         onMouseDown={(e) => {
@@ -171,7 +171,7 @@ export function Modal({
           }
           className={
             sheet
-              ? `relative max-h-[90dvh] w-full shrink-0 overflow-y-auto rounded-t-[16px] border-x-0 border-b-0 border-t ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pb-8 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
+              ? `relative max-h-[90dvh] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-t-[16px] border border-b-0 ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pb-8 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
               : `relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`
           }
         >
@@ -179,7 +179,7 @@ export function Modal({
             // The sheet's handle: says "this came up from the bottom".
             <span aria-hidden="true" className="mx-auto mb-5 block h-1.5 w-12 rounded-full bg-line" />
           )}
-          <div className={sheet ? `relative mx-auto w-full ${SIZE[size]}` : "contents"}>
+          <div className={sheet ? "relative w-full" : "contents"}>
           {title == null ? null : typeof title === "string" ? (
             <h2
               id={headingId}
