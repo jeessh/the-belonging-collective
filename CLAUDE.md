@@ -258,7 +258,9 @@ can open.
 - **One listing, three surfaces.** `member/EventDetails` (no hooks) draws the
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
-  LINKS (`event.links` plus the organizer's `registration_url`) — for the
+  LINKS (`event.links` plus the organizer's `registration_url`; one
+  bordered card per link — label, site name, external-link icon, the whole
+  card clickable — two to a row from `sm`) — for the
   "More information" dialog
   (`member/EventDetailModal`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
