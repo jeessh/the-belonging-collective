@@ -22,10 +22,6 @@ const RAIL_WIDTH = 100;
 /* The board, an experiment (the open panel's list): a whiteboard, each
    saved program held to it by a magnet as a miniature of the feed card —
    its picture and title — in two even columns. A click opens one. */
-/* The open panel's two buttons, as sticky notes on the whiteboard, with a
-   curled-paper shadow. */
-const STICKY =
-  "relative flex min-h-[104px] flex-1 flex-col items-start justify-between gap-2 rounded-[2px] p-3 pt-4 text-left text-lg font-medium leading-tight text-[#2B2405] shadow-[0_12px_14px_-10px_rgba(40,25,5,0.55),0_2px_4px_rgba(40,25,5,0.15)] transition-transform duration-150 ease-out hover:-translate-y-1 motion-reduce:transition-none";
 export const BOARD_CARD_W = 136;
 // Soft, spread-out shadows: one at rest, a deeper one for the card in flight.
 const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
@@ -173,29 +169,18 @@ export const SavedSidebar = memo(
     );
     const calendar =
       signedIn && owner ? (
-        open ? (
-          <a href={calendarUrl} className={`${STICKY} bg-[#CFE6FF]`}>
-            {calendarInner}
-          </a>
-        ) : (
-          <a href={calendarUrl} className={buttonClass("secondary", "md", RAIL)}>
-            {calendarInner}
-          </a>
-        )
-      ) : open ? (
-        <button
-          type="button"
-          onClick={signedIn ? () => void subscribe() : onSignIn}
-          className={`${STICKY} bg-[#CFE6FF]`}
+        <a
+          href={calendarUrl}
+          className={buttonClass("secondary", open ? "lg" : "md", open ? "w-full" : RAIL)}
         >
           {calendarInner}
-        </button>
+        </a>
       ) : (
         <Button
           variant="secondary"
-          size="md"
+          size={open ? "lg" : "md"}
           onClick={signedIn ? () => void subscribe() : onSignIn}
-          className={RAIL}
+          className={open ? "w-full" : RAIL}
         >
           {calendarInner}
         </Button>
@@ -282,15 +267,16 @@ export const SavedSidebar = memo(
                   </div>
                 </div>
 
-                <div className="flex gap-4 px-6 pb-6 pt-1">
-                  <button
-                    type="button"
+                <div className="flex flex-col gap-4 px-6 pb-6 pt-1">
+                  <Button
+                    variant="secondary"
+                    size="lg"
                     onClick={onOpenSaved}
-                    className={`${STICKY} bg-[#FFE97A]`}
+                    leadingIcon={<Bookmark className="fill-primary-strong text-primary-strong" />}
+                    className="w-full"
                   >
-                            <Bookmark aria-hidden="true" className="size-6 fill-[#2B2405]" />
                     See Saved Events
-                  </button>
+                  </Button>
                   {calendar}
                 </div>
               </>

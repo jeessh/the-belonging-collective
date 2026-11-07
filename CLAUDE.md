@@ -114,8 +114,8 @@ can open.
   so an arrival animates. The open panel is a whiteboard (an
   experiment, `Board` in SavedSidebar): the whole panel is `.whiteboard`
   (globals.css) with a grey metal edge on its right — a dark "Saved Events"
-  heading and grey count, and See Saved Events / Google Calendar as two
-  straight sticky notes (yellow, blue; `STICKY`) side by side at the
+  heading and grey count, and See Saved Events / Google Calendar as the
+  standard secondary `Button`s (large, full width, stacked) at the
   bottom — miniature feed cards (picture and title) each held by a
   coloured square magnet (`Magnet`), in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
