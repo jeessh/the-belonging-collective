@@ -929,7 +929,8 @@ export function EventForm({
             </div>
             {/* Cost on its own row; the paid details go under it. */}
             <Section title="Cost">
-              <div className="flex flex-col items-start gap-4">
+              {/* The toggle, with the payments note beside it on one row. */}
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <SegmentedToggle<"free" | "paid">
                   size="sm"
                   label="Cost"
@@ -944,7 +945,7 @@ export function EventForm({
                   ]}
                 />
                 {/* Cost is a label for members, nothing more. */}
-                <p className="text-base text-fg-muted">
+                <p className="min-w-0 text-base text-fg-muted">
                   This platform doesn&rsquo;t process payments. The cost is
                   only shown to members for their information &mdash; collect
                   any payment yourselves.
