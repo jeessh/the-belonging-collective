@@ -404,8 +404,11 @@ can open.
   the form's **Special access** box (light grey, a lock, no switch and no
   "Who can see this" heading): a Group picker whose first option, "None —
   everyone can see it", means public, else a group of the *program's*
-  organization (`hostId`); **New group** opens a dialog (`NewGroupModal`):
-  the group's name plus, optionally, community members by email (up to 50,
+  organization (`hostId`); **New group** opens a dialog (`NewGroupModal`),
+  and **Add members** (beside a chosen group) opens `AddMembersModal`; both
+  use `PeopleFields` — for a superadmin a searchable checklist of existing
+  members (`GET /users`, which refuses anyone else; then it falls back),
+  plus typed email addresses for everyone — the group's name plus people (up to 50,
   added with no approval through `addPeopleToGroup` — in at once with an
   account, invited without), then a summary; the new group is chosen for
   the event — and
