@@ -26,7 +26,7 @@ const RAIL_WIDTH = 100;
    Double-click opens one (Enter / Space from the keyboard). Where each
    card was left is remembered in this browser (`tbc.saved_board`). */
 export const BOARD_CARD_W = 136;
-const BOARD_ROW_H = 176;
+const BOARD_ROW_H = 212;
 const BOARD_GAP = 12;
 const BOARD_PAD = 12;
 const BOARD_KEY = "tbc.saved_board";
@@ -612,18 +612,20 @@ function BoardCard({
   );
 }
 
-/** The mini card's frame: white, the feed card's border, a little padding. */
+/** The mini card's frame: an ivory invitation card. */
 export const MINI_CARD =
-  "flex flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 text-left";
+  "flex flex-col rounded-[4px] bg-[#FFFDF7] p-1.5 text-center";
 
-/** What a mini card shows: the picture and the title. Shared with the
-    feed card's drag, which turns into one on its way to the board. */
+/** What a mini card shows, as a formal invitation: inside a gold double
+    rule, the event's picture in a circle, "You're invited to", the title
+    in serif and the date under a small divider. Shared with the feed
+    card's drag, which turns into one on its way to the board. */
 export function MiniCardFace({ event }: { event: Event }) {
   return (
-    <>
+    <span className="flex flex-col items-center gap-1.5 border border-[#C8A96A] px-2 py-3 outline outline-1 -outline-offset-4 outline-[#C8A96A]">
       <span
         aria-hidden="true"
-        className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"
+        className="pointer-events-none relative block size-12 shrink-0 overflow-hidden rounded-full bg-surface-subtle"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -633,9 +635,16 @@ export function MiniCardFace({ event }: { event: Event }) {
           className="absolute inset-0 h-full w-full object-cover"
         />
       </span>
-      <span className="line-clamp-2 px-0.5 pb-0.5 text-base font-medium leading-tight text-fg">
+      <span aria-hidden="true" className="font-serif text-xs italic text-[#7A5C22]">
+        You&rsquo;re invited to
+      </span>
+      <span className="line-clamp-3 font-serif text-base leading-tight text-[#2B2116]">
         {event.title}
       </span>
-    </>
+      <span aria-hidden="true" className="w-8 border-t border-[#C8A96A]" />
+      <span className="text-xs text-[#5C4A30]">
+        {monthDay(event.starts_at)}
+      </span>
+    </span>
   );
 }
