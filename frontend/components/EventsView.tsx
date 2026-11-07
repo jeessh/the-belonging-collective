@@ -1440,13 +1440,23 @@ export function EventsView({
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
                 >
-                  {/* The deck beneath: the next card, greyed and narrower,
-                      peeking below. Purely decorative, and plain — the
-                      design's blurred Save button on it read as a glitch. */}
-                  <div
-                    aria-hidden
-                    className="absolute inset-x-8 -bottom-6 top-16 rounded-card border border-line bg-[#e3e3e3] sm:inset-x-14 sm:-bottom-11 short:!-bottom-7"
-                  />
+                  {/* The deck beneath: up to two more event cards, each a little
+                      narrower and lower, peeking out under the one on top —
+                      white cards with the same edge and shadow, so it reads
+                      as a stack of events. Only as many as are left. Purely
+                      decorative. */}
+                  {feed.length - i - 1 >= 2 && (
+                    <div
+                      aria-hidden
+                      className="absolute inset-x-10 -bottom-5 top-16 rounded-card border border-line-card/70 bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:inset-x-16 sm:-bottom-6"
+                    />
+                  )}
+                  {feed.length - i - 1 >= 1 && (
+                    <div
+                      aria-hidden
+                      className="absolute inset-x-5 -bottom-2.5 top-12 rounded-card border border-line-card bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] sm:inset-x-8 sm:-bottom-3"
+                    />
+                  )}
                   <motion.div
                     ref={cardWrapRef}
                     style={{
