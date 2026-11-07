@@ -487,10 +487,10 @@ export function Magnet({
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 opacity-80 shadow-[0_1px_2px_rgba(0,0,0,0.12)] ${className}`}
+      className={`pointer-events-none absolute -top-2.5 left-1/2 z-10 h-5 w-14 -translate-x-1/2 opacity-45 ${className}`}
       style={{
         rotate: `${tilt}deg`,
-        background: `linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 60%), ${colour}`,
+        background: `linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 70%), ${colour}`,
         // Torn ends: a zigzag down each short side.
         clipPath:
           "polygon(0 0, 100% 0, 96% 20%, 100% 40%, 96% 60%, 100% 80%, 96% 100%, 0 100%, 4% 80%, 0 60%, 4% 40%, 0 20%)",
