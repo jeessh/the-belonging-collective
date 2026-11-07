@@ -203,7 +203,7 @@ can open.
   otherwise sent to everyone, signed in or not (just a count, no names —
   the shared-list page too), and
   `ui/GoingCount` shows "N people saved this event" (bookmark icon; the
-  sidebar chip "N SAVED") — at zero too ("0 people saved this event");
+  sidebar shows no count) — at zero too ("0 people saved this event");
   nothing only where the count is withheld. Members and console say it
   the same way; nothing says "going" any more. There is no "See who
   else is going" sign-in nudge any more, and sign-out keeps the counts.

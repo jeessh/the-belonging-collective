@@ -13,7 +13,6 @@ import { googleCalendarButton } from "@/lib/calendar";
 import { eventImage } from "@/lib/eventImage";
 import { TIME_ZONE, longDate } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { GoingCount } from "@/components/ui/GoingCount";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 
@@ -435,7 +434,6 @@ function Thumb({
       className="absolute inset-0 h-full w-full object-cover transition duration-150 ease-out group-hover:brightness-75 group-focus-visible:brightness-75"
     />
   );
-  const going = <GoingCount count={event.saved_count} variant="tag" />;
 
   if (layout === "rail") {
     return (
@@ -492,7 +490,6 @@ function Thumb({
         <span className="text-base text-fg-muted">
           {longDate(event.starts_at) || "Date to be announced"}
         </span>
-        {going}
       </span>
     </button>
   );
