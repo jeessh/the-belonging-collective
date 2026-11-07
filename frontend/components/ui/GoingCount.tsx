@@ -25,8 +25,10 @@ export function GoingCount({
   iconClassName?: string;
   className?: string;
 }) {
-  // Nothing at zero, and nothing where a count wasn't sent.
-  if (!count) return null;
+  // Shown at zero too ("0 people saved this event"), as the console does;
+  // nothing only where a count wasn't sent (a special-access program the
+  // viewer isn't approved for).
+  if (count == null) return null;
   if (variant === "tag") {
     return (
       <span
