@@ -239,7 +239,13 @@ export const SavedSidebar = memo(
           >
             {open ? (
               <>
-                <div className="flex items-start justify-between gap-3 px-6">
+                {/* A soft dark wash down from the top, so the white heading
+                    and count read clearly against the cork. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/50 via-black/25 to-transparent"
+                />
+                <div className="relative flex items-start justify-between gap-3 px-6">
                   <div className="min-w-0">
                     <h2 className="text-2xl font-medium text-white [text-shadow:0_1px_3px_rgba(40,20,0,0.65)]">
                       Saved Events
