@@ -23,6 +23,7 @@ import type { Event, EventLink } from "@/lib/api";
 import { ImageDrop } from "@/components/ImageDrop";
 import { Field, RequiredMark, Select, TextArea } from "@/components/AdminTable";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TextField } from "@/components/ui/TextField";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -954,32 +955,14 @@ export function EventForm({
                 for an hour while spots last (core/holds). */}
             {values.requiresSignup && (
               <div className="field flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={limitOn}
-                    aria-labelledby={`${id}-limit-label`}
-                    onClick={() => {
-                      const next = !limitOn;
-                      setLimitOn(next);
-                      if (!next) set("capacity", "");
-                    }}
-                    className={`relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-border ${
-                      limitOn ? "bg-primary-strong" : "bg-line"
-                    }`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform ${
-                        limitOn ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                  <span id={`${id}-limit-label`} className="field-label text-lg font-medium text-fg">
-                    Attendee limit
-                  </span>
-                </div>
+                <Switch
+                  label="Attendee limit"
+                  checked={limitOn}
+                  onChange={(next) => {
+                    setLimitOn(next);
+                    if (!next) set("capacity", "");
+                  }}
+                />
                 {limitOn && (
                   <TextField
                     label="Most people who can come"
@@ -1061,18 +1044,15 @@ export function EventForm({
                 ))}
               </div>
             </Section>
-            <Section
-              title="Who can see this"
-            >
-              <AccessPicker
-                hostId={hostId}
-                mode={values.accessMode}
-                groupId={values.accessGroupId}
-                onChange={(accessMode, accessGroupId) =>
-                  onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
-                }
-              />
-            </Section>
+            {/* Special access: a switch; on, the group picker under it. */}
+            <AccessPicker
+              hostId={hostId}
+              mode={values.accessMode}
+              groupId={values.accessGroupId}
+              onChange={(accessMode, accessGroupId) =>
+                onChange((prev) => ({ ...prev, accessMode, accessGroupId }))
+              }
+            />
           </Group>
           <Group title="Event tags">
             <Section title="Topics" required>

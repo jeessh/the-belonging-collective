@@ -12,15 +12,14 @@ import {
 } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { Switch } from "@/components/ui/Switch";
 import { TextField } from "@/components/ui/TextField";
 import { Field, Select, TextArea } from "@/components/AdminTable";
 
 export type AccessMode = "everyone" | "group";
 
 /**
- * "Who can see this": a Special access checkbox — unticked, everyone; ticked,
- * the group picker below it. Only members approved into one of the
+ * Special access: a switch — off, everyone; on, the group picker below it. Only members approved into one of the
  * organization's special-access groups. Groups are the program's own
  * organization's — a superadmin editing another agency's program sees that
  * agency's list, which is what the API accepts.
@@ -57,14 +56,17 @@ export function AccessPicker({
 
   return (
     <div className="flex flex-col items-start gap-4">
-      {/* Unticked, everyone can see it; ticked, the group picker shows. */}
-      <Checkbox
-        label="Special access: only members approved into a group can see it"
-        checked={mode === "group"}
-        onChange={(e) =>
-          e.target.checked ? onChange("group", groupId) : onChange("everyone", null)
-        }
-      />
+      {/* Off, everyone can see it; on, the group picker shows. */}
+      <div className="flex flex-col gap-1">
+        <Switch
+          label="Special access"
+          checked={mode === "group"}
+          onChange={(on) => (on ? onChange("group", groupId) : onChange("everyone", null))}
+        />
+        <p className="text-base text-fg-muted">
+          Only members approved into a group can see it. Off, everyone can.
+        </p>
+      </div>
 
       {mode === "group" && (
         <div className="flex w-full flex-col gap-3">

@@ -397,8 +397,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
               "None"
             )}
           </ReadField>
-          <ReadField label="Who can see this">
-            {event.access_group ? `Special access — ${event.access_group.name}` : "Everyone"}
+          <ReadField label="Special access">
+            {event.access_group ? `On — ${event.access_group.name}` : "Off"}
           </ReadField>
           <ConsoleCounts event={event} />
           </Group>
