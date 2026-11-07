@@ -788,24 +788,70 @@ export function EventForm({
             </Section>
           </Group>
           <Group title="Event details">
-            <TextField
-              label="Date"
-              placeholder="DD/MM/YYYY"
-              required
-              type="date"
-              icon={<CalendarDays />}
-              value={values.date}
-              error={fieldError("date")}
-              // Chrome's date field takes a six-digit year; min/max bound the
-              // spinner and the clamp catches typing.
-              min="2000-01-01"
-              max="2100-12-31"
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
-                set("date", v);
-              }}
-            />
+            {/* Date, with Repeats beside it on the same row (create only). */}
+            <div className={`grid grid-cols-1 items-start gap-4 ${mode === "create" ? "sm:grid-cols-2" : ""}`}>
+              <TextField
+                label="Date"
+                placeholder="DD/MM/YYYY"
+                required
+                type="date"
+                icon={<CalendarDays />}
+                value={values.date}
+                error={fieldError("date")}
+                // Chrome's date field takes a six-digit year; min/max bound the
+                // spinner and the clamp catches typing.
+                min="2000-01-01"
+                max="2100-12-31"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v && (v.length > 10 || Number(v.slice(0, 4)) > 2100)) return;
+                  set("date", v);
+                }}
+              />
+              {mode === "create" && (
+                <Section title="Repeats">
+                  <div className="flex flex-wrap items-end gap-4">
+                    {/* The section's "Repeats" is its label; no second one. */}
+                    <Select
+                      aria-label="Repeats"
+                      className="min-w-[200px]"
+                      value={values.frequency}
+                      onChange={(e) => set("frequency", e.target.value as Frequency)}
+                    >
+                      {FREQUENCIES.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </Select>
+                    {values.frequency !== "once" && !values.repeatForever && (
+                      <TextField
+                        label="How many times"
+                        required
+                        className="min-w-[170px]"
+                        type="number"
+                        min={2}
+                        max={104}
+                        value={values.occurrenceCount}
+                        onChange={(e) => set("occurrenceCount", e.target.value)}
+                        error={fieldError("occurrenceCount")}
+                        placeholder="8"
+                      />
+                    )}
+                    {values.frequency !== "once" && (
+                      // A drop-in that has run every Friday for nine years has no
+                      // session count to give.
+                      <Checkbox
+                        label="It keeps going"
+                        className="min-h-12"
+                        checked={values.repeatForever}
+                        onChange={(e) => set("repeatForever", e.target.checked)}
+                      />
+                    )}
+                  </div>
+                </Section>
+              )}
+            </div>
             <div className="field flex flex-col gap-2">
               <p className="field-label text-lg font-medium text-fg">
                 Time
@@ -839,50 +885,6 @@ export function EventForm({
                 />
               </div>
             </div>
-            {/* Repeats, right under the date and time it repeats. */}
-            {mode === "create" && (
-              <Section title="Repeats">
-                <div className="flex flex-wrap items-end gap-4">
-                  {/* The section's "Repeats" is its label; no second one. */}
-                  <Select
-                    aria-label="Repeats"
-                    className="min-w-[200px]"
-                    value={values.frequency}
-                    onChange={(e) => set("frequency", e.target.value as Frequency)}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {values.frequency !== "once" && !values.repeatForever && (
-                    <TextField
-                      label="How many times"
-                      required
-                      className="min-w-[170px]"
-                      type="number"
-                      min={2}
-                      max={104}
-                      value={values.occurrenceCount}
-                      onChange={(e) => set("occurrenceCount", e.target.value)}
-                      error={fieldError("occurrenceCount")}
-                      placeholder="8"
-                    />
-                  )}
-                  {values.frequency !== "once" && (
-                    // A drop-in that has run every Friday for nine years has no
-                    // session count to give.
-                    <Checkbox
-                      label="It keeps going"
-                      className="min-h-12"
-                      checked={values.repeatForever}
-                      onChange={(e) => set("repeatForever", e.target.checked)}
-                    />
-                  )}
-                </div>
-              </Section>
-            )}
             {/* Venue and its address / meeting link, side by side. */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
               <Section title="Where">

@@ -518,8 +518,8 @@ can open.
   is chosen (a drop-in that already has a link shows it as Posting link),
   then an optional **Attendee limit** — a switch (`limitOn`; off clears
   it) that reveals the number when on (`capacity` — drives the
-  one-hour holds; members aren't shown spots); Repeats sits right under
-  the date and time (create only). The details page mirrors all of this.
+  one-hour holds; members aren't shown spots); Repeats sits beside the
+  Date on the same row (create only; Date alone when editing). The details page mirrors all of this.
   Under Description are **External links (optional)** — `links` rows of label + address,
   the first always shown with a + button beside it (tooltip "Add a link")
   that adds a row, up to `LINKS_MAX` (3); later rows have ×. The details
