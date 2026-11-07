@@ -23,7 +23,7 @@ function Poster({ url }: { url: string }) {
     <a href={url} target="_blank" rel="noopener noreferrer" className={LINK_ROW}>
       <span className="flex min-w-0 items-center gap-4">
         {pdf ? (
-          <FileText aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
+          <FileText aria-hidden="true" className="size-6 shrink-0 text-fg-icon" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img

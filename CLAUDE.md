@@ -282,6 +282,10 @@ can open.
   In-person / Virtual are no longer pills on any surface — the facts and
   filters still carry them. `EventSummary` draws title + tags as one
   wrapping row (`heading`), the event page included.
+- **Icon sizes in the member app:** facts on the feed card and the event
+  dialog / page are 28px beside 20px text (`EventSummary` `icon`; the
+  dialog's and page's `GoingCount` pass `size-7`), smaller rows 24px, and
+  every button icon 24px (`Button`). All draw a 2px line (see below).
 - The fact icons on every event summary (`ui/EventSummary` — feed card, list
   row, saved tile, event page: when, where, ages, spots) and the "going"
   people icon (`ui/GoingCount`) are `text-fg-muted` (#6D6D6D), the card's muted-text grey;

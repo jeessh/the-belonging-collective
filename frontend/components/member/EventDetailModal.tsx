@@ -73,7 +73,7 @@ export function EventDetailModal({
           event={event}
           titleAs="h2"
           titleId={TITLE_ID}
-          going={<GoingCount count={event.saved_count} onSignIn={onSignIn} />}
+          going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
           tools={<EventTools event={event} />}
           hint={external ? hostnameOf(event.registration_url) : undefined}

@@ -142,16 +142,18 @@ export function EventSummary({
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
   // 18, the saved tile's 24 over 20.
   // The feed card's facts are 20px at every size, on a 1.4 line.
+  // The event's dialog and page (`detail`) use the feed card's facts too:
+  // 20px text, 28px icons, so the icons match across the member app.
   const meta = feed
     ? "text-xl leading-[1.4]"
     : card
-    ? "text-xl sm:text-2xl"
+    ? "text-xl leading-[1.4]"
     : tile
       ? "text-xl"
       : "text-lg";
   // The fact icons (when, where, ages, spots) are a neutral grey: they mark
   // the facts, the words carry them.
-  const icon = feed ? "size-7" : card ? "size-7 sm:size-9" : "size-6";
+  const icon = feed || card ? "size-7" : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
