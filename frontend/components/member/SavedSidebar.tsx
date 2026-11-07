@@ -232,9 +232,9 @@ export const SavedSidebar = memo(
             exit={{ opacity: 0 }}
             transition={ease}
             style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-            // Open, the whole panel is the cork board, in a wooden frame.
+            // Open, the whole panel is the cork board, with a wooden edge on the right.
             className={`absolute inset-y-0 left-0 flex flex-col ${
-              open ? "cork gap-6 border-[6px] border-[#8a5a30] pt-6" : ""
+              open ? "cork gap-6 border-r-[6px] border-[#8a5a30] pt-6" : ""
             }`}
           >
             {open ? (
