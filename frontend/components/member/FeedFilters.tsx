@@ -148,13 +148,12 @@ export const FeedFilters = memo(function FeedFilters({
 
   return (
     <div className="flex flex-col gap-4" data-tour="filters">
+      {/* Not shown, but still names the chip group for a screen reader. */}
+      <p id="feed-filters-label" className="sr-only">
+        Event filters
+      </p>
+      {(topicCount > 1 || chips.size > 0) && (
       <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1">
-        <p
-          id="feed-filters-label"
-          className="text-xl uppercase tracking-wide text-fg-muted max-sm:sr-only"
-        >
-          Event filters
-        </p>
         {topicCount > 1 && (
           <p className="text-base text-fg-muted">
             Showing events in any selected topic
@@ -172,6 +171,7 @@ export const FeedFilters = memo(function FeedFilters({
           </button>
         )}
       </div>
+      )}
       <div className="flex items-center gap-3">
         {more.prev && <ScrollArrow dir="prev" onClick={() => scroll(-1)} />}
         {/* One row at every width, as drawn: the topics outnumber the
