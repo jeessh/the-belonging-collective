@@ -163,13 +163,11 @@ can open.
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
 - **Card view has a 48px cursor** (`.big-cursor` in globals.css, put on
-  the feed column while `viewMode === "card"`): an arrow, and a pointing
-  hand over anything clickable, an open hand over the draggable card and a
-  closed one while it's held (`.card-grab`, `.is-grabbing` while lifted);
-  text boxes keep the text cursor. Solid white shapes with a black outline,
-  48px PNGs in `public/cursors` (drawn by
-  `frontend/scripts/make-cursors.py`, Pillow), one size — `image-set` 2x
-  cursors came out distorted in Chrome on a Mac, SVG cursors blur.
+  the feed column while `viewMode === "card"`): just the ordinary arrow,
+  twice the size, everywhere in the column — no hand or grab states; text
+  boxes keep the text cursor. A 48px PNG with a 96px Retina copy through
+  `image-set` (`public/cursors`, drawn by `frontend/scripts/make-cursors.py`,
+  Pillow); SVG cursors blur.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
