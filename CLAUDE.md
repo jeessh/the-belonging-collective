@@ -132,6 +132,15 @@ can open.
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
   {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
   Me). The View toggle still switches card / list on its own.
+  **Advanced in List view is the console's layout** (`member/CaregiverFeed`):
+  `host/PostedEvents`' `FilterPanel` on the left (`memberView` — the feed's
+  groups only, member-app sizes; it replaces the chip row), search, and a
+  card per event like `AdminEventCard` (image, tags, when, where, "N
+  people saved this event"; the whole card opens the details) whose ⋯ menu
+  holds Share and Add to Google Calendar, beside Save / Unsave (through
+  `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
+  member's actions: nothing edits; a special-access program not yet
+  approved has no Save (its details offer Request access).
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as

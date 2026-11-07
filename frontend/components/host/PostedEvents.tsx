@@ -114,7 +114,11 @@ export const FilterPanel = memo(function FilterPanel({
   onChange,
   statusOf = publishedOnly,
   showStatus = false,
+  memberView = false,
 }: {
+  /** The member app's Advanced list: the feed's groups only, at the member
+      app's larger sizes. */
+  memberView?: boolean;
   events: Event[];
   filters: HostFilters;
   onChange: (next: HostFilters) => void;
@@ -161,12 +165,15 @@ export const FilterPanel = memo(function FilterPanel({
   }
 
   // The console's groups first (status, when, who), then the feed's.
-  const groups: FilterKey[] = [
-    ...(showStatus ? (["status"] as const) : []),
-    "posted",
-    "postedBy",
-    ...DIMENSIONS.map((d) => d.key),
-  ];
+  const groups: FilterKey[] = memberView
+    ? DIMENSIONS.map((d) => d.key)
+    : [
+        ...(showStatus ? (["status"] as const) : []),
+        "posted",
+        "postedBy",
+        ...DIMENSIONS.map((d) => d.key),
+      ];
+  const rowText = memberView ? "min-h-12 text-lg" : "min-h-10 text-sm";
   const anyChosen = groups.some((k) => filters[k]?.length);
 
   return (
@@ -186,7 +193,7 @@ export const FilterPanel = memo(function FilterPanel({
               type="button"
               onClick={() => setOpen((o) => ({ ...o, [d.key]: !isOpen }))}
               aria-expanded={isOpen}
-              className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-subtle"
+              className={`flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-fg hover:bg-surface-subtle ${rowText}`}
             >
               <span aria-hidden="true" className="info-icon w-4 shrink-0 text-fg-icon [&>svg]:size-4">
                 {group.icon}
@@ -216,7 +223,7 @@ export const FilterPanel = memo(function FilterPanel({
                   <Checkbox
                     key={o.id}
                     label={o.label}
-                    dense
+                    dense={!memberView}
                     className="text-fg-muted"
                     checked={chosen.includes(o.id)}
                     onChange={() => toggle(d.key, o.id)}
@@ -234,7 +241,7 @@ export const FilterPanel = memo(function FilterPanel({
         role="radio"
         aria-checked={!anyChosen}
         onClick={() => onChange(NO_HOST_FILTERS)}
-        className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-subtle"
+        className={`flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-fg hover:bg-surface-subtle ${rowText}`}
       >
         <span
           aria-hidden="true"

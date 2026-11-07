@@ -66,6 +66,7 @@ import { SavedSidebar } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { ListFeed } from "@/components/member/ListFeed";
+import { CaregiverFeed } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
 
@@ -789,6 +790,7 @@ export function EventsView({
     setI(0);
   }, []);
 
+  const advanced = me?.is_caregiver ?? false;
   // The experience: Simplified (community member, the card) or Advanced
   // (caregiver, the list). One write sets both.
   const changeExperience = useCallback(
@@ -1272,12 +1274,14 @@ export function EventsView({
                 </div>
               </div>
 
+              {!(viewMode === "list" && advanced) && (
               <FeedFilters
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
                 interests={taste.interests}
               />
+              )}
             </div>
 
             {status === "error" ? (
@@ -1302,6 +1306,16 @@ export function EventsView({
                   ? `${space.name} hasn't posted any programs yet. Check back soon.`
                   : "No programs yet. Check back soon."}
               </p>
+            ) : viewMode === "list" && advanced ? (
+              // The Advanced experience: the console's layout, a member's
+              // actions. Its own filter panel replaces the chip row.
+              <CaregiverFeed
+                events={feed}
+                saved={saved}
+                onOpen={setDetailFor}
+                onSave={(ev) => void attend(ev)}
+                onUnsave={(ev) => void unsave(ev)}
+              />
             ) : viewMode === "list" ? (
               <ListFeed
                 events={feed}
