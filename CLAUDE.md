@@ -164,7 +164,9 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **Card view has a 48px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): an arrow, and a pointing
-  hand over anything clickable; text boxes keep the text cursor. SVG data
+  hand over anything clickable, an open hand over the draggable card and a
+  closed one while it's held (`.card-grab`, `.is-grabbing` while lifted);
+  text boxes keep the text cursor. SVG data
   URIs, hotspots at the arrow's tip and the fingertip.
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
