@@ -118,11 +118,11 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
-- The feed's account button and menu (`FeedHeader`'s `AccountButton`) are
-  the console's (`host/ConsoleHeader`) size for size — a 32px picture, the
-  name (14px medium) over the account type ("Caregiver" / "Community
-  member", `Me.is_caregiver`, 12px grey), a 16px chevron, and a 224px menu
-  of rounded 14px items with 16px icons. Change one, change the other.
+- The feed's account button (`FeedHeader`'s `AccountButton`) is the
+  member header's one size: a 36px picture and **just the name** (no
+  account-type line) at 20px, the size of "Accessibility Tools" and the
+  "Saving for" switcher beside it, a 20px chevron; its menu items are
+  18px with 20px icons, like the header's other menus.
 - **The experience: Simplified or Advanced.** The sign-up flow's account
   step is "Choose your experience": **Simplified** (a community member;
   the feed opens on the one card) or **Advanced** (a caregiver; the list).

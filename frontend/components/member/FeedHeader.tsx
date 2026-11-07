@@ -67,7 +67,6 @@ export const FeedHeader = memo(function FeedHeader({
       <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <AccountButton
           name={name}
-          role={role}
           avatar={avatar}
           // Beside the switcher a phone has room for the picture, not the
           // name; the menu still carries it.
@@ -118,7 +117,7 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Saving for ${current}`}
-        className={`inline-flex min-h-11 max-w-[11rem] items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-lg ${
+        className={`inline-flex min-h-11 max-w-[11rem] items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
           selected
             ? "border-primary-border bg-primary-soft"
             : "border-line bg-surface hover:bg-surface-subtle"
@@ -188,15 +187,12 @@ function CareSwitcher({ members, selected, onSelect }: CareChoice) {
  */
 function AccountButton({
   name,
-  role,
   avatar,
   compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
-  /** The account type, as a smaller line under the name. */
-  role?: string | null;
   avatar?: AvatarChoice | null;
   /** Hide the name below `sm`; the picture stands in for it. */
   compact?: boolean;
@@ -230,31 +226,24 @@ function AccountButton({
         onClick={() => (signedIn ? setOpen((v) => !v) : onSignIn())}
         aria-haspopup={signedIn ? "menu" : undefined}
         aria-expanded={signedIn ? open : undefined}
-        // The console's account button (host/ConsoleHeader), size for size:
-        // a 32px picture, the name over the account type, a small chevron.
+        // The member header's one text size: the picture and the name at
+        // the size of "Accessibility Tools" beside them (20px, a 20px
+        // chevron). Just the name — no account-type line under it.
         className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control px-2 text-left transition-colors hover:bg-surface-subtle"
       >
         <Avatar
           name={name}
           src={avatar?.url}
           emblem={avatar?.emblem}
-          size={32}
+          size={36}
         />
-        {/* The name over the account type ("Caregiver" / "Community
-            member"), as the console's account button puts a person over
-            their organization. */}
         <span
-          className={`flex min-w-0 flex-col leading-tight ${compact ? "max-sm:sr-only" : ""}`}
+          className={`truncate text-xl ${signedIn ? "text-fg" : "text-fg-muted"} ${compact ? "max-sm:sr-only" : ""}`}
         >
-          <span
-            className={`truncate text-sm ${signedIn ? "font-medium text-fg" : "text-fg-muted"}`}
-          >
-            {name ?? "Not Logged In"}
-          </span>
-          {signedIn && role && <span className="truncate text-xs text-fg-muted">{role}</span>}
+          {name ?? "Not Logged In"}
         </span>
         {signedIn && (
-          <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-fg-icon" />
+          <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />
         )}
       </button>
 
@@ -262,15 +251,15 @@ function AccountButton({
         <div
           role="menu"
           aria-label="Account"
-          className="absolute left-0 top-full z-50 mt-2 w-56 rounded-control border border-line bg-surface p-1 shadow-lift"
+          className="absolute left-0 top-full z-50 mt-2 w-64 rounded-control border border-line bg-surface p-1 shadow-lift"
         >
           <Link
             role="menuitem"
             href="/profile"
             onClick={() => setOpen(false)}
-            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+            className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-lg text-fg hover:bg-surface-subtle"
           >
-            <UserRound aria-hidden="true" className="size-4" />
+            <UserRound aria-hidden="true" className="size-5" />
             Profile
           </Link>
           <button
@@ -280,9 +269,9 @@ function AccountButton({
               setOpen(false);
               onSignOut();
             }}
-            className="flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm text-fg hover:bg-surface-subtle"
+            className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-lg text-fg hover:bg-surface-subtle"
           >
-            <LogOut aria-hidden="true" className="size-4" />
+            <LogOut aria-hidden="true" className="size-5" />
             Sign out
           </button>
         </div>
