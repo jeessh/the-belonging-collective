@@ -59,7 +59,11 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   dropTarget,
   orderLabel = "Recommended",
   removeIcon = false,
+  group,
 }: {
+  /** Split what's shown (after search, Filter and Sort) into titled
+      sections; a `collapsed` one starts folded. Flat without it. */
+  group?: (shown: Event[]) => FeedSection[];
   /** The saved page: a red delete icon at each card's top right takes it
       off the list, in place of the Unsave button. */
   removeIcon?: boolean;
@@ -176,21 +180,60 @@ export const CaregiverFeed = memo(function CaregiverFeed({
           No events match these filters.
         </p>
       ) : (
-        <div className="flex flex-col gap-6">
-          {shown.map((ev) => (
-            <MemberEventCard
-              key={ev.id}
-              event={ev}
-              saved={saved.has(ev.id)}
-              onOpen={() => onOpen(ev)}
-              onSave={() => onSave(ev)}
-              onUnsave={() => onUnsave(ev)}
-              onRegister={() => onRegister(ev)}
-              dropTarget={dropTarget}
-              removeIcon={removeIcon}
-            />
-          ))}
-        </div>
+        (() => {
+          const cards = (list: Event[]) => (
+            <div className="flex flex-col gap-6">
+              {list.map((ev) => (
+                <MemberEventCard
+                  key={ev.id}
+                  event={ev}
+                  saved={saved.has(ev.id)}
+                  onOpen={() => onOpen(ev)}
+                  onSave={() => onSave(ev)}
+                  onUnsave={() => onUnsave(ev)}
+                  onRegister={() => onRegister(ev)}
+                  dropTarget={dropTarget}
+                  removeIcon={removeIcon}
+                />
+              ))}
+            </div>
+          );
+          if (!group) return cards(shown);
+          return (
+            <div className="flex flex-col gap-10">
+              {group(shown)
+                .filter((g) => g.events.length > 0)
+                .map((g) =>
+                  g.collapsed ? (
+                    // Folded until opened: a summary row with the count.
+                    <details key={g.key} className="group flex flex-col">
+                      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-control py-1 text-2xl font-medium text-fg [&::-webkit-details-marker]:hidden">
+                        <ChevronDown
+                          aria-hidden="true"
+                          className="size-6 -rotate-90 text-fg-icon transition-transform group-open:rotate-0"
+                        />
+                        {g.title}
+                        <span className="text-xl font-normal text-fg-muted">({g.events.length})</span>
+                      </summary>
+                      {g.note && <p className="mt-2 text-lg text-fg-muted">{g.note}</p>}
+                      <div className="mt-6">{cards(g.events)}</div>
+                    </details>
+                  ) : (
+                    <section key={g.key} aria-label={g.title} className="flex flex-col gap-4">
+                      <div>
+                        <h2 className="text-2xl font-medium text-fg">
+                          {g.title}{" "}
+                          <span className="text-xl font-normal text-fg-muted">({g.events.length})</span>
+                        </h2>
+                        {g.note && <p className="text-lg text-fg-muted">{g.note}</p>}
+                      </div>
+                      {cards(g.events)}
+                    </section>
+                  ),
+                )}
+            </div>
+          );
+        })()
       )}
 
     </div>
@@ -198,6 +241,14 @@ export const CaregiverFeed = memo(function CaregiverFeed({
 });
 
 type SortKey = "recommended" | "soonest" | "saved" | "az";
+
+export type FeedSection = {
+  key: string;
+  title: string;
+  events: Event[];
+  note?: string;
+  collapsed?: boolean;
+};
 
 /** The console's event card, with a member's actions. */
 function MemberEventCard({

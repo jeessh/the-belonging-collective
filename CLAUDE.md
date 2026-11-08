@@ -405,10 +405,15 @@ can open.
   Filter dropdown and Sort on one row over the same cards — with no
   Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
   colours, tooltip "Remove from saved") at each card's top right, beside
-  Share, un-saves it (with the usual Undo). No drag, `dropTarget` omitted. Back,
-  the title and the **Upcoming / Past toggle** (at the title row's right)
-  — the top bar hides Card View / List View while it is open —
-  are one sticky bar with a line under it. The page no longer has Google
+  Share, un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
+  **Grouped into sections** (`CaregiverFeed group` → `FeedSection[]`,
+  applied after search / Filter / Sort): **Upcoming** (starts within the
+  next 7 days, or is on now), **Scheduled** (later), and **Past events**
+  folded in a `<details>` — only events that finished in the last 7 days;
+  older ones drop off the page (the attendance row is kept). No Upcoming /
+  Past toggle; Sort's first option is "Date". "N Saved Events" counts
+  upcoming programs. Back and the title are one sticky bar with a line
+  under it; the top bar hides Card View / List View while it is open. The page no longer has Google
   Calendar / Share list / Print list — the sidebar's Google Calendar button
   remains; `ShareModal`'s list share and `PrintPreview` are unused here. It has no fetch of
   its own: it is handed the feed's `savedEvents` (and `unsave`), so an

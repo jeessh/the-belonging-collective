@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type ReactNode,
 } from "react";
 import { Search } from "lucide-react";
@@ -14,19 +13,47 @@ import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { CaregiverFeed } from "@/components/member/CaregiverFeed";
+import { CaregiverFeed, type FeedSection } from "@/components/member/CaregiverFeed";
 import { toastControls } from "@/components/ui/Toast";
 import { BackButton } from "@/components/ui/BackButton";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
 
-type Tab = "upcoming" | "past";
-const TABS = [
-  { value: "upcoming" as const, label: "Upcoming Events" },
-  { value: "past" as const, label: "Past Events" },
-];
+const endMs = (e: Event) => {
+  const at = e.ends_at ?? e.starts_at;
+  return at ? new Date(at).getTime() : 0;
+};
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Upcoming (starts within the week, or is on now), Scheduled (later), and
+    Past (finished in the last week), folded away. Each keeps the order it
+    was handed — whatever Sort says. */
+function sections(shown: Event[]): FeedSection[] {
+  const weekOut = Date.now() + WEEK_MS;
+  const coming = shown.filter(isUpcoming);
+  return [
+    {
+      key: "upcoming",
+      title: "Upcoming",
+      note: "Happening in the next week.",
+      events: coming.filter((e) => startMs(e) <= weekOut),
+    },
+    {
+      key: "scheduled",
+      title: "Scheduled",
+      note: "Later on.",
+      events: coming.filter((e) => startMs(e) > weekOut),
+    },
+    {
+      key: "past",
+      title: "Past events",
+      note: "Events that have happened. Each one stays here for a week.",
+      events: shown.filter((e) => !isUpcoming(e)),
+      collapsed: true,
+    },
+  ];
+}
 
 // The saved list is the design's Saved Event tiles, two up, on one
 // continuous page that scrolls.
@@ -61,8 +88,6 @@ export const SavedEvents = memo(function SavedEvents({
   onOpen,
   onUnsave,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("upcoming");
-  const listHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -109,29 +134,26 @@ export const SavedEvents = memo(function SavedEvents({
   // One entry per program, at its next date — the same thing the feed shows.
   // Saving a series-priced program writes a row per date; the member's own
   // list says what they saved, not how many rows that took. Collapsed after
-  // sorting, and separately per tab, so a past date never hides the
-  // program's next one. Search, Filter and Sort are the list view's own.
-  const { upcoming, past } = useMemo(
-    () => ({
-      upcoming: oneCardPerProgram(
-        events.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b)),
-      ),
-      past: oneCardPerProgram(
-        events
-          .filter((e) => !isUpcoming(e))
-          .sort((a, b) => startMs(b) - startMs(a)),
-      ),
-    }),
-    [events],
-  );
+  // sorting, and separately for the coming and the past dates, so a past
+  // date never hides the program's next one. Past events show for a week
+  // after they finish, then drop off this page (the save itself is kept).
+  const ordered = useMemo(() => {
+    const weekAgo = Date.now() - WEEK_MS;
+    const coming = oneCardPerProgram(
+      events.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b)),
+    );
+    const past = oneCardPerProgram(
+      events
+        .filter((e) => !isUpcoming(e) && endMs(e) >= weekAgo)
+        .sort((a, b) => startMs(b) - startMs(a)),
+    );
+    return [...coming, ...past];
+  }, [events]);
   const savedIds = useMemo(() => new Set(events.map((e) => e.id)), [events]);
-
-  const shown = tab === "upcoming" ? upcoming : past;
 
   if (!open) return null;
 
-  const total = oneCardPerProgram(events).length;
-  const tabLabel = TABS.find((t) => t.value === tab)!.label;
+  const total = oneCardPerProgram(events.filter(isUpcoming)).length;
 
   const listTitle = owner
     ? `${owner}'s Saved Events`
@@ -170,16 +192,6 @@ export const SavedEvents = memo(function SavedEvents({
                   {me ? total : 0} Saved {(me ? total : 0) === 1 ? "Event" : "Events"}
                 </p>
               </div>
-              {/* Upcoming / Past, where the title's row ends. */}
-              {me && (
-                <SegmentedToggle
-                  label="Which events"
-                  className="shrink-0 self-start sm:self-auto"
-                  segments={TABS}
-                  value={tab}
-                  onChange={setTab}
-                />
-              )}
             </div>
           </div>
         </div>
@@ -189,27 +201,20 @@ export const SavedEvents = memo(function SavedEvents({
             <Empty onAction={onSignIn} action="Login" />
           ) : (
             <>
-              {shown.length === 0 ? (
+              {ordered.length === 0 ? (
                 <Empty onAction={onClose} action="Browse Events" icon={<Search />} />
               ) : (
-                <>
-                  {/* The toggle already says which list this is; the heading
-                      is for the keyboard and screen reader. */}
-                  <h2 ref={listHeadingRef} tabIndex={-1} className="sr-only">
-                    {tabLabel}
-                  </h2>
-                  <CaregiverFeed
-                    key={tab}
-                    events={shown}
-                    saved={savedIds}
-                    orderLabel={tab === "upcoming" ? "Soonest first" : "Most recent"}
-                    removeIcon
-                    onOpen={onOpen}
-                    onSave={() => {}}
-                    onUnsave={onUnsave}
-                    onRegister={() => {}}
-                  />
-                </>
+                <CaregiverFeed
+                  events={ordered}
+                  saved={savedIds}
+                  orderLabel="Date"
+                  removeIcon
+                  group={sections}
+                  onOpen={onOpen}
+                  onSave={() => {}}
+                  onUnsave={onUnsave}
+                  onRegister={() => {}}
+                />
               )}
             </>
           )}
