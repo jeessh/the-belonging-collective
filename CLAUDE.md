@@ -255,9 +255,7 @@ can open.
   nothing is hidden. The only things that remove cards are the filter chips in
   `FeedFilters` (an "N FILTERS" count over the row, "0 FILTERS" with none;
   an **All** chip first — selected while no chip is, and
-  pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
-  upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
-  event is free; a chip that's on stays so it can be switched off)),
+  pressing it clears them — then FREE + the topics from `useCategories`),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
