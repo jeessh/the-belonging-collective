@@ -143,9 +143,9 @@ can open.
 - **The bar spans the whole width**, over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
-  panel's "Saved Events" heading, and Accessibility Tools (`a11yMenu`, card
-  view only) at the far right; the Card View / List View toggle sits on the
-  "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  panel's "Saved Events" heading, and the Card View / List View toggle at
+  the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
+  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
   beside the account — except while the saved panel is open (`careInPanel`),
   when it sits under the panel's heading and Close button, the board's full
   width.
