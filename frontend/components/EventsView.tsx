@@ -1384,6 +1384,7 @@ export function EventsView({
               toSignIn();
             }}
             onOpen={setDetailFor}
+            onUnsave={(ev) => void unsave(ev)}
           />
 
           <div

@@ -399,14 +399,18 @@ can open.
   drew 4px), so globals.css draws `svg.lucide` outside `.console` with
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
-- `components/SavedEvents.tsx` ("All Saved Events") is one continuous
-  scrolling grid — no Back / Next paging. Back + title with Google Calendar /
-  Share / Print on the right are one sticky bar with a line under it; search
-  with the Upcoming / Past toggle beside it sits just under that, at the top
-  of the page, and scrolls away with the list. It has no fetch of its own:
-  it is handed the feed's `savedEvents`, so an un-save there and the Undo on
-  its toast show at once. Its dialog is named "All saved events" — the
-  sidebar already owns "Saved events".
+- `components/SavedEvents.tsx` ("All Saved Events") **follows the list
+  view's conventions**: the card's width (880px) centred, the title with
+  "N Saved Events" in grey under it, and the list view's own component
+  (`CaregiverFeed`, `orderLabel` "Soonest first" / "Most recent") — search,
+  Filter dropdown and Sort on one row over the same cards, each saying
+  Unsave (everything here is saved; no drag, `dropTarget` omitted). Back +
+  title with Google Calendar / Share / Print as square icon buttons with
+  tooltips (the list cards' style) are one sticky bar with a line under it;
+  the Upcoming / Past toggle sits over the search row. It has no fetch of
+  its own: it is handed the feed's `savedEvents` (and `unsave`), so an
+  un-save there and the Undo on its toast show at once. Its dialog is named
+  "All saved events" — the sidebar already owns "Saved events".
 - "Share list" is the design's two rows: Share by Email (the server-sent
   cards above, its button the live list page) and Share by
   Link (the public `/shared/[token]` page, minted when the sheet opens; see

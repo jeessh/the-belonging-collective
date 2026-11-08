@@ -58,7 +58,10 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onUnsave,
   onRegister,
   dropTarget,
+  orderLabel = "Recommended",
 }: {
+  /** What the list's own order is called in Sort (its first option). */
+  orderLabel?: string;
   events: Event[];
   saved: Set<string>;
   onOpen: (event: Event) => void;
@@ -67,7 +70,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   /** An event that needs registering: ask to confirm, then register. */
   onRegister: (event: Event) => void;
   /** The saved panel: dropping a dragged card on it saves the event. */
-  dropTarget: RefObject<HTMLDivElement>;
+  dropTarget?: RefObject<HTMLDivElement>;
 }) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
@@ -153,7 +156,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
             onChange={(e) => setSort(e.target.value as SortKey)}
             className="max-sm:flex-1 [&>select]:min-h-14 [&>select]:text-lg"
           >
-            <option value="recommended">Sort: Recommended</option>
+            <option value="recommended">Sort: {orderLabel}</option>
             <option value="soonest">Sort: Soonest first</option>
             <option value="saved">Sort: Most saved</option>
             <option value="az">Sort: A–Z</option>
@@ -208,7 +211,7 @@ function MemberEventCard({
   onSave: () => void;
   onUnsave: () => void;
   onRegister: () => void;
-  dropTarget: RefObject<HTMLDivElement>;
+  dropTarget?: RefObject<HTMLDivElement>;
 }) {
   const when = whenLine(event);
   const [sharing, setSharing] = useState(false);
@@ -226,7 +229,7 @@ function MemberEventCard({
   // A special-access program needs approval before it can be saved; its
   // details say how to ask.
   const canSave = !event.access_group || event.access_status === "approved";
-  const draggable = canDragQuery && canSave && !saved;
+  const draggable = !!dropTarget && canDragQuery && canSave && !saved;
   const clientPoint = (e: MouseEvent | TouchEvent | PointerEvent) =>
     "clientX" in e
       ? { x: e.clientX, y: e.clientY }
@@ -253,7 +256,7 @@ function MemberEventCard({
         const p = clientPoint(e);
         setGhost(null);
         hint.seen();
-        const zone = dropTarget.current?.getBoundingClientRect();
+        const zone = dropTarget?.current?.getBoundingClientRect();
         const over =
           !!zone && p.x >= zone.left && p.x <= zone.right && p.y >= zone.top && p.y <= zone.bottom;
         if (over) {
