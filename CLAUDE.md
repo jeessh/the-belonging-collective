@@ -131,7 +131,10 @@ can open.
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
-  card and arrows / list all sit in it.
+  card and arrows / list all sit in it. In card view the heading block and
+  the card + arrows are one box centred on the page (1000px, 1012px from
+  `lg`), so heading, filters and card share a left edge and the filters and
+  Accessibility Tools end at the card's right edge.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
@@ -139,8 +142,9 @@ can open.
 - **The bar spans the whole width**, over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
-  panel's "Saved Events" heading, and on the right Accessibility Tools
-  (`a11yMenu`) then the Card View / List View toggle at the far right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  panel's "Saved Events" heading, and the Card View / List View toggle at
+  the far right; Accessibility Tools (`a11yMenu`) sits on the "Discover
+  Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
   beside the account — except while the saved panel is open (`careInPanel`),
   when it sits under the panel's heading and Close button, the board's full
   width.

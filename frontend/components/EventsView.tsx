@@ -1318,9 +1318,9 @@ export function EventsView({
             onSignOut={() => void doLogout()}
           />
         </div>
-        {/* Accessibility Tools, then Card View / List View at the far right. */}
+        {/* Card View / List View at the far right (Accessibility Tools sits on
+            the "Discover Events" row). */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {a11yMenu}
           <div data-tour="view">
             <SegmentedToggle
               label="View"
@@ -1389,7 +1389,22 @@ export function EventsView({
           >
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
-            <div className="flex flex-col gap-5 sm:gap-6">
+            {/* In card view laid out like the card's row — the block as wide
+                as the card (880px at most) and an empty stand-in for the
+                ↑ / ↓ column beside it — so Accessibility Tools and the filter
+                chips end exactly where the card does. */}
+            <div
+              className={
+                viewMode === "card"
+                  ? "mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9"
+                  : "contents"
+              }
+            >
+            <div
+              className={`flex w-full min-w-0 flex-col gap-5 sm:gap-6 ${
+                viewMode === "card" ? "max-w-[880px] flex-1" : ""
+              }`}
+            >
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
                   {space.logo_url && (
@@ -1422,6 +1437,8 @@ export function EventsView({
                     {heading}
                   </p>
                 </div>
+                {/* Accessibility Tools, on the heading's row at the right. */}
+                {a11yMenu}
               </div>
 
               {viewMode !== "list" && (
@@ -1433,6 +1450,10 @@ export function EventsView({
                 interests={taste.interests}
               />
               )}
+            </div>
+            {viewMode === "card" && (
+              <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
+            )}
             </div>
 
             {status === "error" ? (
@@ -1479,7 +1500,9 @@ export function EventsView({
                  from the left, in line with the heading and filters */
               <div
                 ref={deckRef}
-                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:gap-9"
+                // The card + arrows group (880 + gap + 96px), centred on the
+                // page; the heading block above is the same box.
+                className="mx-auto flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
