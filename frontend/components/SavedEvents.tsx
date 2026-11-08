@@ -8,40 +8,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  Printer,
-  Search,
-  Send,
-} from "lucide-react";
-import {
-  apiMessage,
-  createShareLink,
-  sharedListUrl,
-  type Event,
-  type Me,
-} from "@/lib/api";
-import { googleCalendarButton } from "@/lib/calendar";
+import { Search } from "lucide-react";
+import type { Event, Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
-import { EventSummary } from "@/components/ui/EventSummary";
-import { GoingCount } from "@/components/ui/GoingCount";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { CaregiverFeed } from "@/components/member/CaregiverFeed";
-import { ShareModal } from "@/components/member/ShareModal";
-import { PrintPreview } from "@/components/member/PrintPreview";
-import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { toastControls, useToast } from "@/components/ui/Toast";
+import { toastControls } from "@/components/ui/Toast";
 import { BackButton } from "@/components/ui/BackButton";
 
 const startMs = (e: Event) =>
   e.starts_at ? new Date(e.starts_at).getTime() : 0;
-
-// The list cards' square tool buttons.
-const TOOL =
-  "grid size-11 place-items-center rounded-control bg-surface-subtle text-fg-icon transition-colors hover:bg-line-active disabled:cursor-not-allowed disabled:opacity-40 [&>svg]:size-6";
 
 type Tab = "upcoming" | "past";
 const TABS = [
@@ -60,10 +39,6 @@ type Props = {
   events: Event[];
   /** "Sam R." when a caregiver is looking at someone else's list. */
   owner?: string | null;
-  /** That person's id: a share of their list is filtered by their access. */
-  ownerId?: string | null;
-  /** The `.ics` for whichever list is showing. */
-  calendarUrl: string;
   onClose: () => void;
   onSignIn: () => void;
   onOpen: (event: Event) => void;
@@ -81,28 +56,13 @@ export const SavedEvents = memo(function SavedEvents({
   open,
   events,
   owner = null,
-  ownerId = null,
-  calendarUrl,
   onClose,
   onSignIn,
   onOpen,
   onUnsave,
 }: Props) {
   const [tab, setTab] = useState<Tab>("upcoming");
-  const [sub, setSub] = useState<"share" | "print" | null>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
-  const { show } = useToast();
-
-  async function googleCalendar() {
-    try {
-      await googleCalendarButton(me?.google_calendar, show);
-    } catch (err) {
-      show({
-        title: apiMessage(err, "Couldn't open Google Calendar."),
-        tone: "alert",
-      });
-    }
-  }
 
   // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -210,76 +170,15 @@ export const SavedEvents = memo(function SavedEvents({
                   {me ? total : 0} Saved {(me ? total : 0) === 1 ? "Event" : "Events"}
                 </p>
               </div>
+              {/* Upcoming / Past, where the title's row ends. */}
               {me && (
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  {/* The whole list, subscribed in Google Calendar. The feed
-                      is the signed-in account's own, so someone else's list
-                      (a caregiver's view) stays a download. Icon buttons
-                      like the list cards', with their names as tooltips. */}
-                  {owner ? (
-                    <Tooltip text="Download calendar" align="end">
-                      {(tip) => (
-                        <a
-                          href={calendarUrl}
-                          aria-label="Download calendar"
-                          aria-describedby={tip}
-                          className={TOOL}
-                        >
-                          <GoogleCalendarIcon />
-                        </a>
-                      )}
-                    </Tooltip>
-                  ) : (
-                    <Tooltip
-                      text={
-                        me?.google_calendar === "connected"
-                          ? "Open Google Calendar"
-                          : "Add to Google Calendar"
-                      }
-                      align="end"
-                    >
-                      {(tip) => (
-                        <button
-                          type="button"
-                          aria-label="Google Calendar"
-                          aria-describedby={tip}
-                          className={TOOL}
-                          onClick={() => void googleCalendar()}
-                        >
-                          <GoogleCalendarIcon />
-                        </button>
-                      )}
-                    </Tooltip>
-                  )}
-                  <Tooltip text="Share list" align="end">
-                    {(tip) => (
-                      <button
-                        type="button"
-                        aria-label="Share list"
-                        aria-describedby={tip}
-                        className={TOOL}
-                        onClick={() => setSub("share")}
-                        disabled={upcoming.length === 0}
-                      >
-                        <Send aria-hidden="true" className="size-6" />
-                      </button>
-                    )}
-                  </Tooltip>
-                  <Tooltip text="Print list" align="end">
-                    {(tip) => (
-                      <button
-                        type="button"
-                        aria-label="Print list"
-                        aria-describedby={tip}
-                        className={TOOL}
-                        onClick={() => setSub("print")}
-                        disabled={upcoming.length === 0}
-                      >
-                        <Printer aria-hidden="true" className="size-6" />
-                      </button>
-                    )}
-                  </Tooltip>
-                </div>
+                <SegmentedToggle
+                  label="Which events"
+                  className="shrink-0 self-start sm:self-auto"
+                  segments={TABS}
+                  value={tab}
+                  onChange={setTab}
+                />
               )}
             </div>
           </div>
@@ -290,13 +189,6 @@ export const SavedEvents = memo(function SavedEvents({
             <Empty onAction={onSignIn} action="Login" />
           ) : (
             <>
-              <SegmentedToggle
-                label="Which events"
-                className="self-start"
-                segments={TABS}
-                value={tab}
-                onChange={setTab}
-              />
               {shown.length === 0 ? (
                 <Empty onAction={onClose} action="Browse Events" icon={<Search />} />
               ) : (
@@ -323,47 +215,6 @@ export const SavedEvents = memo(function SavedEvents({
         </div>
       </div>
 
-      {sub === "share" && (
-        <ShareModal
-          title="Share list of events?"
-          eventIds={upcoming.map((ev) => ev.id)}
-          withListLink={!owner}
-          forMember={ownerId}
-          // No copy-the-text row (the audit found no use for it): email, or
-          // a live link to the list. Public by design: it is only a list. The
-          // link is the signed-in account's own, so it is left out of
-          // someone else's list.
-          link={
-            owner
-              ? undefined
-              : {
-                  getUrl: async () =>
-                    sharedListUrl((await createShareLink()).token),
-                }
-          }
-          onClose={() => setSub(null)}
-        />
-      )}
-      {sub === "print" && (
-        <PrintPreview
-          title={listTitle}
-          printLabel="Print List"
-          onClose={() => setSub(null)}
-        >
-          <ul className="divide-y divide-line-card">
-            {upcoming.map((ev) => (
-              <li key={ev.id} className="py-6">
-                <EventSummary
-                  event={ev}
-                  layout="row"
-                  fixedDates
-                  going={<GoingCount count={ev.saved_count} />}
-                />
-              </li>
-            ))}
-          </ul>
-        </PrintPreview>
-      )}
     </div>
   );
 });
