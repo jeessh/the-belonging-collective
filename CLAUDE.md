@@ -310,8 +310,9 @@ can open.
   (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
-  Calendar / Share / Print — a row above the title, at the top of the
-  text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  Calendar / Share / Print — ghost buttons in a row under the title and
+  its three facts, in the same column beside the picture; through
+  `EventSummary`'s `going` slot) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,

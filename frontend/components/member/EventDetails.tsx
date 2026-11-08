@@ -66,7 +66,7 @@ export function EventDetails({
   stickyActions?: boolean;
   event: Event;
   going?: ReactNode;
-  /** Google Calendar / Share / Print, above the title. */
+  /** Google Calendar / Share / Print, under the title and facts. */
   tools?: ReactNode;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
@@ -112,11 +112,17 @@ export function EventDetails({
         event={event}
         layout="detail"
         saved={saved}
-        going={going}
-        // Add to Google Calendar, Share and Print sit above the title, at
-        // the top of the text column.
-        aboveTitle={
-          tools ? <div className="flex flex-wrap items-center gap-3">{tools}</div> : undefined
+        // Add to Google Calendar, Share and Print go under the title and
+        // the three facts, in the same column, after the saved count.
+        going={
+          tools ? (
+            <div className="flex flex-col items-start gap-3">
+              {going}
+              <div className="flex flex-wrap items-center gap-1">{tools}</div>
+            </div>
+          ) : (
+            going
+          )
         }
         titleAs={titleAs}
         titleId={titleId}
