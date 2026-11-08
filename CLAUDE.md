@@ -157,9 +157,14 @@ can open.
 - **Community member or caregiver** (was "Simplified / Advanced"). The
   sign-up flow's account step asks "Are you a community member or a
   caregiver?": a **community member** gets card view (one card at a time),
-  a **caregiver** list view. Accessibility Tools has the same choice as an
-  "I am a" toggle (Community member | Caregiver), and the profile shows it
-  under the name. Signing up or in through the feed's own sign-in sheet
+  a **caregiver** list view. **Switching role is deliberate**: Accessibility
+  Tools only says "I am a caregiver / community member" with a **Go to
+  settings** button (`/profile#role`); the switch itself (Community member |
+  Caregiver) is the Profile page's "Your role" card (`changeRole`: `PATCH
+  /users/me {is_caregiver, preferred_view}`). The profile also shows it
+  under the name. **In list view Accessibility Tools has no Read aloud,
+  Voice commands or Head tracking** — they drive the one card — only Show me
+  around and the topics. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
   `is_caregiver` plus `preferred_view`, written together — at sign-up
@@ -893,9 +898,9 @@ can open.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
-  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`; the profile
-  no longer has a toggle, it only lists "People I support" for an account that
-  already is one). **The member keeps their own account and their own
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
+  profile's "Your role" card; the profile lists "People I support" for an
+  account that is one). **The member keeps their own account and their own
   credential**; a caregiver never signs in as them. `care_links(caregiver_id,
   member_id, created_at, removed_at)` (migration `0021_caregivers`,
   `models/care.py`) is the only user-to-user relation. Unlinking sets

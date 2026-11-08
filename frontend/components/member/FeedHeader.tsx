@@ -8,17 +8,17 @@ import {
   Compass,
   LogOut,
   PersonStanding,
+  Settings,
   UserRound,
   Mic,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { categoryStyle } from "@/lib/categories";
 import { useCategories } from "@/lib/useCategories";
 import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
 import { Glyph } from "@/components/ui/Glyph";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -292,9 +292,6 @@ function AccountButton({
 
 /* ---------------- accessibility tools ---------------- */
 
-/** Why a card-driven tool is greyed out while the list is showing. */
-const CARD_ONLY = "Works in card view. Switch to Card View to use it.";
-
 export const AccessibilityMenu = memo(function AccessibilityMenu({
   open,
   onOpenChange,
@@ -413,34 +410,37 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         >
           {signedIn && onChangeExperience && (
             <>
-              <h2 className="text-xl font-medium text-fg">I am a</h2>
+              <h2 className="text-xl font-medium text-fg">
+                I am a {advanced ? "caregiver" : "community member"}
+              </h2>
               <p className="text-base text-fg-muted">
-                {advanced
-                  ? "Every event in a list, and saving for someone you support (list view)."
-                  : "One event at a time, big and clear (card view)."}
+                To change your role, go to settings.
               </p>
-              <SegmentedToggle<"simplified" | "advanced">
-                className="mt-3 w-full"
-                label="I am a"
-                value={advanced ? "advanced" : "simplified"}
-                onChange={(v) => onChangeExperience(v === "advanced")}
-                segments={[
-                  { value: "simplified", label: "Community member" },
-                  { value: "advanced", label: "Caregiver" },
-                ]}
-              />
+              {/* Switching role is deliberate: it lives in Profile. */}
+              <Link
+                href="/profile#role"
+                onClick={() => onOpenChange(false)}
+                className={buttonClass("secondary", "md", "mt-3 w-full")}
+              >
+                <Settings aria-hidden="true" className="size-6" />
+                Go to settings
+              </Link>
               <div className="mt-6" />
             </>
           )}
+          {/* Read aloud, voice and head tracking all drive the one card, so
+              list view doesn't offer them. */}
+          {!listView && (
+          <>
           <h2 className="text-xl font-medium text-fg">Accessibility</h2>
           <div className="mt-1 flex flex-col divide-y divide-line-card">
             <MenuToggle
               label="Read aloud"
               hint="Speaks each event as you browse."
               checked={ttsEnabled}
-              disabled={!ttsSupported || listView}
+              disabled={!ttsSupported}
               disabledHint={
-                !ttsSupported ? "Not supported in this browser." : CARD_ONLY
+                "Not supported in this browser."
               }
               onChange={onToggleTts}
             />
@@ -454,9 +454,9 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
                   : 'Say “next”, “back”, “save”, or “list”.'
               }
               checked={voiceEnabled}
-              disabled={!voiceSupported || listView}
+              disabled={!voiceSupported}
               disabledHint={
-                !voiceSupported ? "Not supported here (try Chrome or Edge)." : CARD_ONLY
+                "Not supported here (try Chrome or Edge)."
               }
               onChange={onToggleVoice}
             />
@@ -464,16 +464,18 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               label="Head tracking"
               hint="Turn your head to an edge: up and down move, left saves, right opens your list."
               checked={headEnabled}
-              disabled={!headSupported || listView}
+              disabled={!headSupported}
               disabledHint={
-                !headSupported ? "Needs a webcam, and Chrome or Edge." : CARD_ONLY
+                "Needs a webcam, and Chrome or Edge."
               }
               onChange={onToggleHead}
             />
           </div>
+          </>
+          )}
 
           <Button
-            className="mt-4 w-full"
+            className={`w-full ${listView ? "" : "mt-4"}`}
             onClick={onShowTour}
             leadingIcon={<Compass />}
           >
