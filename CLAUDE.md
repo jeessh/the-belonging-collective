@@ -202,7 +202,10 @@ can open.
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
-  **Its cards drag onto the saved panel too** (from `sm`; a phone scrolls):
+  **List cards have no Save / Register button and no drag any more** — an
+  event is saved from its details (click the card); a saved card shows only
+  the red trash icon. (The drag code remains, off: no `dropTarget` is
+  passed.) Previously: its cards dragged onto the saved panel too (from `sm`; a phone scrolls):
   framer `drag` held in place (zero `dragConstraints`, no elasticity — the
   card itself never moves, or it slid over the filter panel), the card
   fading while a portalled

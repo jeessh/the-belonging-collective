@@ -13,10 +13,8 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
-  Bookmark,
   CalendarDays,
   ChevronDown,
-  ClipboardPen,
   MapPin,
   Printer,
   Send,
@@ -453,31 +451,8 @@ function MemberEventCard({
             </Tooltip>
           )}
         </div>
-        {canSave &&
-          !(removeIcon && saved) &&
-          (saved ? (
-            <Button onClick={onUnsave} trailingIcon={<Trash2 />} className="max-sm:order-1 max-sm:flex-1">
-              Unsave
-            </Button>
-          ) : event.requires_signup ? (
-            <Button
-              variant="primary"
-              onClick={onRegister}
-              trailingIcon={<ClipboardPen />}
-              className="max-sm:order-1 max-sm:flex-1"
-            >
-              Register
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={onSave}
-              trailingIcon={<Bookmark />}
-              className="max-sm:order-1 max-sm:flex-1"
-            >
-              Save
-            </Button>
-          ))}
+        {/* No Save here: an event is saved from its details (click the
+            card). Saved, the trash icon above un-saves it. */}
       </div>
 
       {ghost &&

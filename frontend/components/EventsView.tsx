@@ -1500,7 +1500,6 @@ export function EventsView({
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
-                dropTarget={dropRef}
                 group={byWhen}
                 removeIcon
               />
