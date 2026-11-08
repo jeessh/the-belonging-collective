@@ -14,7 +14,6 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   Bookmark,
-  BookX,
   CalendarDays,
   ChevronDown,
   ClipboardPen,
@@ -446,7 +445,7 @@ function MemberEventCard({
         {canSave &&
           !(removeIcon && saved) &&
           (saved ? (
-            <Button onClick={onUnsave} trailingIcon={<BookX />} className="max-sm:order-1 max-sm:flex-1">
+            <Button onClick={onUnsave} trailingIcon={<Trash2 />} className="max-sm:order-1 max-sm:flex-1">
               Unsave
             </Button>
           ) : event.requires_signup ? (

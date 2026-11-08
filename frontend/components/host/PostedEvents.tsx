@@ -136,7 +136,9 @@ export const FilterPanel = memo(function FilterPanel({
     for (const d of DIMENSIONS) {
       byKey.set(
         d.key,
-        bucketsFor(events, d).sort((a, b) => a.label.localeCompare(b.label)),
+        d.options
+          ? d.options
+          : bucketsFor(events, d).sort((a, b) => a.label.localeCompare(b.label)),
       );
     }
     for (const k of EXTRAS) {

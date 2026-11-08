@@ -40,6 +40,10 @@ export type Dimension = {
    * `bucket`. `bucket` stays the one the stepper and tags group on.
    */
   all?: (event: Event) => ReturnType<Dimension["bucket"]>[];
+  /** A fixed set of choices, always offered in this order (even one no
+      event uses yet) — for the yes / no kinds of filter. Absent means the
+      choices come from the events. */
+  options?: { id: string; label: string }[];
 };
 
 /** Every bucket `event` is in on `dimension` — what a filter matches on. */
@@ -106,40 +110,36 @@ export const DIMENSIONS: Dimension[] = [
       e.is_free
         ? { id: "free", label: "Free", color: "#2FA36B" }
         : { id: "paid", label: "Paid", color: "#F59E0B" },
+    options: [
+      { id: "free", label: "Free" },
+      { id: "paid", label: "Paid" },
+    ],
   },
   {
     key: "registration",
     label: "Registration Type",
     heading: "Registration Type",
-    // The three states a member actually experiences. Whether sign-up is
-    // internal or external only changes anything when sign-up is required, so
-    // drop-in is one bucket rather than two.
-    bucket: (e) => {
-      if (!e.requires_signup) {
-        return { id: "dropin", label: "Drop in", color: "#22C55E" };
-      }
-      return e.registration_mode === "external"
-        ? {
-            id: "external",
-            label: "Registration (link given)",
-            color: "#3B82F6",
-          }
-        : {
-            id: "internal",
-            label: "Registration (no link)",
-            color: "#9B5BD6",
-          };
-    },
+    // Drop-in or registration required: the two a member actually
+    // experiences (the tag says the same).
+    bucket: (e) =>
+      e.requires_signup
+        ? { id: "signup", label: "Registration required", color: "#3B82F6" }
+        : { id: "dropin", label: "Drop-in", color: "#22C55E" },
+    options: [
+      { id: "dropin", label: "Drop-in" },
+      { id: "signup", label: "Registration required" },
+    ],
   },
   {
     key: "eventType",
     label: "Event Type",
     heading: "Event Type",
-    // Virtual, in person, or for youth — the same three the admin filters on.
-    bucket: (e) => (e.is_youth ? YOUTH : venueOf(e)),
-    // The form asks venue and audience separately, so a virtual youth
-    // program is in both "Virtual" and "Youth".
-    all: (e) => (e.is_youth ? [venueOf(e), YOUTH] : [venueOf(e)]),
+    // In person or virtual (the form no longer asks about youth).
+    bucket: (e) => venueOf(e),
+    options: [
+      { id: "inperson", label: "In person" },
+      { id: "virtual", label: "Virtual" },
+    ],
   },
   {
     key: "activityType",
@@ -154,8 +154,6 @@ export const DIMENSIONS: Dimension[] = [
       (e.categories?.length ? e.categories : [e.category || ""]).map(topicBucket),
   },
 ];
-
-const YOUTH = { id: "youth", label: "Youth", color: "#F59E0B" };
 
 const venueOf = (e: Event) =>
   e.is_virtual

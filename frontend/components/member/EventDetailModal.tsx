@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, BookX, ClipboardPen } from "lucide-react";
+import { Bookmark, ClipboardPen, Trash2 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
@@ -91,7 +91,7 @@ export function EventDetailModal({
                   // and the text above.
                   className="-ml-6 !text-danger-fg [&_svg]:!text-danger-fg"
                   onClick={() => onUnsave(event)}
-                  trailingIcon={<BookX />}
+                  trailingIcon={<Trash2 />}
                 >
                   Un-Save Event
                 </Button>

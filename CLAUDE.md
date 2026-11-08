@@ -530,9 +530,10 @@ can open.
   isn't confused with the toggle), with a Your Events / All Events toggle. The panel is sticky under the
   console header (`lg:top-[97px]`, scrolling itself if taller than the window).
   **A filter matches every option a program is in** (`Dimension.all`,
-  `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
-  Type, and both Virtual/In person and Youth under Event Type, because the
-  form asks venue and audience separately. `bucket` (one per program) is
+  `bucketsOf` in `lib/dimensions.ts`): each of its topics under Topics.
+  Price (Free / Paid), Registration Type (Drop-in / Registration required)
+  and Event Type (In person / Virtual — no Youth any more) have fixed
+  `options`, always offered even when no event uses one yet. `bucket` (one per program) is
   still what the member stepper and tags group on. The console says
   "event" throughout, never "program" (the printed poster, which members
   read, keeps the member app's word).
