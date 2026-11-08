@@ -73,7 +73,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const wide = useMediaQuery("(min-width: 1024px)");
+  const wide = useMediaQuery("(min-width: 1280px)");
   const shown = useMemo(
     () => applyHostFilters(events, filters, query),
     [events, filters, query],
@@ -81,10 +81,10 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   return (
-    <div className="flex flex-col items-start gap-8 lg:flex-row">
+    <div className="flex flex-col items-start gap-8 xl:flex-row">
       {/* Sticky: it stays in view while the cards scroll (the feed column
           is the scroller), scrolling itself if it's taller than the window. */}
-      <div className="hidden w-[280px] shrink-0 lg:sticky lg:top-4 lg:block lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
+      <div className="hidden w-[280px] shrink-0 xl:sticky xl:top-4 xl:block xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
         <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
       </div>
 
@@ -98,7 +98,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
             className="w-full min-w-0 sm:flex-1"
           />
           <Button
-            className="shrink-0 lg:hidden"
+            className="shrink-0 xl:hidden"
             leadingIcon={<SlidersHorizontal />}
             aria-haspopup="dialog"
             onClick={() => setFiltersOpen(true)}

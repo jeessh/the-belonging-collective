@@ -1421,7 +1421,7 @@ export function EventsView({
               {/* One row on a phone too, the switch as icons: stacked, the
                   heading, switch and filter label pushed the card's Save
                   below the fold, behind the saved bar. */}
-              <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-row items-start justify-between gap-3 sm:gap-4">
                 {/* "Discover Events", with the count under it. In the card view
                     a screen reader skips the "Event n of m" line — the live
                     region already reads it per card, and a line that changes

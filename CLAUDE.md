@@ -171,7 +171,7 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
+  `host/PostedEvents`' `FilterPanel` on the left, sticky, from `xl` (a Filters sheet below that — with the saved panel open a `lg` window left the cards ~190px) (`memberView` — the feed's
   groups only, member-app sizes; it replaces the chip row), search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share and Add to Google
