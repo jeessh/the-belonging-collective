@@ -5,15 +5,20 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
-import { Search } from "lucide-react";
-import type { Event, Me } from "@/lib/api";
+import { Printer, Search, Send } from "lucide-react";
+import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
 import { CaregiverFeed, type FeedSection } from "@/components/member/CaregiverFeed";
+import { ShareModal } from "@/components/member/ShareModal";
+import { PrintPreview } from "@/components/member/PrintPreview";
+import { EventSummary } from "@/components/ui/EventSummary";
+import { GoingCount } from "@/components/ui/GoingCount";
 import { toastControls } from "@/components/ui/Toast";
 import { BackButton } from "@/components/ui/BackButton";
 
@@ -66,6 +71,8 @@ type Props = {
   events: Event[];
   /** "Sam R." when a caregiver is looking at someone else's list. */
   owner?: string | null;
+  /** That person's id: a share of their list is filtered by their access. */
+  ownerId?: string | null;
   onClose: () => void;
   onSignIn: () => void;
   onOpen: (event: Event) => void;
@@ -83,11 +90,13 @@ export const SavedEvents = memo(function SavedEvents({
   open,
   events,
   owner = null,
+  ownerId = null,
   onClose,
   onSignIn,
   onOpen,
   onUnsave,
 }: Props) {
+  const [sub, setSub] = useState<"share" | "print" | null>(null);
 
   // Dialog focus management. Escape is handled globally by EventsView.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -150,6 +159,7 @@ export const SavedEvents = memo(function SavedEvents({
     return [...coming, ...past];
   }, [events]);
   const savedIds = useMemo(() => new Set(events.map((e) => e.id)), [events]);
+  const coming = useMemo(() => ordered.filter(isUpcoming), [ordered]);
 
   if (!open) return null;
 
@@ -210,6 +220,30 @@ export const SavedEvents = memo(function SavedEvents({
                   orderLabel="Date"
                   removeIcon
                   group={sections}
+                  tools={
+                    // Share and Print, where the list view has Filter and
+                    // Sort. Both cover the events still to come.
+                    <div className="flex gap-3">
+                      <Button
+                        size="lg"
+                        className="max-sm:flex-1"
+                        leadingIcon={<Send />}
+                        disabled={coming.length === 0}
+                        onClick={() => setSub("share")}
+                      >
+                        Share
+                      </Button>
+                      <Button
+                        size="lg"
+                        className="max-sm:flex-1"
+                        leadingIcon={<Printer />}
+                        disabled={coming.length === 0}
+                        onClick={() => setSub("print")}
+                      >
+                        Print
+                      </Button>
+                    </div>
+                  }
                   onOpen={onOpen}
                   onSave={() => {}}
                   onUnsave={onUnsave}
@@ -221,6 +255,46 @@ export const SavedEvents = memo(function SavedEvents({
         </div>
       </div>
 
+      {sub === "share" && (
+        <ShareModal
+          title="Share list of events?"
+          eventIds={coming.map((ev) => ev.id)}
+          withListLink={!owner}
+          forMember={ownerId}
+          // Email, or a live link to the list. Public by design: it is only
+          // a list. The link is the signed-in account's own, so it is left
+          // out of someone else's list.
+          link={
+            owner
+              ? undefined
+              : {
+                  getUrl: async () =>
+                    sharedListUrl((await createShareLink()).token),
+                }
+          }
+          onClose={() => setSub(null)}
+        />
+      )}
+      {sub === "print" && (
+        <PrintPreview
+          title={listTitle}
+          printLabel="Print List"
+          onClose={() => setSub(null)}
+        >
+          <ul className="divide-y divide-line-card">
+            {coming.map((ev) => (
+              <li key={ev.id} className="py-6">
+                <EventSummary
+                  event={ev}
+                  layout="row"
+                  fixedDates
+                  going={<GoingCount count={ev.saved_count} />}
+                />
+              </li>
+            ))}
+          </ul>
+        </PrintPreview>
+      )}
     </div>
   );
 });

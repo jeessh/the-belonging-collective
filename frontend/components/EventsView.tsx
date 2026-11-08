@@ -1379,6 +1379,7 @@ export function EventsView({
             open={view === "saved"}
             events={savedEvents}
             owner={listOwner}
+            ownerId={careFor?.id ?? null}
             onClose={closeSaved}
             onSignIn={() => {
               closeSaved();

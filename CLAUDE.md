@@ -401,21 +401,21 @@ can open.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
   view's conventions**: the card's width (880px) centred, the title with
   "N Saved Events" in grey under it, and the list view's own component
-  (`CaregiverFeed`, `orderLabel` "Date") — search,
-  Filter dropdown and Sort on one row over the same cards — with no
+  (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
+  `tools` prop, in place of the list view's Filter and Sort; both cover the
+  events still to come) over the same cards — with no
   Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
   colours, tooltip "Remove from saved") at each card's top right, beside
   Share, un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
   **Grouped into sections** (`CaregiverFeed group` → `FeedSection[]`,
-  applied after search / Filter / Sort): **Upcoming** (starts within the
+  applied after search): **Upcoming** (starts within the
   next 7 days, or is on now), **Scheduled** (later), and **Past events**
   folded in a `<details>` — only events that finished in the last 7 days;
   older ones drop off the page (the attendance row is kept). No Upcoming /
-  Past toggle; Sort's first option is "Date". "N Saved Events" counts
+  Past toggle, no Filter or Sort. "N Saved Events" counts
   upcoming programs. Back and the title are one sticky bar with a line
-  under it; the top bar hides Card View / List View while it is open. The page no longer has Google
-  Calendar / Share list / Print list — the sidebar's Google Calendar button
-  remains; `ShareModal`'s list share and `PrintPreview` are unused here. It has no fetch of
+  under it; the top bar hides Card View / List View while it is open. No
+  Google Calendar button here (the sidebar's remains). It has no fetch of
   its own: it is handed the feed's `savedEvents` (and `unsave`), so an
   un-save there and the Undo on its toast show at once. Its dialog is named
   "All saved events" — the sidebar already owns "Saved events".

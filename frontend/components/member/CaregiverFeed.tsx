@@ -1,6 +1,15 @@
 "use client";
 
-import { memo, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  memo,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -60,7 +69,11 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   orderLabel = "Recommended",
   removeIcon = false,
   group,
+  tools,
 }: {
+  /** In place of Filter and Sort, beside the search box (the saved page:
+      Share and Print). */
+  tools?: ReactNode;
   /** Split what's shown (after search, Filter and Sort) into titled
       sections; a `collapsed` one starts folded. Flat without it. */
   group?: (shown: Event[]) => FeedSection[];
@@ -125,6 +138,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
           onChange={setQuery}
           className="w-full min-w-0 sm:flex-1"
         />
+        {tools ?? (
         <div className="flex gap-3">
           {/* A dropdown of every filter group, under the button. */}
           <div ref={filterRef} className="relative max-sm:flex-1">
@@ -169,6 +183,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
             <option value="az">Sort: A–Z</option>
           </Select>
         </div>
+        )}
       </div>
 
       <p role="status" aria-live="polite" className="sr-only">
