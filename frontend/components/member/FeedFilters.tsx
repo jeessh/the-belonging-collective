@@ -152,23 +152,12 @@ export const FeedFilters = memo(function FeedFilters({
       <p id="feed-filters-label" className="sr-only">
         Event filters
       </p>
-      {(topicCount > 1 || chips.size > 0) && (
+      {topicCount > 1 && (
       <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1">
         {topicCount > 1 && (
           <p className="text-base text-fg-muted">
             Showing events in any selected topic
           </p>
-        )}
-        {chips.size > 0 && (
-          <button
-            type="button"
-            onClick={onClearChips}
-            className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-lg text-fg underline underline-offset-4 hover:bg-surface-subtle"
-          >
-            <X aria-hidden="true" className="size-5" />
-            Clear all
-            <span className="sr-only"> filters ({chips.size} selected)</span>
-          </button>
         )}
       </div>
       )}
@@ -204,6 +193,18 @@ export const FeedFilters = memo(function FeedFilters({
           })}
         </div>
         {more.next && <ScrollArrow dir="next" onClick={() => scroll(1)} />}
+        {/* Clear all, at the right end of the chip row, once a chip is on. */}
+        {chips.size > 0 && (
+          <button
+            type="button"
+            onClick={onClearChips}
+            className="inline-flex min-h-11 shrink-0 whitespace-nowrap items-center gap-2 rounded-control px-3 text-lg text-fg underline underline-offset-4 hover:bg-surface-subtle"
+          >
+            <X aria-hidden="true" className="size-5" />
+            Clear all
+            <span className="sr-only"> filters ({chips.size} selected)</span>
+          </button>
+        )}
       </div>
     </div>
   );

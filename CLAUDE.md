@@ -253,7 +253,8 @@ can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` (an **All** chip first — selected while no chip is, and
+  `FeedFilters` ("Clear all" at the right end of the chip row once a chip
+  is on; an **All** chip first — selected while no chip is, and
   pressing it clears them — then FREE + the topics from `useCategories`),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
