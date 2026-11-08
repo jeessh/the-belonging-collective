@@ -444,31 +444,40 @@ export function EventsView({
   useEffect(() => {
     const el = deckRef.current;
     if (!el || viewMode !== "card") return;
+    // A trackpad keeps sending "momentum" wheel events for a second or so
+    // after the fingers lift, sometimes with short gaps — so one swipe is
+    // one turn: after a turn, nothing more counts until BOTH 700ms have
+    // passed and the wheel has been still for 300ms. Small drifts (under
+    // 60px of travel) never turn a card.
     let sum = 0;
-    let locked = false;
-    let quiet: ReturnType<typeof setTimeout> | undefined;
+    let lockedUntil = 0;
+    let lastAt = 0;
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return; // a pinch is zoom, not a swipe
       if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return; // sideways: leave it
       e.preventDefault();
-      clearTimeout(quiet);
-      quiet = setTimeout(() => {
-        locked = false;
+      const now = performance.now();
+      const quietFor = now - lastAt;
+      lastAt = now;
+      if (now < lockedUntil || (lockedUntil > 0 && quietFor < 300)) {
+        // Still the same swipe (or its momentum): keep it locked a little.
+        if (now >= lockedUntil) lockedUntil = now + 120;
         sum = 0;
-      }, 180);
-      if (locked) return;
-      sum += e.deltaY;
-      if (Math.abs(sum) < 40) return;
-      locked = true;
+        return;
+      }
+      lockedUntil = 0;
+      // A fresh swipe starts counting from zero.
+      if (quietFor > 300) sum = 0;
+      // Line-mode wheels (some mice) report lines, not pixels.
+      sum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      if (Math.abs(sum) < 60) return;
+      lockedUntil = now + 700;
       if (sum > 0) nextRef.current();
       else prevRef.current();
       sum = 0;
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      clearTimeout(quiet);
-    };
+    return () => el.removeEventListener("wheel", onWheel);
     // The deck mounts and unmounts with the card (filters that match
     // nothing), so re-attach whenever it comes back.
   }, [viewMode, status, hasCard]);

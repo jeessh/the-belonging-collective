@@ -231,8 +231,10 @@ can open.
   hold saves; head zones are left = save, right = saved list, up/down =
   previous/next (`useHeadTracking`). **A two-finger trackpad swipe (or mouse wheel) over the
   card turns it too** — up for next, down for previous, one card per gesture
-  (a non-passive `wheel` listener on `deckRef` in card view; momentum is
-  ignored until the events pause; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
+  (a non-passive `wheel` listener on `deckRef` in card view: 60px of travel
+  turns a card, then nothing counts until 700ms have passed AND the wheel
+  has been still for 300ms, so a swipe's momentum — gaps and all — can't
+  turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
   call) — the card's button turning to "Unsave event" (which un-saves,
   with the usual Undo toast) and the live region say it; only
