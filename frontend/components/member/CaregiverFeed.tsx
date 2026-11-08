@@ -383,11 +383,7 @@ function MemberEventCard({
         </h3>
           <EventTags event={event} saved={saved} />
         </div>
-        {event.host_name && (
-          <p className="text-lg text-fg-muted">
-            <PostedBy event={event} />
-          </p>
-        )}
+
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">
             <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
@@ -459,6 +455,12 @@ function MemberEventCard({
         </div>
         {/* No Save here: an event is saved from its details (click the
             card). Saved, the trash icon above un-saves it. */}
+        {/* Who posted it, at the card's bottom right. */}
+        {event.host_name && (
+          <p className="text-base text-fg-muted max-sm:order-3 max-sm:w-full sm:text-right">
+            <PostedBy event={event} />
+          </p>
+        )}
       </div>
 
       {ghost &&

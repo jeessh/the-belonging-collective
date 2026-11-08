@@ -379,7 +379,8 @@ can open.
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
 - **Who posted it, under the title, everywhere members see an event**
-  (`EventSummary`'s heading and the list cards): `host/PostedBy` — the
+  (`EventSummary`'s heading; on the list cards, the card's **bottom
+  right**, 16px): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
 - **Every event summary shows three facts and no more: when, where and
