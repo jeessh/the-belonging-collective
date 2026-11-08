@@ -29,6 +29,8 @@ type Step = {
   targets: string[];
   /** Play a cursor dragging an event onto the saved panel over the page. */
   dragDemo?: boolean;
+  /** Stretch the spotlight across the whole page, edge to edge. */
+  fullWidth?: boolean;
 };
 
 function stepsFor(): Step[] {
@@ -45,6 +47,7 @@ function stepsFor(): Step[] {
       body: "Drag an event into Saved Events on the left to save it. Or tap \u201cSave event\u201d.",
       targets: ["card", "saved"],
       dragDemo: true,
+      fullWidth: true,
     },
     {
       icon: <Info />,
@@ -226,7 +229,12 @@ export function Tour({
       behavior: reduceMotion ? "auto" : "smooth",
     });
     const measure = () => {
-      setRect(unionRect(names));
+      const r = unionRect(names);
+      setRect(
+        r && step.fullWidth
+          ? { ...r, left: PAD, width: window.innerWidth - PAD * 2 }
+          : r,
+      );
       setDemo(step.dragDemo && !reduceMotion && !phone ? dragPath() : null);
     };
     measure();
