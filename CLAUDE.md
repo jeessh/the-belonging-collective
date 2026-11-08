@@ -284,8 +284,9 @@ can open.
   has been still for 300ms, so a swipe's momentum — gaps and all — can't
   turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
-  call) — the card's button turning to "Unsave event" (which un-saves,
-  with the usual Undo toast) and the live region say it; only
+  call) — the card's button turning to **"Share event"** (primary; opens
+  the share sheet — the card no longer un-saves, that's in More information
+  and on the saved page) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
