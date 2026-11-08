@@ -75,9 +75,30 @@ import {
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
-import { CaregiverFeed } from "@/components/member/CaregiverFeed";
+import { CaregiverFeed, type FeedSection } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** List view's sections: this week (starts within 7 days, or is on now),
+    the month after that (to 37 days out), then anything later. Each keeps
+    the order Search / Filter / Sort gave it. */
+function byWhen(shown: Event[]): FeedSection[] {
+  const now = Date.now();
+  const at = (e: Event) => (e.starts_at ? new Date(e.starts_at).getTime() : now);
+  const week = now + 7 * DAY_MS;
+  const month = week + 30 * DAY_MS;
+  return [
+    { key: "week", title: "This week", events: shown.filter((e) => at(e) <= week) },
+    {
+      key: "month",
+      title: "Next month",
+      events: shown.filter((e) => at(e) > week && at(e) <= month),
+    },
+    { key: "later", title: "Later", events: shown.filter((e) => at(e) > month) },
+  ];
+}
 
 /** How far from the saved board (px) the dragged card starts turning into a mini card. */
 const MORPH_DISTANCE = 320;
@@ -1501,6 +1522,7 @@ export function EventsView({
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
                 dropTarget={dropRef}
+                group={byWhen}
               />
                 </div>
               </div>

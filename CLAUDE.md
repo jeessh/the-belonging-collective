@@ -189,7 +189,10 @@ can open.
   are on) and **Sort** (Recommended — the feed's own order — Soonest first,
   Most saved, A–Z) share one row, over the cards. It is handed `listFeed`
   (the feed before the card view's chips), so a chip left on in card view
-  never hides list rows. Then a
+  never hides list rows. The cards are **grouped under headings** (`byWhen` in
+  EventsView → `CaregiverFeed group`): **This week** (starts within 7 days,
+  or is on now), **Next month** (the 30 days after that) and **Later**, each
+  with its count; an empty one is left out, and each keeps Sort's order. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share
   as an icon button with `ui/Tooltip`s, beside Save / Unsave (through
