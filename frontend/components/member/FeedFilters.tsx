@@ -173,14 +173,6 @@ export const FeedFilters = memo(function FeedFilters({
       </div>
       )}
       <div className="flex items-center gap-3">
-        {/* How many filters are on, at the start of the chip row: "0
-            filters" with none (All). */}
-        <p
-          aria-live="polite"
-          className="shrink-0 whitespace-nowrap text-xl uppercase tracking-wide text-fg-muted max-sm:text-base"
-        >
-          {chips.size} {chips.size === 1 ? "filter" : "filters"}
-        </p>
         {more.prev && <ScrollArrow dir="prev" onClick={() => scroll(-1)} />}
         {/* One row at every width, as drawn: the topics outnumber the
             frame's seven, so the row scrolls sideways (the edge fades where
