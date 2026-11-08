@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   Bookmark,
-  Check,
+  BookX,
   CalendarDays,
   ChevronDown,
   ClipboardPen,
@@ -336,13 +336,8 @@ function MemberEventCard({
         </div>
         {canSave &&
           (saved ? (
-            <Button
-              onClick={onUnsave}
-              trailingIcon={<Check />}
-              aria-label={`Already saved. Press to unsave ${event.title}`}
-              className="max-sm:order-1 max-sm:flex-1"
-            >
-              Already Saved
+            <Button onClick={onUnsave} trailingIcon={<BookX />} className="max-sm:order-1 max-sm:flex-1">
+              Unsave
             </Button>
           ) : event.requires_signup ? (
             <Button

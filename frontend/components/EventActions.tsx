@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bookmark, Check, ClipboardPen } from "lucide-react";
+import { Bookmark, BookmarkCheck, ClipboardPen } from "lucide-react";
 import {
   ApiError,
   api,
@@ -210,9 +210,9 @@ export function EventActions({ event }: { event: Event }) {
           size="lg"
           onClick={() => void save()}
           disabled={busy || saved}
-          trailingIcon={saved ? <Check /> : <Bookmark />}
+          trailingIcon={saved ? <BookmarkCheck /> : <Bookmark />}
         >
-          {saved ? "Already Saved" : "Save event"}
+          {saved ? "Event saved" : "Save event"}
         </Button>
       ) : (
         <AccessAction

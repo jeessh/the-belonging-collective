@@ -270,7 +270,7 @@ can open.
   has been still for 300ms, so a swipe's momentum — gaps and all — can't
   turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
-  call) — the card's button turning to "Already Saved" ✓ (which un-saves,
+  call) — the card's button turning to "Unsave event" (which un-saves,
   with the usual Undo toast) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
@@ -305,9 +305,7 @@ can open.
   reshuffles between renders.
 - **Saved events stay in the feed**: there is no "Saved" tag any more
   (`EventTags` ignores `saved`; the `saved` Tag kind is unused) — the
-  button reading **"Already Saved" with a check** says it — feed card, list
-  cards, event dialog and the event page alike. Pressing it still un-saves
-  (with Undo); its aria-label says so.
+  card's button reading "Unsave event" (list cards "Unsave") says it.
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
@@ -405,7 +403,7 @@ can open.
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`, `orderLabel` "Soonest first" / "Most recent") — search,
   Filter dropdown and Sort on one row over the same cards, each saying
-  Already Saved (everything here is saved; no drag, `dropTarget` omitted). Back,
+  Unsave (everything here is saved; no drag, `dropTarget` omitted). Back,
   the title and the **Upcoming / Past toggle** (at the title row's right)
   — the top bar hides Card View / List View while it is open —
   are one sticky bar with a line under it. The page no longer has Google

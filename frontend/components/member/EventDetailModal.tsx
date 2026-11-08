@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, Check, ClipboardPen } from "lucide-react";
+import { Bookmark, BookX, ClipboardPen } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
@@ -96,12 +96,12 @@ export function EventDetailModal({
                 />
               ) : saved ? (
                 <Button
+                  variant="danger"
                   size="lg"
                   onClick={() => onUnsave(event)}
-                  trailingIcon={<Check />}
-                  aria-label={`Already saved. Press to unsave ${event.title}`}
+                  trailingIcon={<BookX />}
                 >
-                  Already Saved
+                  Un-Save Event
                 </Button>
               ) : event.requires_signup ? (
                 // Needs registering: Register, confirmed first (which saves
