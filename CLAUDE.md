@@ -151,7 +151,10 @@ can open.
   caregiver?": a **community member** gets card view (one card at a time),
   a **caregiver** list view. Accessibility Tools has the same choice as an
   "I am a" toggle (Community member | Caregiver), and the profile shows it
-  under the name. It is `is_caregiver` plus `preferred_view`, written together — at sign-up
+  under the name. Signing up or in through the feed's own sign-in sheet
+  switches the feed to the account's `preferred_view` straight away
+  (`handleSignedIn`), so a new caregiver lands in the list. It is
+  `is_caregiver` plus `preferred_view`, written together — at sign-up
   (`is_caregiver` on the sign-up call, then `PATCH /users/me
   {preferred_view}`) and from the "Your experience" toggle at the top of
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me

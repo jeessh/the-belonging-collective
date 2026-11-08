@@ -719,6 +719,10 @@ export function EventsView({
         fetchAllEvents(space?.slug).catch(() => null),
       ]);
       setMe(profile);
+      // Open in the view their account chose — list for a caregiver, the
+      // card for a community member (set at sign-up, or later in
+      // Accessibility Tools) — rather than whatever was showing before.
+      setViewMode(profile.preferred_view === "list" ? "list" : "card");
       setSavedEvents(attended);
       if (refreshed?.length) setEvents(refreshed);
       // The refs update on render; the pending save must not wait for one.
