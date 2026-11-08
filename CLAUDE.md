@@ -129,6 +129,9 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **The event column has wide margins and a centred, 1200px-at-most
+  content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
+  card and arrows / list all sit in it.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"

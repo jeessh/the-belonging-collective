@@ -1369,7 +1369,7 @@ export function EventsView({
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:p-9 short:!gap-10 short:!p-6 ${
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
               viewMode === "card" ? "big-cursor" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
