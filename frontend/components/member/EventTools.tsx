@@ -26,13 +26,12 @@ export function EventTools({
 
   return (
     <>
-      {/* Saved (`lead`): Print, then Share filling the rest, at the very
-          right. Otherwise two quiet ghosts. */}
+      {/* Saved (`lead`): Print, then Share at the very right, each its own
+          width. Otherwise two quiet ghosts. */}
       <div className={`flex ${lead ? "w-full flex-row-reverse gap-3" : "flex-wrap gap-1"}`}>
         <Button
           variant={lead ? "primary" : "ghost"}
           size={lead ? "lg" : "md"}
-          className={lead ? "flex-1" : ""}
           onClick={() => setOpen("share")}
           trailingIcon={<Send />}
         >
