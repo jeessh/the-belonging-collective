@@ -119,7 +119,7 @@ can open.
   standard secondary `Button`s (large, full width, stacked) at the
   bottom — miniature feed cards (picture and title), no magnets
   (`Magnet` is still exported, unused) and no shadow (the drag ghost
-  neither), flush with the "Saved Events" heading's left edge, in two even columns
+  neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight

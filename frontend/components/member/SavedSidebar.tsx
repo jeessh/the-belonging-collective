@@ -523,7 +523,7 @@ function Board({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={transition}
-            className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
+            className={`relative w-full transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted motion-reduce:transition-none ${MINI_CARD}`}
           >
             <MiniCardFace event={ev} />
           </motion.button>
