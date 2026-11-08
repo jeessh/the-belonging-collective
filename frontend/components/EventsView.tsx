@@ -1318,7 +1318,20 @@ export function EventsView({
             onSignOut={() => void doLogout()}
           />
         </div>
-        {a11yMenu}
+        {/* Accessibility Tools, then Card View / List View at the far right. */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {a11yMenu}
+          <div data-tour="view">
+            <SegmentedToggle
+              label="View"
+              segments={
+                phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
+              }
+              value={viewMode}
+              onChange={changeView}
+            />
+          </div>
+        </div>
       </header>
 
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
@@ -1408,16 +1421,6 @@ export function EventsView({
                   >
                     {heading}
                   </p>
-                </div>
-                <div data-tour="view">
-                  <SegmentedToggle
-                    label="View"
-                    segments={
-                      phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
-                    }
-                    value={viewMode}
-                    onChange={changeView}
-                  />
                 </div>
               </div>
 
