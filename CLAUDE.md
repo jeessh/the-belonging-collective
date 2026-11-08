@@ -311,7 +311,11 @@ can open.
   `FeedFilters` (each chip with an icon — a grid for All, coins for Free,
   the topic's own `categoryStyle` icon; "Clear all" at the right end of the chip row once a chip
   is on; an **All** chip first — selected while no chip is, and
-  pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
+  pressing it clears them — then FREE + the topics from `useCategories`, **ordered by
+  what the member has saved** (`rankChips` with `saved={savedEvents}`: the
+  topics on the most saved programs — past ones too, one per program — and
+  Free by how many were free, then their interests, then the console's
+  order; it never hides a chip and never moves one as it's pressed) — **only the chips some
   upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
   event is free; a chip that's on stays so it can be switched off)),
   which are the member's own explicit choice. There is no sort control.

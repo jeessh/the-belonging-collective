@@ -1459,6 +1459,7 @@ export function EventsView({
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
                 interests={taste.interests}
+                saved={savedEvents}
               />
               )}
             </div>
