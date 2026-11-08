@@ -14,8 +14,12 @@ export function GoingCount({
   variant = "line",
   iconClassName = "size-6",
   className = "",
+  capacity,
 }: {
   count: number | null | undefined;
+  /** The organizer's attendee limit: the line reads "5/20 spots left"
+      in place of the saved count. */
+  capacity?: number | null;
   onSignIn?: () => void;
   /** Where to sign in when there is no overlay to open. */
   signInHref?: string;
@@ -41,7 +45,10 @@ export function GoingCount({
   return (
     <span className={`inline-flex items-center gap-3 text-fg ${className}`}>
       <Bookmark aria-hidden="true" className={`shrink-0 text-fg-muted ${iconClassName}`} />
-      {count} {count === 1 ? "person" : "people"} saved this event
+      {/* With an attendee limit, the line is the places left instead. */}
+      {capacity != null
+        ? `${Math.max(capacity - count, 0)}/${capacity} spots left`
+        : `${count} ${count === 1 ? "person" : "people"} saved this event`}
     </span>
   );
 }

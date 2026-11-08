@@ -404,7 +404,7 @@ function MemberEventCard({
             <MapPin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
             {placeLabel(event)}
           </p>
-          <GoingCount count={event.saved_count} />
+          <GoingCount capacity={event.capacity} count={event.saved_count} />
         </div>
       </div>
 
@@ -510,7 +510,7 @@ function MemberEventCard({
             fixedDates
             going={
               typeof event.saved_count === "number" ? (
-                <GoingCount count={event.saved_count} />
+                <GoingCount capacity={event.capacity} count={event.saved_count} />
               ) : undefined
             }
           />

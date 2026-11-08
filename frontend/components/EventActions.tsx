@@ -18,6 +18,7 @@ import {
   accessStateOf,
   type AccessState,
 } from "@/components/member/AccessAction";
+import { WaitlistAction, waitlistState } from "@/components/member/WaitlistAction";
 import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { useToast } from "@/components/ui/Toast";
 
@@ -36,6 +37,21 @@ export function EventActions({ event }: { event: Event }) {
   const params = useSearchParams();
   const toast = useToast();
   const [saved, setSaved] = useState(false);
+  // The viewer's own standing with a full program's waitlist, read in the
+  // browser (the page is rendered without their cookie).
+  const [standing, setStanding] = useState<Event["viewer_status"]>(null);
+  useEffect(() => {
+    if (event.capacity == null) return;
+    let alive = true;
+    api<Event>(`/events/${event.id}`)
+      .then((fresh) => {
+        if (alive) setStanding(fresh.viewer_status ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [event.id, event.capacity]);
   // "Register for …?" open.
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -99,6 +115,15 @@ export function EventActions({ event }: { event: Event }) {
       setError(null);
       try {
         const result = await attendEvent(event.id);
+        if (result.waitlisted) {
+          setStanding("waitlisted");
+          toast.show({
+            title: `You're on the waitlist for ${event.title}`,
+            description: "The organizer will email you if a place opens up.",
+            tone: "info",
+          });
+          return;
+        }
         setSaved(true);
         // Say whether a spot was held: the page can't redraw its own count.
         toast.show({
@@ -120,8 +145,21 @@ export function EventActions({ event }: { event: Event }) {
         setBusy(false);
       }
     },
-    [event.id, toSignIn, toast],
+    [event.id, event.title, toSignIn, toast],
   );
+
+  const leaveWaitlist = useCallback(async () => {
+    setBusy(true);
+    try {
+      await api(`/events/${event.id}/attend`, { method: "DELETE" });
+      setStanding(null);
+      toast.show({ title: `You left the waitlist for ${event.title}`, tone: "info" });
+    } catch (e) {
+      setError(apiMessage(e, "That didn't work. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  }, [event.id, event.title, toast]);
 
   const ask = useCallback(
     async (resuming = false) => {
@@ -178,7 +216,13 @@ export function EventActions({ event }: { event: Event }) {
 
   return (
     <>
-      {canSave && event.requires_signup && !saved ? (
+      {canSave && !saved && waitlistState({ ...event, viewer_status: standing }) ? (
+        <WaitlistAction
+          event={{ ...event, viewer_status: standing }}
+          onJoin={() => void save()}
+          onLeave={() => void leaveWaitlist()}
+        />
+      ) : canSave && event.requires_signup && !saved ? (
         // Needs registering: Register, confirmed first — confirming saves it
         // and opens the organizer's page when registering happens there.
         <Button

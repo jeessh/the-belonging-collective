@@ -16,14 +16,22 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_user, get_db, get_optional_user
-from app.core import gcal, holds, ical
+from app.api.deps import get_current_host, get_current_user, get_db, get_optional_user
+from app.core import gcal, holds, ical, member_mail
 from app.core.access import is_approved, visible_to_member
 from app.core.rate_limit import CLICK_LIMIT, client_key, enforce, record
 from app.core.pricing import covers_whole_series
-from app.models.attendance import REMOVED, SAVED, Attendance
+from app.models.attendance import (
+    DECLINED,
+    REMOVED,
+    SAVED,
+    WAITLIST_LEFT,
+    WAITLISTED,
+    Attendance,
+)
 from app.models.click import RegistrationClick
 from app.models.event import Event
+from app.models.host import Host, org_id_of
 from app.models.user import User
 from app.schemas.event import EventOut
 
@@ -62,6 +70,35 @@ def record_registration_click(
     db.commit()
 
 
+def place(db: Session, event: Event, now: datetime) -> tuple[str, datetime | None]:
+    """Where a new save of `event` lands: saved (with a spot held for the
+    first hour, core/holds) — or, once the program is full, its waitlist.
+
+    Full means the saved rows have reached the organizer's attendee limit.
+    Locks the event row so two members reading "one place left" can't both
+    take it; the lock goes with the caller's commit.
+    """
+    if event.capacity is None:
+        return SAVED, None
+    locked = (
+        db.query(Event)
+        .filter(Event.id == event.id, Event.deleted_at.is_(None))
+        .with_for_update()
+        .one_or_none()
+    )
+    if locked is None or locked.capacity is None:
+        return SAVED, None
+    going = (
+        db.query(func.count(Attendance.user_id))
+        .filter(Attendance.event_id == event.id, Attendance.status == SAVED)
+        .scalar()
+        or 0
+    )
+    if going >= locked.capacity:
+        return WAITLISTED, None
+    return SAVED, holds.take_hold(db, event, now)
+
+
 def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
     """Save the program for `user` — a bookmark, never a registration.
 
@@ -70,9 +107,10 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
     so are the rules — special access is the member's approval, the hold is
     the member's spot.
 
-    Capacity never refuses a save. What it does is hold a spot for the first
-    hour (core/holds.py) when the holds still running are under capacity;
-    `held_until` in the response says whether this save got one.
+    A program with an attendee limit that's reached puts the save on its
+    waitlist instead (`waitlisted: true`); the organization approves or
+    declines it (`decide_waitlist`). Under the limit, the first hour holds a
+    spot (core/holds.py); `held_until` says whether this save got one.
     """
     event = db.get(Event, event_id)
     if not event or event.deleted_at is not None:
@@ -95,10 +133,21 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
                 "already": True,
                 "held_until": holds.active_until(existing, now),
             }
-        existing.status = SAVED
-        existing.held_until = holds.take_hold(db, event, now)
+        if existing.status == WAITLISTED:
+            return {"ok": True, "already": True, "waitlisted": True, "held_until": None}
+        if existing.status == DECLINED:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "The organizer couldn't fit you in to this program. Ask them "
+                "if a place opens up.",
+            )
+        existing.status, existing.held_until = place(db, event, now)
         db.commit()
-        return {"ok": True, "held_until": existing.held_until}
+        return {
+            "ok": True,
+            "waitlisted": existing.status == WAITLISTED,
+            "held_until": existing.held_until,
+        }
     # A series price covers the whole run, so saving one date enrols them in
     # all of them. Making somebody who paid for eight weeks save eight dates by
     # hand is busywork that also loses what they actually bought.
@@ -126,20 +175,25 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
         targets = run[:limit]
 
     held_until = None
+    waitlisted = False
     for target in targets:
-        held = holds.take_hold(db, target, now)
-        if target.id == event.id:
-            held_until = held
         existing = db.get(
             Attendance, {"user_id": user.id, "event_id": target.id}
         )
+        # A date they're already on (or declined for) stays as it is.
+        if existing and existing.status in (SAVED, WAITLISTED, DECLINED):
+            continue
+        state, held = place(db, target, now)
+        if target.id == event.id:
+            held_until = held
+            waitlisted = state == WAITLISTED
         if existing:
-            existing.status = SAVED
+            existing.status = state
             existing.held_until = held
         else:
             db.add(
                 Attendance(
-                    user_id=user.id, event_id=target.id, status=SAVED, held_until=held
+                    user_id=user.id, event_id=target.id, status=state, held_until=held
                 )
             )
     try:
@@ -152,7 +206,7 @@ def save_event(db: Session, user: User, event_id: uuid.UUID) -> dict:
         if getattr(exc.orig, "sqlstate", None) == "23505":
             return {"ok": True, "already": True, "held_until": None}
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
-    return {"ok": True, "held_until": held_until}
+    return {"ok": True, "waitlisted": waitlisted, "held_until": held_until}
 
 
 @router.post("/events/{event_id}/attend", status_code=status.HTTP_201_CREATED)
@@ -167,28 +221,115 @@ def attend_event(
     return result
 
 
+# ---------- the waitlist (organizers) ----------
+
+
+class WaitlistEntry(BaseModel):
+    user_id: uuid.UUID
+    name: str
+    email: str | None
+    status: str
+    requested_at: datetime
+
+
+def _own_event(db: Session, host: Host, event_id: uuid.UUID) -> Event:
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+    if not host.is_superadmin and event.host_id != org_id_of(host):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only its organization can see this.")
+    return event
+
+
+@router.get("/events/{event_id}/waitlist", response_model=list[WaitlistEntry])
+def event_waitlist(
+    event_id: uuid.UUID,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """Who's waiting for a full program — and who was declined — oldest
+    request first. Its organization's (or a superadmin's) to see."""
+    _own_event(db, host, event_id)
+    rows = (
+        db.query(Attendance, User)
+        .join(User, User.id == Attendance.user_id)
+        .filter(
+            Attendance.event_id == event_id,
+            Attendance.status.in_((WAITLISTED, DECLINED)),
+            User.deleted_at.is_(None),
+        )
+        .order_by(Attendance.created_at.asc())
+        .all()
+    )
+    return [
+        WaitlistEntry(
+            user_id=user.id,
+            name=f"{user.first_name} {user.last_name or ''}".strip(),
+            email=user.email,
+            status=a.status,
+            requested_at=a.created_at,
+        )
+        for a, user in rows
+    ]
+
+
+class WaitlistDecision(BaseModel):
+    approve: bool
+
+
+@router.post(
+    "/events/{event_id}/waitlist/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def decide_waitlist(
+    event_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: WaitlistDecision,
+    background: BackgroundTasks,
+    host: Host = Depends(get_current_host),
+    db: Session = Depends(get_db),
+):
+    """Approve (it becomes a save, even past the limit — the organizer's
+    call) or decline a member on the waitlist. A declined member can be
+    approved later. The member is emailed either way."""
+    _own_event(db, host, event_id)
+    row = db.get(Attendance, {"user_id": user_id, "event_id": event_id})
+    if not row or row.status not in (WAITLISTED, DECLINED):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not on this waitlist")
+    row.status = SAVED if body.approve else DECLINED
+    row.held_until = None
+    db.commit()
+    background.add_task(member_mail.send_waitlist_decision, event_id, user_id, body.approve)
+    if body.approve:
+        member = db.get(User, user_id)
+        if member:
+            gcal.after_save(background, member)
+
+
 def unsave_event(db: Session, user: User, event_id: uuid.UUID) -> None:
     """Un-saving flips the status; the row stays so the organizer's cumulative
     save count doesn't walk backwards. Any hold goes with it."""
     existing = db.get(Attendance, {"user_id": user.id, "event_id": event_id})
-    if not existing or existing.status == REMOVED:
+    if not existing or existing.status not in (SAVED, WAITLISTED):
         return
     event = db.get(Event, event_id)
     # Released the same way it was taken: if one save enrolled them in the whole
     # run, one removal has to let them out of it, or they're stuck holding
     # places they can't give back.
     if event and covers_whole_series(event.pricing_model) and event.series_id:
-        db.query(Attendance).filter(
-            Attendance.user_id == user.id,
-            Attendance.event_id.in_(
-                db.query(Event.id).filter(Event.series_id == event.series_id)
-            ),
-        ).update(
-            {Attendance.status: REMOVED, Attendance.held_until: None},
-            synchronize_session=False,
-        )
+        series = db.query(Event.id).filter(Event.series_id == event.series_id)
+        for was, now_is in ((SAVED, REMOVED), (WAITLISTED, WAITLIST_LEFT)):
+            db.query(Attendance).filter(
+                Attendance.user_id == user.id,
+                Attendance.status == was,
+                Attendance.event_id.in_(series),
+            ).update(
+                {Attendance.status: now_is, Attendance.held_until: None},
+                synchronize_session=False,
+            )
     else:
-        existing.status = REMOVED
+        # Leaving the waitlist isn't un-saving: it never was a save.
+        existing.status = REMOVED if existing.status == SAVED else WAITLIST_LEFT
         existing.held_until = None
     db.commit()
 

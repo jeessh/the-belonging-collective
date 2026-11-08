@@ -270,9 +270,11 @@ can open.
   otherwise `attend`) and, when `registration_mode === "external"` with a
   `registration_url`, opens that page in a new tab (`openRegistration`,
   counted as a registration click). Saved, it shows Unsave as usual.
-- **Ages and "spots left" are not shown to members** (any surface), nor the
-  card's (i) "saving holds your spot" tip (`HoldInfo` is no longer drawn).
-  The data and the one-hour holds are untouched.
+- **Ages are not shown to members**, nor the card's (i) "saving holds your
+  spot" tip (`HoldInfo` is no longer drawn). An event with an attendee limit
+  shows "5/20 spots left" in place of "N people saved this event"
+  (`GoingCount capacity`: capacity − saved rows; without a limit the line is
+  the saved count as before).
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
@@ -436,7 +438,8 @@ can open.
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
-  view's conventions**: the card's width (880px) centred, the title with
+  view's conventions**: the card's width (880px) centred, the title (with a
+  bookmark-check icon before it) with
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
   `tools` prop, in place of the list view's Filter and Sort; both cover the
@@ -774,8 +777,9 @@ can open.
   `delete-orphan` cascade. Attendance counts are what nonprofits put in grant
   applications, so they have to outlive the event and the account. Every read
   path filters `deleted_at IS NULL`; add the filter when you add a query.
-- **Saving is a bookmark.** It never registers anyone, and it never fails for
-  capacity. What `events.capacity` does is hold a spot for the first hour —
+- **Saving is a bookmark — until the attendee limit is reached.** It never
+  registers anyone. **With a `capacity`, once the saved rows reach it, a new
+  save goes on the event's waitlist** (see "Waitlist" below). What `events.capacity` does is hold a spot for the first hour —
   see "Holds, member email, sharing" below. `EventOut.saved_count` ("N going")
   is public — shown to signed-out visitors too.
 - **Member emails are unique over live rows only** (`uq_users_email_live` on
@@ -902,6 +906,35 @@ can open.
   the Who.
 - New dependencies: `icalendar`, `python-dateutil` (requirements.txt). No
   migration.
+
+## Waitlist (attendee limit)
+- **A full program waitlists new saves.** `routes/attendance.place` locks the
+  event row and counts `saved` rows; at `capacity` the row is written as
+  `waitlisted` (no hold), and the save answers `waitlisted: true`. Statuses
+  live in `models/attendance.py` (plain text, no migration):
+  `saved | removed | waitlisted | declined | waitlist_left`. Leaving the
+  waitlist (the same DELETE as un-saving) is `waitlist_left`, not `removed`,
+  so it never counts as a save; **analytics counts only `saved` and
+  `removed` rows** as saves (`a.status IN ('saved', 'removed')` in every
+  saves query). A declined member re-saving gets 409.
+- `EventOut.is_full`, `viewer_status` (the signed-in member's own row) come
+  from `holds.annotate`; `waitlist_count` is filled for its organization and
+  superadmins only (`_public_view`).
+- **Console:** the event's details page has a **Waitlist** tab (events with a
+  limit, owners only; `?tab=waitlist`; `host/WaitlistPanel`):
+  `GET /events/{id}/waitlist` (waiting and declined, oldest first) and
+  `POST /events/{id}/waitlist/{user_id} {approve}` — approve makes it a save
+  even past the limit (the organizer's call), decline marks it `declined`
+  (approvable later). The member is emailed either way
+  (`member_mail.send_waitlist_decision`).
+- **Members:** `member/WaitlistAction` stands in for Save / Register — "Join
+  waitlist" when full, "Leave waitlist" while waiting, a disabled "Not able
+  to join" when declined — on the feed card, the event dialog and the public
+  page (`EventActions`, which reads `viewer_status` in the browser). Tags
+  "Full · waitlist" / "On the waitlist" (`eventTags`). Joining isn't a save:
+  no fly-to-board, not in the saved list; a toast says the organizer will
+  email. A caregiver's "Saving for" joins for the member, but the card shows
+  the signed-in account's own standing.
 
 ## Holds, member email, sharing
 - **Saving a program with a `capacity` holds a spot for one hour**

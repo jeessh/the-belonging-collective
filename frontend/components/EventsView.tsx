@@ -575,16 +575,37 @@ export function EventsView({
       }
       const target = careForRef.current;
       const forWhom = target ? ` for ${shortName(target)}` : "";
-      setSrMessage(`Saved ${ev.title}${forWhom}`);
-      setSavedEvents((prev) =>
-        prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
-      );
+      // A full program goes on its waitlist, not the saved list, so it
+      // isn't added optimistically.
+      if (!ev.is_full) {
+        setSrMessage(`Saved ${ev.title}${forWhom}`);
+        setSavedEvents((prev) =>
+          prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
+        );
+      }
       try {
         const result = await (target
           ? attendEventFor(target.id, ev.id)
           : attendEvent(ev.id));
         // A program with a capacity holds a spot for the first hour, when
         // one is left; the card says so until the hour is up.
+        if (result.waitlisted) {
+          setSavedEvents((prev) => prev.filter((s) => s.id !== ev.id));
+          patchEvent(ev.id, { viewer_status: "waitlisted", is_full: true });
+          setSrMessage(`${ev.title} is full. You're on the waitlist.`);
+          toast.show({
+            title: `You're on the waitlist for ${ev.title}`,
+            description: "The organizer will email you if a place opens up.",
+            tone: "info",
+          });
+          return;
+        }
+        if (ev.is_full) {
+          // A place opened up since the page loaded: it saved after all.
+          setSavedEvents((prev) =>
+            prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
+          );
+        }
         const heldUntil = result.held_until ?? null;
         if (ev.capacity != null) {
           patchEvent(ev.id, {
@@ -628,6 +649,27 @@ export function EventsView({
       }
     },
     [toSignIn, syncSaved, toast, patchEvent, advanceAfterSave, sessionEnded],
+  );
+
+  // Off a full program's waitlist (the same DELETE as un-saving).
+  const leaveWaitlist = useCallback(
+    async (ev: Event) => {
+      try {
+        const target = careForRef.current;
+        await (target
+          ? unattendEventFor(target.id, ev.id)
+          : api(`/events/${ev.id}/attend`, { method: "DELETE" }));
+        patchEvent(ev.id, { viewer_status: null });
+        setSrMessage(`You left the waitlist for ${ev.title}.`);
+        toast.show({ title: `You left the waitlist for ${ev.title}`, tone: "info" });
+      } catch (e) {
+        toast.show({
+          title: apiMessage(e, `Couldn't leave the waitlist for ${ev.title}.`),
+          tone: "alert",
+        });
+      }
+    },
+    [patchEvent, toast],
   );
 
   /**
@@ -1658,6 +1700,8 @@ export function EventsView({
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
                           onRegister={() => setRegisterFor(current)}
+                          onJoinWaitlist={() => void attend(current)}
+                          onLeaveWaitlist={() => void leaveWaitlist(current)}
                         />
                       </motion.div>
                       {ghosting &&
@@ -1756,12 +1800,15 @@ export function EventsView({
 
       {detailFor && (
         <EventDetailModal
-          event={detailFor}
+          // The live copy, so joining the waitlist shows at once.
+          event={events.find((e) => e.id === detailFor.id) ?? detailFor}
           saved={saved.has(detailFor.id)}
           onClose={() => setDetailFor(null)}
           onSave={(ev) => void attend(ev)}
           onUnsave={(ev) => void unsave(ev)}
           onRegister={setRegisterFor}
+          onJoinWaitlist={(ev) => void attend(ev)}
+          onLeaveWaitlist={(ev) => void leaveWaitlist(ev)}
           onRequestAccess={requestAccessFor}
           onSignIn={() => toSignIn()}
         />

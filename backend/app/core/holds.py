@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.attendance import SAVED, Attendance
+from app.models.attendance import DECLINED, SAVED, WAITLISTED, Attendance
 from app.models.event import Event
 from app.schemas.event import EventOut
 
@@ -72,7 +72,11 @@ def annotate(rows: list[Event], out: list[EventOut], viewer_id: uuid.UUID | None
         if row.capacity is not None:
             active = sum(1 for a in row.attendees if active_until(a, now))
             item.spots_left = max(row.capacity - active, 0)
+            going = sum(1 for a in row.attendees if a.status == SAVED)
+            item.is_full = going >= row.capacity
         if viewer_id is not None:
             mine = next((a for a in row.attendees if a.user_id == viewer_id), None)
             if mine is not None:
                 item.held_until = active_until(mine, now)
+                if mine.status in (SAVED, WAITLISTED, DECLINED):
+                    item.viewer_status = mine.status

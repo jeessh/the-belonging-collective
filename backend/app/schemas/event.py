@@ -283,5 +283,14 @@ class EventOut(EventBase):
     # When the signed-in member's own hold on this program runs out; null when
     # they have none (not saved, no capacity, or the hour is up).
     held_until: datetime | None = None
+    # A capacity that's reached: a new save goes on the waitlist. Filled by
+    # core/holds.annotate (saved rows ≥ capacity).
+    is_full: bool = False
+    # The signed-in member's own row: "saved", "waitlisted", "declined" — or
+    # null (never saved, or un-saved / left the waitlist).
+    viewer_status: str | None = None
+    # How many are waiting. Filled only for its organization or a
+    # superadmin, by the route; null for everyone else.
+    waitlist_count: int | None = None
     images: list[EventImageOut] = []
     created_at: datetime

@@ -17,16 +17,26 @@ export function LiveGoingCount({
   signInHref: string;
 }) {
   const [count, setCount] = useState<number | null | undefined>(null);
+  const [capacity, setCapacity] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
     api<Event>(`/events/${eventId}`)
       .then((fresh) => {
-        if (alive) setCount(fresh.saved_count);
+        if (!alive) return;
+        setCount(fresh.saved_count);
+        setCapacity(fresh.capacity ?? null);
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
   }, [eventId]);
-  return <GoingCount count={count} signInHref={signInHref} iconClassName="size-7" />;
+  return (
+    <GoingCount
+      count={count}
+      capacity={capacity}
+      signInHref={signInHref}
+      iconClassName="size-7"
+    />
+  );
 }

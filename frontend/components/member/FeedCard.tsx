@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import { Bookmark, ClipboardPen, MoveRight, Send } from "lucide-react";
 import { publicEventUrl } from "@/lib/share";
 import { ShareModal } from "@/components/member/ShareModal";
+import { WaitlistAction, waitlistState } from "@/components/member/WaitlistAction";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -22,7 +23,12 @@ export const FeedCard = memo(function FeedCard({
   onUnsave,
   onSignIn,
   onRegister,
+  onJoinWaitlist,
+  onLeaveWaitlist,
 }: {
+  /** A full program: join, or leave, its waitlist (WaitlistAction). */
+  onJoinWaitlist?: () => void;
+  onLeaveWaitlist?: () => void;
   /** For an event that needs registering: the card's button says Register
       and this asks to confirm (which saves it and opens the organizer's
       page when there is one). */
@@ -54,6 +60,7 @@ export const FeedCard = memo(function FeedCard({
           // The feed card's fact icons are 28px (EventSummary's `icon`).
           <GoingCount
             count={event.saved_count}
+            capacity={event.capacity}
             onSignIn={onSignIn}
             iconClassName="size-7"
           />
@@ -74,7 +81,15 @@ export const FeedCard = memo(function FeedCard({
               <span className="sm:hidden">More info</span>
               <span className="max-sm:hidden">More information</span>
             </Button>
-            {register ? (
+            {waitlistState(event) && onJoinWaitlist && onLeaveWaitlist ? (
+              <WaitlistAction
+                event={event}
+                className={size}
+                onPointerDown={stop}
+                onJoin={onJoinWaitlist}
+                onLeave={onLeaveWaitlist}
+              />
+            ) : register ? (
               // Registering is asked to confirm first (RegisterConfirm);
               // confirming saves it too.
               <Button
