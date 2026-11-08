@@ -75,37 +75,9 @@ import {
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
-import { CaregiverFeed, type FeedSection } from "@/components/member/CaregiverFeed";
+import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** List view's sections: this week (starts within 7 days, or is on now),
-    the rest of this calendar month, next calendar month, then anything
-    later. Each keeps the order Search / Filter / Sort gave it. */
-function byWhen(shown: Event[]): FeedSection[] {
-  const now = new Date();
-  const at = (e: Event) => (e.starts_at ? new Date(e.starts_at).getTime() : now.getTime());
-  const week = now.getTime() + 7 * DAY_MS;
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
-  const monthAfter = new Date(now.getFullYear(), now.getMonth() + 2, 1).getTime();
-  const name = (d: number) => new Date(d).toLocaleString("en-CA", { month: "long" });
-  return [
-    { key: "week", title: "This week", events: shown.filter((e) => at(e) <= week) },
-    {
-      key: "month",
-      title: `This month · ${name(now.getTime())}`,
-      events: shown.filter((e) => at(e) > week && at(e) < nextMonth),
-    },
-    {
-      key: "next",
-      title: `Next month · ${name(nextMonth)}`,
-      events: shown.filter((e) => at(e) > week && at(e) >= nextMonth && at(e) < monthAfter),
-    },
-    { key: "later", title: "Later", events: shown.filter((e) => at(e) > week && at(e) >= monthAfter) },
-  ];
-}
 
 /** How far from the saved board (px) the dragged card starts turning into a mini card. */
 const MORPH_DISTANCE = 320;

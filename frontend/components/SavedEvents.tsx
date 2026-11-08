@@ -14,7 +14,7 @@ import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
-import { CaregiverFeed, type FeedSection } from "@/components/member/CaregiverFeed";
+import { CaregiverFeed, byWhen, type FeedSection } from "@/components/member/CaregiverFeed";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -31,29 +31,14 @@ const endMs = (e: Event) => {
 };
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Upcoming (starts within the week, or is on now), Scheduled (later), and
-    Past (finished in the last week), folded away. Each keeps the order it
-    was handed — whatever Sort says. */
+/** The list view's own separators — This week, This month, Next month,
+    Later — then Past (finished in the last week), folded away. */
 function sections(shown: Event[]): FeedSection[] {
-  const weekOut = Date.now() + WEEK_MS;
-  const coming = shown.filter(isUpcoming);
   return [
-    {
-      key: "upcoming",
-      title: "Upcoming",
-      note: "Happening in the next week.",
-      events: coming.filter((e) => startMs(e) <= weekOut),
-    },
-    {
-      key: "scheduled",
-      title: "Scheduled",
-      note: "Later on.",
-      events: coming.filter((e) => startMs(e) > weekOut),
-    },
+    ...byWhen(shown.filter(isUpcoming)),
     {
       key: "past",
       title: "Past events",
-      note: "Events that have happened. Each one stays here for a week.",
       events: shown.filter((e) => !isUpcoming(e)),
       collapsed: true,
     },

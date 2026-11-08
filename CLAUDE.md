@@ -418,9 +418,9 @@ can open.
   Share and a **Print** icon (that event's `PrintPreview`, saved page
   only), un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
   **Grouped into sections** (`CaregiverFeed group` → `FeedSection[]`,
-  applied after search): **Upcoming** (starts within the
-  next 7 days, or is on now), **Scheduled** (later), and **Past events**
-  folded in a `<details>` — only events that finished in the last 7 days;
+  applied after search): the list view's own separators (`byWhen`, now in
+  CaregiverFeed) — This week, This month · …, Next month · …, Later — and
+  **Past events** folded in a `<details>`; no subtext under any heading — only events that finished in the last 7 days;
   older ones drop off the page (the attendance row is kept). No Upcoming /
   Past toggle, no Filter or Sort. "N Saved Events" counts
   upcoming programs. Back and the title sit at the top and scroll away
