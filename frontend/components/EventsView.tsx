@@ -1437,7 +1437,7 @@ export function EventsView({
                   </p>
                 </div>
                 {/* Accessibility Tools, on the heading's row at the right. */}
-                {a11yMenu}
+                {viewMode === "card" && a11yMenu}
               </div>
 
               {viewMode !== "list" && (

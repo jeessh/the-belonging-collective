@@ -2,7 +2,8 @@ import { useId, type InputHTMLAttributes } from "react";
 import { Check } from "lucide-react";
 
 /**
- * The component sheet's checkbox: a cyan-edged square, filled cyan with a
+ * The component sheet's checkbox: a cyan-edged square (3px corners, not
+ * the app's 8px, so it reads as a box), filled cyan with a
  * white tick when checked. A real checkbox underneath, so keyboard, forms and
  * screen readers work as usual.
  */
@@ -30,7 +31,7 @@ export function Checkbox({
         <input
           id={inputId}
           type="checkbox"
-          className={`peer appearance-none rounded border-2 border-primary-strong bg-surface transition-colors checked:bg-primary-strong ${
+          className={`peer appearance-none rounded-[3px] border-2 border-primary-strong bg-surface transition-colors checked:bg-primary-strong ${
             dense ? "size-4" : "size-5"
           }`}
           {...rest}

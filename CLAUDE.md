@@ -163,8 +163,12 @@ can open.
   Caregiver) is the Profile page's "Your role" card (`changeRole`: `PATCH
   /users/me {is_caregiver, preferred_view}`). The profile also shows it
   under the name. **In list view Accessibility Tools has no Read aloud,
-  Voice commands or Head tracking** — they drive the one card — only Show me
-  around and the topics. Signing up or in through the feed's own sign-in sheet
+  Voice commands or Head tracking — **list view has no Accessibility Tools
+  at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
+  The list's `FilterPanel` (`memberView`) opens with "N filters applied",
+  a removable chip per ticked option and Clear all, and each group with
+  something ticked shows a count badge and a medium-weight name.
+  `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
   `is_caregiver` plus `preferred_view`, written together — at sign-up

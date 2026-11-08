@@ -11,6 +11,7 @@ import {
   Clipboard,
   Contact,
   PartyPopper,
+  X,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
@@ -175,12 +176,53 @@ export const FilterPanel = memo(function FilterPanel({
       ];
   const rowText = memberView ? "min-h-12 text-lg" : "min-h-10 text-sm";
   const anyChosen = groups.some((k) => filters[k]?.length);
+  const chosenCount = groups.reduce((n, k) => n + (filters[k]?.length ?? 0), 0);
 
   return (
     <aside
       aria-label="Filter events"
       className="w-full rounded-control border border-line bg-surface px-1 py-1 lg:w-[280px] lg:shrink-0"
     >
+      {/* What's on, at a glance: each ticked option as a chip that takes
+          itself off, so nobody has to open every group to see. */}
+      {memberView && anyChosen && (
+        <div className="flex flex-col gap-2 border-b border-line-active px-3 pb-3 pt-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-base font-medium text-fg">
+              {chosenCount} {chosenCount === 1 ? "filter" : "filters"} applied
+            </p>
+            <button
+              type="button"
+              onClick={() => onChange(NO_HOST_FILTERS)}
+              className="text-base font-medium text-primary-strong underline-offset-2 hover:underline"
+            >
+              Clear all
+            </button>
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            {groups.flatMap((key) =>
+              (filters[key] ?? []).map((id) => {
+                const label =
+                  options.get(key)?.find((o) => o.id === id)?.label ?? id;
+                return (
+                  <li key={`${key}:${id}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(key, id)}
+                      aria-label={`Remove filter: ${label}`}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-primary-border bg-primary-soft px-3 text-base text-fg hover:bg-primary"
+                    >
+                      {label}
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
+                  </li>
+                );
+              }),
+            )}
+          </ul>
+        </div>
+      )}
+
       {groups.map((key) => {
         const d = { key };
         const isOpen = open[d.key] ?? false;
@@ -198,9 +240,15 @@ export const FilterPanel = memo(function FilterPanel({
               <span aria-hidden="true" className="info-icon w-4 shrink-0 text-fg-icon [&>svg]:size-4">
                 {group.icon}
               </span>
-              <span className="flex-1">{group.label}</span>
+              <span className={`flex-1 ${chosen.length > 0 ? "font-medium" : ""}`}>
+                {group.label}
+              </span>
               {chosen.length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-medium text-fg">
+                <span
+                  className={`grid place-items-center rounded-full bg-primary font-medium text-fg ${
+                    memberView ? "h-7 min-w-7 px-2 text-base" : "h-5 min-w-5 px-1.5 text-xs"
+                  }`}
+                >
                   {chosen.length}
                   <span className="sr-only"> selected</span>
                 </span>
