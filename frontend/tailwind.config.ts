@@ -89,10 +89,13 @@ const config: Config = {
         // destructive dialog's edge); `fg` is the readable red for error
         // text, since the pink border fails contrast as type. Kept to
         // destructive actions and errors, so red always means "careful".
+        // Softened: a pale blush fill and a lighter edge (was #FFD0D5 /
+        // #FFBFC6 / #FD9BA6), so a red button reads as "careful" without
+        // shouting; `fg` is unchanged so the text still passes contrast.
         danger: {
-          DEFAULT: "#FFD0D5",
-          hover: "#FFBFC6",
-          border: "#FD9BA6",
+          DEFAULT: "#FFECEE",
+          hover: "#FFDCE0",
+          border: "#FBBAC2",
           fg: "#7F000E",
         },
       },
