@@ -348,7 +348,9 @@ can open.
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" dialog
-  (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
+  (`member/EventDetailModal`, a centred `Modal`; its title row is padded
+  clear of the × — `insetForClose` → `EventSummary headingInset`, `pr-12`
+  / `sm:pr-14`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons on the actions' row: **not saved yet**, Share and Print

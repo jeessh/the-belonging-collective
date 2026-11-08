@@ -113,6 +113,7 @@ export function EventSummary({
   fixedDates = false,
   className = "",
   aboveTitle,
+  headingInset = false,
 }: {
   /** Above the title in the text column (the event dialog's Google
       Calendar / Share / Print). */
@@ -123,6 +124,8 @@ export function EventSummary({
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
   actions?: ReactNode;
+  /** Keep the title row clear of a dialog's top-right ×. */
+  headingInset?: boolean;
   /** The page's own heading where the summary is the page (or the dialog). */
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
@@ -200,7 +203,12 @@ export function EventSummary({
   // For you where they apply), on one line when there's room.
   const heading = (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* In a dialog, the title row keeps clear of the × in its corner. */}
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${
+          headingInset ? "pr-12 sm:pr-14" : ""
+        }`}
+      >
         {title}
         {tags}
       </div>

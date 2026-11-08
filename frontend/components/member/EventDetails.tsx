@@ -116,6 +116,7 @@ export function EventDetails({
         event={event}
         layout="detail"
         saved={saved}
+        headingInset={insetForClose}
         going={going}
         titleAs={titleAs}
         titleId={titleId}
