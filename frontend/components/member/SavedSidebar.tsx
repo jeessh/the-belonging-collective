@@ -18,7 +18,7 @@ import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
-const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
+const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-base";
 const RAIL_WIDTH = 100;
 /* The board, an experiment (the open panel's list): a whiteboard, each
    saved program held to it by a magnet as a miniature of the feed card —
@@ -450,10 +450,10 @@ function Thumb({
           {img}
         </span>
         <span className="flex min-w-0 flex-col">
-          <span className="line-clamp-2 text-sm font-medium leading-snug text-fg">
+          <span className="line-clamp-2 text-base font-medium leading-snug text-fg">
             {event.title}
           </span>
-          <span className="text-xs text-fg-muted">{monthDay(event.starts_at)}</span>
+          <span className="text-base text-fg-muted">{monthDay(event.starts_at)}</span>
         </span>
       </button>
     );
@@ -462,7 +462,7 @@ function Thumb({
 }
 
 /** Magnet colours; each program keeps the same one. */
-const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
+const PINS = ["#38D0F5"]; // one colour: the app's accent
 
 function hash(id: string): number {
   let h = 0;

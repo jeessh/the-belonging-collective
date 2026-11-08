@@ -311,11 +311,6 @@ export function EventsView({
     () => new Set(savedEvents.map((ev) => ev.id)),
     [savedEvents],
   );
-  // The programs (series) saved, so the feed can leave every date of them out.
-  const savedPrograms = useMemo(
-    () => new Set(savedEvents.map(programKey)),
-    [savedEvents],
-  );
   // The sidebar: upcoming, soonest first, one per program.
   const savedList = useMemo(
     () =>
@@ -345,35 +340,33 @@ export function EventsView({
   const recommended = useMemo(
     () =>
       signedIn
-        ? // Saved programs are on the board, not suggested again.
-          recommendedThisWeek(
-            events.filter((ev) => !savedPrograms.has(programKey(ev))),
-            taste,
-            dismissed ?? [],
-          )
+        ? recommendedThisWeek(events, taste, dismissed ?? [])
         : [],
-    [events, taste, dismissed, signedIn, savedPrograms],
+    [events, taste, dismissed, signedIn],
   );
   const recommendedKeys = useMemo(
     () => new Set(recommended.map(programKey)),
     [recommended],
   );
 
+  // What the filter chips are drawn from: everything on offer (upcoming,
+  // within the repeating window), before the chips themselves narrow it.
+  const chipEvents = useMemo(
+    () => events.filter((ev) => isUpcoming(ev) && withinRecurringWindow(ev)),
+    [events],
+  );
+
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
-    // A repeating program shows only once its next date is within a month,
-    // and anything already saved (any date of it) leaves the feed — it's on
-    // the saved board. Un-saving brings it back.
+    // A repeating program shows only once its next date is within a month.
+    // Saved events stay in the feed, showing as saved (the card's button
+    // reads "Unsave event", list cards "Unsave").
     const upcoming = events.filter(
-      (ev) =>
-        isUpcoming(ev) &&
-        withinRecurringWindow(ev) &&
-        !savedPrograms.has(programKey(ev)) &&
-        passesFilters(ev, chips),
+      (ev) => isUpcoming(ev) && withinRecurringWindow(ev) && passesFilters(ev, chips),
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
-  }, [events, chips, taste, savedPrograms]);
+  }, [events, chips, taste]);
 
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(
@@ -1430,6 +1423,7 @@ export function EventsView({
 
               {viewMode !== "list" && (
               <FeedFilters
+                events={chipEvents}
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}

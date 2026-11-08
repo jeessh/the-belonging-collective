@@ -267,16 +267,16 @@ can open.
   nothing is hidden. The only things that remove cards are the filter chips in
   `FeedFilters` ("Clear all" at the right end of the chip row once a chip
   is on; an **All** chip first — selected while no chip is, and
-  pressing it clears them — then FREE + the topics from `useCategories`),
+  pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
+  upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
+  event is free; a chip that's on stays so it can be switched off)),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
-- **A saved program leaves the feed** (card, list and Advanced views, and
-  "For you this week"): EventsView's `savedPrograms` (the `programKey`s of
-  `savedEvents`, so every date of a repeating program) is filtered out where
-  `feed` is built. Saving the card on screen therefore advances to the next
-  one (`advanceAfterSave` finds the current id changed and does nothing
-  more); un-saving, or a save that fails and rolls back, brings it back.
+- **Saved events stay in the feed, marked saved**: a "Saved" tag (bookmark,
+  the accent's soft fill) leads the tag row on the feed card, list cards and
+  the event dialog (`EventSummary saved` / `EventTags saved`), and the
+  card's button reads "Unsave event".
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
@@ -335,6 +335,13 @@ can open.
   event page, print). Cost and registration are the tags beside the title;
   there is no price line, no repeats line, no ages or spots. `EventDetails`
   labels the organizer's link "Sign up on …" when sign-up is needed.
+- **Type and colour rules (member app):** tags and filter chips are
+  sentence case, never uppercase (18px tags); tooltips 16px; nothing on the
+  member side under 16px. One accent (the cyan `primary`), plus a semantic
+  set: green Free, blue Paid, neutral grey Registration required. Every
+  magnet is the accent cyan. In the event dialog / page, Google Calendar /
+  Share / Print are ghost buttons so See on Map (secondary) and Save /
+  Register (primary) clearly lead.
 - **Tags beside the title: "Free" or "Paid", and "Registration required"**
   (`eventTags` in `ui/Tag`; Free / Paid from the `price` dimension, so it
   always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in

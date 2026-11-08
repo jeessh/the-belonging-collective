@@ -49,7 +49,7 @@ export const FeedCard = memo(function FeedCard({
     // Held up like a flyer: a magnet at the top and a soft shadow.
     <div className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
       <Magnet
-        colour="#e5484d"
+        colour="#38D0F5"
         className={`!-top-2.5 !size-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
           unpinned ? "!-translate-y-4 rotate-45 opacity-0" : ""
         }`}
@@ -58,6 +58,7 @@ export const FeedCard = memo(function FeedCard({
         event={event}
         layout="card"
         recommended={recommended}
+        saved={saved}
         going={
           // The feed card's fact icons are 28px (EventSummary's `icon`).
           <GoingCount

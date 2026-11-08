@@ -57,7 +57,10 @@ export function EventDetails({
   fixedDates = false,
   insetForClose = false,
   stickyActions = false,
+  saved = false,
 }: {
+  /** On the member's saved list: a "Saved" tag beside the title. */
+  saved?: boolean;
   /** Pin the bottom buttons to the foot of the scrolling panel (the event
       panel), so they stay on screen however long the details are. */
   stickyActions?: boolean;
@@ -108,6 +111,7 @@ export function EventDetails({
       <EventSummary
         event={event}
         layout="detail"
+        saved={saved}
         going={going}
         // Add to Google Calendar, Share and Print sit above the title, at
         // the top of the text column.

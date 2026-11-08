@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Lock, Sparkles } from "lucide-react";
+import { BookmarkCheck, Lock, Sparkles } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { dimensionByKey } from "@/lib/dimensions";
 
@@ -11,7 +11,8 @@ export type TagKind =
   | "inperson"
   | "virtual"
   | "access"
-  | "foryou";
+  | "foryou"
+  | "saved";
 
 const TAG: Record<
   TagKind,
@@ -25,7 +26,9 @@ const TAG: Record<
   },
   signup: {
     label: "Registration required",
-    className: "bg-tag-signup-bg text-tag-signup-fg",
+    // Neutral, not a colour of its own: green / blue mean free / paid, and
+    // the one accent is the app's cyan.
+    className: "border border-line bg-surface-subtle text-fg",
   },
   inperson: {
     label: "In-person",
@@ -42,6 +45,12 @@ const TAG: Record<
     icon: Lock,
   },
   // In this week's picks for the signed-in member.
+  // Already on the member's saved list (or the list "Saving for" names).
+  saved: {
+    label: "Saved",
+    className: "border border-primary-border bg-primary-soft text-fg",
+    icon: BookmarkCheck,
+  },
   foryou: {
     label: "For you",
     className: "border border-primary-border bg-primary-soft text-fg",
@@ -62,7 +71,7 @@ export function Tag({
   const { label, className: tone, icon: Icon } = TAG[kind];
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-control px-3 py-1 text-base uppercase tracking-wide ${tone} ${className}`}
+      className={`inline-flex items-center gap-2 rounded-control px-3 py-1 text-lg font-medium leading-snug ${tone} ${className}`}
     >
       {Icon && <Icon aria-hidden="true" className="size-4 shrink-0" />}
       {label}

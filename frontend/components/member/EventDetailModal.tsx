@@ -70,6 +70,7 @@ export function EventDetailModal({
           titleId={TITLE_ID}
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
+          saved={saved}
           tools={<EventTools event={event} />}
           actions={
             <>

@@ -252,7 +252,7 @@ function MemberEventCard({
             {event.title}
           </button>
         </h3>
-          <EventTags event={event} />
+          <EventTags event={event} saved={saved} />
         </div>
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">

@@ -51,15 +51,19 @@ export function audienceLabel(ev: {
 export function EventTags({
   event,
   recommended = false,
+  saved = false,
   className = "",
 }: {
   event: Event;
   recommended?: boolean;
+  /** On the member's saved list: a "Saved" tag first. */
+  saved?: boolean;
   /** Passed to every pill, e.g. the feed card's larger type. */
   className?: string;
 }) {
   return (
     <>
+      {saved && <Tag kind="saved" className={className} />}
       {recommended && <Tag kind="foryou" className={className} />}
       {eventTags(event).map((kind) => (
         <Tag key={kind} kind={kind} className={className} />
@@ -100,6 +104,7 @@ export function EventSummary({
   titleAs: Title = "h3",
   titleId,
   recommended = false,
+  saved = false,
   fixedDates = false,
   className = "",
   aboveTitle,
@@ -120,6 +125,8 @@ export function EventSummary({
   fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
+  /** On the member's saved list — adds the "Saved" pill. */
+  saved?: boolean;
   className?: string;
 }) {
   const card = layout === "card" || layout === "detail";
@@ -162,6 +169,7 @@ export function EventSummary({
     <EventTags
       event={event}
       recommended={recommended}
+      saved={saved}
       className={feed ? "lg:text-xl short:!text-lg" : ""}
     />
   );

@@ -40,8 +40,8 @@ function stepsFor(): Step[] {
     {
       icon: <Bookmark />,
       title: "Save what you like",
-      body: "Drag the event left, or tap \u201cSave event\u201d.",
-      targets: ["save"],
+      body: "Drag the event card into Saved Events on the left to save it \u2014 in the list too. Or tap \u201cSave event\u201d.",
+      targets: ["save", "saved"],
     },
     {
       icon: <Info />,
