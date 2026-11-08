@@ -12,17 +12,35 @@ import { PrintPreview } from "@/components/member/PrintPreview";
 
 /** Share and Print for one program (no per-event calendar button: saving
     syncs the member's calendar) — the dialog's and the page's bottom right. */
-export function EventTools({ event }: { event: Event }) {
+export function EventTools({
+  event,
+  lead = false,
+}: {
+  event: Event;
+  /** Once the event is saved, Share and Print lead (primary, secondary)
+      and Un-save drops to tertiary; otherwise they are quiet ghosts. */
+  lead?: boolean;
+}) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
 
   return (
     <>
-      <div className="flex flex-wrap gap-1">
-        <Button variant="ghost" onClick={() => setOpen("share")} trailingIcon={<Send />}>
+      <div className={`flex flex-wrap ${lead ? "gap-3" : "gap-1"}`}>
+        <Button
+          variant={lead ? "primary" : "ghost"}
+          size={lead ? "lg" : "md"}
+          onClick={() => setOpen("share")}
+          trailingIcon={<Send />}
+        >
           Share
         </Button>
-        <Button variant="ghost" onClick={() => setOpen("print")} trailingIcon={<Printer />}>
+        <Button
+          variant={lead ? "secondary" : "ghost"}
+          size={lead ? "lg" : "md"}
+          onClick={() => setOpen("print")}
+          trailingIcon={<Printer />}
+        >
           Print
         </Button>
       </div>

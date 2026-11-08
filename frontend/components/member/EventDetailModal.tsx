@@ -68,7 +68,7 @@ export function EventDetailModal({
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
           saved={saved}
-          tools={<EventTools event={event} />}
+          tools={<EventTools event={event} lead={saved && canSave} />}
           actions={
             <>
               {!canSave ? (
@@ -81,8 +81,9 @@ export function EventDetailModal({
                   }}
                 />
               ) : saved ? (
+                // Tertiary once saved: Share and Print lead.
                 <Button
-                  variant="danger"
+                  variant="ghost"
                   size="lg"
                   onClick={() => onUnsave(event)}
                   trailingIcon={<BookX />}
