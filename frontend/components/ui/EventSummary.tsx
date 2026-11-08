@@ -1,5 +1,7 @@
 import { placeLabel } from "@/lib/place";
 import { mapsUrl } from "@/lib/share";
+import { buttonClass } from "@/components/ui/Button";
+import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 import type { ReactNode } from "react";
 import {
   CalendarDays,
@@ -229,23 +231,23 @@ export function EventSummary({
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
-        {/* On the event's dialog and page, the place is the map link (the
-            "See on Map" button went); cards open the details instead. */}
-        {mapLink ? (
-          <p className="min-w-0">
+        {/* On the event's dialog and page, a small "See on Map" button
+            sits under the place; cards open the details instead. */}
+        <div className="flex min-w-0 flex-col items-start gap-2">
+          <p className="min-w-0 text-fg">{where}</p>
+          {mapLink && (
             <a
               href={mapLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-fg underline decoration-fg-muted underline-offset-4 hover:decoration-fg"
+              className={buttonClass("secondary", "md", "!min-h-9 !px-3 !py-1 !text-base")}
             >
-              {where}
+              <GoogleMapsIcon className="size-5" />
+              See on Map
               <span className="sr-only"> (opens Google Maps)</span>
             </a>
-          </p>
-        ) : (
-          <p className="min-w-0 text-fg">{where}</p>
-        )}
+          )}
+        </div>
       </div>
       {/* Only three facts on any summary: when, where and the saved
           count. Cost and registration are the tags beside the title. */}

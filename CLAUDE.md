@@ -341,8 +341,9 @@ can open.
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons at the **bottom right**, on the actions' row; no per-event
   Add to Google Calendar any more) and bottom `actions` (Save / Register;
-  **no See on Map** — in the `detail` layout the place itself is the Google
-  Maps link, underlined, opening a new tab). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  See on Map is no longer an action: in the `detail` layout it is a small
+  secondary button — Maps icon, "See on Map" — under the place, opening
+  Google Maps in a new tab; not for a virtual event). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
