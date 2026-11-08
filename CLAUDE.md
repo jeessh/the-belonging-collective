@@ -132,10 +132,12 @@ can open.
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
-  card and arrows / list all sit in it. In card view the heading block and
-  the card + arrows are one box centred on the page (1000px, 1012px from
+  card and arrows / list all sit in it. In both views the heading block and
+  the card + arrows (or the list + an empty arrows column) are one box centred on the page (1000px, 1012px from
   `lg`), so heading, filters and card share a left edge and the filters and
-  Accessibility Tools end at the card's right edge.
+  Accessibility Tools end at the card's right edge; the list (search and
+  cards) is exactly the card's width. The column reserves its scrollbar
+  (`scrollbar-gutter: stable`) so the two views' edges never differ.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
@@ -165,9 +167,8 @@ can open.
   under the name. **In list view Accessibility Tools has no Read aloud,
   Voice commands or Head tracking — **list view has no Accessibility Tools
   at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
-  The list's `FilterPanel` (`memberView`) opens with "N filters applied",
-  a removable chip per ticked option and Clear all, and each group with
-  something ticked shows a count badge and a medium-weight name.
+  `FilterPanel`'s `memberView` (an "N filters applied" summary with
+  removable chips, count badges) is no longer used by the member app.
   `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
@@ -181,8 +182,8 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  `host/PostedEvents`' `FilterPanel` on the left, sticky, from `xl` (a Filters sheet below that — with the saved panel open a `lg` window left the cards ~190px) (`memberView` — the feed's
-  groups only, member-app sizes; it replaces the chip row), search, and a
+  **no filter panel any more** — the same `FeedFilters` chips as card view
+  sit under the heading in both views — then search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share and Add to Google
   Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through

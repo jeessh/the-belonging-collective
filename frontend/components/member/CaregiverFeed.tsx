@@ -10,7 +10,6 @@ import {
   ClipboardPen,
   MapPin,
   Send,
-  SlidersHorizontal,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
@@ -23,7 +22,6 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { Modal } from "@/components/Modal";
 import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import {
@@ -33,18 +31,13 @@ import {
   MiniCardFace,
   useDragHint,
 } from "@/components/member/SavedSidebar";
-import {
-  FilterPanel,
-  NO_HOST_FILTERS,
-  applyHostFilters,
-  type HostFilters,
-} from "@/components/host/PostedEvents";
+import { NO_HOST_FILTERS, applyHostFilters } from "@/components/host/PostedEvents";
 import { placeLabel } from "@/lib/place";
 
 /**
- * The feed's List view (for everyone): the console's event
- * management layout — the filter panel on the left, search over the cards,
- * one card per event — restricted to what a member can do.
+ * The feed's List view (for everyone): search over one card per event (the
+ * console's card, restricted to what a member can do), filtered by the same
+ * topic / Free chips as card view, which sit over it.
  * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
  * whoever "Saving for" names. A special-access program the member isn't
@@ -69,83 +62,47 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   /** The saved panel: dropping a dragged card on it saves the event. */
   dropTarget: RefObject<HTMLDivElement>;
 }) {
-  const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [query, setQuery] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const wide = useMediaQuery("(min-width: 1280px)");
+  // The topic / Free chips over the list narrow `events` already; this is
+  // just the search box.
   const shown = useMemo(
-    () => applyHostFilters(events, filters, query),
-    [events, filters, query],
+    () => applyHostFilters(events, NO_HOST_FILTERS, query),
+    [events, query],
   );
-  const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   return (
-    <div className="flex flex-col items-start gap-8 xl:flex-row">
-      {/* Sticky: it stays in view while the cards scroll (the feed column
-          is the scroller), scrolling itself if it's taller than the window. */}
-      <div className="hidden w-[280px] shrink-0 xl:sticky xl:top-4 xl:block xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
-        <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
-      </div>
+    <div className="flex w-full min-w-0 flex-col gap-6">
+      <SearchField
+        label="Search for event"
+        placeholder="Search for event"
+        value={query}
+        onChange={setQuery}
+        className="w-full min-w-0"
+      />
 
-      <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <SearchField
-            label="Search for event"
-            placeholder="Search for event"
-            value={query}
-            onChange={setQuery}
-            className="w-full min-w-0 sm:flex-1"
-          />
-          <Button
-            className="shrink-0 xl:hidden"
-            leadingIcon={<SlidersHorizontal />}
-            aria-haspopup="dialog"
-            onClick={() => setFiltersOpen(true)}
-          >
-            Filters{chosen > 0 && ` (${chosen})`}
-          </Button>
-        </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {`${shown.length} of ${events.length} events shown`}
+      </p>
 
-        <p role="status" aria-live="polite" className="sr-only">
-          {`${shown.length} of ${events.length} events shown`}
+      {shown.length === 0 ? (
+        <p className="py-16 text-center text-2xl text-fg-muted">
+          No events match these filters.
         </p>
-
-        {shown.length === 0 ? (
-          <p className="py-16 text-center text-2xl text-fg-muted">
-            No events match these filters.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {shown.map((ev) => (
-              <MemberEventCard
-                key={ev.id}
-                event={ev}
-                saved={saved.has(ev.id)}
-                onOpen={() => onOpen(ev)}
-                onSave={() => onSave(ev)}
-                onUnsave={() => onUnsave(ev)}
-                onRegister={() => onRegister(ev)}
-                dropTarget={dropTarget}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {filtersOpen && !wide && (
-        <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
-          <div className="mt-4">
-            <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
-          </div>
-          <Button
-            variant="primary"
-            size="lg"
-            className="mt-6 w-full"
-            onClick={() => setFiltersOpen(false)}
-          >
-            Show {shown.length} {shown.length === 1 ? "event" : "events"}
-          </Button>
-        </Modal>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {shown.map((ev) => (
+            <MemberEventCard
+              key={ev.id}
+              event={ev}
+              saved={saved.has(ev.id)}
+              onOpen={() => onOpen(ev)}
+              onSave={() => onSave(ev)}
+              onUnsave={() => onUnsave(ev)}
+              onRegister={() => onRegister(ev)}
+              dropTarget={dropTarget}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
