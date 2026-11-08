@@ -402,8 +402,10 @@ can open.
   view's conventions**: the card's width (880px) centred, the title with
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`, `orderLabel` "Soonest first" / "Most recent") — search,
-  Filter dropdown and Sort on one row over the same cards, each saying
-  Unsave (everything here is saved; no drag, `dropTarget` omitted). Back,
+  Filter dropdown and Sort on one row over the same cards — with no
+  Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
+  colours, tooltip "Remove from saved") at each card's top right, beside
+  Share, un-saves it (with the usual Undo). No drag, `dropTarget` omitted. Back,
   the title and the **Upcoming / Past toggle** (at the title row's right)
   — the top bar hides Card View / List View while it is open —
   are one sticky bar with a line under it. The page no longer has Google

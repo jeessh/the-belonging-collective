@@ -203,6 +203,7 @@ export const SavedEvents = memo(function SavedEvents({
                     events={shown}
                     saved={savedIds}
                     orderLabel={tab === "upcoming" ? "Soonest first" : "Most recent"}
+                    removeIcon
                     onOpen={onOpen}
                     onSave={() => {}}
                     onUnsave={onUnsave}

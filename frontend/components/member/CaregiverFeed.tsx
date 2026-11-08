@@ -11,6 +11,7 @@ import {
   ClipboardPen,
   MapPin,
   Send,
+  Trash2,
   SlidersHorizontal,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -57,7 +58,11 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onRegister,
   dropTarget,
   orderLabel = "Recommended",
+  removeIcon = false,
 }: {
+  /** The saved page: a red delete icon at each card's top right takes it
+      off the list, in place of the Unsave button. */
+  removeIcon?: boolean;
   /** What the list's own order is called in Sort (its first option). */
   orderLabel?: string;
   events: Event[];
@@ -182,6 +187,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
               onUnsave={() => onUnsave(ev)}
               onRegister={() => onRegister(ev)}
               dropTarget={dropTarget}
+              removeIcon={removeIcon}
             />
           ))}
         </div>
@@ -202,7 +208,9 @@ function MemberEventCard({
   onUnsave,
   onRegister,
   dropTarget,
+  removeIcon = false,
 }: {
+  removeIcon?: boolean;
   event: Event;
   saved: boolean;
   onOpen: () => void;
@@ -333,8 +341,24 @@ function MemberEventCard({
               </button>
             )}
           </Tooltip>
+          {removeIcon && saved && (
+            <Tooltip text="Remove from saved" align="end">
+              {(tip) => (
+                <button
+                  type="button"
+                  aria-label={`Remove ${event.title} from saved`}
+                  aria-describedby={tip}
+                  onClick={onUnsave}
+                  className="grid size-11 place-items-center rounded-control border border-danger-border bg-danger text-danger-fg transition-colors hover:bg-danger-hover"
+                >
+                  <Trash2 aria-hidden="true" className="size-6" />
+                </button>
+              )}
+            </Tooltip>
+          )}
         </div>
         {canSave &&
+          !(removeIcon && saved) &&
           (saved ? (
             <Button onClick={onUnsave} trailingIcon={<BookX />} className="max-sm:order-1 max-sm:flex-1">
               Unsave
