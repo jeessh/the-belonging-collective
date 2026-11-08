@@ -1637,6 +1637,7 @@ export function EventsView({
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
+                          unpinned={!!lift}
                           onRegister={() => setRegisterFor(current)}
                         />
                       </motion.div>

@@ -468,14 +468,15 @@ function hash(id: string): number {
   return Math.abs(h);
 }
 
-/** A square fridge magnet: a rounded square of colour with a little shine. */
-export function Magnet({ colour, className = "" }: { colour: string; className?: string }) {
+/** A push pin seen from above: a round, glossy head with the shadow it
+    casts falling down and to the right, where the needle goes in. */
+export function Pin({ colour, className = "" }: { colour: string; className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-[4px] shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${className}`}
+      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-full shadow-[2px_3px_3px_rgba(0,0,0,0.35)] ${className}`}
       style={{
-        background: `linear-gradient(145deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%), ${colour}`,
+        background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0) 45%), radial-gradient(circle at 50% 50%, ${colour} 55%, color-mix(in srgb, ${colour} 70%, black) 100%)`,
       }}
     />
   );
@@ -525,6 +526,8 @@ function Board({
             transition={transition}
             className={`relative w-full transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted motion-reduce:transition-none ${MINI_CARD}`}
           >
+            {/* The pin holding it to the board. */}
+            <Pin colour={PINS[hash(ev.id) % PINS.length]} />
             <MiniCardFace event={ev} />
           </motion.button>
         ))}

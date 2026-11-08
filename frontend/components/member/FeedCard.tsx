@@ -4,6 +4,7 @@ import { memo } from "react";
 import { Bookmark, BookmarkX, ClipboardPen, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { Pin } from "@/components/member/SavedSidebar";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
 
@@ -19,12 +20,16 @@ export const FeedCard = memo(function FeedCard({
   onSave,
   onUnsave,
   onSignIn,
+  unpinned = false,
   onRegister,
 }: {
   /** For an event that needs registering: the card's button says Register
       and this asks to confirm (which saves it and opens the organizer's
       page when there is one). */
   onRegister?: () => void;
+  /** The card is on the move (dragged, held or flying to the board): its
+      pin pops out. */
+  unpinned?: boolean;
   event: Event;
   saved: boolean;
   /** In this week's picks. */
@@ -41,8 +46,14 @@ export const FeedCard = memo(function FeedCard({
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    // Held up like a flyer, with a soft shadow.
+    // Pinned up like a flyer, with a soft shadow.
     <div className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
+      <Pin
+        colour="#38D0F5"
+        className={`!-top-2.5 !size-5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
+          unpinned ? "!-translate-y-4 opacity-0" : ""
+        }`}
+      />
       <EventSummary
         event={event}
         layout="card"
