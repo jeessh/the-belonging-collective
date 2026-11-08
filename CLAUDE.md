@@ -401,7 +401,7 @@ can open.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
   view's conventions**: the card's width (880px) centred, the title with
   "N Saved Events" in grey under it, and the list view's own component
-  (`CaregiverFeed`, `orderLabel` "Soonest first" / "Most recent") — search,
+  (`CaregiverFeed`, `orderLabel` "Date") — search,
   Filter dropdown and Sort on one row over the same cards — with no
   Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
   colours, tooltip "Remove from saved") at each card's top right, beside
