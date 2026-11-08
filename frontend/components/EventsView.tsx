@@ -359,6 +359,13 @@ export function EventsView({
     [recommended],
   );
 
+  // What the filter chips are drawn from: everything on offer (upcoming,
+  // within the repeating window), before the chips themselves narrow it.
+  const chipEvents = useMemo(
+    () => events.filter((ev) => isUpcoming(ev) && withinRecurringWindow(ev)),
+    [events],
+  );
+
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
@@ -1375,6 +1382,7 @@ export function EventsView({
 
               {viewMode !== "list" && (
               <FeedFilters
+                events={chipEvents}
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
