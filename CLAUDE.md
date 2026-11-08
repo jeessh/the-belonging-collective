@@ -195,7 +195,8 @@ can open.
   month), **Next month · December** (the next calendar month) and **Later**, each
   with its count; an empty one is left out. A saved card there has no Unsave
   button: the red trash icon at its top right (`removeIcon`, as on the saved
-  page; the saved page alone adds `printIcon`) un-saves it. Then a
+  page) un-saves it. Every list card also has the **Print** icon
+  (`printIcon`), after Share — the saved page's too. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share
   as an icon button with `ui/Tooltip`s, beside Save / Unsave (through
