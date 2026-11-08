@@ -436,7 +436,8 @@ can open.
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
-  view's conventions**: the card's width (880px) centred, the title with
+  view's conventions**: the card's width (880px) centred, the title (with a
+  bookmark-check icon before it) with
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
   `tools` prop, in place of the list view's Filter and Sort; both cover the

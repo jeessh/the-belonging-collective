@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Printer, Search, Send } from "lucide-react";
+import { BookmarkCheck, Printer, Search, Send } from "lucide-react";
 import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
@@ -180,7 +180,9 @@ export const SavedEvents = memo(function SavedEvents({
             <BackButton label="Back to events" onClick={onClose} />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[32px]">
+                  {/* The saved bookmark, as on the sidebar's Saved Events. */}
+                  <BookmarkCheck aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
                   {owner ? listTitle : "All Saved Events"}
                 </h1>
                 <p className="text-xl text-fg-muted">
