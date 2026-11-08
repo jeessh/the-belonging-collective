@@ -431,6 +431,48 @@ export function EventsView({
   // then the next one comes in — unless the member has already moved on.
   const advanceTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(advanceTimer.current), []);
+  // A two-finger swipe on a trackpad (or a mouse wheel) over the card turns
+  // it, like ↑ / ↓: swiping up shows the next card, down the one before.
+  // One card per gesture — the swipe's momentum keeps firing wheel events,
+  // so after a turn the rest are ignored until they stop for a moment.
+  const deckRef = useRef<HTMLDivElement>(null);
+  const hasCard = feed.length > 0;
+  const nextRef = useRef(next);
+  const prevRef = useRef(prev);
+  nextRef.current = next;
+  prevRef.current = prev;
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el || viewMode !== "card") return;
+    let sum = 0;
+    let locked = false;
+    let quiet: ReturnType<typeof setTimeout> | undefined;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // a pinch is zoom, not a swipe
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return; // sideways: leave it
+      e.preventDefault();
+      clearTimeout(quiet);
+      quiet = setTimeout(() => {
+        locked = false;
+        sum = 0;
+      }, 180);
+      if (locked) return;
+      sum += e.deltaY;
+      if (Math.abs(sum) < 40) return;
+      locked = true;
+      if (sum > 0) nextRef.current();
+      else prevRef.current();
+      sum = 0;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      clearTimeout(quiet);
+    };
+    // The deck mounts and unmounts with the card (filters that match
+    // nothing), so re-attach whenever it comes back.
+  }, [viewMode, status, hasCard]);
+
   const advanceAfterSave = useCallback(
     (ev: Event) => {
       clearTimeout(advanceTimer.current);
@@ -1423,7 +1465,10 @@ export function EventsView({
               </p>
             ) : (
               /* card view: one card on a stacked deck, ↑ / ↓ beside it */
-              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9">
+              <div
+                ref={deckRef}
+                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9"
+              >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
