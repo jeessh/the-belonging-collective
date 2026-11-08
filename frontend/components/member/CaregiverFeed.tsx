@@ -69,6 +69,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onRegister,
   dropTarget,
   removeIcon = false,
+  printIcon = false,
   group,
   tools,
 }: {
@@ -78,7 +79,9 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   /** Split what's shown (after search and Filter) into titled
       sections; a `collapsed` one starts folded. Flat without it. */
   group?: (shown: Event[]) => FeedSection[];
-  /** The saved page: a red delete icon at each card's top right takes it
+  /** The saved page: a Print icon on each card, for that event. */
+  printIcon?: boolean;
+  /** A saved card: a red delete icon at each card's top right takes it
       off the list, in place of the Unsave button. */
   removeIcon?: boolean;
   events: Event[];
@@ -190,6 +193,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
                   onRegister={() => onRegister(ev)}
                   dropTarget={dropTarget}
                   removeIcon={removeIcon}
+              printIcon={printIcon}
                 />
               ))}
             </div>
@@ -282,8 +286,10 @@ function MemberEventCard({
   onRegister,
   dropTarget,
   removeIcon = false,
+  printIcon = false,
 }: {
   removeIcon?: boolean;
+  printIcon?: boolean;
   event: Event;
   saved: boolean;
   onOpen: () => void;
@@ -416,7 +422,7 @@ function MemberEventCard({
             )}
           </Tooltip>
           {/* The saved page: Print too, for this one event. */}
-          {removeIcon && (
+          {printIcon && (
             <Tooltip text="Print" align="end">
               {(tip) => (
                 <button

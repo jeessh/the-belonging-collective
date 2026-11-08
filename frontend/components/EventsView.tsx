@@ -1502,6 +1502,7 @@ export function EventsView({
                 onRegister={setRegisterFor}
                 dropTarget={dropRef}
                 group={byWhen}
+                removeIcon
               />
                 </div>
               </div>
