@@ -224,6 +224,7 @@ function MemberEventCard({
           dragged.current = false;
         }, 0);
       }}
+      data-tour="card"
       className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5`}
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">

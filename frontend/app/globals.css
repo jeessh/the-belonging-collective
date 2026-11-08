@@ -378,3 +378,19 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .big-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) {
   cursor: text;
 }
+
+/* The tour's drag demo (member/Tour DragDemo): the arrow while it glides
+   in, the closed hand while it carries. One cycle is the motion's 3.4s plus
+   its 0.4s pause, so the two stay in step. */
+@keyframes tour-arrow {
+  0%, 16% { opacity: 1; }
+  25%, 64% { opacity: 0; }
+  73%, 100% { opacity: 1; }
+}
+@keyframes tour-grab {
+  0%, 16% { opacity: 0; }
+  25%, 64% { opacity: 1; }
+  73%, 100% { opacity: 0; }
+}
+.tour-arrow { animation: tour-arrow 3.8s linear infinite; }
+.tour-grab { animation: tour-grab 3.8s linear infinite; }

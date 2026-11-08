@@ -143,9 +143,9 @@ can open.
 - **The bar spans the whole width**, over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
-  panel's "Saved Events" heading, and the Card View / List View toggle at
-  the far right; Accessibility Tools (`a11yMenu`) sits on the "Discover
-  Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  panel's "Saved Events" heading, and Accessibility Tools (`a11yMenu`, card
+  view only) at the far right; the Card View / List View toggle sits on the
+  "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
   beside the account — except while the saved panel is open (`careInPanel`),
   when it sits under the panel's heading and Close button, the board's full
   width.
@@ -213,7 +213,13 @@ can open.
   (`arrows`, `save`, `more`, `filters`, `view`, `foryou`, `a11y`) — keep those
   attributes when moving a control — and is never mounted over sign-in or
   head-tracking calibration; "Show me around" in Accessibility Tools replays
-  it.
+  it. Step 2 ("Save what you like", targets `card` + `saved` — `data-tour="card"`
+  is on the feed card and every list card) plays `DragDemo`: a cursor glides
+  onto the card, grabs it and carries a mini card into Saved Events, looping
+  (framer keyframes for the path; the arrow / closed-hand swap is CSS,
+  `.tour-arrow` / `.tour-grab` in globals.css, on the same 3.8s cycle —
+  framer wouldn't animate the images' opacity). Not on a phone or with
+  reduced motion.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
   (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
   on the x axis only (`touch-action: pan-y`, so a finger still scrolls);

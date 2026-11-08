@@ -1317,19 +1317,11 @@ export function EventsView({
             onSignOut={() => void doLogout()}
           />
         </div>
-        {/* Card View / List View at the far right (Accessibility Tools sits on
-            the "Discover Events" row). */}
+        {/* Accessibility Tools at the far right (card view only — its tools
+            drive the one card); Card View / List View sit on the "Discover
+            Events" row. */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <div data-tour="view">
-            <SegmentedToggle
-              label="View"
-              segments={
-                phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
-              }
-              value={viewMode}
-              onChange={changeView}
-            />
-          </div>
+          {viewMode === "card" && a11yMenu}
         </div>
       </header>
 
@@ -1436,8 +1428,17 @@ export function EventsView({
                     {heading}
                   </p>
                 </div>
-                {/* Accessibility Tools, on the heading's row at the right. */}
-                {viewMode === "card" && a11yMenu}
+                {/* Card View / List View, on the heading's row at the right. */}
+                <div data-tour="view" className="shrink-0">
+                  <SegmentedToggle
+                    label="View"
+                    segments={
+                      phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
+                    }
+                    value={viewMode}
+                    onChange={changeView}
+                  />
+                </div>
               </div>
 
               {viewMode !== "list" && (
