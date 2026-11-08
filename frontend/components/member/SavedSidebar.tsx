@@ -459,29 +459,6 @@ function Thumb({
   return null;
 }
 
-/** Magnet colours; each program keeps the same one. */
-const PINS = ["#38D0F5"]; // one colour: the app's accent
-
-function hash(id: string): number {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return Math.abs(h);
-}
-
-/** A push pin seen from above: a round, glossy head with the shadow it
-    casts falling down and to the right, where the needle goes in. */
-export function Pin({ colour, className = "" }: { colour: string; className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-full shadow-[2px_3px_3px_rgba(0,0,0,0.35)] ${className}`}
-      style={{
-        background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0) 45%), radial-gradient(circle at 50% 50%, ${colour} 55%, color-mix(in srgb, ${colour} 70%, black) 100%)`,
-      }}
-    />
-  );
-}
-
 /** The open panel's saved programs: two even columns of mini cards. */
 function Board({
   events,
@@ -526,8 +503,6 @@ function Board({
             transition={transition}
             className={`relative w-full transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted motion-reduce:transition-none ${MINI_CARD}`}
           >
-            {/* The pin holding it to the board. */}
-            <Pin colour={PINS[hash(ev.id) % PINS.length]} />
             <MiniCardFace event={ev} />
           </motion.button>
         ))}

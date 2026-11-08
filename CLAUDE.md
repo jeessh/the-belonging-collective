@@ -117,8 +117,8 @@ can open.
   (`border-line`) edge on the right, the same grey as the top bar's bottom line — a dark "Saved Events"
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
-  bottom — miniature feed cards (picture and title), each held by a
-  cyan push pin (`Pin`: a round glossy head, shadow down-right) and no shadow (the drag ghost
+  bottom — miniature feed cards (picture and title), no pins or magnets
+  and no shadow (the drag ghost
   neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
@@ -231,9 +231,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card is pinned up like a flyer (`FeedCard`: a cyan `Pin` at the top and a
-  soft shadow, kept straight); while it's on the move (`lift` — drag, ← hold,
-  flight) the pin pops out (`unpinned`). The card's text and buttons are untouched.
+  card has a soft shadow, kept straight (`FeedCard`; no pin or magnet).
+  The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
