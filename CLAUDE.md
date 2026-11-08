@@ -360,9 +360,10 @@ can open.
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") is one continuous
-  scrolling grid — no Back / Next paging. Everything above the grid (back,
-  title, search, Google Calendar / Share / Print, the Upcoming / Past toggle)
-  is one sticky header with a line under it. It has no fetch of its own:
+  scrolling grid — no Back / Next paging. Everything above the grid is one
+  sticky header with a line under it, in two rows: back + title with Google
+  Calendar / Share / Print on the right, then search with the Upcoming /
+  Past toggle beside it (stacking on a narrow panel). It has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".
