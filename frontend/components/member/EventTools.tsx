@@ -11,14 +11,14 @@ import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 
 /** Share and Print for one program (no per-event calendar button: saving
-    syncs the member's calendar) — the dialog's and the page's top right. */
+    syncs the member's calendar) — the dialog's and the page's bottom right. */
 export function EventTools({ event }: { event: Event }) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
 
   return (
     <>
-      <div className="-ml-4 flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1">
         <Button variant="ghost" onClick={() => setOpen("share")} trailingIcon={<Send />}>
           Share
         </Button>

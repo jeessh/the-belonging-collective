@@ -339,9 +339,10 @@ can open.
   (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
-  — ghost buttons; no per-event Add to Google Calendar any more in a row under the title and
-  its three facts, in the same column beside the picture; through
-  `EventSummary`'s `going` slot) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  — ghost buttons at the **bottom right**, on the actions' row; no per-event
+  Add to Google Calendar any more) and bottom `actions` (Save / Register;
+  **no See on Map** — in the `detail` layout the place itself is the Google
+  Maps link, underlined, opening a new tab). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,

@@ -40,7 +40,7 @@ function Poster({ url }: { url: string }) {
 
 /**
  * The full listing, drawn as the design's Expanded Card: the summary, the
- * tools (Google Calendar / Share / Print) above the title in its text column, then
+ * tools (Share / Print) at the bottom right, beside the actions, then
  * DETAILS, POSTER and LINKS. No hooks, so the
  * server-rendered public page, the dialog over the feed and the print
  * preview all draw the same thing; each hands in its own `tools`, `going`
@@ -112,18 +112,7 @@ export function EventDetails({
         event={event}
         layout="detail"
         saved={saved}
-        // Add to Google Calendar, Share and Print go under the title and
-        // the three facts, in the same column, after the saved count.
-        going={
-          tools ? (
-            <div className="flex flex-col items-start gap-3">
-              {going}
-              <div className="flex flex-wrap items-center gap-1">{tools}</div>
-            </div>
-          ) : (
-            going
-          )
-        }
+        going={going}
         titleAs={titleAs}
         titleId={titleId}
         fixedDates={fixedDates}
@@ -201,7 +190,7 @@ export function EventDetails({
         </section>
       )}
 
-      {actions && (
+      {(actions || tools) && (
         <div
           className={`flex flex-col gap-2 ${
             stickyActions
@@ -213,8 +202,19 @@ export function EventDetails({
               : ""
           }`}
         >
-          <div className="flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
-            {actions}
+          {/* Save / Register on the left, Share and Print at the bottom
+              right. */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {actions && (
+              <div className="flex flex-1 flex-col gap-4 sm:flex-row [&>*]:flex-1">
+                {actions}
+              </div>
+            )}
+            {tools && (
+              <div className="flex shrink-0 flex-wrap items-center gap-1 sm:ml-auto">
+                {tools}
+              </div>
+            )}
           </div>
           {/* The destination itself is the "you are leaving" cue. */}
           {hint && <p className="text-center text-base text-fg-muted">{hint}</p>}

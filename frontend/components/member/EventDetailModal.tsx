@@ -3,14 +3,12 @@
 import { useCallback, useRef, useState } from "react";
 import { Bookmark, BookX, ClipboardPen } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
 import { EventTools } from "@/components/member/EventTools";
 import { AccessAction, accessStateOf } from "@/components/member/AccessAction";
-import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 
 const TITLE_ID = "event-detail-title";
 
@@ -48,7 +46,6 @@ export function EventDetailModal({
   const close = useCallback(() => onCloseRef.current(), []);
 
   // A virtual event's "location" is a meeting app, not a place to map.
-  const maps = event.is_virtual ? null : mapsUrl(event.location);
   // Save is for approved members only; everyone else gets the access control.
   const access = accessStateOf(event);
   const canSave = access === null || access === "approved";
@@ -74,17 +71,6 @@ export function EventDetailModal({
           tools={<EventTools event={event} />}
           actions={
             <>
-              {maps && (
-                <a
-                  href={maps}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={buttonClass("secondary", "lg")}
-                >
-                  See on Map
-                  <GoogleMapsIcon />
-                </a>
-              )}
               {!canSave ? (
                 <AccessAction
                   state={access}

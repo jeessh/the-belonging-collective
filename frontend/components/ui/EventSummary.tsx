@@ -1,4 +1,5 @@
 import { placeLabel } from "@/lib/place";
+import { mapsUrl } from "@/lib/share";
 import type { ReactNode } from "react";
 import {
   CalendarDays,
@@ -135,6 +136,8 @@ export function EventSummary({
   const tile = layout === "tile";
   const when = whenLine(event, { fixed: fixedDates });
   const where = placeLabel(event);
+  const mapLink =
+    layout === "detail" && !event.is_virtual ? mapsUrl(event.location) : null;
   const image = eventImage(event);
   // Ages and spots left are no longer shown to members (the data stays).
 
@@ -226,7 +229,23 @@ export function EventSummary({
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
-        <p className="min-w-0 text-fg">{where}</p>
+        {/* On the event's dialog and page, the place is the map link (the
+            "See on Map" button went); cards open the details instead. */}
+        {mapLink ? (
+          <p className="min-w-0">
+            <a
+              href={mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fg underline decoration-fg-muted underline-offset-4 hover:decoration-fg"
+            >
+              {where}
+              <span className="sr-only"> (opens Google Maps)</span>
+            </a>
+          </p>
+        ) : (
+          <p className="min-w-0 text-fg">{where}</p>
+        )}
       </div>
       {/* Only three facts on any summary: when, where and the saved
           count. Cost and registration are the tags beside the title. */}
