@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Bookmark, BookmarkX, ClipboardPen, MoveRight } from "lucide-react";
+import { Bookmark, Check, ClipboardPen, MoveRight } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -96,11 +96,11 @@ export const FeedCard = memo(function FeedCard({
                 className={size}
                 onClick={onUnsave}
                 onPointerDown={stop}
-                trailingIcon={<BookmarkX />}
+                trailingIcon={<Check />}
                 data-tour="save"
-                aria-label={`Event saved. Unsave ${event.title}`}
+                aria-label={`Already saved. Press to unsave ${event.title}`}
               >
-                Unsave event
+                Already Saved
               </Button>
             ) : (
               <Button
