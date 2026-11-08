@@ -209,9 +209,7 @@ can open.
   column stays plain white; the feed
   card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
   top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
-  its magnet pops off (`unpinned`). Under the card's More information / Save buttons, Google
-  Calendar / Share / Print sit centred as ghost buttons (`EventTools
-  centered`), the same tools as the event dialog.
+  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
