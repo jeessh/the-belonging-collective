@@ -188,9 +188,9 @@ export const SavedEvents = memo(function SavedEvents({
           Sort on one row over the same cards — which say Unsave, since
           everything here is saved. */}
       <div className="flex flex-col gap-6 p-4 [scrollbar-gutter:stable] sm:gap-8 sm:p-6 lg:px-16 lg:py-9 xl:px-24">
-        {/* Back, title and the calendar / share / print buttons stay at the
-            top while the list scrolls under it: on white, a line below. */}
-        <div className="sticky top-0 z-10 -mx-4 -mt-4 border-b border-line bg-surface px-4 pb-4 pt-4 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pb-5 sm:pt-5 lg:-mx-16 lg:-mt-9 lg:px-16 lg:pt-6 xl:-mx-24 xl:px-24">
+        {/* Back and the title, scrolling away with the list like the feed's
+            "Discover Events" heading. */}
+        <div>
           <div className="mx-auto flex w-full max-w-[880px] flex-col gap-3">
             <BackButton label="Back to events" onClick={onClose} />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

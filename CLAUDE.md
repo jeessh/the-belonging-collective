@@ -413,8 +413,8 @@ can open.
   folded in a `<details>` — only events that finished in the last 7 days;
   older ones drop off the page (the attendance row is kept). No Upcoming /
   Past toggle, no Filter or Sort. "N Saved Events" counts
-  upcoming programs. Back and the title are one sticky bar with a line
-  under it; the top bar hides Card View / List View while it is open. No
+  upcoming programs. Back and the title sit at the top and scroll away
+  with the list (no sticky bar, no line); the top bar hides Card View / List View while it is open. No
   Google Calendar button here (the sidebar's remains). It has no fetch of
   its own: it is handed the feed's `savedEvents` (and `unsave`), so an
   un-save there and the Undo on its toast show at once. Its dialog is named
