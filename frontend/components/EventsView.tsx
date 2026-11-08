@@ -1475,10 +1475,11 @@ export function EventsView({
                 No events match these filters.
               </p>
             ) : (
-              /* card view: one card on a stacked deck, ↑ / ↓ beside it */
+              /* card view: one card on a stacked deck, ↑ / ↓ beside it —
+                 from the left, in line with the heading and filters */
               <div
                 ref={deckRef}
-                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9"
+                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
