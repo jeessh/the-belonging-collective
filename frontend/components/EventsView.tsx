@@ -1256,6 +1256,22 @@ export function EventsView({
       )}
 
 
+      {/* The bar across the whole width, over the saved panel and the
+          events: who you are on the left (in line with the panel's "Saved
+          Events" heading), Accessibility Tools on the right. */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
+        <div className="-ml-2 min-w-0">
+          <FeedAccount
+            name={name}
+            avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+            care={careInPanel ? null : careChoice}
+            onSignIn={() => toSignIn()}
+            onSignOut={() => void doLogout()}
+          />
+        </div>
+        {a11yMenu}
+      </header>
+
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
           bar under it, so it comes after the feed in the DOM as well. */}
       <div className="relative flex min-h-0 flex-1 max-sm:flex-col">
@@ -1284,23 +1300,6 @@ export function EventsView({
 
         {/* The event column, plain white. */}
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
-          {/* The bar over the event column: who you are on the left,
-              Accessibility Tools on the right. */}
-          {/* Same side padding as the feed below (short screens too), and the
-              account button pulled back by its own 8px, so the picture lines
-              up with "Event 1 of 47". */}
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
-            <div className="-ml-2 min-w-0">
-            <FeedAccount
-              name={name}
-              avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-              care={careInPanel ? null : careChoice}
-              onSignIn={() => toSignIn()}
-              onSignOut={() => void doLogout()}
-            />
-            </div>
-            {a11yMenu}
-          </header>
           <div className="relative flex min-h-0 flex-1 flex-col">
           {/* The saved list opens over the main column, which has the whole
               width while it is up. */}

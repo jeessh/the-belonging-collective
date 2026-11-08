@@ -133,12 +133,14 @@ can open.
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
   in list view).
-- **The bar spans the event column only; the saved panel runs the full
-  height.** The bar (in EventsView) has the account button (`FeedAccount`
-  in `member/FeedHeader.tsx`) on the left and Accessibility Tools
-  (`a11yMenu`) on the right. "Saving for" (`CareSwitcher`) sits beside the
-  account — except while the saved panel is open (`careInPanel`), when it
-  sits under the panel's heading and Close button, the board's full width.
+- **The bar spans the whole width**, over the saved panel and the events
+  (in EventsView, before the panel / feed row): the account button
+  (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
+  panel's "Saved Events" heading, and Accessibility Tools (`a11yMenu`) on the
+  right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  beside the account — except while the saved panel is open (`careInPanel`),
+  when it sits under the panel's heading and Close button, the board's full
+  width.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the
