@@ -411,8 +411,9 @@ can open.
   `tools` prop, in place of the list view's Filter and Sort; both cover the
   events still to come) over the same cards — with no
   Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
-  colours, tooltip "Remove from saved") at each card's top right, beside
-  Share, un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
+  colours, tooltip "Remove from saved") at each card's top right, after
+  Share and a **Print** icon (that event's `PrintPreview`, saved page
+  only), un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
   **Grouped into sections** (`CaregiverFeed group` → `FeedSection[]`,
   applied after search): **Upcoming** (starts within the
   next 7 days, or is on now), **Scheduled** (later), and **Past events**

@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ClipboardPen,
   MapPin,
+  Printer,
   Send,
   Trash2,
   SlidersHorizontal,
@@ -34,6 +35,8 @@ import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
 import { SearchField, Select } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
+import { PrintPreview } from "@/components/member/PrintPreview";
+import { EventDetails } from "@/components/member/EventDetails";
 import {
   BOARD_CARD_W,
   DragHint,
@@ -287,6 +290,7 @@ function MemberEventCard({
 }) {
   const when = whenLine(event);
   const [sharing, setSharing] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Drag the card onto the saved panel to save it, as in card view: a mini
   // card follows the pointer while the card itself stays put (the list
@@ -407,6 +411,22 @@ function MemberEventCard({
               </button>
             )}
           </Tooltip>
+          {/* The saved page: Print too, for this one event. */}
+          {removeIcon && (
+            <Tooltip text="Print" align="end">
+              {(tip) => (
+                <button
+                  type="button"
+                  aria-label={`Print ${event.title}`}
+                  aria-describedby={tip}
+                  onClick={() => setPrinting(true)}
+                  className={tool}
+                >
+                  <Printer aria-hidden="true" className="size-6" />
+                </button>
+              )}
+            </Tooltip>
+          )}
           {removeIcon && saved && (
             <Tooltip text="Remove from saved" align="end">
               {(tip) => (
@@ -476,6 +496,25 @@ function MemberEventCard({
           link={{ getUrl: async () => publicEventUrl(event.id) }}
           onClose={() => setSharing(false)}
         />
+      )}
+      {printing && (
+        <PrintPreview
+          title={event.title}
+          printLabel="Print Event"
+          titleOnPaper={false}
+          onClose={() => setPrinting(false)}
+        >
+          <EventDetails
+            event={event}
+            titleAs="h3"
+            fixedDates
+            going={
+              typeof event.saved_count === "number" ? (
+                <GoingCount count={event.saved_count} />
+              ) : undefined
+            }
+          />
+        </PrintPreview>
       )}
     </motion.article>
   );
