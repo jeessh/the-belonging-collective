@@ -378,6 +378,10 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **Who posted it, under the title, everywhere members see an event**
+  (`EventSummary`'s heading and the list cards): `host/PostedBy` — the
+  organization's logo and "Posted by {organization}", the console's own
+  line; members never get the person (`created_by_name` is organizer-only).
 - **Every event summary shows three facts and no more: when, where and
   the saved count** (`EventSummary`, every layout — feed card, list, dialog,
   event page, print). Cost and registration are the tags beside the title;

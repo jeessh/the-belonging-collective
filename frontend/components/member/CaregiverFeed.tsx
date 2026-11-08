@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
+import { PostedBy } from "@/components/host/PostedBy";
 import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
@@ -382,6 +383,11 @@ function MemberEventCard({
         </h3>
           <EventTags event={event} saved={saved} />
         </div>
+        {event.host_name && (
+          <p className="text-lg text-fg-muted">
+            <PostedBy event={event} />
+          </p>
+        )}
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">
             <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />

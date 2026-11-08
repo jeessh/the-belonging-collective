@@ -1,5 +1,6 @@
 import { placeLabel } from "@/lib/place";
 import { mapsUrl } from "@/lib/share";
+import { PostedBy } from "@/components/host/PostedBy";
 import { buttonClass } from "@/components/ui/Button";
 import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 import type { ReactNode } from "react";
@@ -198,9 +199,18 @@ export function EventSummary({
   // The title with its tags beside it (just "Free", and special access /
   // For you where they apply), on one line when there's room.
   const heading = (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      {title}
-      {tags}
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {title}
+        {tags}
+      </div>
+      {/* Who posted it, as the console shows it: the organization and its
+          logo (members never see which person on a team posted it). */}
+      {event.host_name && (
+        <p className="text-lg text-fg-muted">
+          <PostedBy event={event} />
+        </p>
+      )}
     </div>
   );
 
