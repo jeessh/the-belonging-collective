@@ -133,8 +133,8 @@ can open.
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
   card and arrows / list all sit in it. In both views the heading block and
-  the card + arrows are one box centred on the page (list view: the card's
-  880px alone, centred) (1000px, 1012px from
+  the card + arrows are one box centred on the page (1000px, 1012px from
+  `lg`) — list view uses the same box, the list taking the arrows' room too (1000px, 1012px from
   `lg`), so heading, filters and card share a left edge and the filters and
   Accessibility Tools end at the card's right edge; the list (search and
   cards) is the card's width. The column reserves its scrollbar
@@ -182,8 +182,8 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  **no chips and no filter column**, the card's width (880px) centred on
-  its own: search, **Filter** (a dropdown under the button — not a modal;
+  **no chips and no filter column**, in the card view's box (so the
+  margins match): search, **Filter** (a dropdown under the button — not a modal;
   Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
   badges; the button shows "Filter (N)" and the accent's soft fill while any
   are on) share one row, over the cards — **no Sort**; the cards keep the

@@ -1406,14 +1406,16 @@ export function EventsView({
                 the heading block as wide as the card. */}
             <div
               className={`mx-auto flex w-full gap-6 lg:gap-9 ${
-                // Card view: the card + arrows group. List view: just the
-                // card's width, centred on its own (no arrows to balance).
-                viewMode === "card"
-                  ? "!max-w-[1000px] lg:!max-w-[1012px]"
-                  : "!max-w-[880px]"
+                // Both views: the card + arrows box, so the side margins
+                // match; list view spends the arrows' room on the list.
+                "!max-w-[1000px] lg:!max-w-[1012px]"
               }`}
             >
-            <div className="flex w-full min-w-0 max-w-[880px] flex-1 flex-col gap-5 sm:gap-6">
+            <div
+              className={`flex w-full min-w-0 flex-1 flex-col gap-5 sm:gap-6 ${
+                viewMode === "card" ? "max-w-[880px]" : ""
+              }`}
+            >
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
                   {space.logo_url && (
@@ -1490,8 +1492,9 @@ export function EventsView({
             ) : viewMode === "list" ? (
               // List view: search and a card per event (the console's card,
               // with a member's actions), under the same chips as card view.
-              // The card's width (880px at most), centred on the page.
-              <div className="mx-auto w-full !max-w-[880px]">
+              // The card view's whole box (card + arrows), so both views
+              // have the same margins.
+              <div className="mx-auto w-full !max-w-[1000px] lg:!max-w-[1012px]">
                 <div className="w-full min-w-0">
               <CaregiverFeed
                 events={listFeed}
