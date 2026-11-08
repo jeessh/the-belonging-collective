@@ -199,36 +199,22 @@ export const SavedEvents = memo(function SavedEvents({
       {/* The panel shares the screen with the sidebar, so how many cards fit
           across is the panel's own width, not the viewport's. */}
       <div className="flex flex-col gap-6 p-4 [container-type:inline-size] sm:gap-8 sm:p-6 lg:p-9">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-col items-start gap-2">
+        {/* The back link, title and the calendar / share / print buttons
+            stay at the top while the list scrolls under it: out to the
+            panel's edges, on white, with a line below. */}
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 border-b border-line bg-surface px-4 pb-4 pt-4 sm:-mx-6 sm:-mt-6 sm:gap-5 sm:px-6 sm:pb-5 sm:pt-5 lg:-mx-9 lg:-mt-9 lg:px-9 lg:pt-6">
+        {/* Back + title on the left, Google Calendar / Share / Print on
+            the right. */}
+        <div className="flex flex-col gap-3 cq-xl:flex-row cq-xl:items-end cq-xl:justify-between">
+          <div className="flex min-w-0 flex-col items-start gap-1">
             <BackButton label="Back to events" onClick={onClose} />
             <h1 className="text-2xl font-medium text-fg sm:text-3xl">
               {owner ? listTitle : "All Saved Events"} ({me ? total : 0})
             </h1>
           </div>
-        </div>
-
-        {!me ? (
-          <Empty onAction={onSignIn} action="Login" />
-        ) : (
-          <>
-            <div className="flex flex-col gap-4 cq-xl:flex-row cq-xl:items-center cq-xl:justify-between">
-              <label className="relative block w-full min-w-0 cq-xl:max-w-[640px] cq-xl:flex-1">
-                <span className="sr-only">Search for event</span>
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-fg-icon-muted"
-                />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search for event"
-                  className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
-                />
-              </label>
-              {/* Three of the design's large buttons are five rows on a phone;
-                  the medium size there fits two to a row. */}
+          {/* Three of the design's large buttons are five rows on a phone;
+              the medium size there fits two to a row. */}
+          {me && (
               <div className="flex shrink-0 flex-wrap gap-3">
                 {/* The whole list, subscribed in Google Calendar. The feed
                     is the signed-in account's own, so someone else's list
@@ -273,15 +259,43 @@ export const SavedEvents = memo(function SavedEvents({
                   Print list
                 </Button>
               </div>
-            </div>
+          )}
+        </div>
 
+        </div>
+
+        {/* Search and the Upcoming / Past toggle: at the top of the page,
+            under the sticky bar, scrolling away with the list. */}
+        {me && (
+          <div className="flex flex-col gap-3 cq-xl:flex-row cq-xl:items-center">
+              <label className="relative block w-full min-w-0 cq-xl:flex-1">
+                <span className="sr-only">Search for event</span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-fg-icon-muted"
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search for event"
+                  className="min-h-14 w-full rounded-control border border-line-card bg-surface-subtle py-3 pl-14 pr-4 text-lg text-fg placeholder:text-fg-muted max-sm:min-h-11"
+                />
+              </label>
             <SegmentedToggle
               label="Which events"
-              className="self-start"
+              className="shrink-0 self-start cq-xl:self-auto"
               segments={TABS}
               value={tab}
               onChange={setTab}
             />
+          </div>
+        )}
+
+        {!me ? (
+          <Empty onAction={onSignIn} action="Login" />
+        ) : (
+          <>
 
             {shown.length === 0 ? (
               query ? (

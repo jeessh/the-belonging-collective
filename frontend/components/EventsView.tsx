@@ -67,10 +67,12 @@ import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { AccessibilityMenu, CareSwitcher, FeedAccount } from "@/components/member/FeedHeader";
 import {
   BOARD_CARD_W,
+  DragHint,
   MINI_CARD,
   MiniCardFace,
   SHADOW_HELD,
   SavedSidebar,
+  useDragHint,
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
@@ -236,6 +238,8 @@ export function EventsView({
   // saved board: it follows the pointer, fading in as the card fades out
   // (desktop and tablet; a phone's drop zone is the bar under the feed).
   const [ghosting, setGhosting] = useState(false);
+  // The first drag's "drop it on Saved Events" tip, over the mini card.
+  const dragHint = useDragHint();
   const ghostX = useMotionValue(0);
   const ghostY = useMotionValue(0);
   const ghostT = useMotionValue(0);
@@ -427,6 +431,57 @@ export function EventsView({
   // then the next one comes in — unless the member has already moved on.
   const advanceTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(advanceTimer.current), []);
+  // A two-finger swipe on a trackpad (or a mouse wheel) over the card turns
+  // it, like ↑ / ↓: swiping up shows the next card, down the one before.
+  // One card per gesture — the swipe's momentum keeps firing wheel events,
+  // so after a turn the rest are ignored until they stop for a moment.
+  const deckRef = useRef<HTMLDivElement>(null);
+  const hasCard = feed.length > 0;
+  const nextRef = useRef(next);
+  const prevRef = useRef(prev);
+  nextRef.current = next;
+  prevRef.current = prev;
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el || viewMode !== "card") return;
+    // A trackpad keeps sending "momentum" wheel events for a second or so
+    // after the fingers lift, sometimes with short gaps — so one swipe is
+    // one turn: after a turn, nothing more counts until BOTH 700ms have
+    // passed and the wheel has been still for 300ms. Small drifts (under
+    // 60px of travel) never turn a card.
+    let sum = 0;
+    let lockedUntil = 0;
+    let lastAt = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // a pinch is zoom, not a swipe
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return; // sideways: leave it
+      e.preventDefault();
+      const now = performance.now();
+      const quietFor = now - lastAt;
+      lastAt = now;
+      if (now < lockedUntil || (lockedUntil > 0 && quietFor < 300)) {
+        // Still the same swipe (or its momentum): keep it locked a little.
+        if (now >= lockedUntil) lockedUntil = now + 120;
+        sum = 0;
+        return;
+      }
+      lockedUntil = 0;
+      // A fresh swipe starts counting from zero.
+      if (quietFor > 300) sum = 0;
+      // Line-mode wheels (some mice) report lines, not pixels.
+      sum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      if (Math.abs(sum) < 60) return;
+      lockedUntil = now + 700;
+      if (sum > 0) nextRef.current();
+      else prevRef.current();
+      sum = 0;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+    // The deck mounts and unmounts with the card (filters that match
+    // nothing), so re-attach whenever it comes back.
+  }, [viewMode, status, hasCard]);
+
   const advanceAfterSave = useCallback(
     (ev: Event) => {
       clearTimeout(advanceTimer.current);
@@ -1252,6 +1307,22 @@ export function EventsView({
       )}
 
 
+      {/* The bar across the whole width, over the saved panel and the
+          events: who you are on the left (in line with the panel's "Saved
+          Events" heading), Accessibility Tools on the right. */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
+        <div className="-ml-2 min-w-0">
+          <FeedAccount
+            name={name}
+            avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+            care={careInPanel ? null : careChoice}
+            onSignIn={() => toSignIn()}
+            onSignOut={() => void doLogout()}
+          />
+        </div>
+        {a11yMenu}
+      </header>
+
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
           bar under it, so it comes after the feed in the DOM as well. */}
       <div className="relative flex min-h-0 flex-1 max-sm:flex-col">
@@ -1280,23 +1351,6 @@ export function EventsView({
 
         {/* The event column, plain white. */}
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
-          {/* The bar over the event column: who you are on the left,
-              Accessibility Tools on the right. */}
-          {/* Same side padding as the feed below (short screens too), and the
-              account button pulled back by its own 8px, so the picture lines
-              up with "Event 1 of 47". */}
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:px-9 short:!px-6">
-            <div className="-ml-2 min-w-0">
-            <FeedAccount
-              name={name}
-              avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
-              care={careInPanel ? null : careChoice}
-              onSignIn={() => toSignIn()}
-              onSignOut={() => void doLogout()}
-            />
-            </div>
-            {a11yMenu}
-          </header>
           <div className="relative flex min-h-0 flex-1 flex-col">
           {/* The saved list opens over the main column, which has the whole
               width while it is up. */}
@@ -1412,6 +1466,7 @@ export function EventsView({
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
+                dropTarget={dropRef}
               />
             ) : !current ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
@@ -1419,7 +1474,10 @@ export function EventsView({
               </p>
             ) : (
               /* card view: one card on a stacked deck, ↑ / ↓ beside it */
-              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9">
+              <div
+                ref={deckRef}
+                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9"
+              >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
@@ -1513,6 +1571,7 @@ export function EventsView({
                         }}
                         onDragEnd={(_, info) => {
                           setDragTint(false);
+                          if (ghosting) dragHint.seen();
                           const { x: dx, y: dy } = info.offset;
                           if (Math.abs(dx) > Math.abs(dy)) {
                             // Let go over the zone counts too. The zone is the
@@ -1559,6 +1618,7 @@ export function EventsView({
                       </motion.div>
                       {ghosting &&
                         createPortal(
+                          <>
                           <motion.div
                             aria-hidden="true"
                             style={{
@@ -1577,7 +1637,27 @@ export function EventsView({
                             className={`pointer-events-none ${MINI_CARD}`}
                           >
                             <MiniCardFace event={current} />
-                          </motion.div>,
+                          </motion.div>
+                          {/* The first drag's tip, at full strength from the
+                              start (the mini card itself fades in). */}
+                          {dragHint.show && (
+                            <motion.div
+                              aria-hidden="false"
+                              style={{
+                                position: "fixed",
+                                left: 0,
+                                top: 0,
+                                x: ghostX,
+                                y: ghostY,
+                                width: BOARD_CARD_W,
+                                zIndex: 61,
+                              }}
+                              className="pointer-events-none"
+                            >
+                              <DragHint />
+                            </motion.div>
+                          )}
+                          </>,
                           document.body,
                         )}
                     </motion.div>

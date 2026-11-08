@@ -133,12 +133,14 @@ can open.
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
   in list view).
-- **The bar spans the event column only; the saved panel runs the full
-  height.** The bar (in EventsView) has the account button (`FeedAccount`
-  in `member/FeedHeader.tsx`) on the left and Accessibility Tools
-  (`a11yMenu`) on the right. "Saving for" (`CareSwitcher`) sits beside the
-  account — except while the saved panel is open (`careInPanel`), when it
-  sits under the panel's heading and Close button, the board's full width.
+- **The bar spans the whole width**, over the saved panel and the events
+  (in EventsView, before the panel / feed row): the account button
+  (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
+  panel's "Saved Events" heading, and Accessibility Tools (`a11yMenu`) on the
+  right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  beside the account — except while the saved panel is open (`careInPanel`),
+  when it sits under the panel's heading and Close button, the board's full
+  width.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and **just the name** (no
   account-type line) at 20px, the size of "Accessibility Tools" and the
@@ -165,6 +167,18 @@ can open.
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
+  **Its cards drag onto the saved panel too** (from `sm`; a phone scrolls):
+  framer `drag` held in place (zero `dragConstraints`, no elasticity — the
+  card itself never moves, or it slid over the filter panel), the card
+  fading while a portalled
+  `MiniCardFace` follows the pointer; released over `dropTarget` (the feed's
+  `dropRef`) it saves — or, needing registration, opens the Register
+  confirm. A drag never also opens the details.
+  **The first drag shows a tip** (card view and list view alike): "Drop it on
+  Saved Events, on the left, to save it" in a dark bubble over the mini card
+  (`DragHint` / `useDragHint` in SavedSidebar), then never again in that
+  browser (`tbc.drag_hint_seen`, try/catch). In card view it rides its own
+  layer at full strength, since the mini card fades in.
 - **Two things a member's profile remembers about the feed itself:**
   `Me.preferred_view` (card | list — the feed opens in it and the toggle
   PATCHes it) and `Me.onboarded_at` (the tour is shown once, and counts as
@@ -215,7 +229,12 @@ can open.
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
   hold saves; head zones are left = save, right = saved list, up/down =
-  previous/next (`useHeadTracking`). A new save path should call `flyToDrop`,
+  previous/next (`useHeadTracking`). **A two-finger trackpad swipe (or mouse wheel) over the
+  card turns it too** — up for next, down for previous, one card per gesture
+  (a non-passive `wheel` listener on `deckRef` in card view: 60px of travel
+  turns a card, then nothing counts until 700ms have passed AND the wheel
+  has been still for 300ms, so a swipe's momentum — gaps and all — can't
+  turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
   call) — the card's button turning to "Unsave event" (which un-saves,
   with the usual Undo toast) and the live region say it; only
@@ -241,7 +260,9 @@ can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` (FREE + the topics from `useCategories`, as in the design),
+  `FeedFilters` ("Clear all" at the right end of the chip row once a chip
+  is on; an **All** chip first — selected while no chip is, and
+  pressing it clears them — then FREE + the topics from `useCategories`),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
@@ -280,8 +301,11 @@ can open.
   LINKS (`event.links` plus the organizer's `registration_url`; one
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
-  "More information" dialog
-  (`member/EventDetailModal`), the public `/events/[id]` page and the print
+  "More information" panel
+  (`member/EventDetailModal`, a `Modal sheet`: sliding up from the bottom
+  with a handle, as wide as its content (960px, centred), up to 90% of the
+  screen and scrolling inside, its See on Map / Save buttons pinned to the
+  panel's foot — `EventDetails stickyActions`), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
   Calendar / Share / Print — a row above the title, at the top of the
   text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
@@ -336,7 +360,10 @@ can open.
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") is one continuous
-  scrolling grid — no Back / Next paging. It has no fetch of its own:
+  scrolling grid — no Back / Next paging. Back + title with Google Calendar /
+  Share / Print on the right are one sticky bar with a line under it; search
+  with the Upcoming / Past toggle beside it sits just under that, at the top
+  of the page, and scrolls away with the list. It has no fetch of its own:
   it is handed the feed's `savedEvents`, so an un-save there and the Undo on
   its toast show at once. Its dialog is named "All saved events" — the
   sidebar already owns "Saved events".

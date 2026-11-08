@@ -40,7 +40,12 @@ export function Modal({
   closeOutside = false,
   tone = "default",
   snug = false,
+  sheet = false,
 }: {
+  /** A panel that slides up from the bottom of the screen, the full width,
+      as tall as it needs to be up to 90% of the screen, scrolling inside;
+      its content is centred at the `size` width. The event dialog. */
+  sheet?: boolean;
   /** A little less padding (24 / 32px rather than 24 / 48px): the event
       dialog, which has a lot to show. */
   snug?: boolean;
@@ -135,7 +140,11 @@ export function Modal({
           Centred with auto margins rather than `place-items-center`, which
           would push the top of a panel taller than the screen out of reach. */}
       <div
-        className="fixed inset-0 z-30 flex flex-col items-center overflow-y-auto bg-fg/40 p-4 backdrop-blur-sm sm:py-8"
+        className={
+          sheet
+            ? "fixed inset-0 z-30 flex flex-col items-center justify-end bg-fg/40 backdrop-blur-sm sm:px-4"
+            : "fixed inset-0 z-30 flex flex-col items-center overflow-y-auto bg-fg/40 p-4 backdrop-blur-sm sm:py-8"
+        }
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -146,12 +155,31 @@ export function Modal({
           aria-modal="true"
           aria-labelledby={headingId}
           tabIndex={-1}
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className={`relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`}
+          initial={
+            reduceMotion
+              ? false
+              : sheet
+                ? { y: "100%" }
+                : { opacity: 0, scale: 0.96, y: 12 }
+          }
+          animate={sheet ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+          exit={reduceMotion ? undefined : sheet ? { y: "100%" } : { opacity: 0, scale: 0.98 }}
+          transition={
+            sheet
+              ? { type: "spring", stiffness: 260, damping: 32 }
+              : { type: "spring", stiffness: 300, damping: 28 }
+          }
+          className={
+            sheet
+              ? `relative max-h-[90dvh] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-t-[16px] border border-b-0 ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
+              : `relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`
+          }
         >
+          {sheet && (
+            // The sheet's handle: says "this came up from the bottom".
+            <span aria-hidden="true" className="mx-auto mb-5 block h-1.5 w-12 rounded-full bg-line" />
+          )}
+          <div className={sheet ? "relative w-full" : "contents"}>
           {title == null ? null : typeof title === "string" ? (
             <h2
               id={headingId}
@@ -168,13 +196,14 @@ export function Modal({
             <p className="mt-2 text-lg text-fg-muted">{subtitle}</p>
           )}
           {children}
+          </div>
           {/* Centred on the padding corner, as the sheet draws the ×. */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
             className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-[26px] sm:top-[26px] ${
-              closeOutside
+              closeOutside && !sheet
                 ? "xl:-right-[76px] xl:top-0 xl:size-[52px] xl:rounded-full xl:border xl:border-line xl:bg-surface"
                 : ""
             }`}
