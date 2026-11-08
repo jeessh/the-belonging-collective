@@ -48,7 +48,8 @@ const TAG: Record<
   // Already on the member's saved list (or the list "Saving for" names).
   saved: {
     label: "Saved",
-    className: "border border-primary-border bg-primary-soft text-fg",
+    // Neutral grey, like Registration required: a fact, not a call to act.
+    className: "border border-line bg-surface-subtle text-fg",
     icon: BookmarkCheck,
   },
   foryou: {

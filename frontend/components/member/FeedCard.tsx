@@ -1,7 +1,9 @@
 "use client";
 
-import { memo } from "react";
-import { Bookmark, BookmarkX, ClipboardPen, MoveRight } from "lucide-react";
+import { memo, useState } from "react";
+import { Bookmark, ClipboardPen, MoveRight, Send } from "lucide-react";
+import { publicEventUrl } from "@/lib/share";
+import { ShareModal } from "@/components/member/ShareModal";
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
@@ -36,13 +38,13 @@ export const FeedCard = memo(function FeedCard({
   onSignIn: () => void;
 }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
+  const [sharing, setSharing] = useState(false);
   // The admin set "needs registration": Register (with a confirm), not Save.
   const register = !!onRegister && event.requires_signup && !saved;
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    // Held up like a flyer, with a soft shadow.
-    <div className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
+    <div data-tour="card" className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
       <EventSummary
         event={event}
         layout="card"
@@ -88,20 +90,19 @@ export const FeedCard = memo(function FeedCard({
                 Register
               </Button>
             ) : saved ? (
-              // Saved: the button undoes it, rather than sitting disabled —
-              // a member shouldn't have to open the listing to change their
-              // mind. The un-save toast offers Undo.
+              // Saved: sharing it is the next thing to do (un-saving is in
+              // More information and on the saved page).
               <Button
-                variant="secondary"
+                variant="primary"
                 size="lg"
                 className={size}
-                onClick={onUnsave}
+                onClick={() => setSharing(true)}
                 onPointerDown={stop}
-                trailingIcon={<BookmarkX />}
+                trailingIcon={<Send />}
                 data-tour="save"
-                aria-label={`Event saved. Unsave ${event.title}`}
+                aria-label={`Share ${event.title}`}
               >
-                Unsave event
+                Share event
               </Button>
             ) : (
               <Button
@@ -119,6 +120,14 @@ export const FeedCard = memo(function FeedCard({
           </>
         }
       />
+      {sharing && (
+        <ShareModal
+          title="Share this event?"
+          eventIds={[event.id]}
+          link={{ getUrl: async () => publicEventUrl(event.id) }}
+          onClose={() => setSharing(false)}
+        />
+      )}
     </div>
   );
 });

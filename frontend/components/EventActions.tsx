@@ -11,15 +11,13 @@ import {
   requestAccess,
   type Event,
 } from "@/lib/api";
-import { mapsUrl } from "@/lib/share";
 import { clockTime } from "@/lib/time";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import {
   AccessAction,
   accessStateOf,
   type AccessState,
 } from "@/components/member/AccessAction";
-import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 import { RegisterConfirm } from "@/components/member/RegisterConfirm";
 import { useToast } from "@/components/ui/Toast";
 
@@ -82,7 +80,6 @@ export function EventActions({ event }: { event: Event }) {
     event.registration_mode === "external" &&
     !!event.registration_url;
   // A virtual event's "location" is a meeting app, not a place to map.
-  const maps = event.is_virtual ? null : mapsUrl(event.location);
 
   // Not signed in: keep where they were and what they wanted, so coming back
   // doesn't mean finding the program again and pressing twice. While resuming
@@ -181,17 +178,6 @@ export function EventActions({ event }: { event: Event }) {
 
   return (
     <>
-      {maps && (
-        <a
-          href={maps}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonClass("secondary", "lg")}
-        >
-          See on Map
-          <GoogleMapsIcon />
-        </a>
-      )}
       {canSave && event.requires_signup && !saved ? (
         // Needs registering: Register, confirmed first — confirming saves it
         // and opens the organizer's page when registering happens there.

@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Bookmark, BookX, ClipboardPen } from "lucide-react";
+import { Bookmark, ClipboardPen, Trash2 } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { mapsUrl } from "@/lib/share";
 import { Modal } from "@/components/Modal";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
 import { EventTools } from "@/components/member/EventTools";
 import { AccessAction, accessStateOf } from "@/components/member/AccessAction";
-import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 
 const TITLE_ID = "event-detail-title";
 
@@ -48,7 +46,6 @@ export function EventDetailModal({
   const close = useCallback(() => onCloseRef.current(), []);
 
   // A virtual event's "location" is a meeting app, not a place to map.
-  const maps = event.is_virtual ? null : mapsUrl(event.location);
   // Save is for approved members only; everyone else gets the access control.
   const access = accessStateOf(event);
   const canSave = access === null || access === "approved";
@@ -70,21 +67,10 @@ export function EventDetailModal({
           titleId={TITLE_ID}
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
-          saved={saved}
-          tools={<EventTools event={event} />}
+          tools={<EventTools event={event} lead={saved && canSave} />}
+          toolsFill={saved && canSave}
           actions={
             <>
-              {maps && (
-                <a
-                  href={maps}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={buttonClass("secondary", "lg")}
-                >
-                  See on Map
-                  <GoogleMapsIcon />
-                </a>
-              )}
               {!canSave ? (
                 <AccessAction
                   state={access}
@@ -95,11 +81,16 @@ export function EventDetailModal({
                   }}
                 />
               ) : saved ? (
+                // Tertiary once saved: Share and Print lead.
                 <Button
-                  variant="danger"
+                  variant="ghost"
                   size="lg"
+                  // Red words, no fill: careful, but not the lead. Pulled
+                  // out by its padding so the words line up with DETAILS
+                  // and the text above.
+                  className="-ml-6 !text-danger-fg [&_svg]:!text-danger-fg"
                   onClick={() => onUnsave(event)}
-                  trailingIcon={<BookX />}
+                  trailingIcon={<Trash2 />}
                 >
                   Un-Save Event
                 </Button>

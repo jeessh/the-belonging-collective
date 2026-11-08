@@ -40,7 +40,7 @@ function Poster({ url }: { url: string }) {
 
 /**
  * The full listing, drawn as the design's Expanded Card: the summary, the
- * tools (Google Calendar / Share / Print) above the title in its text column, then
+ * tools (Share / Print) at the bottom right, beside the actions, then
  * DETAILS, POSTER and LINKS. No hooks, so the
  * server-rendered public page, the dialog over the feed and the print
  * preview all draw the same thing; each hands in its own `tools`, `going`
@@ -50,6 +50,7 @@ export function EventDetails({
   event,
   going,
   tools,
+  toolsFill = false,
   actions,
   hint,
   titleAs = "h2",
@@ -68,6 +69,9 @@ export function EventDetails({
   going?: ReactNode;
   /** Google Calendar / Share / Print, under the title and facts. */
   tools?: ReactNode;
+  /** The tools take the row's room (Share filling it) and the actions keep
+      their own width — a saved event's dialog. */
+  toolsFill?: boolean;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
   /** A line under the actions, e.g. the host you are about to leave for. */
@@ -112,18 +116,8 @@ export function EventDetails({
         event={event}
         layout="detail"
         saved={saved}
-        // Add to Google Calendar, Share and Print go under the title and
-        // the three facts, in the same column, after the saved count.
-        going={
-          tools ? (
-            <div className="flex flex-col items-start gap-3">
-              {going}
-              <div className="flex flex-wrap items-center gap-1">{tools}</div>
-            </div>
-          ) : (
-            going
-          )
-        }
+        headingInset={insetForClose}
+        going={going}
         titleAs={titleAs}
         titleId={titleId}
         fixedDates={fixedDates}
@@ -201,7 +195,7 @@ export function EventDetails({
         </section>
       )}
 
-      {actions && (
+      {(actions || tools) && (
         <div
           className={`flex flex-col gap-2 ${
             stickyActions
@@ -213,8 +207,29 @@ export function EventDetails({
               : ""
           }`}
         >
-          <div className="flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
-            {actions}
+          {/* Not saved yet: Share and Print on the left (their words in line
+              with the text above), Save / Register at the bottom right.
+              Saved (`toolsFill`): Un-Save on the left, Print and Share at
+              the right. */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {actions && (
+              <div
+                className={`flex flex-col gap-4 sm:flex-row ${
+                  toolsFill ? "" : "sm:order-2 sm:ml-auto [&>*]:max-sm:flex-1"
+                }`}
+              >
+                {actions}
+              </div>
+            )}
+            {tools && (
+              <div
+                className={`flex items-center gap-1 ${
+                  toolsFill ? "min-w-0 flex-1" : "-ml-4 shrink-0 flex-wrap sm:order-1"
+                }`}
+              >
+                {tools}
+              </div>
+            )}
           </div>
           {/* The destination itself is the "you are leaving" cue. */}
           {hint && <p className="text-center text-base text-fg-muted">{hint}</p>}

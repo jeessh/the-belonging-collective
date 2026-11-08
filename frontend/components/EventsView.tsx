@@ -75,7 +75,7 @@ import {
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
-import { CaregiverFeed } from "@/components/member/CaregiverFeed";
+import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
 
@@ -366,6 +366,13 @@ export function EventsView({
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
   }, [events, chips, taste]);
+
+  // List view filters with its own Filter sheet, not the chips: the same
+  // order as the feed, before the chips narrow it.
+  const listFeed = useMemo(
+    () => oneCardPerProgram(personalizedFeed(chipEvents, taste)),
+    [chipEvents, taste],
+  );
 
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(
@@ -1320,6 +1327,8 @@ export function EventsView({
         {/* Card View / List View at the far right (Accessibility Tools sits on
             the "Discover Events" row). */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* The saved page is one list; there is no card / list to pick. */}
+          {view !== "saved" && (
           <div data-tour="view">
             <SegmentedToggle
               label="View"
@@ -1330,6 +1339,7 @@ export function EventsView({
               onChange={changeView}
             />
           </div>
+          )}
         </div>
       </header>
 
@@ -1370,18 +1380,18 @@ export function EventsView({
             events={savedEvents}
             owner={listOwner}
             ownerId={careFor?.id ?? null}
-            calendarUrl={calendarUrl}
             onClose={closeSaved}
             onSignIn={() => {
               closeSaved();
               toSignIn();
             }}
             onOpen={setDetailFor}
+            onUnsave={(ev) => void unsave(ev)}
           />
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
               viewMode === "card" ? "big-cursor" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
@@ -1392,16 +1402,18 @@ export function EventsView({
                 as the card (880px at most) and an empty stand-in for the
                 ↑ / ↓ column beside it — so Accessibility Tools and the filter
                 chips end exactly where the card does. */}
+            {/* Card and list view alike: the same box as the card + arrows,
+                the heading block as wide as the card. */}
             <div
-              className={
-                viewMode === "card"
-                  ? "mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9"
-                  : "flex"
-              }
+              className={`mx-auto flex w-full gap-6 lg:gap-9 ${
+                // Both views: the card + arrows box, so the side margins
+                // match; list view spends the arrows' room on the list.
+                "!max-w-[1000px] lg:!max-w-[1012px]"
+              }`}
             >
             <div
-              className={`flex w-full min-w-0 flex-col gap-5 sm:gap-6 ${
-                viewMode === "card" ? "max-w-[880px] flex-1" : ""
+              className={`flex w-full min-w-0 flex-1 flex-col gap-5 sm:gap-6 ${
+                viewMode === "card" ? "max-w-[880px]" : ""
               }`}
             >
               {space && (
@@ -1437,16 +1449,17 @@ export function EventsView({
                   </p>
                 </div>
                 {/* Accessibility Tools, on the heading's row at the right. */}
-                {a11yMenu}
+                {viewMode === "card" && a11yMenu}
               </div>
 
-              {viewMode !== "list" && (
+              {viewMode === "card" && (
               <FeedFilters
                 events={chipEvents}
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
                 interests={taste.interests}
+                saved={savedEvents}
               />
               )}
             </div>
@@ -1478,18 +1491,25 @@ export function EventsView({
                   : "No programs yet. Check back soon."}
               </p>
             ) : viewMode === "list" ? (
-              // List view is the console's Event Management layout for
-              // everyone: a filter panel, search and a card per event, with
-              // a member's actions. Its filter panel replaces the chip row.
+              // List view: search and a card per event (the console's card,
+              // with a member's actions), under the same chips as card view.
+              // The card view's whole box (card + arrows), so both views
+              // have the same margins.
+              <div className="mx-auto w-full !max-w-[1000px] lg:!max-w-[1012px]">
+                <div className="w-full min-w-0">
               <CaregiverFeed
-                events={feed}
+                events={listFeed}
                 saved={saved}
                 onOpen={setDetailFor}
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
-                dropTarget={dropRef}
+                group={byWhen}
+                removeIcon
+                printIcon
               />
+                </div>
+              </div>
             ) : !current ? (
               <p className="py-16 text-center text-2xl text-fg-muted">
                 No events match these filters.

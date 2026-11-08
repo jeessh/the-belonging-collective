@@ -1,19 +1,27 @@
 "use client";
 
-import { memo, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  memo,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
-  Bookmark,
-  BookX,
   CalendarDays,
-  ClipboardPen,
+  ChevronDown,
   MapPin,
+  Printer,
   Send,
+  Trash2,
   SlidersHorizontal,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { publicEventUrl } from "@/lib/share";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
@@ -22,10 +30,11 @@ import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
-import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { Modal } from "@/components/Modal";
+import { PostedBy } from "@/components/host/PostedBy";
 import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
+import { PrintPreview } from "@/components/member/PrintPreview";
+import { EventDetails } from "@/components/member/EventDetails";
 import {
   BOARD_CARD_W,
   DragHint,
@@ -42,9 +51,9 @@ import {
 import { placeLabel } from "@/lib/place";
 
 /**
- * The feed's List view (for everyone): the console's event
- * management layout — the filter panel on the left, search over the cards,
- * one card per event — restricted to what a member can do.
+ * The feed's List view (for everyone): search and Filter (a dropdown
+ * holding the console's filter panel) on one row, over one card per event (the
+ * console's card, restricted to what a member can do).
  * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
  * whoever "Saving for" names. A special-access program the member isn't
@@ -58,7 +67,26 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onUnsave,
   onRegister,
   dropTarget,
+  removeIcon = false,
+  printIcon = false,
+  savedTag = true,
+  group,
+  tools,
 }: {
+  /** In place of Filter, beside the search box (the saved page:
+      Share and Print). */
+  tools?: ReactNode;
+  /** Split what's shown (after search and Filter) into titled
+      sections; a `collapsed` one starts folded. Flat without it. */
+  group?: (shown: Event[]) => FeedSection[];
+  /** The grey "Saved" tag on saved cards — off on the saved page, where
+      every card is saved. */
+  savedTag?: boolean;
+  /** The saved page: a Print icon on each card, for that event. */
+  printIcon?: boolean;
+  /** A saved card: a red delete icon at each card's top right takes it
+      off the list, in place of the Unsave button. */
+  removeIcon?: boolean;
   events: Event[];
   saved: Set<string>;
   onOpen: (event: Event) => void;
@@ -67,12 +95,30 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   /** An event that needs registering: ask to confirm, then register. */
   onRegister: (event: Event) => void;
   /** The saved panel: dropping a dragged card on it saves the event. */
-  dropTarget: RefObject<HTMLDivElement>;
+  dropTarget?: RefObject<HTMLDivElement>;
 }) {
-  const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const wide = useMediaQuery("(min-width: 1280px)");
+  const filterRef = useRef<HTMLDivElement>(null);
+  const filterId = useId();
+  // The dropdown closes on Escape or a click anywhere outside it.
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!filterRef.current?.contains(e.target as Node)) setFiltersOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [filtersOpen]);
+  // The feed's own order (personalized, then the server's); no Sort.
   const shown = useMemo(
     () => applyHostFilters(events, filters, query),
     [events, filters, query],
@@ -80,76 +126,159 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   return (
-    <div className="flex flex-col items-start gap-8 xl:flex-row">
-      {/* Sticky: it stays in view while the cards scroll (the feed column
-          is the scroller), scrolling itself if it's taller than the window. */}
-      <div className="hidden w-[280px] shrink-0 xl:sticky xl:top-4 xl:block xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
-        <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
-      </div>
-
-      <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <SearchField
-            label="Search for event"
-            placeholder="Search for event"
-            value={query}
-            onChange={setQuery}
-            className="w-full min-w-0 sm:flex-1"
-          />
-          <Button
-            className="shrink-0 xl:hidden"
-            leadingIcon={<SlidersHorizontal />}
-            aria-haspopup="dialog"
-            onClick={() => setFiltersOpen(true)}
-          >
-            Filters{chosen > 0 && ` (${chosen})`}
-          </Button>
-        </div>
-
-        <p role="status" aria-live="polite" className="sr-only">
-          {`${shown.length} of ${events.length} events shown`}
-        </p>
-
-        {shown.length === 0 ? (
-          <p className="py-16 text-center text-2xl text-fg-muted">
-            No events match these filters.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {shown.map((ev) => (
-              <MemberEventCard
-                key={ev.id}
-                event={ev}
-                saved={saved.has(ev.id)}
-                onOpen={() => onOpen(ev)}
-                onSave={() => onSave(ev)}
-                onUnsave={() => onUnsave(ev)}
-                onRegister={() => onRegister(ev)}
-                dropTarget={dropTarget}
-              />
-            ))}
+    <div className="flex w-full min-w-0 flex-col gap-6">
+      {/* Search, then Filter, on one row (stacked on a phone). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchField
+          label="Search for event"
+          placeholder="Search for event"
+          value={query}
+          onChange={setQuery}
+          className="w-full min-w-0 sm:flex-1"
+        />
+        {tools ?? (
+        <div className="flex gap-3">
+          {/* A dropdown of every filter group, under the button. */}
+          <div ref={filterRef} className="relative max-sm:flex-1">
+            <Button
+              size="lg"
+              className={`w-full ${chosen > 0 ? "!border-primary-border !bg-primary-soft" : ""}`}
+              leadingIcon={<SlidersHorizontal />}
+              trailingIcon={
+                <ChevronDown
+                  className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+                />
+              }
+              aria-expanded={filtersOpen}
+              aria-controls={filterId}
+              onClick={() => setFiltersOpen((o) => !o)}
+            >
+              Filter{chosen > 0 && ` (${chosen})`}
+            </Button>
+            {filtersOpen && (
+              <div
+                id={filterId}
+                className="absolute right-0 top-full z-40 mt-2 max-h-[min(70vh,640px)] w-[min(280px,calc(100vw-2rem))] overflow-y-auto rounded-control bg-surface shadow-lift [&>aside]:w-full"
+              >
+                <FilterPanel
+                  events={events}
+                  filters={filters}
+                  onChange={setFilters}
+                  memberView
+                />
+              </div>
+            )}
           </div>
+        </div>
         )}
       </div>
 
-      {filtersOpen && !wide && (
-        <Modal title="Filters" onClose={() => setFiltersOpen(false)}>
-          <div className="mt-4">
-            <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
-          </div>
-          <Button
-            variant="primary"
-            size="lg"
-            className="mt-6 w-full"
-            onClick={() => setFiltersOpen(false)}
-          >
-            Show {shown.length} {shown.length === 1 ? "event" : "events"}
-          </Button>
-        </Modal>
+      <p role="status" aria-live="polite" className="sr-only">
+        {`${shown.length} of ${events.length} events shown`}
+      </p>
+
+      {shown.length === 0 ? (
+        <p className="py-16 text-center text-2xl text-fg-muted">
+          No events match these filters.
+        </p>
+      ) : (
+        (() => {
+          const cards = (list: Event[]) => (
+            <div className="flex flex-col gap-6">
+              {list.map((ev) => (
+                <MemberEventCard
+                  key={ev.id}
+                  event={ev}
+                  saved={saved.has(ev.id)}
+                  onOpen={() => onOpen(ev)}
+                  onSave={() => onSave(ev)}
+                  onUnsave={() => onUnsave(ev)}
+                  onRegister={() => onRegister(ev)}
+                  dropTarget={dropTarget}
+                  removeIcon={removeIcon}
+              printIcon={printIcon}
+              savedTag={savedTag}
+                />
+              ))}
+            </div>
+          );
+          if (!group) return cards(shown);
+          return (
+            <div className="flex flex-col gap-10">
+              {group(shown)
+                .filter((g) => g.events.length > 0)
+                .map((g) =>
+                  g.collapsed ? (
+                    // Folded until opened: a summary row with the count.
+                    <details key={g.key} className="group flex flex-col">
+                      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-control py-1 text-2xl font-medium text-fg [&::-webkit-details-marker]:hidden">
+                        <ChevronDown
+                          aria-hidden="true"
+                          className="size-6 -rotate-90 text-fg-icon transition-transform group-open:rotate-0"
+                        />
+                        {g.title}
+                        <span className="text-xl font-normal text-fg-muted">({g.events.length})</span>
+                      </summary>
+                      {g.note && <p className="mt-2 text-lg text-fg-muted">{g.note}</p>}
+                      <div className="mt-6">{cards(g.events)}</div>
+                    </details>
+                  ) : (
+                    <section key={g.key} aria-label={g.title} className="flex flex-col gap-4">
+                      <div>
+                        <h2 className="text-2xl font-medium text-fg">
+                          {g.title}{" "}
+                          <span className="text-xl font-normal text-fg-muted">({g.events.length})</span>
+                        </h2>
+                        {g.note && <p className="text-lg text-fg-muted">{g.note}</p>}
+                      </div>
+                      {cards(g.events)}
+                    </section>
+                  ),
+                )}
+            </div>
+          );
+        })()
       )}
+
     </div>
   );
 });
+
+export type FeedSection = {
+  key: string;
+  title: string;
+  events: Event[];
+  note?: string;
+  collapsed?: boolean;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** List view's sections: this week (starts within 7 days, or is on now),
+    the rest of this calendar month, next calendar month, then anything
+    later. Each keeps the order Search / Filter / Sort gave it. */
+export function byWhen(shown: Event[]): FeedSection[] {
+  const now = new Date();
+  const at = (e: Event) => (e.starts_at ? new Date(e.starts_at).getTime() : now.getTime());
+  const week = now.getTime() + 7 * DAY_MS;
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+  const monthAfter = new Date(now.getFullYear(), now.getMonth() + 2, 1).getTime();
+  const name = (d: number) => new Date(d).toLocaleString("en-CA", { month: "long" });
+  return [
+    { key: "week", title: "This week", events: shown.filter((e) => at(e) <= week) },
+    {
+      key: "month",
+      title: `This month · ${name(now.getTime())}`,
+      events: shown.filter((e) => at(e) > week && at(e) < nextMonth),
+    },
+    {
+      key: "next",
+      title: `Next month · ${name(nextMonth)}`,
+      events: shown.filter((e) => at(e) > week && at(e) >= nextMonth && at(e) < monthAfter),
+    },
+    { key: "later", title: "Later", events: shown.filter((e) => at(e) > week && at(e) >= monthAfter) },
+  ];
+}
 
 /** The console's event card, with a member's actions. */
 function MemberEventCard({
@@ -160,17 +289,24 @@ function MemberEventCard({
   onUnsave,
   onRegister,
   dropTarget,
+  removeIcon = false,
+  printIcon = false,
+  savedTag = true,
 }: {
+  removeIcon?: boolean;
+  printIcon?: boolean;
+  savedTag?: boolean;
   event: Event;
   saved: boolean;
   onOpen: () => void;
   onSave: () => void;
   onUnsave: () => void;
   onRegister: () => void;
-  dropTarget: RefObject<HTMLDivElement>;
+  dropTarget?: RefObject<HTMLDivElement>;
 }) {
   const when = whenLine(event);
   const [sharing, setSharing] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Drag the card onto the saved panel to save it, as in card view: a mini
   // card follows the pointer while the card itself stays put (the list
@@ -185,7 +321,7 @@ function MemberEventCard({
   // A special-access program needs approval before it can be saved; its
   // details say how to ask.
   const canSave = !event.access_group || event.access_status === "approved";
-  const draggable = canDragQuery && canSave && !saved;
+  const draggable = !!dropTarget && canDragQuery && canSave && !saved;
   const clientPoint = (e: MouseEvent | TouchEvent | PointerEvent) =>
     "clientX" in e
       ? { x: e.clientX, y: e.clientY }
@@ -212,7 +348,7 @@ function MemberEventCard({
         const p = clientPoint(e);
         setGhost(null);
         hint.seen();
-        const zone = dropTarget.current?.getBoundingClientRect();
+        const zone = dropTarget?.current?.getBoundingClientRect();
         const over =
           !!zone && p.x >= zone.left && p.x <= zone.right && p.y >= zone.top && p.y <= zone.bottom;
         if (over) {
@@ -224,6 +360,7 @@ function MemberEventCard({
           dragged.current = false;
         }, 0);
       }}
+      data-tour="card"
       className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5`}
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
@@ -251,8 +388,9 @@ function MemberEventCard({
             {event.title}
           </button>
         </h3>
-          <EventTags event={event} saved={saved} />
+          <EventTags event={event} saved={saved && savedTag} />
         </div>
+
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">
             <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
@@ -290,46 +428,46 @@ function MemberEventCard({
               </button>
             )}
           </Tooltip>
-          {googleCalendarUrl(event) !== null && (
-            <Tooltip text="Add to Google Calendar" align="end">
+          {/* The saved page: Print too, for this one event. */}
+          {printIcon && (
+            <Tooltip text="Print" align="end">
               {(tip) => (
                 <button
                   type="button"
-                  aria-label={`Add ${event.title} to Google Calendar`}
+                  aria-label={`Print ${event.title}`}
                   aria-describedby={tip}
-                  onClick={() => openGoogleCalendar(event)}
+                  onClick={() => setPrinting(true)}
                   className={tool}
                 >
-                  <GoogleCalendarIcon />
+                  <Printer aria-hidden="true" className="size-6" />
+                </button>
+              )}
+            </Tooltip>
+          )}
+          {removeIcon && saved && (
+            <Tooltip text="Remove from saved" align="end">
+              {(tip) => (
+                <button
+                  type="button"
+                  aria-label={`Remove ${event.title} from saved`}
+                  aria-describedby={tip}
+                  onClick={onUnsave}
+                  className="grid size-11 place-items-center rounded-control border border-danger-border bg-danger text-danger-fg transition-colors hover:bg-danger-hover"
+                >
+                  <Trash2 aria-hidden="true" className="size-6" />
                 </button>
               )}
             </Tooltip>
           )}
         </div>
-        {canSave &&
-          (saved ? (
-            <Button onClick={onUnsave} trailingIcon={<BookX />} className="max-sm:order-1 max-sm:flex-1">
-              Unsave
-            </Button>
-          ) : event.requires_signup ? (
-            <Button
-              variant="primary"
-              onClick={onRegister}
-              trailingIcon={<ClipboardPen />}
-              className="max-sm:order-1 max-sm:flex-1"
-            >
-              Register
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={onSave}
-              trailingIcon={<Bookmark />}
-              className="max-sm:order-1 max-sm:flex-1"
-            >
-              Save
-            </Button>
-          ))}
+        {/* No Save here: an event is saved from its details (click the
+            card). Saved, the trash icon above un-saves it. */}
+        {/* Who posted it, at the card's bottom right. */}
+        {event.host_name && (
+          <p className="text-base text-fg-muted max-sm:order-3 max-sm:w-full sm:text-right">
+            <PostedBy event={event} />
+          </p>
+        )}
       </div>
 
       {ghost &&
@@ -358,6 +496,25 @@ function MemberEventCard({
           link={{ getUrl: async () => publicEventUrl(event.id) }}
           onClose={() => setSharing(false)}
         />
+      )}
+      {printing && (
+        <PrintPreview
+          title={event.title}
+          printLabel="Print Event"
+          titleOnPaper={false}
+          onClose={() => setPrinting(false)}
+        >
+          <EventDetails
+            event={event}
+            titleAs="h3"
+            fixedDates
+            going={
+              typeof event.saved_count === "number" ? (
+                <GoingCount count={event.saved_count} />
+              ) : undefined
+            }
+          />
+        </PrintPreview>
       )}
     </motion.article>
   );

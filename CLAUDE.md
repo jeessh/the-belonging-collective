@@ -117,8 +117,8 @@ can open.
   (`border-line`) edge on the right, the same grey as the top bar's bottom line — a dark "Saved Events"
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
-  bottom — miniature feed cards (picture and title), no magnets
-  (`Magnet` is still exported, unused) and no shadow (the drag ghost
+  bottom — miniature feed cards (picture and title), no pins or magnets
+  and no shadow (the drag ghost
   neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
@@ -132,10 +132,13 @@ can open.
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
-  card and arrows / list all sit in it. In card view the heading block and
+  card and arrows / list all sit in it. In both views the heading block and
   the card + arrows are one box centred on the page (1000px, 1012px from
+  `lg`) — list view uses the same box, the list taking the arrows' room too (1000px, 1012px from
   `lg`), so heading, filters and card share a left edge and the filters and
-  Accessibility Tools end at the card's right edge.
+  Accessibility Tools end at the card's right edge; the list (search and
+  cards) is the card's width. The column reserves its scrollbar
+  (`scrollbar-gutter: stable`) so the two views' edges never differ.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
@@ -144,8 +147,8 @@ can open.
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
-  the far right; Accessibility Tools (`a11yMenu`) sits on the "Discover
-  Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
+  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
   beside the account — except while the saved panel is open (`careInPanel`),
   when it sits under the panel's heading and Close button, the board's full
   width.
@@ -157,9 +160,20 @@ can open.
 - **Community member or caregiver** (was "Simplified / Advanced"). The
   sign-up flow's account step asks "Are you a community member or a
   caregiver?": a **community member** gets card view (one card at a time),
-  a **caregiver** list view. Accessibility Tools has the same choice as an
-  "I am a" toggle (Community member | Caregiver), and the profile shows it
-  under the name. Signing up or in through the feed's own sign-in sheet
+  a **caregiver** list view. **Switching role is deliberate**: Accessibility
+  Tools only says "I am a caregiver / community member" with a **Go to
+  settings** button (`/profile#role`); the switch itself (Community member |
+  Caregiver) is the Profile page's "Your role" card (`changeRole`: `PATCH
+  /users/me {is_caregiver, preferred_view}`). The profile also shows it
+  under the name. **In list view Accessibility Tools has no Read aloud,
+  Voice commands or Head tracking — **list view has no Accessibility Tools
+  at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
+  The card view's chips (`FeedFilters`) show in card view only. The Filter dropdown
+  also has **What you need** (`access` in `lib/dimensions`: the
+  `SELECTABLE_TAGS` access needs, matched on `event.accessibility_tags`) —
+  moved out of Accessibility Tools, which no longer has "What you like" or
+  "What you need" (members' interests / needs are no longer set there).
+  `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
   `is_caregiver` plus `preferred_view`, written together — at sign-up
@@ -172,15 +186,31 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  `host/PostedEvents`' `FilterPanel` on the left, sticky, from `xl` (a Filters sheet below that — with the saved panel open a `lg` window left the cards ~190px) (`memberView` — the feed's
-  groups only, member-app sizes; it replaces the chip row), search, and a
+  **no chips and no filter column**, in the card view's box (so the
+  margins match): search, **Filter** (a dropdown under the button — not a modal;
+  Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
+  badges; the button shows "Filter (N)" and the accent's soft fill while any
+  are on) share one row, over the cards — **no Sort**; the cards keep the
+  feed's own order. It is handed `listFeed`
+  (the feed before the card view's chips), so a chip left on in card view
+  never hides list rows. The cards are **grouped under headings** (`byWhen` in
+  EventsView → `CaregiverFeed group`): **This week** (starts within 7 days,
+  or is on now), **This month · November** (the rest of the calendar
+  month), **Next month · December** (the next calendar month) and **Later**, each
+  with its count; an empty one is left out. A saved card there has no Unsave
+  button: the red trash icon at its top right (`removeIcon`, as on the saved
+  page) un-saves it. Every list card also has the **Print** icon
+  (`printIcon`), after Share — the saved page's too. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
-  people saved this event"; the whole card opens the details) with Share and Add to Google
-  Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through
+  people saved this event"; the whole card opens the details) with Share
+  as an icon button with `ui/Tooltip`s, beside Save / Unsave (through
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
-  **Its cards drag onto the saved panel too** (from `sm`; a phone scrolls):
+  **List cards have no Save / Register button and no drag any more** — an
+  event is saved from its details (click the card); a saved card shows only
+  the red trash icon. (The drag code remains, off: no `dropTarget` is
+  passed.) Previously: its cards dragged onto the saved panel too (from `sm`; a phone scrolls):
   framer `drag` held in place (zero `dragConstraints`, no elasticity — the
   card itself never moves, or it slid over the filter panel), the card
   fading while a portalled
@@ -204,7 +234,13 @@ can open.
   (`arrows`, `save`, `more`, `filters`, `view`, `foryou`, `a11y`) — keep those
   attributes when moving a control — and is never mounted over sign-in or
   head-tracking calibration; "Show me around" in Accessibility Tools replays
-  it.
+  it. Step 2 ("Save what you like", targets `card` + `saved` — `data-tour="card"`
+  is on the feed card and every list card) plays `DragDemo`: a cursor glides
+  onto the card, grabs it and carries a mini card into Saved Events, looping
+  (framer keyframes for the path; the arrow / closed-hand swap is CSS,
+  `.tour-arrow` / `.tour-grab` in globals.css, on the same 3.8s cycle —
+  framer wouldn't animate the images' opacity). Not on a phone or with
+  reduced motion.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
   (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
   on the x axis only (`touch-action: pan-y`, so a finger still scrolls);
@@ -215,8 +251,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card has a soft shadow, kept straight (`FeedCard`; no magnet). The card's
-  text and buttons are untouched.
+  card has a soft shadow, kept straight (`FeedCard`; no pin or magnet).
+  The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
@@ -248,8 +284,9 @@ can open.
   has been still for 300ms, so a swipe's momentum — gaps and all — can't
   turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
   not `attend`, or it skips the animation. A save shows no toast (Jesse's
-  call) — the card's button turning to "Unsave event" (which un-saves,
-  with the usual Undo toast) and the live region say it; only
+  call) — the card's button turning to **"Share event"** (primary; opens
+  the share sheet — the card no longer un-saves, that's in More information
+  and on the saved page) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
   A save from the card (`attend(ev, true)`) leaves the saved card up for
   0.5 s, then advances, unless the member has already moved on.
@@ -272,18 +309,25 @@ can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` ("Clear all" at the right end of the chip row once a chip
+  `FeedFilters` (each chip with an icon — a grid for All, coins for Free,
+  the topic's own `categoryStyle` icon; "Clear all" at the right end of the chip row once a chip
   is on; an **All** chip first — selected while no chip is, and
-  pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
+  pressing it clears them — then FREE + the topics from `useCategories`, **ordered by
+  what the member has saved** (`rankChips` with `saved={savedEvents}`: the
+  topics on the most saved programs — past ones too, one per program — and
+  Free by how many were free, then their interests, then the console's
+  order; it never hides a chip and never moves one as it's pressed) — **only the chips some
   upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
   event is free; a chip that's on stays so it can be switched off)),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
-- **Saved events stay in the feed, marked saved**: a "Saved" tag (bookmark,
-  the accent's soft fill) leads the tag row on the feed card, list cards and
-  the event dialog (`EventSummary saved` / `EventTags saved`), and the
-  card's button reads "Unsave event".
+- **Saved events stay in the feed, tagged**: a grey **"Saved"** tag
+  (bookmark-check, neutral like Registration required) sits after Free /
+  Paid in the tag row — on the feed card and list cards only
+  (`EventSummary saved` / `EventTags saved`); not in the event dialog (its
+  Un-Save says it) nor on the saved page, where every card is saved
+  (`CaregiverFeed savedTag={false}`).
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
@@ -314,12 +358,22 @@ can open.
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" dialog
-  (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
+  (`member/EventDetailModal`, a centred `Modal`; its title row is padded
+  clear of the × — `insetForClose` → `EventSummary headingInset`, `pr-12`
+  / `sm:pr-14`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
-  preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
-  Calendar / Share / Print — ghost buttons in a row under the title and
-  its three facts, in the same column beside the picture; through
-  `EventSummary`'s `going` slot) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
+  — ghost buttons on the actions' row: **not saved yet**, Share and Print
+  sit on the left (words in line with the text) and Save / Register at the
+  bottom right, its own width; once the
+  event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
+  (tertiary) button in red text, its own width, its words in line with
+  DETAILS (`-ml-6`) — then Print (secondary),
+  then Share (primary, its own width) at the very right; no per-event
+  Add to Google Calendar any more) and bottom `actions` (Save / Register;
+  See on Map is no longer an action: in the `detail` layout it is a small
+  secondary button — Maps icon, "See on Map" — under the place, opening
+  Google Maps in a new tab; not for a virtual event). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
@@ -338,6 +392,11 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **Who posted it, under the title, everywhere members see an event**
+  (`EventSummary`'s heading; on the list cards, the card's **bottom
+  right**, 16px): `host/PostedBy` — the
+  organization's logo and "Posted by {organization}", the console's own
+  line; members never get the person (`created_by_name` is organizer-only).
 - **Every event summary shows three facts and no more: when, where and
   the saved count** (`EventSummary`, every layout — feed card, list, dialog,
   event page, print). Cost and registration are the tags beside the title;
@@ -376,14 +435,28 @@ can open.
   drew 4px), so globals.css draws `svg.lucide` outside `.console` with
   `vector-effect: non-scaling-stroke`. Keep icons at the default
   `strokeWidth` (2) there; the console keeps its own lighter scale.
-- `components/SavedEvents.tsx` ("All Saved Events") is one continuous
-  scrolling grid — no Back / Next paging. Back + title with Google Calendar /
-  Share / Print on the right are one sticky bar with a line under it; search
-  with the Upcoming / Past toggle beside it sits just under that, at the top
-  of the page, and scrolls away with the list. It has no fetch of its own:
-  it is handed the feed's `savedEvents`, so an un-save there and the Undo on
-  its toast show at once. Its dialog is named "All saved events" — the
-  sidebar already owns "Saved events".
+- `components/SavedEvents.tsx` ("All Saved Events") **follows the list
+  view's conventions**: the card's width (880px) centred, the title with
+  "N Saved Events" in grey under it, and the list view's own component
+  (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
+  `tools` prop, in place of the list view's Filter and Sort; both cover the
+  events still to come) over the same cards — with no
+  Unsave button: a **red delete icon** (`removeIcon`: Trash2, danger
+  colours, tooltip "Remove from saved") at each card's top right, after
+  Share and a **Print** icon (that event's `PrintPreview`, saved page
+  only), un-saves it (with the usual Undo). No drag, `dropTarget` omitted.
+  **Grouped into sections** (`CaregiverFeed group` → `FeedSection[]`,
+  applied after search): the list view's own separators (`byWhen`, now in
+  CaregiverFeed) — This week, This month · …, Next month · …, Later — and
+  **Past events** folded in a `<details>`; no subtext under any heading — only events that finished in the last 7 days;
+  older ones drop off the page (the attendance row is kept). No Upcoming /
+  Past toggle, no Filter or Sort. "N Saved Events" counts
+  upcoming programs. Back and the title sit at the top and scroll away
+  with the list (no sticky bar, no line); the top bar hides Card View / List View while it is open. No
+  Google Calendar button here (the sidebar's remains). It has no fetch of
+  its own: it is handed the feed's `savedEvents` (and `unsave`), so an
+  un-save there and the Undo on its toast show at once. Its dialog is named
+  "All saved events" — the sidebar already owns "Saved events".
 - "Share list" is the design's two rows: Share by Email (the server-sent
   cards above, its button the live list page) and Share by
   Link (the public `/shared/[token]` page, minted when the sheet opens; see
@@ -484,9 +557,10 @@ can open.
   isn't confused with the toggle), with a Your Events / All Events toggle. The panel is sticky under the
   console header (`lg:top-[97px]`, scrolling itself if taller than the window).
   **A filter matches every option a program is in** (`Dimension.all`,
-  `bucketsOf` in `lib/dimensions.ts`): each of its topics under Activity
-  Type, and both Virtual/In person and Youth under Event Type, because the
-  form asks venue and audience separately. `bucket` (one per program) is
+  `bucketsOf` in `lib/dimensions.ts`): each of its topics under Topics.
+  Price (Free / Paid), Registration Type (Drop-in / Registration required)
+  and Event Type (In person / Virtual — no Youth any more) have fixed
+  `options`, always offered even when no event uses one yet. `bucket` (one per program) is
   still what the member stepper and tags group on. The console says
   "event" throughout, never "program" (the printed poster, which members
   read, keeps the member app's word).
@@ -888,13 +962,16 @@ can open.
     the POST says `subscribed`, so the button opens Google Calendar with an
     "Add it again" toast instead of Google's Add page.
   A caregiver viewing someone else's list gets that member's `.ics` download
-  either way. Single programs use Google's prefilled "add event" link.
+  either way. **No per-event calendar button** on any member surface (list
+  cards, event dialog, event page) — saving is how an event reaches the
+  calendar; only the public `/shared/[token]` page keeps Google's prefilled
+  "add event" link per program, for people without an account.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
-  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`; the profile
-  no longer has a toggle, it only lists "People I support" for an account that
-  already is one). **The member keeps their own account and their own
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
+  profile's "Your role" card; the profile lists "People I support" for an
+  account that is one). **The member keeps their own account and their own
   credential**; a caregiver never signs in as them. `care_links(caregiver_id,
   member_id, created_at, removed_at)` (migration `0021_caregivers`,
   `models/care.py`) is the only user-to-user relation. Unlinking sets

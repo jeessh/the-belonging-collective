@@ -8,17 +8,13 @@ import {
   Compass,
   LogOut,
   PersonStanding,
+  Settings,
   UserRound,
   Mic,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
-import { categoryStyle } from "@/lib/categories";
-import { useCategories } from "@/lib/useCategories";
-import { SELECTABLE_TAGS } from "@/lib/accessibility";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { shortName, type CarePerson } from "@/lib/api";
-import { Glyph } from "@/components/ui/Glyph";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -292,9 +288,6 @@ function AccountButton({
 
 /* ---------------- accessibility tools ---------------- */
 
-/** Why a card-driven tool is greyed out while the list is showing. */
-const CARD_ONLY = "Works in card view. Switch to Card View to use it.";
-
 export const AccessibilityMenu = memo(function AccessibilityMenu({
   open,
   onOpenChange,
@@ -353,7 +346,6 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   /** Replays the first-run tour. */
   onShowTour: () => void;
 }) {
-  const { categories, label: topicLabel } = useCategories();
   // Escape closes it and focus returns to the trigger. Capture, without
   // stopping propagation, matching the other menus on this surface.
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -413,34 +405,37 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         >
           {signedIn && onChangeExperience && (
             <>
-              <h2 className="text-xl font-medium text-fg">I am a</h2>
+              <h2 className="text-xl font-medium text-fg">
+                I am a {advanced ? "caregiver" : "community member"}
+              </h2>
               <p className="text-base text-fg-muted">
-                {advanced
-                  ? "Every event in a list, and saving for someone you support (list view)."
-                  : "One event at a time, big and clear (card view)."}
+                To change your role, go to settings.
               </p>
-              <SegmentedToggle<"simplified" | "advanced">
-                className="mt-3 w-full"
-                label="I am a"
-                value={advanced ? "advanced" : "simplified"}
-                onChange={(v) => onChangeExperience(v === "advanced")}
-                segments={[
-                  { value: "simplified", label: "Community member" },
-                  { value: "advanced", label: "Caregiver" },
-                ]}
-              />
+              {/* Switching role is deliberate: it lives in Profile. */}
+              <Link
+                href="/profile#role"
+                onClick={() => onOpenChange(false)}
+                className={buttonClass("secondary", "md", "mt-3 w-full")}
+              >
+                <Settings aria-hidden="true" className="size-6" />
+                Go to settings
+              </Link>
               <div className="mt-6" />
             </>
           )}
+          {/* Read aloud, voice and head tracking all drive the one card, so
+              list view doesn't offer them. */}
+          {!listView && (
+          <>
           <h2 className="text-xl font-medium text-fg">Accessibility</h2>
           <div className="mt-1 flex flex-col divide-y divide-line-card">
             <MenuToggle
               label="Read aloud"
               hint="Speaks each event as you browse."
               checked={ttsEnabled}
-              disabled={!ttsSupported || listView}
+              disabled={!ttsSupported}
               disabledHint={
-                !ttsSupported ? "Not supported in this browser." : CARD_ONLY
+                "Not supported in this browser."
               }
               onChange={onToggleTts}
             />
@@ -454,9 +449,9 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
                   : 'Say “next”, “back”, “save”, or “list”.'
               }
               checked={voiceEnabled}
-              disabled={!voiceSupported || listView}
+              disabled={!voiceSupported}
               disabledHint={
-                !voiceSupported ? "Not supported here (try Chrome or Edge)." : CARD_ONLY
+                "Not supported here (try Chrome or Edge)."
               }
               onChange={onToggleVoice}
             />
@@ -464,115 +459,31 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
               label="Head tracking"
               hint="Turn your head to an edge: up and down move, left saves, right opens your list."
               checked={headEnabled}
-              disabled={!headSupported || listView}
+              disabled={!headSupported}
               disabledHint={
-                !headSupported ? "Needs a webcam, and Chrome or Edge." : CARD_ONLY
+                "Needs a webcam, and Chrome or Edge."
               }
               onChange={onToggleHead}
             />
           </div>
+          </>
+          )}
 
           <Button
-            className="mt-4 w-full"
+            className={`w-full ${listView ? "" : "mt-4"}`}
             onClick={onShowTour}
             leadingIcon={<Compass />}
           >
             Show me around
           </Button>
 
-          <h2 className="mt-6 text-xl font-medium text-fg">What you like</h2>
-          <p className="text-base text-fg-muted">
-            These come first in your programs.
-          </p>
-          {/* Topics live on a profile, so there is nowhere to put them without
-              an account. The switches above need no account. */}
-          {!signedIn ? (
-            <Button variant="primary" className="mt-3 w-full" onClick={onSignIn}>
-              Sign in to pick topics
-            </Button>
-          ) : (
-            <>
-              <div
-                role="group"
-                aria-label="Things you are interested in"
-                className="mt-3 flex flex-wrap gap-2"
-              >
-                {categories.map(({ slug, label }) => (
-                  <Chip
-                    key={slug}
-                    pressed={interests.includes(slug)}
-                    onClick={() => onToggleInterest(slug)}
-                  >
-                    <Glyph icon={categoryStyle(slug).icon} />
-                    {label}
-                  </Chip>
-                ))}
-              </div>
-              <p className="sr-only" role="status" aria-live="polite">
-                {interests.length === 0
-                  ? "Nothing chosen yet"
-                  : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
-              </p>
-
-              {/* Needs, not tastes — they sort harder than topics do (see
-                  ACCESS_WEIGHT in lib/feed). Still only sorting. */}
-              <h2 className="mt-6 text-xl font-medium text-fg">What you need</h2>
-              <p className="text-base text-fg-muted">
-                Programs that offer these come first.
-              </p>
-              <div
-                role="group"
-                aria-label="Things you need a program to offer"
-                className="mt-3 flex flex-wrap gap-2"
-              >
-                {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
-                  <Chip
-                    key={slug}
-                    pressed={accessPrefs.includes(slug)}
-                    onClick={() => onToggleAccessPref(slug, label)}
-                  >
-                    <Glyph icon={icon} />
-                    {label}
-                  </Chip>
-                ))}
-              </div>
-              <p className="sr-only" role="status" aria-live="polite">
-                {accessPrefs.length === 0
-                  ? "Nothing chosen yet"
-                  : `${accessPrefs.length} chosen`}
-              </p>
-            </>
-          )}
+          {/* "What you like" and "What you need" are gone from here: needs
+              are a filter in list view now (Filter → What you need). */}
         </div>
       )}
     </div>
   );
 });
-
-function Chip({
-  pressed,
-  onClick,
-  children,
-}: {
-  pressed: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-2 text-base text-fg transition-colors ${
-        pressed
-          ? "border-primary-border bg-primary-soft"
-          : "border-line bg-surface hover:bg-surface-subtle"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function MenuToggle({
   label,

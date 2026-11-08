@@ -1,10 +1,12 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, HandCoins, LayoutGrid, X } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
 import { FilterChip } from "@/components/ui/FilterChip";
+import { Glyph } from "@/components/ui/Glyph";
+import { categoryStyle } from "@/lib/categories";
 
 /** "free", or a topic slug from `GET /categories`. */
 export const FREE_CHIP = "free";
@@ -26,17 +28,24 @@ export function passesFilters(event: Event, chips: Set<string>): boolean {
 type Chip = { key: string; label: string };
 
 /**
- * Every chip, the member's top ones first: FREE, then their own interests,
- * then the rest in the order superadmins set on /host/topics. Choosing a chip
- * doesn't move it, so the row never jumps.
+ * Every chip, the member's top ones first: what they've saved most often
+ * (`history` — how many saved events carry each topic, and how many were
+ * free), then their own interests, then FREE, then the rest in the order
+ * superadmins set on /host/topics. Choosing a chip doesn't move it, so the
+ * row never jumps.
  */
-export function rankChips(all: Chip[], interests: string[]): Chip[] {
+export function rankChips(
+  all: Chip[],
+  interests: string[],
+  history: Map<string, number> = new Map(),
+): Chip[] {
   const order = new Map(all.map((c, i) => [c.key, i]));
   const rank = (c: Chip): number[] => {
     const interest = interests.indexOf(c.key);
     return [
-      c.key === FREE_CHIP ? 0 : 1,
+      -(history.get(c.key) ?? 0),
       interest === -1 ? interests.length : interest,
+      c.key === FREE_CHIP ? 0 : 1,
       order.get(c.key) ?? 0,
     ];
   };
@@ -75,8 +84,12 @@ export const FeedFilters = memo(function FeedFilters({
   onToggleChip,
   onClearChips,
   interests = [],
+  saved = [],
   events,
 }: {
+  /** Everything the member has saved, past included: the topics they save
+      most (and Free, if they mostly save free things) lead the row. */
+  saved?: Event[];
   /** The events on offer: a topic chip shows only if one of them uses it,
       and Free only if one of them is free. */
   events: Event[];
@@ -88,6 +101,20 @@ export const FeedFilters = memo(function FeedFilters({
   interests?: string[];
 }) {
   const { categories } = useCategories();
+  // How often each chip's kind of event was saved, one program at a time.
+  const history = useMemo(() => {
+    const counts = new Map<string, number>();
+    const seen = new Set<string>();
+    for (const ev of saved) {
+      const program = ev.series_id ?? ev.id;
+      if (seen.has(program)) continue;
+      seen.add(program);
+      const topics = ev.categories?.length ? ev.categories : ev.category ? [ev.category] : [];
+      for (const t of topics) counts.set(t, (counts.get(t) ?? 0) + 1);
+      if (ev.is_free) counts.set(FREE_CHIP, (counts.get(FREE_CHIP) ?? 0) + 1);
+    }
+    return counts;
+  }, [saved]);
   // Only the chips some posted event actually carries — a topic no
   // organizer has used would only ever filter to nothing. A chip that's
   // switched on stays, so it can still be switched off.
@@ -111,8 +138,9 @@ export const FeedFilters = memo(function FeedFilters({
             .map((c) => ({ key: c.slug, label: c.label })),
         ],
         interests,
+        history,
       ),
-    [categories, interests, used, chips],
+    [categories, interests, history, used, chips],
   );
 
   // Whether there is more of the row to either side, for the arrows.
@@ -195,7 +223,8 @@ export const FeedFilters = memo(function FeedFilters({
         >
           {/* "All": selected while nothing narrows the feed; pressing it
               clears every chip. */}
-          <FilterChip selected={chips.size === 0} onClick={onClearChips}>
+          <FilterChip selected={chips.size === 0} onClick={onClearChips} className="gap-2">
+            <LayoutGrid aria-hidden="true" className="size-5" />
             All
           </FilterChip>
           {all.map(({ key, label }) => {
@@ -205,7 +234,14 @@ export const FeedFilters = memo(function FeedFilters({
                 key={key}
                 selected={on}
                 onClick={() => onToggleChip(key)}
+                className="gap-2"
               >
+                {/* Free's coins, or the topic's own icon (lib/categories). */}
+                {key === FREE_CHIP ? (
+                  <HandCoins aria-hidden="true" className="size-5" />
+                ) : (
+                  <Glyph icon={categoryStyle(key).icon} />
+                )}
                 {label}
               </FilterChip>
             );

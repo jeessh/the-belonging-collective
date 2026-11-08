@@ -459,28 +459,6 @@ function Thumb({
   return null;
 }
 
-/** Magnet colours; each program keeps the same one. */
-const PINS = ["#38D0F5"]; // one colour: the app's accent
-
-function hash(id: string): number {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return Math.abs(h);
-}
-
-/** A square fridge magnet: a rounded square of colour with a little shine. */
-export function Magnet({ colour, className = "" }: { colour: string; className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-[4px] shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${className}`}
-      style={{
-        background: `linear-gradient(145deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%), ${colour}`,
-      }}
-    />
-  );
-}
-
 /** The open panel's saved programs: two even columns of mini cards. */
 function Board({
   events,

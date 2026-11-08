@@ -27,6 +27,10 @@ type Step = {
   body: string;
   /** `data-tour` names to spotlight, when they are on screen. */
   targets: string[];
+  /** Play a cursor dragging an event onto the saved panel over the page. */
+  dragDemo?: boolean;
+  /** Stretch the spotlight across the whole page, edge to edge. */
+  fullWidth?: boolean;
 };
 
 function stepsFor(): Step[] {
@@ -40,8 +44,10 @@ function stepsFor(): Step[] {
     {
       icon: <Bookmark />,
       title: "Save what you like",
-      body: "Drag the event card into Saved Events on the left to save it \u2014 in the list too. Or tap \u201cSave event\u201d.",
-      targets: ["save", "saved"],
+      body: "Drag an event into Saved Events on the left to save it. Or tap \u201cSave event\u201d.",
+      targets: ["card", "saved"],
+      dragDemo: true,
+      fullWidth: true,
     },
     {
       icon: <Info />,
@@ -71,6 +77,85 @@ function stepsFor(): Step[] {
 }
 
 type Rect = { left: number; top: number; width: number; height: number };
+
+type DragPath = { from: { x: number; y: number }; to: { x: number; y: number } };
+
+/** From the middle of the event card on screen to the middle of the saved
+    panel; null when either isn't showing. */
+function dragPath(): DragPath | null {
+  const card = document.querySelector<HTMLElement>('[data-tour="card"]');
+  const saved = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-tour="saved"]'),
+  ).find((el) => el.offsetParent !== null);
+  if (!card || !saved || card.offsetParent === null) return null;
+  const a = card.getBoundingClientRect();
+  const b = saved.getBoundingClientRect();
+  return {
+    from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
+    to: { x: b.left + b.width / 2, y: b.top + Math.min(b.height / 2, 220) },
+  };
+}
+
+const DEMO_S = 3.4; // one pass of the drag demo, seconds
+// Phases of a pass: glide in, press, carry, drop, rest.
+const T = [0, 0.18, 0.28, 0.72, 0.82, 1];
+
+/**
+ * A cursor that glides onto the event card, grabs it, carries a mini card
+ * across to Saved Events and lets go, over and over, while the step is up.
+ * Drawn over the spotlight, never hit-testable; skipped for reduced motion
+ * and on a phone (where a finger does it, not a cursor).
+ */
+function DragDemo({ path }: { path: DragPath }) {
+  const { from, to } = path;
+  const loop = {
+    duration: DEMO_S,
+    times: T,
+    repeat: Infinity,
+    repeatDelay: 0.4,
+    ease: "easeInOut" as const,
+  };
+  const xs = [from.x + 90, from.x, from.x, to.x, to.x, to.x];
+  const ys = [from.y + 60, from.y, from.y, to.y, to.y, to.y];
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+      {/* The mini card, held just under the cursor's fingers. */}
+      <motion.div
+        className="absolute left-0 top-0 flex w-[150px] flex-col gap-2 rounded-card border-2 border-line-card bg-surface p-2 shadow-lift"
+        style={{ translateX: "-50%", translateY: "-30%" }}
+        animate={{
+          x: xs,
+          y: ys,
+          opacity: [0, 0, 1, 1, 0, 0],
+          scale: [0.9, 0.9, 1, 1, 0.85, 0.85],
+          rotate: [0, 0, -3, -3, 0, 0],
+        }}
+        transition={loop}
+      >
+        <span className="block aspect-[2/1] w-full rounded-control bg-primary-soft" />
+        <span className="block h-3 w-4/5 rounded-full bg-line-card" />
+        <span className="block h-3 w-1/2 rounded-full bg-line-card" />
+      </motion.div>
+      {/* The cursor: an arrow, then the closed hand while it carries. */}
+      <motion.div
+        className="absolute left-0 top-0 size-10"
+        animate={{ x: xs, y: ys, opacity: [0, 1, 1, 1, 1, 0] }}
+        transition={loop}
+      >
+        {/* Swapped by CSS (globals.css, .tour-arrow / .tour-grab) on the
+            same 3.8s cycle as the motion above. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/cursors/arrow@2x.png" alt="" className="tour-arrow absolute inset-0 size-10" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/cursors/grabbing@2x.png"
+          alt=""
+          className="tour-grab absolute -left-5 -top-5 size-10 opacity-0"
+        />
+      </motion.div>
+    </div>
+  );
+}
 
 const PAD = 8; // ring clearance around the target
 const GAP = 16; // between the ring and the card
@@ -118,6 +203,7 @@ export function Tour({
   const steps = useMemo(() => stepsFor(), []);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  const [demo, setDemo] = useState<DragPath | null>(null);
   const step = steps[index];
   const last = index === steps.length - 1;
   const titleId = useId();
@@ -142,7 +228,15 @@ export function Tour({
       inline: "nearest",
       behavior: reduceMotion ? "auto" : "smooth",
     });
-    const measure = () => setRect(unionRect(names));
+    const measure = () => {
+      const r = unionRect(names);
+      setRect(
+        r && step.fullWidth
+          ? { ...r, left: PAD, width: window.innerWidth - PAD * 2 }
+          : r,
+      );
+      setDemo(step.dragDemo && !reduceMotion && !phone ? dragPath() : null);
+    };
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -229,6 +323,8 @@ export function Tour({
       ) : (
         <div aria-hidden="true" className="absolute inset-0 bg-fg/45" />
       )}
+
+      {demo && <DragDemo key={index} path={demo} />}
 
       <motion.div
         ref={panelRef}

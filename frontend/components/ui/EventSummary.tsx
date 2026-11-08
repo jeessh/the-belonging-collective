@@ -1,4 +1,8 @@
 import { placeLabel } from "@/lib/place";
+import { mapsUrl } from "@/lib/share";
+import { PostedBy } from "@/components/host/PostedBy";
+import { buttonClass } from "@/components/ui/Button";
+import { GoogleMapsIcon } from "@/components/ui/GoogleMapsIcon";
 import type { ReactNode } from "react";
 import {
   CalendarDays,
@@ -56,18 +60,19 @@ export function EventTags({
 }: {
   event: Event;
   recommended?: boolean;
-  /** On the member's saved list: a "Saved" tag first. */
+  /** On the member's saved list: a grey "Saved" tag after the cost tags. */
   saved?: boolean;
   /** Passed to every pill, e.g. the feed card's larger type. */
   className?: string;
 }) {
   return (
     <>
-      {saved && <Tag kind="saved" className={className} />}
       {recommended && <Tag kind="foryou" className={className} />}
       {eventTags(event).map((kind) => (
         <Tag key={kind} kind={kind} className={className} />
       ))}
+      {/* Grey, beside Free / Paid: it's on the member's saved list. */}
+      {saved && <Tag kind="saved" className={className} />}
       {event.access_group && (
         <Tag
           kind="access"
@@ -108,6 +113,7 @@ export function EventSummary({
   fixedDates = false,
   className = "",
   aboveTitle,
+  headingInset = false,
 }: {
   /** Above the title in the text column (the event dialog's Google
       Calendar / Share / Print). */
@@ -118,6 +124,8 @@ export function EventSummary({
   going?: ReactNode;
   /** Buttons, placed where the layout puts them. */
   actions?: ReactNode;
+  /** Keep the title row clear of a dialog's top-right ×. */
+  headingInset?: boolean;
   /** The page's own heading where the summary is the page (or the dialog). */
   titleAs?: "h1" | "h2" | "h3";
   titleId?: string;
@@ -125,7 +133,7 @@ export function EventSummary({
   fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
-  /** On the member's saved list — adds the "Saved" pill. */
+  /** On the member's saved list — adds the grey "Saved" pill. */
   saved?: boolean;
   className?: string;
 }) {
@@ -136,6 +144,8 @@ export function EventSummary({
   const tile = layout === "tile";
   const when = whenLine(event, { fixed: fixedDates });
   const where = placeLabel(event);
+  const mapLink =
+    layout === "detail" && !event.is_virtual ? mapsUrl(event.location) : null;
   const image = eventImage(event);
   // Ages and spots left are no longer shown to members (the data stays).
 
@@ -192,9 +202,23 @@ export function EventSummary({
   // The title with its tags beside it (just "Free", and special access /
   // For you where they apply), on one line when there's room.
   const heading = (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      {title}
-      {tags}
+    <div className="flex flex-col gap-2">
+      {/* In a dialog, the title row keeps clear of the × in its corner. */}
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${
+          headingInset ? "pr-12 sm:pr-14" : ""
+        }`}
+      >
+        {title}
+        {tags}
+      </div>
+      {/* Who posted it, as the console shows it: the organization and its
+          logo (members never see which person on a team posted it). */}
+      {event.host_name && (
+        <p className="text-lg text-fg-muted">
+          <PostedBy event={event} />
+        </p>
+      )}
     </div>
   );
 
@@ -227,7 +251,23 @@ export function EventSummary({
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-fg-muted ${icon}`}
         />
-        <p className="min-w-0 text-fg">{where}</p>
+        {/* On the event's dialog and page, a small "See on Map" button
+            sits under the place; cards open the details instead. */}
+        <div className="flex min-w-0 flex-col items-start gap-2">
+          <p className="min-w-0 text-fg">{where}</p>
+          {mapLink && (
+            <a
+              href={mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClass("secondary", "md", "!min-h-9 !px-3 !py-1 !text-base")}
+            >
+              <GoogleMapsIcon className="size-5" />
+              See on Map
+              <span className="sr-only"> (opens Google Maps)</span>
+            </a>
+          )}
+        </div>
       </div>
       {/* Only three facts on any summary: when, where and the saved
           count. Cost and registration are the tags beside the title. */}
