@@ -217,7 +217,6 @@ export const SavedEvents = memo(function SavedEvents({
                 <CaregiverFeed
                   events={ordered}
                   saved={savedIds}
-                  orderLabel="Date"
                   removeIcon
                   group={sections}
                   tools={

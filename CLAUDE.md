@@ -186,14 +186,14 @@ can open.
   its own: search, **Filter** (a dropdown under the button — not a modal;
   Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
   badges; the button shows "Filter (N)" and the accent's soft fill while any
-  are on) and **Sort** (Recommended — the feed's own order — Soonest first,
-  Most saved, A–Z) share one row, over the cards. It is handed `listFeed`
+  are on) share one row, over the cards — **no Sort**; the cards keep the
+  feed's own order. It is handed `listFeed`
   (the feed before the card view's chips), so a chip left on in card view
   never hides list rows. The cards are **grouped under headings** (`byWhen` in
   EventsView → `CaregiverFeed group`): **This week** (starts within 7 days,
   or is on now), **This month · November** (the rest of the calendar
   month), **Next month · December** (the next calendar month) and **Later**, each
-  with its count; an empty one is left out, and each keeps Sort's order. Then a
+  with its count; an empty one is left out. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share
   as an icon button with `ui/Tooltip`s, beside Save / Unsave (through
@@ -303,8 +303,7 @@ can open.
   pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
   upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
   event is free; a chip that's on stays so it can be switched off)),
-  which are the member's own explicit choice. Card view has no sort control
-  (list view's Sort is the member's explicit choice; Recommended is the default).
+  which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
 - **Saved events stay in the feed**: there is no "Saved" tag any more

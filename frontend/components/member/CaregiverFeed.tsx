@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
-import { SearchField, Select } from "@/components/AdminTable";
+import { SearchField } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
 import { EventDetails } from "@/components/member/EventDetails";
@@ -52,8 +52,8 @@ import {
 import { placeLabel } from "@/lib/place";
 
 /**
- * The feed's List view (for everyone): search, Filter (a dropdown holding
- * the console's filter panel) and Sort on one row, over one card per event (the
+ * The feed's List view (for everyone): search and Filter (a dropdown
+ * holding the console's filter panel) on one row, over one card per event (the
  * console's card, restricted to what a member can do).
  * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
@@ -68,22 +68,19 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   onUnsave,
   onRegister,
   dropTarget,
-  orderLabel = "Recommended",
   removeIcon = false,
   group,
   tools,
 }: {
-  /** In place of Filter and Sort, beside the search box (the saved page:
+  /** In place of Filter, beside the search box (the saved page:
       Share and Print). */
   tools?: ReactNode;
-  /** Split what's shown (after search, Filter and Sort) into titled
+  /** Split what's shown (after search and Filter) into titled
       sections; a `collapsed` one starts folded. Flat without it. */
   group?: (shown: Event[]) => FeedSection[];
   /** The saved page: a red delete icon at each card's top right takes it
       off the list, in place of the Unsave button. */
   removeIcon?: boolean;
-  /** What the list's own order is called in Sort (its first option). */
-  orderLabel?: string;
   events: Event[];
   saved: Set<string>;
   onOpen: (event: Event) => void;
@@ -115,23 +112,16 @@ export const CaregiverFeed = memo(function CaregiverFeed({
       document.removeEventListener("keydown", onKey);
     };
   }, [filtersOpen]);
-  const [sort, setSort] = useState<SortKey>("recommended");
-  const shown = useMemo(() => {
-    const list = applyHostFilters(events, filters, query);
-    // "Recommended" is the feed's own order (personalized, then the
-    // server's); the others are the member's explicit choice.
-    if (sort === "soonest")
-      return [...list].sort((a, b) => (a.starts_at ?? "").localeCompare(b.starts_at ?? ""));
-    if (sort === "saved")
-      return [...list].sort((a, b) => (b.saved_count ?? 0) - (a.saved_count ?? 0));
-    if (sort === "az") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    return list;
-  }, [events, filters, query, sort]);
+  // The feed's own order (personalized, then the server's); no Sort.
+  const shown = useMemo(
+    () => applyHostFilters(events, filters, query),
+    [events, filters, query],
+  );
   const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      {/* Search, then Filter and Sort, on one row (stacked on a phone). */}
+      {/* Search, then Filter, on one row (stacked on a phone). */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchField
           label="Search for event"
@@ -173,17 +163,6 @@ export const CaregiverFeed = memo(function CaregiverFeed({
               </div>
             )}
           </div>
-          <Select
-            aria-label="Sort events"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="max-sm:flex-1 [&>select]:min-h-14 [&>select]:text-lg"
-          >
-            <option value="recommended">Sort: {orderLabel}</option>
-            <option value="soonest">Sort: Soonest first</option>
-            <option value="saved">Sort: Most saved</option>
-            <option value="az">Sort: A–Z</option>
-          </Select>
         </div>
         )}
       </div>
@@ -256,8 +235,6 @@ export const CaregiverFeed = memo(function CaregiverFeed({
     </div>
   );
 });
-
-type SortKey = "recommended" | "soonest" | "saved" | "az";
 
 export type FeedSection = {
   key: string;
