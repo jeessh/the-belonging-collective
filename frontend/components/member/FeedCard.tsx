@@ -6,6 +6,7 @@ import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
+import { EventTools } from "@/components/member/EventTools";
 import { Magnet } from "@/components/member/SavedSidebar";
 
 /**
@@ -130,6 +131,12 @@ export const FeedCard = memo(function FeedCard({
           </>
         }
       />
+      {/* Add to Google Calendar, Share and Print, quiet and centred under
+          the card's buttons, as in the event dialog. Pressing one is never
+          the start of a drag. */}
+      <div onPointerDown={stop} className="mt-2 sm:mt-3">
+        <EventTools event={event} centered />
+      </div>
     </div>
   );
 });

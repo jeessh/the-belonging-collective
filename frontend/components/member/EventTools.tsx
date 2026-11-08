@@ -13,14 +13,21 @@ import { PrintPreview } from "@/components/member/PrintPreview";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 
 /** Calendar, Share and Print for one program — the dialog's and the page's top right. */
-export function EventTools({ event }: { event: Event }) {
+export function EventTools({
+  event,
+  centered = false,
+}: {
+  event: Event;
+  /** Centred under the feed card's buttons, rather than in a text column. */
+  centered?: boolean;
+}) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
   const dated = googleCalendarUrl(event) !== null;
 
   return (
     <>
-      <div className="-ml-4 flex flex-wrap gap-1">
+      <div className={`flex flex-wrap gap-1 ${centered ? "justify-center" : "-ml-4"}`}>
         {dated && (
           <Button
             variant="ghost"
