@@ -142,8 +142,8 @@ can open.
   when it sits under the panel's heading and Close button, the board's full
   width.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
-  member header's one size: a 36px picture and **just the name** (no
-  account-type line) at 20px, the size of "Accessibility Tools" and the
+  member header's one size: a 36px picture and the name at 20px, with
+  "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the
   "Saving for" switcher beside it, a 20px chevron; its menu items are
   18px with 20px icons, like the header's other menus.
 - **The experience: Simplified or Advanced.** The sign-up flow's account

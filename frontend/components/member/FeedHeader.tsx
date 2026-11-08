@@ -39,12 +39,15 @@ export type AvatarChoice = {
 export function FeedAccount({
   name,
   avatar,
+  role = null,
   care,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
   avatar?: AvatarChoice | null;
+  /** "Community member" or "Caregiver", under the name. */
+  role?: string | null;
   care?: CareChoice | null;
   onSignIn: () => void;
   onSignOut: () => void;
@@ -54,6 +57,7 @@ export function FeedAccount({
       <AccountButton
         name={name}
         avatar={avatar}
+        role={role}
         // Beside the switcher a phone has room for the picture, not the
         // name; the menu still carries it.
         compact={!!care && care.members.length > 0}
@@ -187,12 +191,15 @@ export function CareSwitcher({
 function AccountButton({
   name,
   avatar,
+  role = null,
   compact = false,
   onSignIn,
   onSignOut,
 }: {
   name: string | null;
   avatar?: AvatarChoice | null;
+  /** "Community member" or "Caregiver", under the name. */
+  role?: string | null;
   /** Hide the name below `sm`; the picture stands in for it. */
   compact?: boolean;
   onSignIn: () => void;
@@ -227,7 +234,7 @@ function AccountButton({
         aria-expanded={signedIn ? open : undefined}
         // The member header's one text size: the picture and the name at
         // the size of "Accessibility Tools" beside them (20px, a 20px
-        // chevron). Just the name — no account-type line under it.
+        // chevron), with the account type in 16px grey under the name.
         className="inline-flex min-h-11 max-w-full items-center gap-3 rounded-control px-2 text-left transition-colors hover:bg-surface-subtle"
       >
         <Avatar
@@ -236,10 +243,14 @@ function AccountButton({
           emblem={avatar?.emblem}
           size={36}
         />
-        <span
-          className={`truncate text-xl ${signedIn ? "text-fg" : "text-fg-muted"} ${compact ? "max-sm:sr-only" : ""}`}
-        >
-          {name ?? "Not Logged In"}
+        {/* The name, and under it who they are on the platform. */}
+        <span className={`flex min-w-0 flex-col leading-tight ${compact ? "max-sm:sr-only" : ""}`}>
+          <span className={`truncate text-xl ${signedIn ? "text-fg" : "text-fg-muted"}`}>
+            {name ?? "Not Logged In"}
+          </span>
+          {signedIn && role && (
+            <span className="truncate text-base text-fg-muted">{role}</span>
+          )}
         </span>
         {signedIn && (
           <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-fg-icon" />

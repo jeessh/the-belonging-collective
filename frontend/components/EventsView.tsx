@@ -1315,6 +1315,7 @@ export function EventsView({
           <FeedAccount
             name={name}
             avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+            role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
             care={careInPanel ? null : careChoice}
             onSignIn={() => toSignIn()}
             onSignOut={() => void doLogout()}
