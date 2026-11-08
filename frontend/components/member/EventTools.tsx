@@ -3,33 +3,22 @@
 import { useState } from "react";
 import { Printer, Send } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { publicEventUrl } from "@/lib/share";
 import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
 import { ShareModal } from "@/components/member/ShareModal";
 import { PrintPreview } from "@/components/member/PrintPreview";
-import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 
-/** Calendar, Share and Print for one program — the dialog's and the page's top right. */
+/** Share and Print for one program (no per-event calendar button: saving
+    syncs the member's calendar) — the dialog's and the page's top right. */
 export function EventTools({ event }: { event: Event }) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
-  const dated = googleCalendarUrl(event) !== null;
 
   return (
     <>
       <div className="-ml-4 flex flex-wrap gap-1">
-        {dated && (
-          <Button
-            variant="ghost"
-            onClick={() => openGoogleCalendar(event)}
-            trailingIcon={<GoogleCalendarIcon />}
-          >
-            Add to Google Calendar
-          </Button>
-        )}
         <Button variant="ghost" onClick={() => setOpen("share")} trailingIcon={<Send />}>
           Share
         </Button>

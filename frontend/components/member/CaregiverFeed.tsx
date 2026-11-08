@@ -14,7 +14,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
 import { publicEventUrl } from "@/lib/share";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
@@ -23,7 +22,6 @@ import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
-import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { SearchField, Select } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import {
@@ -335,21 +333,6 @@ function MemberEventCard({
               </button>
             )}
           </Tooltip>
-          {googleCalendarUrl(event) !== null && (
-            <Tooltip text="Add to Google Calendar" align="end">
-              {(tip) => (
-                <button
-                  type="button"
-                  aria-label={`Add ${event.title} to Google Calendar`}
-                  aria-describedby={tip}
-                  onClick={() => openGoogleCalendar(event)}
-                  className={tool}
-                >
-                  <GoogleCalendarIcon />
-                </button>
-              )}
-            </Tooltip>
-          )}
         </div>
         {canSave &&
           (saved ? (

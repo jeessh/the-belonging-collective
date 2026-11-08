@@ -191,8 +191,8 @@ can open.
   (the feed before the card view's chips), so a chip left on in card view
   never hides list rows. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
-  people saved this event"; the whole card opens the details) with Share and Add to Google
-  Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through
+  people saved this event"; the whole card opens the details) with Share
+  as an icon button with `ui/Tooltip`s, beside Save / Unsave (through
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
@@ -338,8 +338,8 @@ can open.
   "More information" dialog
   (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
-  preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
-  Calendar / Share / Print — ghost buttons in a row under the title and
+  preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
+  — ghost buttons; no per-event Add to Google Calendar any more in a row under the title and
   its three facts, in the same column beside the picture; through
   `EventSummary`'s `going` slot) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
@@ -916,7 +916,10 @@ can open.
     the POST says `subscribed`, so the button opens Google Calendar with an
     "Add it again" toast instead of Google's Add page.
   A caregiver viewing someone else's list gets that member's `.ics` download
-  either way. Single programs use Google's prefilled "add event" link.
+  either way. **No per-event calendar button** on any member surface (list
+  cards, event dialog, event page) — saving is how an event reaches the
+  calendar; only the public `/shared/[token]` page keeps Google's prefilled
+  "add event" link per program, for people without an account.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
