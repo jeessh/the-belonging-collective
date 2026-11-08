@@ -18,15 +18,13 @@ import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 
 /** The rail's stacked icon-over-label button. */
-const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-sm";
+const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-base";
 const RAIL_WIDTH = 100;
 /* The board, an experiment (the open panel's list): a whiteboard, each
    saved program held to it by a magnet as a miniature of the feed card —
    its picture and title — in two even columns. A click opens one. */
 export const BOARD_CARD_W = 136;
 // Soft, spread-out shadows: one at rest, a deeper one for the card in flight.
-const SHADOW_REST = "0 2px 4px -1px rgba(0,0,0,0.06), 0 8px 24px -6px rgba(0,0,0,0.14)";
-export const SHADOW_HELD = "0 6px 12px -4px rgba(0,0,0,0.10), 0 22px 48px -10px rgba(0,0,0,0.26)";
 const PANEL_WIDTH = 377;
 
 type Props = {
@@ -257,7 +255,7 @@ export const SavedSidebar = memo(
                   >
                     {events.length > 0 && (
                       <div
-                        className="no-scrollbar -mx-px min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+                        className="no-scrollbar -mx-[2px] min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
                       >
                         <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
                       </div>
@@ -450,10 +448,10 @@ function Thumb({
           {img}
         </span>
         <span className="flex min-w-0 flex-col">
-          <span className="line-clamp-2 text-sm font-medium leading-snug text-fg">
+          <span className="line-clamp-2 text-base font-medium leading-snug text-fg">
             {event.title}
           </span>
-          <span className="text-xs text-fg-muted">{monthDay(event.starts_at)}</span>
+          <span className="text-base text-fg-muted">{monthDay(event.starts_at)}</span>
         </span>
       </button>
     );
@@ -462,7 +460,7 @@ function Thumb({
 }
 
 /** Magnet colours; each program keeps the same one. */
-const PINS = ["#e5484d", "#3b82f6", "#22a06b", "#f5b300"];
+const PINS = ["#38D0F5"]; // one colour: the app's accent
 
 function hash(id: string): number {
   let h = 0;
@@ -512,7 +510,7 @@ function Board({
 
   return (
     // 16px between the cards both ways; room above each for its magnet.
-    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 px-1 pb-4 pt-4">
+    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 pb-4 pt-4">
       <AnimatePresence initial={false}>
         {shown.map((ev) => (
           <motion.button
@@ -525,11 +523,8 @@ function Board({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={transition}
-            style={{ boxShadow: SHADOW_REST }}
-            className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
+            className={`relative w-full transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted motion-reduce:transition-none ${MINI_CARD}`}
           >
-            {/* The magnet holding it to the whiteboard. */}
-            <Magnet colour={PINS[hash(ev.id) % PINS.length]} />
             <MiniCardFace event={ev} />
           </motion.button>
         ))}

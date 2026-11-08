@@ -20,19 +20,20 @@ export function EventTools({ event }: { event: Event }) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3 sm:justify-end">
+      <div className="-ml-4 flex flex-wrap gap-1">
         {dated && (
           <Button
+            variant="ghost"
             onClick={() => openGoogleCalendar(event)}
             trailingIcon={<GoogleCalendarIcon />}
           >
             Add to Google Calendar
           </Button>
         )}
-        <Button onClick={() => setOpen("share")} trailingIcon={<Send />}>
+        <Button variant="ghost" onClick={() => setOpen("share")} trailingIcon={<Send />}>
           Share
         </Button>
-        <Button onClick={() => setOpen("print")} trailingIcon={<Printer />}>
+        <Button variant="ghost" onClick={() => setOpen("print")} trailingIcon={<Printer />}>
           Print
         </Button>
       </div>

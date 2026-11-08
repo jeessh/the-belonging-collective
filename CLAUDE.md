@@ -117,8 +117,9 @@ can open.
   (`border-line`) edge on the right, the same grey as the top bar's bottom line — a dark "Saved Events"
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
-  bottom — miniature feed cards (picture and title) each held by a
-  coloured square magnet (`Magnet`), in two even columns
+  bottom — miniature feed cards (picture and title), no magnets
+  (`Magnet` is still exported, unused) and no shadow (the drag ghost
+  neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight
@@ -129,6 +130,12 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **The event column has wide margins and a centred, 1200px-at-most
+  content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
+  card and arrows / list all sit in it. In card view the heading block and
+  the card + arrows are one box centred on the page (1000px, 1012px from
+  `lg`), so heading, filters and card share a left edge and the filters and
+  Accessibility Tools end at the card's right edge.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
@@ -136,20 +143,26 @@ can open.
 - **The bar spans the whole width**, over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
-  panel's "Saved Events" heading, and Accessibility Tools (`a11yMenu`) on the
-  right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
+  panel's "Saved Events" heading, and the Card View / List View toggle at
+  the far right; Accessibility Tools (`a11yMenu`) sits on the "Discover
+  Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
   beside the account — except while the saved panel is open (`careInPanel`),
   when it sits under the panel's heading and Close button, the board's full
   width.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
-  member header's one size: a 36px picture and **just the name** (no
-  account-type line) at 20px, the size of "Accessibility Tools" and the
+  member header's one size: a 36px picture and the name at 20px, with
+  "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the
   "Saving for" switcher beside it, a 20px chevron; its menu items are
   18px with 20px icons, like the header's other menus.
-- **The experience: Simplified or Advanced.** The sign-up flow's account
-  step is "Choose your experience": **Simplified** (a community member;
-  the feed opens on the one card) or **Advanced** (a caregiver; the list).
-  It is `is_caregiver` plus `preferred_view`, written together — at sign-up
+- **Community member or caregiver** (was "Simplified / Advanced"). The
+  sign-up flow's account step asks "Are you a community member or a
+  caregiver?": a **community member** gets card view (one card at a time),
+  a **caregiver** list view. Accessibility Tools has the same choice as an
+  "I am a" toggle (Community member | Caregiver), and the profile shows it
+  under the name. Signing up or in through the feed's own sign-in sheet
+  switches the feed to the account's `preferred_view` straight away
+  (`handleSignedIn`), so a new caregiver lands in the list. It is
+  `is_caregiver` plus `preferred_view`, written together — at sign-up
   (`is_caregiver` on the sign-up call, then `PATCH /users/me
   {preferred_view}`) and from the "Your experience" toggle at the top of
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
@@ -159,7 +172,7 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  `host/PostedEvents`' `FilterPanel` on the left, sticky (`memberView` — the feed's
+  `host/PostedEvents`' `FilterPanel` on the left, sticky, from `xl` (a Filters sheet below that — with the saved panel open a `lg` window left the cards ~190px) (`memberView` — the feed's
   groups only, member-app sizes; it replaces the chip row), search, and a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share and Add to Google
@@ -202,9 +215,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
-  top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
-  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
+  card has a soft shadow, kept straight (`FeedCard`; no magnet). The card's
+  text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
@@ -262,16 +274,16 @@ can open.
   nothing is hidden. The only things that remove cards are the filter chips in
   `FeedFilters` ("Clear all" at the right end of the chip row once a chip
   is on; an **All** chip first — selected while no chip is, and
-  pressing it clears them — then FREE + the topics from `useCategories`),
+  pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
+  upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
+  event is free; a chip that's on stays so it can be switched off)),
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
-- **A saved program leaves the feed** (card, list and Advanced views, and
-  "For you this week"): EventsView's `savedPrograms` (the `programKey`s of
-  `savedEvents`, so every date of a repeating program) is filtered out where
-  `feed` is built. Saving the card on screen therefore advances to the next
-  one (`advanceAfterSave` finds the current id changed and does nothing
-  more); un-saving, or a save that fails and rolls back, brings it back.
+- **Saved events stay in the feed, marked saved**: a "Saved" tag (bookmark,
+  the accent's soft fill) leads the tag row on the feed card, list cards and
+  the event dialog (`EventSummary saved` / `EventTags saved`), and the
+  card's button reads "Unsave event".
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
@@ -301,14 +313,13 @@ can open.
   LINKS (`event.links` plus the organizer's `registration_url`; one
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
-  "More information" panel
-  (`member/EventDetailModal`, a `Modal sheet`: sliding up from the bottom
-  with a handle, as wide as its content (960px, centred), up to 90% of the
-  screen and scrolling inside, its See on Map / Save buttons pinned to the
-  panel's foot — `EventDetails stickyActions`), the public `/events/[id]` page and the print
+  "More information" dialog
+  (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
+  `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
-  Calendar / Share / Print — a row above the title, at the top of the
-  text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
+  Calendar / Share / Print — ghost buttons in a row under the title and
+  its three facts, in the same column beside the picture; through
+  `EventSummary`'s `going` slot) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
   (`routes/share.py`): the site mails the designed cards (logo, photo,
@@ -332,6 +343,12 @@ can open.
   event page, print). Cost and registration are the tags beside the title;
   there is no price line, no repeats line, no ages or spots. `EventDetails`
   labels the organizer's link "Sign up on …" when sign-up is needed.
+- **Type and colour rules (member app):** tags and filter chips are
+  sentence case, never uppercase (18px tags); tooltips 16px; nothing on the
+  member side under 16px. One accent (the cyan `primary`), plus a semantic
+  set: green Free, blue Paid, neutral grey Registration required. In the event dialog / page, Google Calendar /
+  Share / Print are ghost buttons so See on Map (secondary) and Save /
+  Register (primary) clearly lead.
 - **Tags beside the title: "Free" or "Paid", and "Registration required"**
   (`eventTags` in `ui/Tag`; Free / Paid from the `price` dimension, so it
   always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in

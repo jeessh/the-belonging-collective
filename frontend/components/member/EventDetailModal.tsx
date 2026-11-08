@@ -61,7 +61,6 @@ export function EventDetailModal({
         title={null}
         labelId={TITLE_ID}
         size="lg"
-        sheet
         snug
         onClose={close}
       >
@@ -71,7 +70,7 @@ export function EventDetailModal({
           titleId={TITLE_ID}
           going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
-          stickyActions
+          saved={saved}
           tools={<EventTools event={event} />}
           actions={
             <>

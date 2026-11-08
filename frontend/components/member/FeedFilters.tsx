@@ -75,7 +75,11 @@ export const FeedFilters = memo(function FeedFilters({
   onToggleChip,
   onClearChips,
   interests = [],
+  events,
 }: {
+  /** The events on offer: a topic chip shows only if one of them uses it,
+      and Free only if one of them is free. */
+  events: Event[];
   chips: Set<string>;
   onToggleChip: (chip: string) => void;
   /** "Clear all": every chip off at once. */
@@ -84,16 +88,31 @@ export const FeedFilters = memo(function FeedFilters({
   interests?: string[];
 }) {
   const { categories } = useCategories();
+  // Only the chips some posted event actually carries — a topic no
+  // organizer has used would only ever filter to nothing. A chip that's
+  // switched on stays, so it can still be switched off.
+  const used = useMemo(() => {
+    const topics = new Set<string>();
+    let anyFree = false;
+    for (const e of events) {
+      for (const slug of e.categories?.length ? e.categories : e.category ? [e.category] : [])
+        topics.add(slug);
+      if (passesFilters(e, new Set([FREE_CHIP]))) anyFree = true;
+    }
+    return { topics, anyFree };
+  }, [events]);
   const all = useMemo(
     () =>
       rankChips(
         [
-          { key: FREE_CHIP, label: "Free" },
-          ...categories.map((c) => ({ key: c.slug, label: c.label })),
+          ...(used.anyFree || chips.has(FREE_CHIP) ? [{ key: FREE_CHIP, label: "Free" }] : []),
+          ...categories
+            .filter((c) => used.topics.has(c.slug) || chips.has(c.slug))
+            .map((c) => ({ key: c.slug, label: c.label })),
         ],
         interests,
       ),
-    [categories, interests],
+    [categories, interests, used, chips],
   );
 
   // Whether there is more of the row to either side, for the arrows.

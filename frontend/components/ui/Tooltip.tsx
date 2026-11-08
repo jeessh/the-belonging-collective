@@ -51,7 +51,7 @@ export function Tooltip({
       <span
         role="tooltip"
         id={id}
-        className={`pointer-events-none absolute z-20 w-max max-w-[16rem] rounded-md bg-fg px-2.5 py-1.5 text-xs leading-snug text-white shadow-lift transition-opacity ${
+        className={`pointer-events-none absolute z-20 w-max max-w-[16rem] rounded-md bg-fg px-3 py-2 text-base leading-snug text-white shadow-lift transition-opacity ${
           side === "bottom" ? "top-full mt-2" : "bottom-full mb-2"
         } ${align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} ${
           open ? "opacity-100" : "opacity-0"

@@ -70,7 +70,6 @@ import {
   DragHint,
   MINI_CARD,
   MiniCardFace,
-  SHADOW_HELD,
   SavedSidebar,
   useDragHint,
 } from "@/components/member/SavedSidebar";
@@ -311,11 +310,6 @@ export function EventsView({
     () => new Set(savedEvents.map((ev) => ev.id)),
     [savedEvents],
   );
-  // The programs (series) saved, so the feed can leave every date of them out.
-  const savedPrograms = useMemo(
-    () => new Set(savedEvents.map(programKey)),
-    [savedEvents],
-  );
   // The sidebar: upcoming, soonest first, one per program.
   const savedList = useMemo(
     () =>
@@ -345,35 +339,33 @@ export function EventsView({
   const recommended = useMemo(
     () =>
       signedIn
-        ? // Saved programs are on the board, not suggested again.
-          recommendedThisWeek(
-            events.filter((ev) => !savedPrograms.has(programKey(ev))),
-            taste,
-            dismissed ?? [],
-          )
+        ? recommendedThisWeek(events, taste, dismissed ?? [])
         : [],
-    [events, taste, dismissed, signedIn, savedPrograms],
+    [events, taste, dismissed, signedIn],
   );
   const recommendedKeys = useMemo(
     () => new Set(recommended.map(programKey)),
     [recommended],
   );
 
+  // What the filter chips are drawn from: everything on offer (upcoming,
+  // within the repeating window), before the chips themselves narrow it.
+  const chipEvents = useMemo(
+    () => events.filter((ev) => isUpcoming(ev) && withinRecurringWindow(ev)),
+    [events],
+  );
+
   const feed = useMemo(() => {
     // Measured from when it ends, so this week's session drops off as it
     // finishes and the next takes its place — see lib/time.
-    // A repeating program shows only once its next date is within a month,
-    // and anything already saved (any date of it) leaves the feed — it's on
-    // the saved board. Un-saving brings it back.
+    // A repeating program shows only once its next date is within a month.
+    // Saved events stay in the feed, showing as saved (the card's button
+    // reads "Unsave event", list cards "Unsave").
     const upcoming = events.filter(
-      (ev) =>
-        isUpcoming(ev) &&
-        withinRecurringWindow(ev) &&
-        !savedPrograms.has(programKey(ev)) &&
-        passesFilters(ev, chips),
+      (ev) => isUpcoming(ev) && withinRecurringWindow(ev) && passesFilters(ev, chips),
     );
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
-  }, [events, chips, taste, savedPrograms]);
+  }, [events, chips, taste]);
 
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(
@@ -719,6 +711,10 @@ export function EventsView({
         fetchAllEvents(space?.slug).catch(() => null),
       ]);
       setMe(profile);
+      // Open in the view their account chose — list for a caregiver, the
+      // card for a community member (set at sign-up, or later in
+      // Accessibility Tools) — rather than whatever was showing before.
+      setViewMode(profile.preferred_view === "list" ? "list" : "card");
       setSavedEvents(attended);
       if (refreshed?.length) setEvents(refreshed);
       // The refs update on render; the pending save must not wait for one.
@@ -1315,12 +1311,26 @@ export function EventsView({
           <FeedAccount
             name={name}
             avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
+            role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
             care={careInPanel ? null : careChoice}
             onSignIn={() => toSignIn()}
             onSignOut={() => void doLogout()}
           />
         </div>
-        {a11yMenu}
+        {/* Card View / List View at the far right (Accessibility Tools sits on
+            the "Discover Events" row). */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div data-tour="view">
+            <SegmentedToggle
+              label="View"
+              segments={
+                phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
+              }
+              value={viewMode}
+              onChange={changeView}
+            />
+          </div>
+        </div>
       </header>
 
       {/* The saved column sits beside the feed from `sm`; on a phone it is a
@@ -1371,14 +1381,29 @@ export function EventsView({
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:p-9 short:!gap-10 short:!p-6 ${
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
               viewMode === "card" ? "big-cursor" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
             {/* The frame's filter header: heading and view toggle over the
                 filters, 16px apart; the feed sits 48px below it. */}
-            <div className="flex flex-col gap-5 sm:gap-6">
+            {/* In card view laid out like the card's row — the block as wide
+                as the card (880px at most) and an empty stand-in for the
+                ↑ / ↓ column beside it — so Accessibility Tools and the filter
+                chips end exactly where the card does. */}
+            <div
+              className={
+                viewMode === "card"
+                  ? "mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9"
+                  : "flex"
+              }
+            >
+            <div
+              className={`flex w-full min-w-0 flex-col gap-5 sm:gap-6 ${
+                viewMode === "card" ? "max-w-[880px] flex-1" : ""
+              }`}
+            >
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
                   {space.logo_url && (
@@ -1395,7 +1420,7 @@ export function EventsView({
               {/* One row on a phone too, the switch as icons: stacked, the
                   heading, switch and filter label pushed the card's Save
                   below the fold, behind the saved bar. */}
-              <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-row items-start justify-between gap-3 sm:gap-4">
                 {/* "Discover Events", with the count under it. In the card view
                     a screen reader skips the "Event n of m" line — the live
                     region already reads it per card, and a line that changes
@@ -1411,26 +1436,23 @@ export function EventsView({
                     {heading}
                   </p>
                 </div>
-                <div data-tour="view">
-                  <SegmentedToggle
-                    label="View"
-                    segments={
-                      phone ? VIEWS.map((v) => ({ ...v, iconOnly: true })) : VIEWS
-                    }
-                    value={viewMode}
-                    onChange={changeView}
-                  />
-                </div>
+                {/* Accessibility Tools, on the heading's row at the right. */}
+                {a11yMenu}
               </div>
 
               {viewMode !== "list" && (
               <FeedFilters
+                events={chipEvents}
                 chips={chips}
                 onToggleChip={toggleChip}
                 onClearChips={clearChips}
                 interests={taste.interests}
               />
               )}
+            </div>
+            {viewMode === "card" && (
+              <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
+            )}
             </div>
 
             {status === "error" ? (
@@ -1473,10 +1495,13 @@ export function EventsView({
                 No events match these filters.
               </p>
             ) : (
-              /* card view: one card on a stacked deck, ↑ / ↓ beside it */
+              /* card view: one card on a stacked deck, ↑ / ↓ beside it —
+                 from the left, in line with the heading and filters */
               <div
                 ref={deckRef}
-                className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:gap-9"
+                // The card + arrows group (880 + gap + 96px), centred on the
+                // page; the heading block above is the same box.
+                className="mx-auto mt-2 flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:mt-4 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
@@ -1612,7 +1637,6 @@ export function EventsView({
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
-                          unpinned={!!lift}
                           onRegister={() => setRegisterFor(current)}
                         />
                       </motion.div>
@@ -1632,7 +1656,6 @@ export function EventsView({
                               rotate: -2,
                               width: BOARD_CARD_W,
                               zIndex: 60,
-                              boxShadow: SHADOW_HELD,
                             }}
                             className={`pointer-events-none ${MINI_CARD}`}
                           >
