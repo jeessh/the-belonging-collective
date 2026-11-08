@@ -336,8 +336,8 @@ export function MemberAuthFlow({
     case "who":
       view = {
         back: back("chooser"),
-        title: "Choose your experience",
-        subtitle: "You can change this any time in Accessibility Tools.",
+        title: "Are you a community member or a caregiver?",
+        subtitle: "We'll show you the view that suits you. You can change this any time in Accessibility Tools.",
         body: (
           <form
             onSubmit={(e) => {
@@ -371,16 +371,16 @@ export function MemberAuthFlow({
               </div>
             )}
             <fieldset className="flex flex-col gap-4">
-              <legend className="sr-only">Your experience</legend>
+              <legend className="sr-only">Who you are</legend>
               <RoleCard
-                name="Simplified"
-                hint="One event at a time, big and clear. For community members."
+                name="Community member"
+                hint="You'll see one event at a time, big and clear (card view)."
                 checked={!caregiver}
                 onChange={() => setCaregiver(false)}
               />
               <RoleCard
-                name="Advanced"
-                hint="Every event in a list, and saving for someone you support. For caregivers."
+                name="Caregiver"
+                hint="You'll see every event in a list, and can save for someone you support (list view)."
                 checked={caregiver}
                 onChange={() => setCaregiver(true)}
               />

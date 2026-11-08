@@ -413,20 +413,20 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
         >
           {signedIn && onChangeExperience && (
             <>
-              <h2 className="text-xl font-medium text-fg">Your experience</h2>
+              <h2 className="text-xl font-medium text-fg">I am a</h2>
               <p className="text-base text-fg-muted">
                 {advanced
-                  ? "Every event in a list, and saving for someone you support."
-                  : "One event at a time, big and clear."}
+                  ? "Every event in a list, and saving for someone you support (list view)."
+                  : "One event at a time, big and clear (card view)."}
               </p>
               <SegmentedToggle<"simplified" | "advanced">
                 className="mt-3 w-full"
-                label="Your experience"
+                label="I am a"
                 value={advanced ? "advanced" : "simplified"}
                 onChange={(v) => onChangeExperience(v === "advanced")}
                 segments={[
-                  { value: "simplified", label: "Simplified" },
-                  { value: "advanced", label: "Advanced" },
+                  { value: "simplified", label: "Community member" },
+                  { value: "advanced", label: "Caregiver" },
                 ]}
               />
               <div className="mt-6" />

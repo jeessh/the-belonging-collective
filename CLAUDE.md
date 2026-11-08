@@ -146,10 +146,12 @@ can open.
   "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the
   "Saving for" switcher beside it, a 20px chevron; its menu items are
   18px with 20px icons, like the header's other menus.
-- **The experience: Simplified or Advanced.** The sign-up flow's account
-  step is "Choose your experience": **Simplified** (a community member;
-  the feed opens on the one card) or **Advanced** (a caregiver; the list).
-  It is `is_caregiver` plus `preferred_view`, written together — at sign-up
+- **Community member or caregiver** (was "Simplified / Advanced"). The
+  sign-up flow's account step asks "Are you a community member or a
+  caregiver?": a **community member** gets card view (one card at a time),
+  a **caregiver** list view. Accessibility Tools has the same choice as an
+  "I am a" toggle (Community member | Caregiver), and the profile shows it
+  under the name. It is `is_caregiver` plus `preferred_view`, written together — at sign-up
   (`is_caregiver` on the sign-up call, then `PATCH /users/me
   {preferred_view}`) and from the "Your experience" toggle at the top of
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
