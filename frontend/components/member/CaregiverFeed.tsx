@@ -31,7 +31,6 @@ import {
   DragHint,
   MINI_CARD,
   MiniCardFace,
-  SHADOW_HELD,
   useDragHint,
 } from "@/components/member/SavedSidebar";
 import {
@@ -344,7 +343,6 @@ function MemberEventCard({
               width: BOARD_CARD_W,
               zIndex: 60,
               rotate: "-2deg",
-              boxShadow: SHADOW_HELD,
             }}
             className={`pointer-events-none ${MINI_CARD}`}
           >

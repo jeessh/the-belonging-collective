@@ -70,7 +70,6 @@ import {
   DragHint,
   MINI_CARD,
   MiniCardFace,
-  SHADOW_HELD,
   SavedSidebar,
   useDragHint,
 } from "@/components/member/SavedSidebar";
@@ -1657,7 +1656,6 @@ export function EventsView({
                               rotate: -2,
                               width: BOARD_CARD_W,
                               zIndex: 60,
-                              boxShadow: SHADOW_HELD,
                             }}
                             className={`pointer-events-none ${MINI_CARD}`}
                           >
