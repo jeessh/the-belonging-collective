@@ -344,7 +344,9 @@ can open.
   (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
-  — ghost buttons at the **bottom right**, on the actions' row; once the
+  — ghost buttons on the actions' row: **not saved yet**, Share and Print
+  sit on the left (words in line with the text) and Save / Register at the
+  bottom right, its own width; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
   (tertiary) button in red text, its own width, its words in line with
   DETAILS (`-ml-6`) — then Print (secondary),

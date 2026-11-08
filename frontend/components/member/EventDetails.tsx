@@ -206,13 +206,15 @@ export function EventDetails({
               : ""
           }`}
         >
-          {/* Save / Register on the left, Share and Print at the bottom
-              right. */}
+          {/* Not saved yet: Share and Print on the left (their words in line
+              with the text above), Save / Register at the bottom right.
+              Saved (`toolsFill`): Un-Save on the left, Print and Share at
+              the right. */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {actions && (
               <div
                 className={`flex flex-col gap-4 sm:flex-row ${
-                  toolsFill ? "" : "flex-1 [&>*]:flex-1"
+                  toolsFill ? "" : "sm:order-2 sm:ml-auto [&>*]:max-sm:flex-1"
                 }`}
               >
                 {actions}
@@ -221,7 +223,7 @@ export function EventDetails({
             {tools && (
               <div
                 className={`flex items-center gap-1 ${
-                  toolsFill ? "min-w-0 flex-1" : "shrink-0 flex-wrap sm:ml-auto"
+                  toolsFill ? "min-w-0 flex-1" : "-ml-4 shrink-0 flex-wrap sm:order-1"
                 }`}
               >
                 {tools}
