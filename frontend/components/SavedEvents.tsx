@@ -203,12 +203,12 @@ export const SavedEvents = memo(function SavedEvents({
             share / print buttons and the Upcoming / Past toggle — stays at
             the top while the list scrolls under it: out to the panel's
             edges, on white, with a line below. */}
-        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-6 border-b border-line bg-surface px-4 pb-4 pt-4 sm:-mx-6 sm:-mt-6 sm:gap-8 sm:px-6 sm:pb-6 sm:pt-6 lg:-mx-9 lg:-mt-9 lg:px-9 lg:pt-9">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 border-b border-line bg-surface px-4 pb-4 pt-4 sm:-mx-6 sm:-mt-6 sm:gap-5 sm:px-6 sm:pb-5 sm:pt-5 lg:-mx-9 lg:-mt-9 lg:px-9 lg:pt-6">
         {/* Row 1: back + title on the left, Google Calendar / Share /
             Print on the right. Row 2: search, with the Upcoming / Past
             toggle beside it. */}
-        <div className="flex flex-col gap-4 cq-xl:flex-row cq-xl:items-end cq-xl:justify-between">
-          <div className="flex min-w-0 flex-col items-start gap-2">
+        <div className="flex flex-col gap-3 cq-xl:flex-row cq-xl:items-end cq-xl:justify-between">
+          <div className="flex min-w-0 flex-col items-start gap-1">
             <BackButton label="Back to events" onClick={onClose} />
             <h1 className="text-2xl font-medium text-fg sm:text-3xl">
               {owner ? listTitle : "All Saved Events"} ({me ? total : 0})
@@ -265,7 +265,7 @@ export const SavedEvents = memo(function SavedEvents({
         </div>
 
         {me && (
-          <div className="flex flex-col gap-4 cq-xl:flex-row cq-xl:items-center">
+          <div className="flex flex-col gap-3 cq-xl:flex-row cq-xl:items-center">
               <label className="relative block w-full min-w-0 cq-xl:flex-1">
                 <span className="sr-only">Search for event</span>
                 <Search
