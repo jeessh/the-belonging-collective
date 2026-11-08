@@ -56,14 +56,13 @@ export function EventTags({
 }: {
   event: Event;
   recommended?: boolean;
-  /** On the member's saved list: a "Saved" tag first. */
+  /** Unused: the "Saved" tag was taken out (the button says Unsave). */
   saved?: boolean;
   /** Passed to every pill, e.g. the feed card's larger type. */
   className?: string;
 }) {
   return (
     <>
-      {saved && <Tag kind="saved" className={className} />}
       {recommended && <Tag kind="foryou" className={className} />}
       {eventTags(event).map((kind) => (
         <Tag key={kind} kind={kind} className={className} />
@@ -125,7 +124,7 @@ export function EventSummary({
   fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
-  /** On the member's saved list — adds the "Saved" pill. */
+  /** Unused: the "Saved" pill was taken out. */
   saved?: boolean;
   className?: string;
 }) {
