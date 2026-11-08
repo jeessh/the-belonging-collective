@@ -1401,7 +1401,15 @@ export function EventsView({
                 chips end exactly where the card does. */}
             {/* Card and list view alike: the same box as the card + arrows,
                 the heading block as wide as the card. */}
-            <div className="mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9">
+            <div
+              className={`mx-auto flex w-full gap-6 lg:gap-9 ${
+                // Card view: the card + arrows group. List view: just the
+                // card's width, centred on its own (no arrows to balance).
+                viewMode === "card"
+                  ? "!max-w-[1000px] lg:!max-w-[1012px]"
+                  : "!max-w-[880px]"
+              }`}
+            >
             <div className="flex w-full min-w-0 max-w-[880px] flex-1 flex-col gap-5 sm:gap-6">
               {space && (
                 <p className="flex items-center gap-3 text-lg font-medium text-fg">
@@ -1449,7 +1457,9 @@ export function EventsView({
               />
               )}
             </div>
-            <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
+            {viewMode === "card" && (
+              <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
+            )}
             </div>
 
             {status === "error" ? (
@@ -1477,10 +1487,9 @@ export function EventsView({
             ) : viewMode === "list" ? (
               // List view: search and a card per event (the console's card,
               // with a member's actions), under the same chips as card view.
-              // The list is exactly the card's width, edges and all: the
-              // same box, with the arrows' column left empty.
-              <div className="mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9">
-                <div className="w-full min-w-0 max-w-[880px] flex-1">
+              // The card's width (880px at most), centred on the page.
+              <div className="mx-auto w-full !max-w-[880px]">
+                <div className="w-full min-w-0">
               <CaregiverFeed
                 events={listFeed}
                 saved={saved}
@@ -1491,7 +1500,6 @@ export function EventsView({
                 dropTarget={dropRef}
               />
                 </div>
-                <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
               </div>
             ) : !current ? (
               <p className="py-16 text-center text-2xl text-fg-muted">

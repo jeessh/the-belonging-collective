@@ -1,12 +1,13 @@
 "use client";
 
-import { memo, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   Bookmark,
   BookX,
   CalendarDays,
+  ChevronDown,
   ClipboardPen,
   MapPin,
   Send,
@@ -38,12 +39,11 @@ import {
   applyHostFilters,
   type HostFilters,
 } from "@/components/host/PostedEvents";
-import { Modal } from "@/components/Modal";
 import { placeLabel } from "@/lib/place";
 
 /**
- * The feed's List view (for everyone): search, Filter (a sheet holding the
- * console's filter panel) and Sort on one row, over one card per event (the
+ * The feed's List view (for everyone): search, Filter (a dropdown holding
+ * the console's filter panel) and Sort on one row, over one card per event (the
  * console's card, restricted to what a member can do).
  * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
@@ -72,6 +72,24 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const filterId = useId();
+  // The dropdown closes on Escape or a click anywhere outside it.
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!filterRef.current?.contains(e.target as Node)) setFiltersOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [filtersOpen]);
   const [sort, setSort] = useState<SortKey>("recommended");
   const shown = useMemo(() => {
     const list = applyHostFilters(events, filters, query);
@@ -98,15 +116,37 @@ export const CaregiverFeed = memo(function CaregiverFeed({
           className="w-full min-w-0 sm:flex-1"
         />
         <div className="flex gap-3">
-          <Button
-            size="lg"
-            className={`max-sm:flex-1 ${chosen > 0 ? "!border-primary-border !bg-primary-soft" : ""}`}
-            leadingIcon={<SlidersHorizontal />}
-            aria-haspopup="dialog"
-            onClick={() => setFiltersOpen(true)}
-          >
-            Filter{chosen > 0 && ` (${chosen})`}
-          </Button>
+          {/* A dropdown of every filter group, under the button. */}
+          <div ref={filterRef} className="relative max-sm:flex-1">
+            <Button
+              size="lg"
+              className={`w-full ${chosen > 0 ? "!border-primary-border !bg-primary-soft" : ""}`}
+              leadingIcon={<SlidersHorizontal />}
+              trailingIcon={
+                <ChevronDown
+                  className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+                />
+              }
+              aria-expanded={filtersOpen}
+              aria-controls={filterId}
+              onClick={() => setFiltersOpen((o) => !o)}
+            >
+              Filter{chosen > 0 && ` (${chosen})`}
+            </Button>
+            {filtersOpen && (
+              <div
+                id={filterId}
+                className="absolute right-0 top-full z-40 mt-2 max-h-[min(70vh,640px)] w-[min(280px,calc(100vw-2rem))] overflow-y-auto rounded-control bg-surface shadow-lift [&>aside]:w-full"
+              >
+                <FilterPanel
+                  events={events}
+                  filters={filters}
+                  onChange={setFilters}
+                  memberView
+                />
+              </div>
+            )}
+          </div>
           <Select
             aria-label="Sort events"
             value={sort}
@@ -146,21 +186,6 @@ export const CaregiverFeed = memo(function CaregiverFeed({
         </div>
       )}
 
-      {filtersOpen && (
-        <Modal title="Filter" onClose={() => setFiltersOpen(false)}>
-          <div className="mt-4">
-            <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
-          </div>
-          <Button
-            variant="primary"
-            size="lg"
-            className="mt-6 w-full"
-            onClick={() => setFiltersOpen(false)}
-          >
-            Show {shown.length} {shown.length === 1 ? "event" : "events"}
-          </Button>
-        </Modal>
-      )}
     </div>
   );
 });

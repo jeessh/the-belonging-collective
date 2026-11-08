@@ -133,10 +133,11 @@ can open.
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
   card and arrows / list all sit in it. In both views the heading block and
-  the card + arrows (or the list + an empty arrows column) are one box centred on the page (1000px, 1012px from
+  the card + arrows are one box centred on the page (list view: the card's
+  880px alone, centred) (1000px, 1012px from
   `lg`), so heading, filters and card share a left edge and the filters and
   Accessibility Tools end at the card's right edge; the list (search and
-  cards) is exactly the card's width. The column reserves its scrollbar
+  cards) is the card's width. The column reserves its scrollbar
   (`scrollbar-gutter: stable`) so the two views' edges never differ.
 - **The feed's heading is "Discover Events"** (`h1`), with the counter
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
@@ -181,8 +182,9 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  **no chips and no filter column**: search, **Filter** (a `Modal` holding
-  `FilterPanel memberView` — "N filters applied" with removable chips, count
+  **no chips and no filter column**, the card's width (880px) centred on
+  its own: search, **Filter** (a dropdown under the button — not a modal;
+  Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
   badges; the button shows "Filter (N)" and the accent's soft fill while any
   are on) and **Sort** (Recommended — the feed's own order — Soonest first,
   Most saved, A–Z) share one row, over the cards. It is handed `listFeed`
