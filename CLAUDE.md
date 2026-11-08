@@ -312,9 +312,10 @@ can open.
   which are the member's own explicit choice. There is no sort control.
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
-- **Saved events stay in the feed**: there is no "Saved" tag any more
-  (`EventTags` ignores `saved`; the `saved` Tag kind is unused) — the
-  card's button reading "Unsave event" (list cards "Unsave") says it.
+- **Saved events stay in the feed, tagged**: a grey **"Saved"** tag
+  (bookmark-check, neutral like Registration required) sits after Free /
+  Paid in the tag row — feed card, list cards, saved page and the event
+  dialog (`EventSummary saved` / `EventTags saved`).
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start

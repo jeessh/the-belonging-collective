@@ -59,7 +59,7 @@ export function EventTags({
 }: {
   event: Event;
   recommended?: boolean;
-  /** Unused: the "Saved" tag was taken out (the button says Unsave). */
+  /** On the member's saved list: a grey "Saved" tag after the cost tags. */
   saved?: boolean;
   /** Passed to every pill, e.g. the feed card's larger type. */
   className?: string;
@@ -70,6 +70,8 @@ export function EventTags({
       {eventTags(event).map((kind) => (
         <Tag key={kind} kind={kind} className={className} />
       ))}
+      {/* Grey, beside Free / Paid: it's on the member's saved list. */}
+      {saved && <Tag kind="saved" className={className} />}
       {event.access_group && (
         <Tag
           kind="access"
@@ -127,7 +129,7 @@ export function EventSummary({
   fixedDates?: boolean;
   /** In this week's picks — adds the "For you" pill. */
   recommended?: boolean;
-  /** Unused: the "Saved" pill was taken out. */
+  /** On the member's saved list — adds the grey "Saved" pill. */
   saved?: boolean;
   className?: string;
 }) {
