@@ -272,8 +272,9 @@ can open.
   counted as a registration click). Saved, it shows Unsave as usual.
 - **Ages are not shown to members**, nor the card's (i) "saving holds your
   spot" tip (`HoldInfo` is no longer drawn). An event with an attendee limit
-  says it in the saved-count line: "N people saved this event · 5/20 spots
-  left" (`GoingCount capacity`, capacity − saved rows).
+  shows "5/20 spots left" in place of "N people saved this event"
+  (`GoingCount capacity`: capacity − saved rows; without a limit the line is
+  the saved count as before).
 - **Every save path ends in `flyToDrop`** — drag the card left into the
   sidebar, ← held ~1 s (`useHold`), the Save button, voice "save" and the
   head-tracking left edge. Keyboard mirrors the screen: ↑ previous, ↓ next, ←
