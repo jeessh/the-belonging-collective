@@ -12,6 +12,13 @@ from app.db.session import Base
 # backwards — which is what nonprofits need for grant reporting.
 SAVED = "saved"
 REMOVED = "removed"
+# A program with a capacity that is full puts a new save on its waitlist; the
+# organization approves (→ SAVED) or declines. Leaving the waitlist is its own
+# status, not REMOVED, so it never counts as a save in the grant numbers —
+# only SAVED and REMOVED rows were ever saves (analytics counts those two).
+WAITLISTED = "waitlisted"
+DECLINED = "declined"
+WAITLIST_LEFT = "waitlist_left"
 
 
 class Attendance(Base):

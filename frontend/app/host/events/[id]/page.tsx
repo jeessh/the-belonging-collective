@@ -35,6 +35,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { PageHeader } from "@/components/host/PageHeader";
 import { PostedBy } from "@/components/host/PostedBy";
 import { EventAnalyticsPanel } from "@/components/host/EventAnalyticsPanel";
+import { WaitlistPanel } from "@/components/host/WaitlistPanel";
 import { EventStatus } from "@/components/host/EventStatus";
 import { PosterSection } from "@/components/host/PosterSection";
 import {
@@ -68,16 +69,17 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   const [sharing, setSharing] = useState(false);
   // Details | Analytics. ?tab=analytics opens on the numbers, so the tab
   // survives a reload and can be linked to.
-  const [tab, setTab] = useState<"details" | "analytics">("details");
+  // Details | Waitlist (an event with an attendee limit) | Analytics.
+  const [tab, setTab] = useState<"details" | "waitlist" | "analytics">("details");
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "analytics")
-      setTab("analytics");
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "analytics" || t === "waitlist") setTab(t);
   }, []);
-  function chooseTab(next: "details" | "analytics") {
+  function chooseTab(next: "details" | "waitlist" | "analytics") {
     setTab(next);
     const url = new URL(window.location.href);
-    if (next === "analytics") url.searchParams.set("tab", "analytics");
-    else url.searchParams.delete("tab");
+    if (next === "details") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
     window.history.replaceState(window.history.state, "", url);
   }
   const [restoring, setRestoring] = useState(false);
@@ -134,6 +136,17 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
   // The numbers are the organization's own (and a superadmin's); another
   // agency's event shows its details only.
   const showAnalytics = owns && tab === "analytics";
+  // The waitlist: an event with an attendee limit, for its organization.
+  const hasWaitlist = owns && event.capacity != null;
+  const showWaitlist = hasWaitlist && tab === "waitlist";
+  const tabs = [
+    ["details", "Details"],
+    ...(hasWaitlist
+      ? [["waitlist", `Waitlist${event.waitlist_count ? ` (${event.waitlist_count})` : ""}`]]
+      : []),
+    ["analytics", "Analytics"],
+  ] as ["details" | "waitlist" | "analytics", string][];
+  const current = showAnalytics ? "analytics" : showWaitlist ? "waitlist" : "details";
 
   async function restore() {
     if (!event) return;
@@ -242,13 +255,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
           aria-label="Event"
           className="-mt-2 flex max-w-[1200px] gap-6 border-b border-line"
         >
-          {(
-            [
-              ["details", "Details"],
-              ["analytics", "Analytics"],
-            ] as const
-          ).map(([key, label]) => {
-            const on = (key === "analytics") === showAnalytics;
+          {tabs.map(([key, label], i) => {
+            const on = key === current;
             return (
               <button
                 key={key}
@@ -261,7 +269,8 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
                 onClick={() => chooseTab(key)}
                 onKeyDown={(e) => {
                   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-                  const next = key === "details" ? "analytics" : "details";
+                  const step = e.key === "ArrowRight" ? 1 : -1;
+                  const next = tabs[(i + step + tabs.length) % tabs.length][0];
                   chooseTab(next);
                   document.getElementById(`tab-${next}`)?.focus();
                 }}
@@ -281,6 +290,14 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
       {showAnalytics ? (
         <div role="tabpanel" id="panel-analytics" aria-labelledby="tab-analytics">
           <EventAnalyticsPanel eventId={event.id} />
+        </div>
+      ) : showWaitlist ? (
+        <div role="tabpanel" id="panel-waitlist" aria-labelledby="tab-waitlist">
+          <WaitlistPanel
+            eventId={event.id}
+            capacity={event.capacity ?? 0}
+            going={event.saved_count ?? 0}
+          />
         </div>
       ) : (
       <div

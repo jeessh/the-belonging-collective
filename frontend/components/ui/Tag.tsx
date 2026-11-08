@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { BookmarkCheck, Lock, Sparkles } from "lucide-react";
+import { BookmarkCheck, Hourglass, Lock, Sparkles, Users } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { dimensionByKey } from "@/lib/dimensions";
 
@@ -12,7 +12,9 @@ export type TagKind =
   | "virtual"
   | "access"
   | "foryou"
-  | "saved";
+  | "saved"
+  | "full"
+  | "waitlisted";
 
 const TAG: Record<
   TagKind,
@@ -51,6 +53,18 @@ const TAG: Record<
     // Neutral grey, like Registration required: a fact, not a call to act.
     className: "border border-line bg-surface-subtle text-fg",
     icon: BookmarkCheck,
+  },
+  // The attendee limit is reached; saving joins the waitlist.
+  full: {
+    label: "Full · waitlist",
+    className: "border border-line bg-surface-subtle text-fg",
+    icon: Users,
+  },
+  // The member is on this program's waitlist.
+  waitlisted: {
+    label: "On the waitlist",
+    className: "border border-line bg-surface-subtle text-fg",
+    icon: Hourglass,
   },
   foryou: {
     label: "For you",
@@ -101,5 +115,8 @@ export function eventTags(event: Event): TagKind[] {
   tags.push(dimensionByKey("price").bucket(event).id === "free" ? "free" : "paid");
   // Only when registering is required; a drop-in says nothing.
   if (event.requires_signup) tags.push("signup");
+  // Full, unless they're already in; waiting says so instead.
+  if (event.viewer_status === "waitlisted") tags.push("waitlisted");
+  else if (event.is_full && event.viewer_status !== "saved") tags.push("full");
   return tags;
 }

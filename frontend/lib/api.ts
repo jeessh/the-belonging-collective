@@ -159,6 +159,12 @@ export type Event = {
   spots_left?: number | null;
   /** When the signed-in member's own hold runs out; null when they have none. */
   held_until?: string | null;
+  /** The attendee limit is reached: a new save goes on the waitlist. */
+  is_full?: boolean;
+  /** The signed-in member's own standing with it. */
+  viewer_status?: "saved" | "waitlisted" | "declined" | null;
+  /** How many are waiting — its organization and superadmins only. */
+  waitlist_count?: number | null;
   images: EventImage[];
 };
 
@@ -167,8 +173,28 @@ export type Event = {
 export type AttendResult = {
   ok: boolean;
   already?: boolean;
+  /** Full: the member went on the waitlist rather than being saved. */
+  waitlisted?: boolean;
   held_until?: string | null;
 };
+
+/** A member waiting on (or declined for) a full program, for the console. */
+export type WaitlistEntry = {
+  user_id: string;
+  name: string;
+  email: string | null;
+  status: "waitlisted" | "declined";
+  requested_at: string;
+};
+
+export const fetchWaitlist = (eventId: string) =>
+  api<WaitlistEntry[]>(`/events/${eventId}/waitlist`);
+
+export const decideWaitlist = (eventId: string, userId: string, approve: boolean) =>
+  api<void>(`/events/${eventId}/waitlist/${userId}`, {
+    method: "POST",
+    body: JSON.stringify({ approve }),
+  });
 
 export const attendEvent = (eventId: string) =>
   api<AttendResult>(`/events/${eventId}/attend`, { method: "POST" });

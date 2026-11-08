@@ -243,6 +243,46 @@ Add to calendar: {ics_url(event)}
         db.close()
 
 
+def send_waitlist_decision(event_id: uuid.UUID, user_id: uuid.UUID, approved: bool) -> None:
+    """Tell a member the organizer let them in off the waitlist, or couldn't.
+
+    Background task, own session, like the change notice.
+    """
+    db = SessionLocal()
+    try:
+        event = (
+            db.query(Event)
+            .options(joinedload(Event.host))
+            .filter(Event.id == event_id, Event.deleted_at.is_(None))
+            .first()
+        )
+        user = db.get(User, user_id)
+        if not event or not user or user.deleted_at is not None or not user.email:
+            return
+        if approved:
+            subject = f"You're in: {event.title}"
+            lead = "Good news — a place opened up and the organizer added you."
+        else:
+            subject = f"About {event.title}"
+            lead = "The organizer wasn't able to fit you in to this program this time."
+        mail.send(
+            user.email,
+            subject,
+            f"""Hello {user.first_name},
+
+{lead}
+
+{event.title}
+{when_text(event)}
+{_where(event)}
+""",
+            button=("See the program", program_url(event)),
+            pictures=[_picture(event)],
+        )
+    finally:
+        db.close()
+
+
 # ---------- sharing ----------
 
 

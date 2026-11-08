@@ -276,7 +276,7 @@ export const SavedEvents = memo(function SavedEvents({
                   event={ev}
                   layout="row"
                   fixedDates
-                  going={<GoingCount count={ev.saved_count} />}
+                  going={<GoingCount capacity={ev.capacity} count={ev.saved_count} />}
                 />
               </li>
             ))}

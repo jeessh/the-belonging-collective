@@ -70,7 +70,7 @@ export function EventTools({
             // "See who else is going" has nothing to open.
             going={
               typeof event.saved_count === "number" ? (
-                <GoingCount count={event.saved_count} />
+                <GoingCount capacity={event.capacity} count={event.saved_count} />
               ) : undefined
             }
           />

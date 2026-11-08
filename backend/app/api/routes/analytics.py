@@ -86,6 +86,7 @@ def _compute(
         SELECT count(*), count(DISTINCT a.user_id)
         FROM event_attendees a JOIN events e ON e.id = a.event_id
         WHERE a.created_at >= :start AND a.created_at < :end AND {org_clause}
+          AND a.status IN ('saved', 'removed')
         """
     )
     (clicks,) = one(
@@ -113,6 +114,7 @@ def _compute(
         SELECT {_WEEK.format(col='a.created_at')} AS week, count(*)
         FROM event_attendees a JOIN events e ON e.id = a.event_id
         WHERE a.created_at >= :start AND a.created_at < :end AND {org_clause}
+          AND a.status IN ('saved', 'removed')
         GROUP BY 1
         """
     )
@@ -165,7 +167,7 @@ def _compute(
             ),
             s AS (
                 SELECT coalesce(e.series_id, e.id) AS program_id,
-                       count(*) FILTER (WHERE a.created_at >= :start AND a.created_at < :end) AS saves,
+                       count(*) FILTER (WHERE a.created_at >= :start AND a.created_at < :end AND a.status IN ('saved', 'removed')) AS saves,
                        count(*) FILTER (WHERE a.status = 'saved') AS going
                 FROM event_attendees a JOIN events e ON e.id = a.event_id
                 GROUP BY 1
@@ -260,7 +262,7 @@ def event_analytics(
             SELECT count(*), count(DISTINCT a.user_id),
                    count(*) FILTER (WHERE a.status = 'saved' AND e.deleted_at IS NULL)
             FROM event_attendees a JOIN events e ON e.id = a.event_id
-            WHERE {program}
+            WHERE {program} AND a.status IN ('saved', 'removed')
             """
         ),
         params,
@@ -283,7 +285,7 @@ def event_analytics(
         f"""
         SELECT {_WEEK.format(col='a.created_at')}, count(*)
         FROM event_attendees a JOIN events e ON e.id = a.event_id
-        WHERE {program} GROUP BY 1
+        WHERE {program} AND a.status IN ('saved', 'removed') GROUP BY 1
         """
     )
     w_clicks = weekly(
@@ -316,7 +318,7 @@ def event_analytics(
             text(
                 f"""
                 SELECT e.id, e.starts_at,
-                       (SELECT count(*) FROM event_attendees a WHERE a.event_id = e.id),
+                       (SELECT count(*) FROM event_attendees a WHERE a.event_id = e.id AND a.status IN ('saved', 'removed')),
                        (SELECT count(*) FROM event_attendees a
                         WHERE a.event_id = e.id AND a.status = 'saved'),
                        (SELECT count(*) FROM event_registration_clicks c WHERE c.event_id = e.id),

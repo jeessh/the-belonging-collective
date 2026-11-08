@@ -55,7 +55,7 @@ export const ListFeed = memo(function ListFeed({
                 <EventSummary
                   event={ev}
                   layout="row"
-                  going={<GoingCount count={ev.saved_count} onSignIn={onSignIn} />}
+                  going={<GoingCount capacity={ev.capacity} count={ev.saved_count} onSignIn={onSignIn} />}
                   actions={
                     <>
                       {onDismiss && (
@@ -96,7 +96,7 @@ export const ListFeed = memo(function ListFeed({
               <EventSummary
                 event={ev}
                 layout="row"
-                going={<GoingCount count={ev.saved_count} onSignIn={onSignIn} />}
+                going={<GoingCount capacity={ev.capacity} count={ev.saved_count} onSignIn={onSignIn} />}
                 actions={
                   <Button
                     variant="secondary"

@@ -7,6 +7,7 @@ import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/Button";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventDetails } from "@/components/member/EventDetails";
+import { WaitlistAction, waitlistState } from "@/components/member/WaitlistAction";
 import { EventTools } from "@/components/member/EventTools";
 import { AccessAction, accessStateOf } from "@/components/member/AccessAction";
 
@@ -24,9 +25,14 @@ export function EventDetailModal({
   onSave,
   onUnsave,
   onRegister,
+  onJoinWaitlist,
+  onLeaveWaitlist,
   onRequestAccess,
   onSignIn,
 }: {
+  /** A full program: join, or leave, its waitlist. */
+  onJoinWaitlist: (event: Event) => void;
+  onLeaveWaitlist: (event: Event) => void;
   event: Event;
   saved: boolean;
   onClose: () => void;
@@ -65,7 +71,7 @@ export function EventDetailModal({
           event={event}
           titleAs="h2"
           titleId={TITLE_ID}
-          going={<GoingCount count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
+          going={<GoingCount capacity={event.capacity} count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
           tools={<EventTools event={event} lead={saved && canSave} />}
           toolsFill={saved && canSave}
@@ -79,6 +85,12 @@ export function EventDetailModal({
                     setRequesting(true);
                     void onRequestAccess(event).finally(() => setRequesting(false));
                   }}
+                />
+              ) : waitlistState(event) ? (
+                <WaitlistAction
+                  event={event}
+                  onJoin={() => onJoinWaitlist(event)}
+                  onLeave={() => onLeaveWaitlist(event)}
                 />
               ) : saved ? (
                 // Tertiary once saved: Share and Print lead.

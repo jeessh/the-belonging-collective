@@ -31,6 +31,7 @@ from app.core.access import (
     scope_to_viewer,
 )
 from app.models.access import APPROVED
+from app.models.attendance import WAITLISTED
 from app.models.event import Event
 from app.models.event_image import EventImage
 from app.models.click import RegistrationClick
@@ -210,6 +211,13 @@ def _public_view(
         )
         for row, item in zip(rows, out):
             item.click_count = clicks.get(row.id, 0)
+            # Who's waiting, for its own organization or a superadmin.
+            if row.capacity is not None and (
+                organizer.is_superadmin or row.host_id == org_id_of(organizer)
+            ):
+                item.waitlist_count = sum(
+                    1 for a in row.attendees if a.status == WAITLISTED
+                )
     if viewer:
         statuses = membership_statuses(
             db, viewer.id, {row.access_group_id for row in rows if row.access_group_id}
