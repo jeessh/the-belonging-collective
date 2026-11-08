@@ -82,21 +82,28 @@ import { FeedLoading } from "@/components/member/FeedLoading";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** List view's sections: this week (starts within 7 days, or is on now),
-    the month after that (to 37 days out), then anything later. Each keeps
-    the order Search / Filter / Sort gave it. */
+    the rest of this calendar month, next calendar month, then anything
+    later. Each keeps the order Search / Filter / Sort gave it. */
 function byWhen(shown: Event[]): FeedSection[] {
-  const now = Date.now();
-  const at = (e: Event) => (e.starts_at ? new Date(e.starts_at).getTime() : now);
-  const week = now + 7 * DAY_MS;
-  const month = week + 30 * DAY_MS;
+  const now = new Date();
+  const at = (e: Event) => (e.starts_at ? new Date(e.starts_at).getTime() : now.getTime());
+  const week = now.getTime() + 7 * DAY_MS;
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+  const monthAfter = new Date(now.getFullYear(), now.getMonth() + 2, 1).getTime();
+  const name = (d: number) => new Date(d).toLocaleString("en-CA", { month: "long" });
   return [
     { key: "week", title: "This week", events: shown.filter((e) => at(e) <= week) },
     {
       key: "month",
-      title: "Next month",
-      events: shown.filter((e) => at(e) > week && at(e) <= month),
+      title: `This month · ${name(now.getTime())}`,
+      events: shown.filter((e) => at(e) > week && at(e) < nextMonth),
     },
-    { key: "later", title: "Later", events: shown.filter((e) => at(e) > month) },
+    {
+      key: "next",
+      title: `Next month · ${name(nextMonth)}`,
+      events: shown.filter((e) => at(e) > week && at(e) >= nextMonth && at(e) < monthAfter),
+    },
+    { key: "later", title: "Later", events: shown.filter((e) => at(e) > week && at(e) >= monthAfter) },
   ];
 }
 
