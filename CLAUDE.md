@@ -117,8 +117,8 @@ can open.
   (`border-line`) edge on the right, the same grey as the top bar's bottom line — a dark "Saved Events"
   heading and grey count, and See Saved Events / Google Calendar as the
   standard secondary `Button`s (large, full width, stacked) at the
-  bottom — miniature feed cards (picture and title) each held by a
-  coloured square magnet (`Magnet`), in two even columns
+  bottom — miniature feed cards (picture and title), no magnets
+  (`Magnet` is still exported, unused), in two even columns
   (a plain grid, 16px apart; no dragging or saved positions any more),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight
@@ -214,9 +214,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card is held up like a flyer (`FeedCard`: a red square `Magnet` at the
-  top and a soft shadow, kept straight); and while the card is on the move (`lift` — drag, ← hold, flight)
-  its magnet pops off (`unpinned`). The card's text and buttons are untouched.
+  card has a soft shadow, kept straight (`FeedCard`; no magnet). The card's
+  text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
   the size — arrow, a pointing hand over anything clickable, an open hand
@@ -346,8 +345,7 @@ can open.
 - **Type and colour rules (member app):** tags and filter chips are
   sentence case, never uppercase (18px tags); tooltips 16px; nothing on the
   member side under 16px. One accent (the cyan `primary`), plus a semantic
-  set: green Free, blue Paid, neutral grey Registration required. Every
-  magnet is the accent cyan. In the event dialog / page, Google Calendar /
+  set: green Free, blue Paid, neutral grey Registration required. In the event dialog / page, Google Calendar /
   Share / Print are ghost buttons so See on Map (secondary) and Save /
   Register (primary) clearly lead.
 - **Tags beside the title: "Free" or "Paid", and "Registration required"**

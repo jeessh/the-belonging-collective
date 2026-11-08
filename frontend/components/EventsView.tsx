@@ -1397,7 +1397,7 @@ export function EventsView({
               className={
                 viewMode === "card"
                   ? "mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9"
-                  : "contents"
+                  : "flex"
               }
             >
             <div
@@ -1638,7 +1638,6 @@ export function EventsView({
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
-                          unpinned={!!lift}
                           onRegister={() => setRegisterFor(current)}
                         />
                       </motion.div>

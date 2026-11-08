@@ -528,8 +528,6 @@ function Board({
             style={{ boxShadow: SHADOW_REST }}
             className={`relative w-full transition-transform duration-150 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:transition-none ${MINI_CARD}`}
           >
-            {/* The magnet holding it to the whiteboard. */}
-            <Magnet colour={PINS[hash(ev.id) % PINS.length]} />
             <MiniCardFace event={ev} />
           </motion.button>
         ))}
