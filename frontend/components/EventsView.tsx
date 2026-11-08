@@ -1327,6 +1327,8 @@ export function EventsView({
         {/* Card View / List View at the far right (Accessibility Tools sits on
             the "Discover Events" row). */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* The saved page is one list; there is no card / list to pick. */}
+          {view !== "saved" && (
           <div data-tour="view">
             <SegmentedToggle
               label="View"
@@ -1337,6 +1339,7 @@ export function EventsView({
               onChange={changeView}
             />
           </div>
+          )}
         </div>
       </header>
 

@@ -406,6 +406,7 @@ can open.
   Filter dropdown and Sort on one row over the same cards, each saying
   Unsave (everything here is saved; no drag, `dropTarget` omitted). Back,
   the title and the **Upcoming / Past toggle** (at the title row's right)
+  — the top bar hides Card View / List View while it is open —
   are one sticky bar with a line under it. The page no longer has Google
   Calendar / Share list / Print list — the sidebar's Google Calendar button
   remains; `ShareModal`'s list share and `PrintPreview` are unused here. It has no fetch of
