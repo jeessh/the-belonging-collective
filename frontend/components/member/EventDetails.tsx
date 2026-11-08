@@ -50,6 +50,7 @@ export function EventDetails({
   event,
   going,
   tools,
+  toolsFill = false,
   actions,
   hint,
   titleAs = "h2",
@@ -68,6 +69,9 @@ export function EventDetails({
   going?: ReactNode;
   /** Google Calendar / Share / Print, under the title and facts. */
   tools?: ReactNode;
+  /** The tools take the row's room (Share filling it) and the actions keep
+      their own width — a saved event's dialog. */
+  toolsFill?: boolean;
   /** The bottom row; each child stretches to share the width. */
   actions?: ReactNode;
   /** A line under the actions, e.g. the host you are about to leave for. */
@@ -206,12 +210,20 @@ export function EventDetails({
               right. */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {actions && (
-              <div className="flex flex-1 flex-col gap-4 sm:flex-row [&>*]:flex-1">
+              <div
+                className={`flex flex-col gap-4 sm:flex-row ${
+                  toolsFill ? "" : "flex-1 [&>*]:flex-1"
+                }`}
+              >
                 {actions}
               </div>
             )}
             {tools && (
-              <div className="flex shrink-0 flex-wrap items-center gap-1 sm:ml-auto">
+              <div
+                className={`flex items-center gap-1 ${
+                  toolsFill ? "min-w-0 flex-1" : "shrink-0 flex-wrap sm:ml-auto"
+                }`}
+              >
                 {tools}
               </div>
             )}

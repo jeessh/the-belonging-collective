@@ -340,8 +340,9 @@ can open.
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons at the **bottom right**, on the actions' row; once the
-  event is saved (`lead`) Share is primary and Print secondary, and the
-  dialog's Un-Save Event drops to a ghost (tertiary) button; no per-event
+  event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
+  (tertiary) button in red text, its own width — then Print (secondary),
+  then Share (primary) filling the rest at the very right; no per-event
   Add to Google Calendar any more) and bottom `actions` (Save / Register;
   See on Map is no longer an action: in the `detail` layout it is a small
   secondary button — Maps icon, "See on Map" — under the place, opening

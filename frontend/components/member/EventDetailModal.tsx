@@ -69,6 +69,7 @@ export function EventDetailModal({
           insetForClose
           saved={saved}
           tools={<EventTools event={event} lead={saved && canSave} />}
+          toolsFill={saved && canSave}
           actions={
             <>
               {!canSave ? (
@@ -85,6 +86,8 @@ export function EventDetailModal({
                 <Button
                   variant="ghost"
                   size="lg"
+                  // Red words, no fill: careful, but not the lead.
+                  className="!text-danger-fg [&_svg]:!text-danger-fg"
                   onClick={() => onUnsave(event)}
                   trailingIcon={<BookX />}
                 >
