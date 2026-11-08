@@ -301,11 +301,9 @@ can open.
   LINKS (`event.links` plus the organizer's `registration_url`; one
   bordered card per link — label, site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
-  "More information" panel
-  (`member/EventDetailModal`, a `Modal sheet`: sliding up from the bottom
-  with a handle, as wide as its content (960px, centred), up to 90% of the
-  screen and scrolling inside, its See on Map / Save buttons pinned to the
-  panel's foot — `EventDetails stickyActions`), the public `/events/[id]` page and the print
+  "More information" dialog
+  (`member/EventDetailModal`, a centred `Modal`; `Modal sheet` and
+  `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Add to Google
   Calendar / Share / Print — a row above the title, at the top of the
   text column beside the picture; `EventSummary aboveTitle`) and bottom `actions`. `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
