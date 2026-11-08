@@ -367,6 +367,13 @@ export function EventsView({
     return oneCardPerProgram(personalizedFeed(upcoming, taste));
   }, [events, chips, taste]);
 
+  // List view filters with its own Filter sheet, not the chips: the same
+  // order as the feed, before the chips narrow it.
+  const listFeed = useMemo(
+    () => oneCardPerProgram(personalizedFeed(chipEvents, taste)),
+    [chipEvents, taste],
+  );
+
   // The list's section keeps to the member's own filters, like the rows.
   const recommendedShown = useMemo(
     () =>
@@ -1432,6 +1439,7 @@ export function EventsView({
                 {viewMode === "card" && a11yMenu}
               </div>
 
+              {viewMode === "card" && (
               <FeedFilters
                 events={chipEvents}
                 chips={chips}
@@ -1439,6 +1447,7 @@ export function EventsView({
                 onClearChips={clearChips}
                 interests={taste.interests}
               />
+              )}
             </div>
             <div aria-hidden="true" className="hidden w-24 shrink-0 sm:block" />
             </div>
@@ -1473,7 +1482,7 @@ export function EventsView({
               <div className="mx-auto flex w-full !max-w-[1000px] gap-6 lg:!max-w-[1012px] lg:gap-9">
                 <div className="w-full min-w-0 max-w-[880px] flex-1">
               <CaregiverFeed
-                events={feed}
+                events={listFeed}
                 saved={saved}
                 onOpen={setDetailFor}
                 onSave={(ev) => void attend(ev)}

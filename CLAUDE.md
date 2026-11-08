@@ -167,8 +167,7 @@ can open.
   under the name. **In list view Accessibility Tools has no Read aloud,
   Voice commands or Head tracking — **list view has no Accessibility Tools
   at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
-  `FilterPanel`'s `memberView` (an "N filters applied" summary with
-  removable chips, count badges) is no longer used by the member app.
+  The card view's chips (`FeedFilters`) show in card view only.
   `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
@@ -182,8 +181,13 @@ can open.
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
   Save on events that need it):
-  **no filter panel any more** — the same `FeedFilters` chips as card view
-  sit under the heading in both views — then search, and a
+  **no chips and no filter column**: search, **Filter** (a `Modal` holding
+  `FilterPanel memberView` — "N filters applied" with removable chips, count
+  badges; the button shows "Filter (N)" and the accent's soft fill while any
+  are on) and **Sort** (Recommended — the feed's own order — Soonest first,
+  Most saved, A–Z) share one row, over the cards. It is handed `listFeed`
+  (the feed before the card view's chips), so a chip left on in card view
+  never hides list rows. Then a
   card per event like `AdminEventCard` (image, tags, when, where, "N
   people saved this event"; the whole card opens the details) with Share and Add to Google
   Calendar as icon buttons with `ui/Tooltip`s, beside Save / Unsave (through
@@ -293,7 +297,8 @@ can open.
   pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
   upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
   event is free; a chip that's on stays so it can be switched off)),
-  which are the member's own explicit choice. There is no sort control.
+  which are the member's own explicit choice. Card view has no sort control
+  (list view's Sort is the member's explicit choice; Recommended is the default).
   Ties fall back to the server's deterministic order, so the feed never
   reshuffles between renders.
 - **Saved events stay in the feed, marked saved**: a "Saved" tag (bookmark,

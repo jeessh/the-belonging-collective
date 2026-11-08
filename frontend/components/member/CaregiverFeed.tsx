@@ -10,6 +10,7 @@ import {
   ClipboardPen,
   MapPin,
   Send,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { googleCalendarUrl, openGoogleCalendar } from "@/lib/calendar";
@@ -22,7 +23,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { GoingCount } from "@/components/ui/GoingCount";
 import { EventTags } from "@/components/ui/EventSummary";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
-import { SearchField } from "@/components/AdminTable";
+import { SearchField, Select } from "@/components/AdminTable";
 import { ShareModal } from "@/components/member/ShareModal";
 import {
   BOARD_CARD_W,
@@ -31,13 +32,19 @@ import {
   MiniCardFace,
   useDragHint,
 } from "@/components/member/SavedSidebar";
-import { NO_HOST_FILTERS, applyHostFilters } from "@/components/host/PostedEvents";
+import {
+  FilterPanel,
+  NO_HOST_FILTERS,
+  applyHostFilters,
+  type HostFilters,
+} from "@/components/host/PostedEvents";
+import { Modal } from "@/components/Modal";
 import { placeLabel } from "@/lib/place";
 
 /**
- * The feed's List view (for everyone): search over one card per event (the
- * console's card, restricted to what a member can do), filtered by the same
- * topic / Free chips as card view, which sit over it.
+ * The feed's List view (for everyone): search, Filter (a sheet holding the
+ * console's filter panel) and Sort on one row, over one card per event (the
+ * console's card, restricted to what a member can do).
  * Nothing here edits a program: the card opens its details, its icons
  * shares it or adds it to Google Calendar, and Save / Unsave saves for
  * whoever "Saving for" names. A special-access program the member isn't
@@ -63,22 +70,56 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   dropTarget: RefObject<HTMLDivElement>;
 }) {
   const [query, setQuery] = useState("");
-  // The topic / Free chips over the list narrow `events` already; this is
-  // just the search box.
-  const shown = useMemo(
-    () => applyHostFilters(events, NO_HOST_FILTERS, query),
-    [events, query],
-  );
+  const [filters, setFilters] = useState<HostFilters>(NO_HOST_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>("recommended");
+  const shown = useMemo(() => {
+    const list = applyHostFilters(events, filters, query);
+    // "Recommended" is the feed's own order (personalized, then the
+    // server's); the others are the member's explicit choice.
+    if (sort === "soonest")
+      return [...list].sort((a, b) => (a.starts_at ?? "").localeCompare(b.starts_at ?? ""));
+    if (sort === "saved")
+      return [...list].sort((a, b) => (b.saved_count ?? 0) - (a.saved_count ?? 0));
+    if (sort === "az") return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    return list;
+  }, [events, filters, query, sort]);
+  const chosen = Object.values(filters).reduce((n, ids) => n + (ids?.length ?? 0), 0);
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <SearchField
-        label="Search for event"
-        placeholder="Search for event"
-        value={query}
-        onChange={setQuery}
-        className="w-full min-w-0"
-      />
+      {/* Search, then Filter and Sort, on one row (stacked on a phone). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchField
+          label="Search for event"
+          placeholder="Search for event"
+          value={query}
+          onChange={setQuery}
+          className="w-full min-w-0 sm:flex-1"
+        />
+        <div className="flex gap-3">
+          <Button
+            size="lg"
+            className={`max-sm:flex-1 ${chosen > 0 ? "!border-primary-border !bg-primary-soft" : ""}`}
+            leadingIcon={<SlidersHorizontal />}
+            aria-haspopup="dialog"
+            onClick={() => setFiltersOpen(true)}
+          >
+            Filter{chosen > 0 && ` (${chosen})`}
+          </Button>
+          <Select
+            aria-label="Sort events"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="max-sm:flex-1 [&>select]:min-h-14 [&>select]:text-lg"
+          >
+            <option value="recommended">Sort: Recommended</option>
+            <option value="soonest">Sort: Soonest first</option>
+            <option value="saved">Sort: Most saved</option>
+            <option value="az">Sort: A–Z</option>
+          </Select>
+        </div>
+      </div>
 
       <p role="status" aria-live="polite" className="sr-only">
         {`${shown.length} of ${events.length} events shown`}
@@ -104,9 +145,27 @@ export const CaregiverFeed = memo(function CaregiverFeed({
           ))}
         </div>
       )}
+
+      {filtersOpen && (
+        <Modal title="Filter" onClose={() => setFiltersOpen(false)}>
+          <div className="mt-4">
+            <FilterPanel events={events} filters={filters} onChange={setFilters} memberView />
+          </div>
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-6 w-full"
+            onClick={() => setFiltersOpen(false)}
+          >
+            Show {shown.length} {shown.length === 1 ? "event" : "events"}
+          </Button>
+        </Modal>
+      )}
     </div>
   );
 });
+
+type SortKey = "recommended" | "soonest" | "saved" | "az";
 
 /** The console's event card, with a member's actions. */
 function MemberEventCard({
