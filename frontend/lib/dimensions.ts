@@ -4,6 +4,7 @@ import {
   categoryLabel,
   categoryStyle,
 } from "@/lib/categories";
+import { SELECTABLE_TAGS, isDerivedTag, tagLabel } from "@/lib/accessibility";
 
 /**
  * How the feed is grouped — the "See events by" choice.
@@ -18,7 +19,8 @@ export type DimensionKey =
   | "price"
   | "registration"
   | "eventType"
-  | "activityType";
+  | "activityType"
+  | "access";
 
 export type Dimension = {
   key: DimensionKey;
@@ -171,6 +173,27 @@ function topicBucket(slug: string) {
     color: style.color,
   };
 }
+
+const NO_NEED = { id: "none", label: "Nothing listed", color: "#9CA3AF" };
+
+DIMENSIONS.push({
+  key: "access",
+  label: "What you need",
+  heading: "What you need",
+  // What the program offers — the same chips as Accessibility Tools' "What
+  // you need" (matching is slug equality, lib/accessibility).
+  bucket: (e) => {
+    const slug = (e.accessibility_tags ?? []).find((t) => !isDerivedTag(t));
+    return slug ? { id: slug, label: tagLabel(slug), color: hashColor(slug) } : NO_NEED;
+  },
+  all: (e) => {
+    const tags = (e.accessibility_tags ?? []).filter((t) => !isDerivedTag(t));
+    return tags.length
+      ? tags.map((slug) => ({ id: slug, label: tagLabel(slug), color: hashColor(slug) }))
+      : [NO_NEED];
+  },
+  options: SELECTABLE_TAGS.map(({ slug, label }) => ({ id: slug, label })),
+});
 
 export const dimensionByKey = (key: DimensionKey): Dimension =>
   DIMENSIONS.find((d) => d.key === key) ?? DIMENSIONS[0];

@@ -11,6 +11,7 @@ import {
   Clipboard,
   Contact,
   PartyPopper,
+  PersonStanding,
   X,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -101,6 +102,7 @@ const GROUP: Record<FilterKey, { label: string; icon: ReactNode }> = {
   registration: { label: "Registration Type", icon: <Clipboard /> },
   eventType: { label: "Event Type", icon: <Contact /> },
   activityType: { label: "Topics", icon: <PartyPopper /> },
+  access: { label: "What you need", icon: <PersonStanding /> },
 };
 
 /**

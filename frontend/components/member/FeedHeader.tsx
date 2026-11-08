@@ -14,11 +14,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { categoryStyle } from "@/lib/categories";
-import { useCategories } from "@/lib/useCategories";
-import { SELECTABLE_TAGS } from "@/lib/accessibility";
 import { shortName, type CarePerson } from "@/lib/api";
-import { Glyph } from "@/components/ui/Glyph";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
 export type CareChoice = {
@@ -350,7 +346,6 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   /** Replays the first-run tour. */
   onShowTour: () => void;
 }) {
-  const { categories, label: topicLabel } = useCategories();
   // Escape closes it and focus returns to the trigger. Capture, without
   // stopping propagation, matching the other menus on this surface.
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -482,99 +477,13 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
             Show me around
           </Button>
 
-          <h2 className="mt-6 text-xl font-medium text-fg">What you like</h2>
-          <p className="text-base text-fg-muted">
-            These come first in your programs.
-          </p>
-          {/* Topics live on a profile, so there is nowhere to put them without
-              an account. The switches above need no account. */}
-          {!signedIn ? (
-            <Button variant="primary" className="mt-3 w-full" onClick={onSignIn}>
-              Sign in to pick topics
-            </Button>
-          ) : (
-            <>
-              <div
-                role="group"
-                aria-label="Things you are interested in"
-                className="mt-3 flex flex-wrap gap-2"
-              >
-                {categories.map(({ slug, label }) => (
-                  <Chip
-                    key={slug}
-                    pressed={interests.includes(slug)}
-                    onClick={() => onToggleInterest(slug)}
-                  >
-                    <Glyph icon={categoryStyle(slug).icon} />
-                    {label}
-                  </Chip>
-                ))}
-              </div>
-              <p className="sr-only" role="status" aria-live="polite">
-                {interests.length === 0
-                  ? "Nothing chosen yet"
-                  : `${interests.length} chosen: ${interests.map(topicLabel).join(", ")}`}
-              </p>
-
-              {/* Needs, not tastes — they sort harder than topics do (see
-                  ACCESS_WEIGHT in lib/feed). Still only sorting. */}
-              <h2 className="mt-6 text-xl font-medium text-fg">What you need</h2>
-              <p className="text-base text-fg-muted">
-                Programs that offer these come first.
-              </p>
-              <div
-                role="group"
-                aria-label="Things you need a program to offer"
-                className="mt-3 flex flex-wrap gap-2"
-              >
-                {SELECTABLE_TAGS.map(({ slug, label, icon }) => (
-                  <Chip
-                    key={slug}
-                    pressed={accessPrefs.includes(slug)}
-                    onClick={() => onToggleAccessPref(slug, label)}
-                  >
-                    <Glyph icon={icon} />
-                    {label}
-                  </Chip>
-                ))}
-              </div>
-              <p className="sr-only" role="status" aria-live="polite">
-                {accessPrefs.length === 0
-                  ? "Nothing chosen yet"
-                  : `${accessPrefs.length} chosen`}
-              </p>
-            </>
-          )}
+          {/* "What you like" and "What you need" are gone from here: needs
+              are a filter in list view now (Filter → What you need). */}
         </div>
       )}
     </div>
   );
 });
-
-function Chip({
-  pressed,
-  onClick,
-  children,
-}: {
-  pressed: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-2 text-base text-fg transition-colors ${
-        pressed
-          ? "border-primary-border bg-primary-soft"
-          : "border-line bg-surface hover:bg-surface-subtle"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function MenuToggle({
   label,

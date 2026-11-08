@@ -168,7 +168,11 @@ can open.
   under the name. **In list view Accessibility Tools has no Read aloud,
   Voice commands or Head tracking — **list view has no Accessibility Tools
   at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
-  The card view's chips (`FeedFilters`) show in card view only.
+  The card view's chips (`FeedFilters`) show in card view only. The Filter dropdown
+  also has **What you need** (`access` in `lib/dimensions`: the
+  `SELECTABLE_TAGS` access needs, matched on `event.accessibility_tags`) —
+  moved out of Accessibility Tools, which no longer has "What you like" or
+  "What you need" (members' interests / needs are no longer set there).
   `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
