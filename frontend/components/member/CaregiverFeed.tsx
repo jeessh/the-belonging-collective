@@ -69,6 +69,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   dropTarget,
   removeIcon = false,
   printIcon = false,
+  savedTag = true,
   group,
   tools,
 }: {
@@ -78,6 +79,9 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   /** Split what's shown (after search and Filter) into titled
       sections; a `collapsed` one starts folded. Flat without it. */
   group?: (shown: Event[]) => FeedSection[];
+  /** The grey "Saved" tag on saved cards — off on the saved page, where
+      every card is saved. */
+  savedTag?: boolean;
   /** The saved page: a Print icon on each card, for that event. */
   printIcon?: boolean;
   /** A saved card: a red delete icon at each card's top right takes it
@@ -193,6 +197,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
                   dropTarget={dropTarget}
                   removeIcon={removeIcon}
               printIcon={printIcon}
+              savedTag={savedTag}
                 />
               ))}
             </div>
@@ -286,9 +291,11 @@ function MemberEventCard({
   dropTarget,
   removeIcon = false,
   printIcon = false,
+  savedTag = true,
 }: {
   removeIcon?: boolean;
   printIcon?: boolean;
+  savedTag?: boolean;
   event: Event;
   saved: boolean;
   onOpen: () => void;
@@ -381,7 +388,7 @@ function MemberEventCard({
             {event.title}
           </button>
         </h3>
-          <EventTags event={event} saved={saved} />
+          <EventTags event={event} saved={saved && savedTag} />
         </div>
 
         <div className="flex flex-col gap-2 text-lg text-fg">

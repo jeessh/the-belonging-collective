@@ -204,6 +204,7 @@ export const SavedEvents = memo(function SavedEvents({
                   saved={savedIds}
                   removeIcon
                   printIcon
+                  savedTag={false}
                   group={sections}
                   tools={
                     // Share and Print, where the list view has Filter and
