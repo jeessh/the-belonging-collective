@@ -1,10 +1,12 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, HandCoins, LayoutGrid, X } from "lucide-react";
 import type { Event } from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
 import { FilterChip } from "@/components/ui/FilterChip";
+import { Glyph } from "@/components/ui/Glyph";
+import { categoryStyle } from "@/lib/categories";
 
 /** "free", or a topic slug from `GET /categories`. */
 export const FREE_CHIP = "free";
@@ -195,7 +197,8 @@ export const FeedFilters = memo(function FeedFilters({
         >
           {/* "All": selected while nothing narrows the feed; pressing it
               clears every chip. */}
-          <FilterChip selected={chips.size === 0} onClick={onClearChips}>
+          <FilterChip selected={chips.size === 0} onClick={onClearChips} className="gap-2">
+            <LayoutGrid aria-hidden="true" className="size-5" />
             All
           </FilterChip>
           {all.map(({ key, label }) => {
@@ -205,7 +208,14 @@ export const FeedFilters = memo(function FeedFilters({
                 key={key}
                 selected={on}
                 onClick={() => onToggleChip(key)}
+                className="gap-2"
               >
+                {/* Free's coins, or the topic's own icon (lib/categories). */}
+                {key === FREE_CHIP ? (
+                  <HandCoins aria-hidden="true" className="size-5" />
+                ) : (
+                  <Glyph icon={categoryStyle(key).icon} />
+                )}
                 {label}
               </FilterChip>
             );

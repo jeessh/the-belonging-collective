@@ -308,7 +308,8 @@ can open.
 - `lib/feed.ts` orders the feed by match score (interest == `event.category`,
   pref ∈ `accessibility_tags`). **Personalization sorts, it never filters** —
   nothing is hidden. The only things that remove cards are the filter chips in
-  `FeedFilters` ("Clear all" at the right end of the chip row once a chip
+  `FeedFilters` (each chip with an icon — a grid for All, coins for Free,
+  the topic's own `categoryStyle` icon; "Clear all" at the right end of the chip row once a chip
   is on; an **All** chip first — selected while no chip is, and
   pressing it clears them — then FREE + the topics from `useCategories` — **only the chips some
   upcoming event actually uses** (`chipEvents` in EventsView; Free only if an
