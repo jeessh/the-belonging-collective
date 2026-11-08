@@ -341,7 +341,8 @@ can open.
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons at the **bottom right**, on the actions' row; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
-  (tertiary) button in red text, its own width — then Print (secondary),
+  (tertiary) button in red text, its own width, its words in line with
+  DETAILS (`-ml-6`) — then Print (secondary),
   then Share (primary, its own width) at the very right; no per-event
   Add to Google Calendar any more) and bottom `actions` (Save / Register;
   See on Map is no longer an action: in the `detail` layout it is a small

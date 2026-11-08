@@ -86,8 +86,10 @@ export function EventDetailModal({
                 <Button
                   variant="ghost"
                   size="lg"
-                  // Red words, no fill: careful, but not the lead.
-                  className="!text-danger-fg [&_svg]:!text-danger-fg"
+                  // Red words, no fill: careful, but not the lead. Pulled
+                  // out by its padding so the words line up with DETAILS
+                  // and the text above.
+                  className="-ml-6 !text-danger-fg [&_svg]:!text-danger-fg"
                   onClick={() => onUnsave(event)}
                   trailingIcon={<BookX />}
                 >
