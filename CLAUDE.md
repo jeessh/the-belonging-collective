@@ -314,9 +314,10 @@ can open.
   reshuffles between renders.
 - **Saved events stay in the feed, tagged**: a grey **"Saved"** tag
   (bookmark-check, neutral like Registration required) sits after Free /
-  Paid in the tag row — feed card, list cards and the event dialog
-  (`EventSummary saved` / `EventTags saved`); not on the saved page, where
-  every card is saved (`CaregiverFeed savedTag={false}`).
+  Paid in the tag row — on the feed card and list cards only
+  (`EventSummary saved` / `EventTags saved`); not in the event dialog (its
+  Un-Save says it) nor on the saved page, where every card is saved
+  (`CaregiverFeed savedTag={false}`).
 - **A repeating program reaches the member feed a month ahead**
   (`withinRecurringWindow` in `lib/feed.ts`, applied where EventsView builds
   `feed`, so card, list and Advanced views alike): its next date must start
