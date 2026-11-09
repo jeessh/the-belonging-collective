@@ -314,6 +314,23 @@ can open.
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the
   saved column's edge — no z-index on the card can fix that.
+- **Card turns and saves are tuned with DialKit** (`dialkit@2.0.0`, dev
+  only — `components/DevDials.tsx` mounts `DialRoot` bottom left from the
+  layout; DialKit hides it in production). Two panels in EventsView:
+  **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
+  `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
+  the top card off the deck, drops it behind and slides it to the bottom of
+  the page while it fades, as the card beneath rises into place; "Back"
+  brings a card up from the bottom), **flip** (turns over like a playing
+  card, `rotateY`) or **slide**; past the last card the deck **shuffles**
+  (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
+  declarative keyframe restarted on every re-render). **Save animation**
+  (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):
+  classic / spin / arc / pop flight with anticipation, curve, end scale,
+  spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
+  sparkles, hearts, ring) where the newest save lands, and "Preview (doesn't
+  save)". Zero-motion: reduced motion skips all of it. Keyframes on
+  `opacity` / `zIndex` in an exit don't animate — use delayed single steps.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,

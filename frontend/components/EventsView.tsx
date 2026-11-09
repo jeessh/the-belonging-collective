@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  AnimatePresence,
   animate,
   motion,
   useMotionValue,
@@ -152,10 +153,19 @@ export function EventsView({
     style: {
       type: "select",
       options: [
+        { value: "tuck", label: "Top card to the bottom" },
         { value: "flip", label: "Flip (deck)" },
         { value: "slide", label: "Slide" },
       ],
-      default: "flip",
+      default: "tuck",
+    },
+    tuck: {
+      lift: [36, 0, 160, 1],
+      distance: [320, 60, 800, 5],
+      tilt: [4, 0, 20, 0.5],
+      duration: [0.6, 0.2, 1.5, 0.05],
+      deckScale: [0.95, 0.8, 1, 0.01],
+      deckOffset: [14, 0, 60, 1],
     },
     flip: {
       angle: [100, 0, 180, 1],
@@ -503,15 +513,108 @@ export function EventsView({
   // → shuffle) before card 1 comes back round.
   const [shuffleTick, setShuffleTick] = useState(0);
   const [shuffling, setShuffling] = useState(false);
+  const shuffleRef = useRef<HTMLDivElement>(null);
   const iRef = useRef(0);
   iRef.current = i;
   // A shuffle plays once, then turns are flips again.
   useEffect(() => {
     if (!shuffleTick) return;
+    const el = shuffleRef.current;
+    if (el && !reduceMotion) {
+      const o = cardDial.shuffle.offset;
+      const rot = cardDial.shuffle.rotate;
+      void animate(
+        el,
+        { x: [-o, o * 0.7, -o * 0.35, 0], rotate: [-rot, rot * 0.7, -rot * 0.3, 0], y: [16, 8, 2, 0] },
+        { duration: cardDial.shuffle.duration, ease: "easeInOut" },
+      );
+    }
     const t = window.setTimeout(() => setShuffling(false), cardDial.shuffle.duration * 1000 + 50);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shuffleTick]);
+
+  /* ── A card turn (DialKit "Card transition") ──────────────────────────
+   *  tuck   next: the top card lifts off the deck and goes under it, to
+   *         the bottom; the card beneath rises into its place. Back: the
+   *         card comes up from the bottom of the deck onto the top.
+   *  flip   the next card turns over onto the deck, like a playing card
+   *  slide  the old slide from the travel direction
+   *  shuffle (past the last card) the deck riffles before card 1 returns
+   * ─────────────────────────────────────────────────────────────────── */
+  const turnVariants = {
+    enter: (d: number) =>
+      cardDial.style === "tuck"
+          ? d > 0
+            ? // The next card is already under it: it rises from the deck.
+              // Under the lifted card until it drops below (see `center`).
+              { y: cardDial.tuck.deckOffset, scale: cardDial.tuck.deckScale, opacity: 1, zIndex: 0 }
+            : // Back: it comes up from the bottom of the deck.
+              { y: cardDial.tuck.distance, scale: 0.9, opacity: 0, zIndex: 2 }
+          : cardDial.style === "flip"
+            ? {
+                rotateY: d > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
+                y: -cardDial.flip.lift,
+                opacity: cardDial.startOpacity,
+                scale: cardDial.startScale,
+                zIndex: 1,
+              }
+            : {
+                y: d > 0 ? cardDial.distance : -cardDial.distance,
+                opacity: cardDial.startOpacity,
+                scale: cardDial.startScale,
+                zIndex: 1,
+              },
+    center: {
+          x: 0,
+          y: 0,
+          rotate: 0,
+          rotateY: 0,
+          opacity: 1,
+          scale: 1,
+          zIndex: 1,
+          transition: {
+            ...toMotionTransition(cardDial.spring),
+            // Comes over the card that's leaving once that one is lifted.
+            zIndex: {
+              delay: cardDial.style === "tuck" ? cardDial.tuck.duration * 0.3 : 0,
+              duration: 0,
+            },
+          },
+        },
+    exit: (d: number) =>
+      cardDial.style === "tuck"
+        ? d > 0
+          ? {
+              // Picked up off the top, then slid under the deck to the bottom.
+              y: [0, -cardDial.tuck.lift, cardDial.tuck.distance],
+              scale: [1, 1.03, 0.9],
+              rotate: [0, -cardDial.tuck.tilt, cardDial.tuck.tilt * 0.5],
+              // Over the deck while it's lifted, then under it — a single
+              // delayed step each (keyframes on these don't animate).
+              opacity: 0,
+              zIndex: 0,
+              transition: {
+                default: { duration: cardDial.tuck.duration, times: [0, 0.3, 1], ease: "easeInOut" },
+                zIndex: { delay: cardDial.tuck.duration * 0.3, duration: 0 },
+                opacity: {
+                  delay: cardDial.tuck.duration * 0.55,
+                  duration: cardDial.tuck.duration * 0.45,
+                  ease: "easeIn",
+                },
+              },
+            }
+          : {
+              // Back: the top card settles down into the deck.
+              y: cardDial.tuck.deckOffset,
+              scale: cardDial.tuck.deckScale,
+              opacity: 0,
+              zIndex: 0,
+              transition: { duration: cardDial.tuck.duration * 0.7, ease: "easeOut" },
+            }
+        : // Other styles have no exit: the card before is simply gone.
+          { opacity: 0, transition: { duration: 0 } },
+  };
   const next = useCallback(() => {
     setDir(1);
     const len = Math.max(feedLenRef.current, 1);
@@ -1816,64 +1919,31 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
+                    {/* Past the last card, the whole top card riffles (started
+                        once per shuffle, imperatively — see shuffleRef). */}
+                    <div ref={shuffleRef}>
+                    <AnimatePresence initial={false} custom={dir} mode="popLayout">
                     <motion.div
                       // A new key on a shuffle too, so card 1 replays even
                       // when it's the only card.
-                      key={`${current.id}:${shuffling ? shuffleTick : 0}`}
+                      key={current.id}
+                      custom={dir}
+                      variants={turnVariants}
+                      initial={reduceMotion ? false : "enter"}
+                      animate="center"
+                      exit={reduceMotion ? undefined : "exit"}
                       style={{
                         transformPerspective: cardDial.flip.perspective,
                         transformOrigin:
-                          cardDial.flip.origin === "left"
-                            ? "left center"
-                            : cardDial.flip.origin === "top"
-                              ? "center top"
-                              : "center",
+                          cardDial.style === "flip"
+                            ? cardDial.flip.origin === "left"
+                              ? "left center"
+                              : cardDial.flip.origin === "top"
+                                ? "center top"
+                                : "center"
+                            : "center",
+                        position: "relative",
                       }}
-                      initial={
-                        reduceMotion
-                          ? false
-                          : shuffling
-                            ? // The top card comes back off a riffle.
-                              { x: -cardDial.shuffle.offset, rotate: -cardDial.shuffle.rotate, y: 16 }
-                            : cardDial.style === "flip"
-                              ? {
-                                  // Forward turns over from the right; back
-                                  // turns it the other way.
-                                  rotateY: dir > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
-                                  y: -cardDial.flip.lift,
-                                  opacity: cardDial.startOpacity,
-                                  scale: cardDial.startScale,
-                                }
-                              : {
-                                  y: dir > 0 ? cardDial.distance : -cardDial.distance,
-                                  opacity: cardDial.startOpacity,
-                                  scale: cardDial.startScale,
-                                }
-                      }
-                      animate={
-                        shuffling
-                          ? {
-                              x: [
-                                -cardDial.shuffle.offset,
-                                cardDial.shuffle.offset * 0.7,
-                                -cardDial.shuffle.offset * 0.35,
-                                0,
-                              ],
-                              rotate: [
-                                -cardDial.shuffle.rotate,
-                                cardDial.shuffle.rotate * 0.7,
-                                -cardDial.shuffle.rotate * 0.3,
-                                0,
-                              ],
-                              y: 0,
-                            }
-                          : { y: 0, x: 0, rotate: 0, rotateY: 0, opacity: 1, scale: 1 }
-                      }
-                      transition={
-                        shuffling
-                          ? { duration: cardDial.shuffle.duration, ease: "easeInOut" }
-                          : toMotionTransition(cardDial.spring)
-                      }
                     >
                       <motion.div
                         // On a phone the card drags left only — a finger
@@ -2009,6 +2079,8 @@ export function EventsView({
                           document.body,
                         )}
                     </motion.div>
+                    </AnimatePresence>
+                    </div>
                   </motion.div>
                 </div>
 
