@@ -122,12 +122,6 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">
             Special Access
           </h1>
-          <p className="text-xl text-fg">
-            Some programs are only for the people in a group. Add people by
-            email and they&apos;re in straight away, or answer requests members
-            send from a program&apos;s page. Anyone in a group can see and save
-            every program in it.
-          </p>
         </div>
         <Button
           variant="primary"
