@@ -3,6 +3,7 @@ import { siteUrl } from "@/lib/serverApi";
 import { MotionRoot } from "@/components/MotionRoot";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SkipLink } from "@/components/SkipLink";
+import { DevDials } from "@/components/DevDials";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
         <SkipLink />
         <MotionRoot>
           <ToastProvider>{children}</ToastProvider>
+          <DevDials />
         </MotionRoot>
       </body>
     </html>

@@ -76,8 +76,17 @@ import {
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
+import { useDialKit, type TransitionConfig } from "dialkit";
+import type { Transition, ValueAnimationTransition } from "framer-motion";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
+
+/** DialKit's transition union → framer-motion's (easing = tween). */
+function toMotionTransition(curve: TransitionConfig): Transition {
+  return curve.type === "easing"
+    ? { type: "tween", duration: curve.duration, ease: curve.ease }
+    : curve;
+}
 
 /** How far from the saved board (px) the dragged card starts turning into a mini card. */
 const MORPH_DISTANCE = 320;
@@ -134,6 +143,92 @@ export function EventsView({
   space?: OrgSpace | null;
 }) {
   const reduceMotion = useReducedMotion();
+  // The card-turn animation, live-tunable in development (DialKit panel,
+  // bottom left; hidden in production). Defaults are the shipped values:
+  // an 80px slide from the travel direction on a 320 / 34 spring.
+  const cardDial = useDialKit("Card transition", {
+    // Flip: the next card turns over onto the deck, like a playing card.
+    // Slide: the old 80px slide from the travel direction.
+    style: {
+      type: "select",
+      options: [
+        { value: "flip", label: "Flip (deck)" },
+        { value: "slide", label: "Slide" },
+      ],
+      default: "flip",
+    },
+    flip: {
+      angle: [100, 0, 180, 1],
+      perspective: [1400, 300, 3000, 10],
+      origin: {
+        type: "select",
+        options: [
+          { value: "left", label: "Left edge (like a book)" },
+          { value: "center", label: "Centre" },
+          { value: "top", label: "Top edge" },
+        ],
+        default: "left",
+      },
+      lift: [24, 0, 120, 1],
+    },
+    distance: [80, 0, 240, 1],
+    startOpacity: [1, 0, 1, 0.05],
+    startScale: [1, 0.8, 1.1, 0.01],
+    spring: { type: "spring", stiffness: 260, damping: 26, mass: 1 },
+    // Past the last card: the deck riffles before card 1 comes back.
+    shuffle: {
+      offset: [70, 0, 240, 1],
+      rotate: [9, 0, 30, 0.5],
+      duration: [0.75, 0.2, 2, 0.05],
+    },
+  });
+  // The save: how the card flies into Saved Events, and what celebrates
+  // its landing. Its own DialKit panel; "Preview" plays it without saving.
+  const previewSaveRef = useRef<() => void>(() => {});
+  const saveDial = useDialKit(
+    "Save animation",
+    {
+      style: {
+        type: "select",
+        options: [
+          { value: "classic", label: "Classic (shrink & fade)" },
+          { value: "spin", label: "Spin" },
+          { value: "arc", label: "Arc (toss)" },
+          { value: "pop", label: "Pop" },
+        ],
+        default: "classic",
+      },
+      anticipation: {
+        scale: [1.06, 1, 1.4, 0.01],
+        duration: [0.12, 0, 0.5, 0.01],
+      },
+      flight: {
+        curve: { type: "easing", duration: 0.46, ease: [0.4, 0, 0.2, 1] },
+        endScale: [0.1, 0, 1, 0.01],
+        spin: [360, 0, 1080, 15],
+        arcHeight: [160, 0, 400, 5],
+      },
+      celebration: {
+        effect: {
+          type: "select",
+          options: [
+            { value: "none", label: "None" },
+            { value: "confetti", label: "Confetti" },
+            { value: "sparkles", label: "Sparkles" },
+            { value: "hearts", label: "Hearts" },
+            { value: "ring", label: "Ring" },
+          ],
+          default: "none",
+        },
+        count: [18, 0, 60, 1],
+        spread: [110, 20, 300, 5],
+        duration: [0.9, 0.2, 2, 0.05],
+      },
+      preview: { type: "action", label: "Preview (doesn't save)" },
+    },
+    { onAction: (path) => path === "preview" && previewSaveRef.current() },
+  );
+  const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
   const toast = useToast();
   const [me, setMe] = useState<Me | null>(initialMe);
 
@@ -233,6 +328,7 @@ export function EventsView({
   const flyY = useMotionValue(0);
   const cardScale = useMotionValue(1);
   const cardOpacity = useMotionValue(1);
+  const flyRotate = useMotionValue(0);
   // The mini card the feed card turns into as it is dragged toward the
   // saved board: it follows the pointer, fading in as the card fades out
   // (desktop and tablet; a phone's drop zone is the bar under the feed).
@@ -403,9 +499,27 @@ export function EventsView({
   const [dir, setDir] = useState(1);
   const feedLenRef = useRef(feed.length);
   feedLenRef.current = feed.length;
+  // Going past the last card shuffles the deck (DialKit "Card transition"
+  // → shuffle) before card 1 comes back round.
+  const [shuffleTick, setShuffleTick] = useState(0);
+  const [shuffling, setShuffling] = useState(false);
+  const iRef = useRef(0);
+  iRef.current = i;
+  // A shuffle plays once, then turns are flips again.
+  useEffect(() => {
+    if (!shuffleTick) return;
+    const t = window.setTimeout(() => setShuffling(false), cardDial.shuffle.duration * 1000 + 50);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shuffleTick]);
   const next = useCallback(() => {
     setDir(1);
-    setI((n) => (n + 1) % Math.max(feedLenRef.current, 1));
+    const len = Math.max(feedLenRef.current, 1);
+    if (len > 1 && iRef.current + 1 >= len) {
+      setShuffling(true);
+      setShuffleTick((t) => t + 1);
+    }
+    setI((n) => (n + 1) % len);
   }, []);
   const prev = useCallback(() => {
     setDir(-1);
@@ -784,6 +898,103 @@ export function EventsView({
    * tracking — so they all end in the same place. `fromX` is where the card
    * already is when a drag or hold hands it over.
    */
+  /* ── The save flight (DialKit "Save animation") ────────────────────────
+   *  anticipation  the card swells (scale, duration)
+   *  flight        it travels to Saved Events on `flight.curve`, shrinking
+   *                to `endScale` and fading; per style:
+   *                  classic  straight in
+   *                  spin     turning `spin` degrees on the way
+   *                  arc      tossed up `arcHeight` px, then down in
+   *                  pop      a bigger swell, staying solid till the end
+   *  celebration   a burst where the newest save lands
+   * ─────────────────────────────────────────────────────────────────── */
+  const flyCard = useCallback(
+    async (fromX = 0) => {
+      const wrap = cardWrapRef.current;
+      const target = dropRef.current;
+      if (!wrap || !target) return;
+      const d = saveDial;
+      setFlying(true);
+      setDragActive(true);
+      liftCard();
+      // The wrapper's box is where the card rests; the drag moved only the
+      // inner element, so the hand-off puts that offset on the wrapper.
+      const card = wrap.getBoundingClientRect();
+      const drop = target.getBoundingClientRect();
+      const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
+      const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
+      x.set(0);
+      flyX.set(fromX);
+
+      const pop = d.style === "pop";
+      const swell = pop ? Math.max(d.anticipation.scale, 1.18) : d.anticipation.scale;
+      if (d.anticipation.duration > 0)
+        await animate(cardScale, swell, {
+          duration: d.anticipation.duration,
+          ease: pop ? [0.34, 1.56, 0.64, 1] : "easeOut",
+        });
+      const curve = toMotionTransition(d.flight.curve) as ValueAnimationTransition<number>;
+      // Keyframed paths (the arc, pop's late fade) need a tween; a spring
+      // curve lends them its visual duration.
+      const secs =
+        d.flight.curve.type === "easing"
+          ? d.flight.curve.duration
+          : (d.flight.curve as { visualDuration?: number }).visualDuration ?? 0.5;
+      const tween = {
+        duration: secs,
+        ease: d.flight.curve.type === "easing" ? d.flight.curve.ease : [0.4, 0, 0.2, 1],
+      } as ValueAnimationTransition<number>;
+      await Promise.all([
+        animate(flyX, dx, curve),
+        d.style === "arc"
+          ? animate(flyY, [0, -d.flight.arcHeight, dy], { ...tween, times: [0, 0.4, 1] })
+          : animate(flyY, dy, curve),
+        animate(cardScale, d.flight.endScale, curve),
+        animate(flyRotate, d.style === "spin" ? d.flight.spin : 0, curve),
+        pop
+          ? animate(cardOpacity, [1, 1, 0], { ...tween, times: [0, 0.75, 1] })
+          : animate(cardOpacity, 0, { duration: secs, ease: "easeIn" }),
+      ]);
+    },
+    [saveDial, liftCard, x, flyX, flyY, cardScale, cardOpacity, flyRotate],
+  );
+
+  /** The card back where it rests, after a flight. */
+  const settleCard = useCallback(() => {
+    flyX.set(0);
+    flyY.set(0);
+    flyRotate.set(0);
+    cardScale.set(1);
+    cardOpacity.set(1);
+    setLift(null);
+    setDragActive(false);
+    setFlying(false);
+  }, [flyX, flyY, flyRotate, cardScale, cardOpacity]);
+
+  /** The celebration where the newest save lands (top left of the board). */
+  const celebrate = useCallback(() => {
+    if (saveDial.celebration.effect === "none" || reduceMotion) return;
+    const drop = dropRef.current?.getBoundingClientRect();
+    if (!drop) return;
+    setBurst({
+      key: Date.now(),
+      x: drop.left + Math.min(90, drop.width / 2),
+      y: drop.top + Math.min(70, drop.height / 2),
+    });
+  }, [saveDial.celebration.effect, reduceMotion]);
+
+  // DialKit's "Preview": the whole save animation on the card showing,
+  // without saving it.
+  previewSaveRef.current = () => {
+    if (flyingRef.current || !cardWrapRef.current) return;
+    void (async () => {
+      await flyCard(0);
+      celebrate();
+      await new Promise((res) => setTimeout(res, 350));
+      settleCard();
+    })();
+  };
+
   const flyToDrop = useCallback(
     async (fromX = 0) => {
       const ev = feed[i];
@@ -829,6 +1040,7 @@ export function EventsView({
           animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
         ]);
         await animate(ghostT, 0, { duration: 0.15 });
+        celebrate();
         x.set(0);
         setLift(null);
         await attend(ev, true);
@@ -838,35 +1050,10 @@ export function EventsView({
         return;
       }
 
-      setFlying(true);
-      setDragActive(true);
-      liftCard();
-      // The wrapper's box is where the card rests; the drag moved only the
-      // inner element, so the hand-off puts that offset on the wrapper.
-      const card = wrap.getBoundingClientRect();
-      const drop = target.getBoundingClientRect();
-      const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
-      const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
-      x.set(0);
-      flyX.set(fromX);
-
-      const EASE = [0.4, 0, 0.2, 1] as const;
-      await animate(cardScale, 1.06, { duration: 0.12, ease: "easeOut" });
-      await Promise.all([
-        animate(flyX, dx, { duration: 0.46, ease: EASE }),
-        animate(flyY, dy, { duration: 0.46, ease: EASE }),
-        animate(cardScale, 0.1, { duration: 0.46, ease: EASE }),
-        animate(cardOpacity, 0, { duration: 0.46, ease: "easeIn" }),
-      ]);
-
+      await flyCard(fromX);
+      celebrate();
       await attend(ev, true);
-      flyX.set(0);
-      flyY.set(0);
-      cardScale.set(1);
-      cardOpacity.set(1);
-      setLift(null);
-      setDragActive(false);
-      setFlying(false);
+      settleCard();
     },
     [
       feed,
@@ -885,6 +1072,9 @@ export function EventsView({
       ghostScale,
       resetGhost,
       toast,
+      flyCard,
+      celebrate,
+      settleCard,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
@@ -1583,14 +1773,23 @@ export function EventsView({
                       as a stack of events. Only as many as are left. Purely
                       decorative. */}
                   {feed.length - i - 1 >= 2 && (
-                    <div
+                    <motion.div
+                      key={`deck2:${shuffleTick}`}
                       aria-hidden
+                      // On a shuffle the deck riffles in from both sides.
+                      initial={shuffling && !reduceMotion ? { x: cardDial.shuffle.offset, rotate: cardDial.shuffle.rotate } : false}
+                      animate={{ x: 0, rotate: 0 }}
+                      transition={{ duration: cardDial.shuffle.duration * 0.8, ease: "easeOut" }}
                       className="absolute inset-x-10 -bottom-6 top-16 rounded-card border border-line-card/80 bg-[#FAFAFA] shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:inset-x-16 sm:-bottom-7"
                     />
                   )}
                   {feed.length - i - 1 >= 1 && (
-                    <div
+                    <motion.div
+                      key={`deck1:${shuffleTick}`}
                       aria-hidden
+                      initial={shuffling && !reduceMotion ? { x: -cardDial.shuffle.offset * 0.8, rotate: -cardDial.shuffle.rotate * 0.8 } : false}
+                      animate={{ x: 0, rotate: 0 }}
+                      transition={{ duration: cardDial.shuffle.duration * 0.9, ease: "easeOut" }}
                       className="absolute inset-x-5 -bottom-3 top-12 rounded-card border border-line-card bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.07)] sm:inset-x-8 sm:-bottom-3.5"
                     />
                   )}
@@ -1601,6 +1800,7 @@ export function EventsView({
                       y: flyY,
                       scale: cardScale,
                       opacity: cardOpacity,
+                      rotate: flyRotate,
                       ...(lift && {
                         position: "fixed",
                         left: lift.left,
@@ -1617,10 +1817,63 @@ export function EventsView({
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
                     <motion.div
-                      key={current.id}
-                      initial={reduceMotion ? false : { y: dir > 0 ? 80 : -80 }}
-                      animate={{ y: 0 }}
-                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                      // A new key on a shuffle too, so card 1 replays even
+                      // when it's the only card.
+                      key={`${current.id}:${shuffling ? shuffleTick : 0}`}
+                      style={{
+                        transformPerspective: cardDial.flip.perspective,
+                        transformOrigin:
+                          cardDial.flip.origin === "left"
+                            ? "left center"
+                            : cardDial.flip.origin === "top"
+                              ? "center top"
+                              : "center",
+                      }}
+                      initial={
+                        reduceMotion
+                          ? false
+                          : shuffling
+                            ? // The top card comes back off a riffle.
+                              { x: -cardDial.shuffle.offset, rotate: -cardDial.shuffle.rotate, y: 16 }
+                            : cardDial.style === "flip"
+                              ? {
+                                  // Forward turns over from the right; back
+                                  // turns it the other way.
+                                  rotateY: dir > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
+                                  y: -cardDial.flip.lift,
+                                  opacity: cardDial.startOpacity,
+                                  scale: cardDial.startScale,
+                                }
+                              : {
+                                  y: dir > 0 ? cardDial.distance : -cardDial.distance,
+                                  opacity: cardDial.startOpacity,
+                                  scale: cardDial.startScale,
+                                }
+                      }
+                      animate={
+                        shuffling
+                          ? {
+                              x: [
+                                -cardDial.shuffle.offset,
+                                cardDial.shuffle.offset * 0.7,
+                                -cardDial.shuffle.offset * 0.35,
+                                0,
+                              ],
+                              rotate: [
+                                -cardDial.shuffle.rotate,
+                                cardDial.shuffle.rotate * 0.7,
+                                -cardDial.shuffle.rotate * 0.3,
+                                0,
+                              ],
+                              y: 0,
+                            }
+                          : { y: 0, x: 0, rotate: 0, rotateY: 0, opacity: 1, scale: 1 }
+                      }
+                      transition={
+                        shuffling
+                          ? { duration: cardDial.shuffle.duration, ease: "easeInOut" }
+                          : toMotionTransition(cardDial.spring)
+                      }
                     >
                       <motion.div
                         // On a phone the card drags left only — a finger
