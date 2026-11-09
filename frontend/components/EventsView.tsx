@@ -170,23 +170,23 @@ export function EventsView({
       default: "tuck",
     },
     tuck: {
-      lift: [36, 0, 160, 1],
+      lift: [89, 0, 160, 1],
       // How far down it sinks as it goes back into the deck (not off the page).
       distance: [26, 0, 200, 1],
-      tilt: [4, 0, 20, 0.5],
+      tilt: [8, 0, 20, 0.5],
       // Out to the side while it's lifted, so it can slide back in UNDER
       // the new top card — that's what makes "behind" readable.
-      swing: [180, 0, 500, 5],
+      swing: [100, 0, 500, 5],
       // How much it darkens as it goes behind (1 = not at all).
       dim: [0.88, 0.5, 1, 0.01],
-      duration: [0.75, 0.2, 1.5, 0.05],
+      duration: [0.55, 0.2, 1.5, 0.05],
       deckScale: [0.95, 0.8, 1, 0.01],
       deckOffset: [14, 0, 60, 1],
       // The new top card emerges from the deck's top card: it waits until
       // the old one has lifted clear (`revealDelay`, s), then fades in
       // slowly as it eases up from the stack's first layer — no pop.
-      fadeIn: [0.6, 0, 1.5, 0.05],
-      revealDelay: [0.05, 0, 1, 0.01],
+      fadeIn: [0.25, 0, 1.5, 0.05],
+      revealDelay: [0.3, 0, 1, 0.01],
     },
     flip: {
       angle: [100, 0, 180, 1],

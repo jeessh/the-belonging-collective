@@ -322,14 +322,15 @@ can open.
   **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
   the top card off the deck and **swings it out to the side** (`tuck.swing`,
-  180px), then slides it back in **under** the new top card — their z swaps
+  100px; lift 89px, tilt 8°, 0.55s — the tuned defaults), then slides it back in **under** the new top card — their z swaps
   at the swing's furthest point — darkening (`tuck.dim`; leaving and
   swinging cards are `pointerEvents: none` till settled, as the swing
   passes over the ↑ / ↓ buttons) and only fading
   once it's tucked into the pile (`tuck.distance`, 26px down), as the
   next card emerges from the deck's top card: after `tuck.revealDelay`
   (0.18s, once the old card is lifted clear) it eases up from the stack's
-  first layer and fades in over `tuck.fadeIn` (0.6s) on a soft ease — no
+  first layer and fades in over `tuck.fadeIn` (0.25s, after a 0.3s
+  `revealDelay`) on a soft ease — no
   spring, no pop. The
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
