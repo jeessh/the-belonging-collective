@@ -658,6 +658,9 @@ export function EventsView({
           scale: 1,
           zIndex: 1,
           boxShadow: SHADOW_REST,
+          // Always full brightness on top: a card turned back to while it
+          // was still dimming its way under the deck kept that grey tint.
+          filter: "brightness(1)",
           transition: {
             // A gentle ease up, not the spring's snap, so it doesn't pop.
             ...(cardDial.style === "tuck"
