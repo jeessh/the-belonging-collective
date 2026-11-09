@@ -587,9 +587,10 @@ export function EventsView({
             : // Back: the mirror of Next — it starts inside the deck, behind
               // the top card (see `center`).
               {
-                y: cardDial.tuck.distance,
-                scale: cardDial.tuck.deckScale,
-                rotate: cardDial.tuck.tilt * 0.3,
+                x: cardDial.stack.offsetX,
+                y: cardDial.stack.offsetY,
+                scale: 0.985,
+                rotate: 0,
                 opacity: 0,
                 boxShadow: SHADOW_NONE,
                 zIndex: 0,
@@ -613,17 +614,24 @@ export function EventsView({
         ? {
             // Back: pulled out of the deck, lifted over the pile, and laid on
             // top — Next played in reverse, its shadow growing as it lifts.
+            // Same softness as Next: it fades in slowly as it slides out
+            // of the deck, lifts over the pile and eases down on top — no
+            // spring, no pop.
             x: 0,
-            y: [cardDial.tuck.distance, -cardDial.tuck.lift, 0],
-            scale: [cardDial.tuck.deckScale, 1.03, 1],
-            rotate: [cardDial.tuck.tilt * 0.3, -cardDial.tuck.tilt, 0],
+            y: [cardDial.stack.offsetY, -cardDial.tuck.lift, 0],
+            scale: [0.985, 1.02, 1],
+            rotate: [0, -cardDial.tuck.tilt * 0.6, 0],
             rotateY: 0,
             opacity: 1,
             zIndex: 1,
             boxShadow: [SHADOW_NONE, SHADOW_LIFT, SHADOW_REST],
             transition: {
-              default: { duration: cardDial.tuck.duration, times: [0, 0.7, 1], ease: "easeInOut" },
-              opacity: { duration: cardDial.tuck.duration * 0.35, ease: "easeOut" },
+              default: {
+                duration: cardDial.tuck.duration + cardDial.tuck.fadeIn * 0.5,
+                times: [0, 0.55, 1],
+                ease: [0.22, 1, 0.36, 1],
+              },
+              opacity: { duration: cardDial.tuck.fadeIn, ease: [0.33, 0, 0.2, 1] },
               // Over the old top card once it has risen clear of the pile.
               zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
             },
@@ -698,7 +706,11 @@ export function EventsView({
               boxShadow: SHADOW_NONE,
               zIndex: 0,
               transition: {
-                default: { duration: cardDial.tuck.duration * 0.4, delay: cardDial.tuck.duration * 0.6, ease: "easeOut" },
+                default: {
+                  duration: cardDial.tuck.fadeIn,
+                  delay: cardDial.tuck.duration * 0.45,
+                  ease: [0.33, 0, 0.2, 1],
+                },
                 // Stays above the arriving card until that one has risen.
                 zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
               },

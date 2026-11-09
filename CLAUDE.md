@@ -329,8 +329,9 @@ can open.
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
   out as it settles into the deck, and fades in with the new card; **Back
-  (↑) is the same motion in reverse**: the previous card rises out of the
-  deck, lifts over the pile (shadow growing) and lands on top while the old
+  (↑) is the same motion in reverse**, just as soft: the previous card
+  starts at the stack's first layer, fades in over `tuck.fadeIn` as it
+  lifts over the pile (shadow growing) and eases down on top — no spring while the old
   top card becomes part of the deck (`center` is a function of `d`; the
   variants are memoised on the dial values); "Back"
   brings a card up from the bottom), **flip** (turns over like a playing
