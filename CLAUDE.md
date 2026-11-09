@@ -481,7 +481,8 @@ can open.
   gets email only. Jesse's call: no privacy gate, it's only a list. The
   page is `noindex`, server-fetched, and **is the All Saved Events page,
   read-only** (`components/SharedListView`; no Back to events — the
-  recipient didn't come from the feed): "{name}'s Saved Events" with
+  recipient didn't come from the feed): "{name}'s Saved Events" — subtext
+  "{name} shared their list of events with you!" — with
   the bookmark icon and count, search with Share and Print, the same cards
   grouped by `byWhen` with Share / Print icons, a card opening the same
   `EventDetailModal` — and no trash icon; Save / Register / Join waitlist /

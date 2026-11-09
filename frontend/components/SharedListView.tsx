@@ -50,7 +50,7 @@ export function SharedListView({
             {title}
           </h1>
           <p className="text-xl text-fg-muted">
-            {shown.length} Saved {shown.length === 1 ? "Event" : "Events"}
+            {firstName} shared their list of events with you!
           </p>
         </div>
       </div>
