@@ -171,14 +171,6 @@ function AnalyticsView({ ctx }: { ctx: ConsoleContext }) {
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">
             Analytics
           </h1>
-          <p className="text-xl text-fg">
-            How members are finding and saving{" "}
-            {ctx.isSuper && !orgId
-              ? "programs"
-              : `${data?.host_name ?? ctx.org.name}'s programs`}
-            . Pick a date range and download it as a spreadsheet for grant
-            applications.
-          </p>
         </div>
         {/* Excel first: that's what an application gets pasted from, and
             a CSV opened in Excel shows its dates as #####. The CSV stays for
