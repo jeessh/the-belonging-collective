@@ -314,8 +314,10 @@ can open.
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the
   saved column's edge — no z-index on the card can fix that.
-- **Card turns and saves are tuned with DialKit** (`dialkit@2.0.0`, dev
-  only — `components/DevDials.tsx` mounts `DialRoot` bottom left from the
+- **Card turns and saves are tuned with DialKit** (`dialkit@2.0.0`; both
+  panels `persist: true` under `dialkit:tbc:card-transition` /
+  `dialkit:tbc:save-animation` in localStorage, so tuning survives reloads;
+  dev only — `components/DevDials.tsx` mounts `DialRoot` bottom left from the
   layout; DialKit hides it in production). Two panels in EventsView:
   **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts

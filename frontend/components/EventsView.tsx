@@ -219,7 +219,9 @@ export function EventsView({
       rotate: [9, 0, 30, 0.5],
       duration: [0.75, 0.2, 2, 0.05],
     },
-  });
+  },
+  // Kept in this browser (localStorage) across reloads and code edits.
+  { id: "tbc:card-transition", persist: true });
   // The save: how the card flies into Saved Events, and what celebrates
   // its landing. Its own DialKit panel; "Preview" plays it without saving.
   const previewSaveRef = useRef<() => void>(() => {});
@@ -264,7 +266,12 @@ export function EventsView({
       },
       preview: { type: "action", label: "Preview (doesn't save)" },
     },
-    { onAction: (path) => path === "preview" && previewSaveRef.current() },
+    {
+      onAction: (path) => path === "preview" && previewSaveRef.current(),
+      // Kept in this browser (localStorage) across reloads and code edits.
+      id: "tbc:save-animation",
+      persist: true,
+    },
   );
   const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
   const toast = useToast();
