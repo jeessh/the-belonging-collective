@@ -43,7 +43,7 @@ export function GoingCount({
     );
   }
   return (
-    <span className={`inline-flex items-center gap-3 text-fg ${className}`}>
+    <span className={`inline-flex items-center gap-3 text-fg-muted ${className}`}>
       <Bookmark aria-hidden="true" className={`shrink-0 text-fg-muted ${iconClassName}`} />
       {/* With an attendee limit, the line is the places left instead. */}
       {capacity != null

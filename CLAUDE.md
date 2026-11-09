@@ -355,7 +355,8 @@ can open.
   count (`_public_view` blanks it for anyone else). `saved_count` is
   otherwise sent to everyone, signed in or not (just a count, no names —
   the shared-list page too), and
-  `ui/GoingCount` shows "N people saved this event" (bookmark icon; the
+  `ui/GoingCount` shows "N people saved this event" in the muted grey, like
+  the time under the date (bookmark icon; the
   sidebar shows no count) — at zero too ("0 people saved this event");
   nothing only where the count is withheld. Members and console say it
   the same way; nothing says "going" any more. There is no "See who
