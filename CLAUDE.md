@@ -320,8 +320,10 @@ can open.
   layout; DialKit hides it in production). Two panels in EventsView:
   **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
-  the top card off the deck, then settles it back into the deck — down a
-  little (`tuck.distance`, 26px), behind the new top card, fading — as the
+  the top card off the deck and **swings it out to the side** (`tuck.swing`,
+  180px), then slides it back in **under** the new top card — their z swaps
+  at the swing's furthest point — darkening (`tuck.dim`) and only fading
+  once it's tucked into the pile (`tuck.distance`, 26px down), as the
   next card emerges from the deck's top card: after `tuck.revealDelay`
   (0.18s, once the old card is lifted clear) it eases up from the stack's
   first layer and fades in over `tuck.fadeIn` (0.6s) on a soft ease — no
