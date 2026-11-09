@@ -40,7 +40,12 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
   const { show } = useToast();
   // A superadmin may look at any organization's team; everyone else sees
   // their own. Undefined = own.
-  const [orgId, setOrgId] = useState<string | undefined>(undefined);
+  // ?org={id} — Organization Management links each organization here.
+  const [orgId, setOrgId] = useState<string | undefined>(() =>
+    typeof window === "undefined"
+      ? undefined
+      : new URLSearchParams(window.location.search).get("org") ?? undefined,
+  );
   const [orgs, setOrgs] = useState<AdminAccount[]>([]);
   const [team, setTeam] = useState<Team | null>(null);
   const [loadError, setLoadError] = useState(false);

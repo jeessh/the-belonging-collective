@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
@@ -236,9 +237,23 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
               const isMe = a.id === ctx.org.id;
               const busy = busyId === a.id;
               return (
-                <tr key={a.id} className="align-middle">
+                // The whole row opens the organization's team page (its
+                // name is the link, for the keyboard); its buttons don't.
+                <tr
+                  key={a.id}
+                  className="cursor-pointer align-middle transition-colors hover:bg-surface-subtle/60"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a")) return;
+                    router.push(`/host/team?org=${a.id}`);
+                  }}
+                >
                   <th scope="row" className="px-3 py-3 font-normal">
-                    {a.name}
+                    <Link
+                      href={`/host/team?org=${a.id}`}
+                      className="font-medium text-fg underline-offset-4 hover:underline"
+                    >
+                      {a.name}
+                    </Link>
                     {isMe && (
                       <span className="ml-3">
                         <Pill tone="good">You</Pill>

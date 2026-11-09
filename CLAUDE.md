@@ -530,7 +530,8 @@ can open.
   **Organizations** (a 24px heading, "Add a KWHab
   superadmin" and the primary **Add organization**, which opens a dialog
   with the organization name + **head's** email) and **Invitations
-  waiting (N)**); the organization's **head** —
+  waiting (N)**; each organization's row — its name a link — opens its
+  team page, `/host/team?org={id}`); the organization's **head** —
   its own login, the account that invite creates — adds and removes its
   team (invite / withdraw / remove refuse anyone else with 403, a
   superadmin aside) and has the normal admin rights; **team members**
