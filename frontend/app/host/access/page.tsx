@@ -154,6 +154,15 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             aria-label="Groups"
             className="w-full rounded-control border border-line bg-surface p-2.5 lg:w-[320px] lg:shrink-0"
           >
+            {/* New group, at the top of the groups column. */}
+            <Button
+              variant="primary"
+              className="mb-2 w-full"
+              trailingIcon={<Plus />}
+              onClick={() => setCreating(true)}
+            >
+              New group
+            </Button>
             <ul className="flex flex-col gap-1">
               {shownGroups.map((g) => {
                 const on = g.id === selectedId;
@@ -194,15 +203,6 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
                 {allGroups ? "Show fewer" : `Show all ${groups.length} groups`}
               </button>
             )}
-            {/* New group, at the foot of the groups column. */}
-            <Button
-              variant="primary"
-              className="mt-2 w-full"
-              trailingIcon={<Plus />}
-              onClick={() => setCreating(true)}
-            >
-              New group
-            </Button>
           </nav>
 
           {selected && (
