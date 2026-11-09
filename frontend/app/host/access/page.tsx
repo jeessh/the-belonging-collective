@@ -123,13 +123,6 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             Special Access
           </h1>
         </div>
-        <Button
-          variant="primary"
-          trailingIcon={<Plus />}
-          onClick={() => setCreating(true)}
-        >
-          New group
-        </Button>
       </div>
 
       {loadError ? (
@@ -201,6 +194,15 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
                 {allGroups ? "Show fewer" : `Show all ${groups.length} groups`}
               </button>
             )}
+            {/* New group, at the foot of the groups column. */}
+            <Button
+              variant="primary"
+              className="mt-2 w-full"
+              trailingIcon={<Plus />}
+              onClick={() => setCreating(true)}
+            >
+              New group
+            </Button>
           </nav>
 
           {selected && (
