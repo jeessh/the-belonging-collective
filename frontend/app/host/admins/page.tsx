@@ -88,11 +88,10 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
 
       <div className="flex flex-col gap-3">
-        {/* The page's one big header: creating organizations is what it's
-            for. The invite fields, invitations waiting and the table of
-            organizations all sit under it. */}
+        {/* The page's one big header; the create-an-organization fields,
+            then the Organizations / Invitations waiting tabs, sit under it. */}
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
-          Create an organization
+          Organization Management
         </h1>
       </div>
 
