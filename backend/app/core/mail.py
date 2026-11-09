@@ -108,6 +108,7 @@ def render_html(
     body: str,
     button: tuple[str, str] | None = None,
     pictures: list[str | None] | None = None,
+    cards: list[str] | None = None,
 ) -> str:
     """The HTML half of a message, from the plain text.
 
@@ -117,11 +118,14 @@ def render_html(
     lines become a link named by the label, so nobody reads a raw `.ics`
     address. The button goes where its URL stood on its own — "open this
     link:" is followed by the button, not by the sign-off — or at the end.
-    `pictures` go with the program cards in order, one per card.
+    `pictures` go with the program cards in order, one per card. `cards`,
+    when given, are ready-made card HTML (member_mail.site_card — the site's
+    own event card) that stand in for the program blocks, in order.
     """
     blocks = []
     placed = False
-    cards = iter(pictures or [])
+    pics = iter(pictures or [])
+    ready = iter(cards or [])
     for block in body.strip().split("\n\n"):
         lines = [line.strip() for line in block.strip().split("\n") if line.strip()]
         if not lines:
@@ -141,7 +145,8 @@ def render_html(
                 f"{_line(lines[0])}</p>"
             )
         else:
-            blocks.append(_card(lines, next(cards, None)))
+            made = next(ready, None) if cards else None
+            blocks.append(made or _card(lines, next(pics, None)))
     if button and not placed:
         blocks.append(_button(*button))
 
@@ -173,6 +178,7 @@ def send(
     button: tuple[str, str] | None = None,
     pictures: list[str | None] | None = None,
     from_name: str | None = None,
+    cards: list[str] | None = None,
     reply_to: str | None = None,
 ) -> bool:
     """Send one message, text plus HTML. True if it was handed to the server.
@@ -206,7 +212,7 @@ def send(
     if reply_to:
         message["Reply-To"] = reply_to
     message.set_content(body)
-    message.add_alternative(render_html(body, button, pictures), subtype="html")
+    message.add_alternative(render_html(body, button, pictures, cards), subtype="html")
 
     try:
         if settings.SMTP_SSL:

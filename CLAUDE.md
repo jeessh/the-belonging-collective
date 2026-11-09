@@ -387,8 +387,12 @@ can open.
   Google Maps in a new tab; not for a virtual event). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
-  (`routes/share.py`): the site mails the designed cards (logo, photo,
-  button) from MAIL_FROM under "{first name} via …", Reply-To the member,
+  (`routes/share.py`): the site mails **the site's own event card**
+  (`member_mail.site_card`, passed as `mail.send(cards=…)`: picture, title
+  with the Free / Paid and Registration required pills in the tag colours,
+  "Monday · November 9, 2026" over the time in grey, where, the saved count
+  or "5/20 spots left", "Posted by {organization}"; title and picture link
+  to the program) under the logo, plus the button from MAIL_FROM under "{first name} via …", Reply-To the member,
   signed-in members only, 20 a day. A caregiver sharing a member's list
   passes `for_member`, so it is filtered by the member's access. The
   sender's first name is in the From name and subject, which is why
@@ -475,7 +479,10 @@ can open.
   Link (the public `/shared/[token]` page, minted when the sheet opens; see
   "Holds, member email, sharing"). A caregiver viewing someone else's list
   gets email only. Jesse's call: no privacy gate, it's only a list. The
-  page is `noindex` and server-rendered; `/profile` (from the account menu)
+  page is `noindex` and server-rendered and draws the list view's card
+  (picture, title and tags, when / where / saved, Posted by at the bottom
+  right, the whole card opening the program, a Google Calendar icon for
+  people without an account); `/profile` (from the account menu)
   is where a member sets their email, picture and copies the same link.
 
 ### Admin console (`/host/*`)

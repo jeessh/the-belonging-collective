@@ -5,6 +5,7 @@ unless its owner chose to give one. Both mails describe the program in
 America/Toronto, where it happens, whatever zone the reader is in.
 """
 
+import html
 import logging
 import uuid
 from datetime import datetime, time, timedelta, timezone
@@ -286,6 +287,86 @@ def send_waitlist_decision(event_id: uuid.UUID, user_id: uuid.UUID, approved: bo
 # ---------- sharing ----------
 
 
+# The site's tag colours (frontend/tailwind.config.ts `tag-*`).
+_TAG = {
+    "free": ("Free", "#D0F9B9", "#265B08", None),
+    "paid": ("Paid", "#C7DAFF", "#004BDE", None),
+    "signup": ("Registration required", "#F1F1F1", mail.INK, mail.LINE),
+}
+
+
+def _pill(kind: str) -> str:
+    label, bg, fg, edge = _TAG[kind]
+    border = f"border:1px solid {edge};" if edge else ""
+    return (
+        f'<span style="display:inline-block;margin:6px 6px 0 0;padding:3px 10px;'
+        f'border-radius:8px;{border}background:{bg};color:{fg};font-size:14px;'
+        f'font-weight:500;line-height:1.4">{html.escape(label)}</span>'
+    )
+
+
+def _site_when(event: Event) -> tuple[str, str]:
+    """The site's two lines, fixed for mail: "Monday · November 9, 2026" over
+    "1:30PM - 3:00PM" (never "Tomorrow" — it's read later)."""
+    if not event.starts_at:
+        return "Date to be announced", ""
+    start = event.starts_at.astimezone(TZ)
+    day = start.strftime("%A · %B %-d, %Y")
+    hours = start.strftime("%-I:%M%p")
+    if event.ends_at:
+        hours += " - " + event.ends_at.astimezone(TZ).strftime("%-I:%M%p")
+    return day, hours
+
+
+def site_card(event: Event) -> str:
+    """One program as the site draws it in its list (member/CaregiverFeed):
+    the picture, then the title with its Free / Paid and Registration
+    required tags, when (the time in grey), where, the saved count — or
+    "5/20 spots left" with a limit — and who posted it. The title and
+    picture open the program."""
+    url = html.escape(program_url(event), quote=True)
+    tags = _pill("free" if event.is_free else "paid")
+    if event.requires_signup:
+        tags += _pill("signup")
+    day, time = _site_when(event)
+    going = event.saved_count
+    if event.capacity is not None:
+        count = (
+            f'<span style="color:{mail.INK}">{max(event.capacity - going, 0)}/'
+            f"{event.capacity}</span> spots left"
+        )
+    else:
+        count = (
+            f'<span style="color:{mail.INK}">{going}</span> '
+            f'{"person" if going == 1 else "people"} saved this event'
+        )
+    fact = f'margin:10px 0 0;font-size:16px;line-height:1.45;color:{mail.INK}'
+    muted = f'color:{mail.MUTED}'
+    picture = html.escape(_picture(event), quote=True)
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" '
+        f'style="margin:0 0 20px;border-collapse:separate;border:1px solid {mail.LINE};'
+        'border-radius:8px;overflow:hidden">'
+        f'<tr><td style="padding:0;line-height:0"><a href="{url}">'
+        f'<img src="{picture}" alt="" width="542" style="display:block;width:100%;'
+        'max-width:542px;height:auto;border:0"></a></td></tr>'
+        '<tr><td style="padding:20px">'
+        f'<p style="margin:0;font-size:22px;font-weight:500;line-height:1.3">'
+        f'<a href="{url}" style="color:{mail.INK};text-decoration:none">'
+        f"{html.escape(event.title)}</a></p>"
+        f'<div style="margin-top:2px">{tags}</div>'
+        f'<p style="{fact}">{html.escape(day)}'
+        + (f'<br><span style="{muted}">{html.escape(time)}</span>' if time else "")
+        + "</p>"
+        f'<p style="{fact}">{html.escape(_where(event))}</p>'
+        f'<p style="{fact};{muted}">{count}</p>'
+        f'<p style="margin:14px 0 0;font-size:15px;line-height:1.4;{muted}">'
+        f'Posted by <strong style="color:{mail.INK};font-weight:500">'
+        f"{html.escape(event.host_name)}</strong></p>"
+        "</td></tr></table>"
+    )
+
+
 def send_share(
     sender: User, to: str, events: list[Event], list_url: str | None
 ) -> bool:
@@ -321,4 +402,6 @@ def send_share(
         pictures=[_picture(e) for e in events],
         from_name=f"{name} via {mail.BRAND}",
         reply_to=sender.email,
+        # The site's own cards, not the plain reminder card.
+        cards=[site_card(e) for e in events],
     )
