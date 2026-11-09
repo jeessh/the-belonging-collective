@@ -794,6 +794,13 @@ export function EventsView({
         void animate(x, 0, { duration: 0.2 }).then(() => setLift(null));
         resetGhost();
         setDragActive(false);
+        // Dragged (or held, or said "save") onto the board again: say so,
+        // rather than silently springing back.
+        if (signedInRef.current) {
+          setSrMessage(`${ev.title} is already saved.`);
+          toast.show({ title: `${ev.title} is already saved`, tone: "info" });
+          return;
+        }
         void attend(ev);
         return;
       }
@@ -877,6 +884,7 @@ export function EventsView({
       ghostY,
       ghostScale,
       resetGhost,
+      toast,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
