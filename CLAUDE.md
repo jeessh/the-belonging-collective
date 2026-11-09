@@ -261,7 +261,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card has a soft shadow, kept straight (`FeedCard`; no pin or magnet).
+  card has a soft shadow — drawn by its turn wrapper in EventsView, not
+  FeedCard — kept straight (no pin or magnet).
   The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
@@ -321,7 +322,10 @@ can open.
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
   the top card off the deck, then settles it back into the deck — down a
   little (`tuck.distance`, 26px), behind the new top card, fading — as the
-  card beneath rises into place; "Back"
+  next card fades in where it sits (no rise or pop, `tuck.fadeIn`). The
+  top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
+  `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
+  out as it settles into the deck, and fades in with the new card; "Back"
   brings a card up from the bottom), **flip** (turns over like a playing
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one, each nudged

@@ -50,7 +50,7 @@ export const FeedCard = memo(function FeedCard({
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    <div data-tour="card" className="relative rounded-card border-2 border-line-card bg-surface p-4 shadow-[0_2px_6px_-2px_rgba(60,40,15,0.12),0_14px_32px_-12px_rgba(60,40,15,0.22)] sm:p-6 lg:p-8 short:!p-6">
+    <div data-tour="card" className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
       <EventSummary
         event={event}
         layout="card"

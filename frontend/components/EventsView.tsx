@@ -82,6 +82,16 @@ import type { Transition, ValueAnimationTransition } from "framer-motion";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
 
+/* The top card's shadow lives on its turn wrapper (not on FeedCard), so a
+   turn can deepen it as the card lifts and let it fade as the card goes back
+   into the deck. Same layer count in each, so they animate between. */
+const SHADOW_REST =
+  "0 2px 6px -2px rgba(60,40,15,0.12), 0 14px 32px -12px rgba(60,40,15,0.22)";
+const SHADOW_LIFT =
+  "0 8px 16px -4px rgba(60,40,15,0.18), 0 30px 50px -12px rgba(60,40,15,0.32)";
+const SHADOW_NONE =
+  "0 0px 0px 0px rgba(60,40,15,0), 0 0px 0px 0px rgba(60,40,15,0)";
+
 /** DialKit's transition union → framer-motion's (easing = tween). */
 function toMotionTransition(curve: TransitionConfig): Transition {
   return curve.type === "easing"
@@ -167,6 +177,8 @@ export function EventsView({
       duration: [0.6, 0.2, 1.5, 0.05],
       deckScale: [0.95, 0.8, 1, 0.01],
       deckOffset: [14, 0, 60, 1],
+      // The new top card fades in (no pop), its shadow with it.
+      fadeIn: [0.4, 0, 1.5, 0.05],
     },
     flip: {
       angle: [100, 0, 180, 1],
@@ -555,10 +567,11 @@ export function EventsView({
       cardDial.style === "tuck"
           ? d > 0
             ? // The next card is already under it: it rises from the deck.
-              // Under the lifted card until it drops below (see `center`).
-              { y: cardDial.tuck.deckOffset, scale: cardDial.tuck.deckScale, opacity: 1, zIndex: 0 }
+              // Under the lifted card until it drops below (see `center`),
+              // then fades in where it sits — no rise, no pop.
+              { y: 0, scale: 1, opacity: 0, boxShadow: SHADOW_NONE, zIndex: 0 }
             : // Back: it comes up from the bottom of the deck.
-              { y: cardDial.tuck.distance, scale: 0.9, opacity: 0, zIndex: 2 }
+              { y: cardDial.tuck.distance, scale: 0.95, opacity: 0, boxShadow: SHADOW_NONE, zIndex: 2 }
           : cardDial.style === "flip"
             ? {
                 rotateY: d > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
@@ -581,8 +594,11 @@ export function EventsView({
           opacity: 1,
           scale: 1,
           zIndex: 1,
+          boxShadow: SHADOW_REST,
           transition: {
             ...toMotionTransition(cardDial.spring),
+            opacity: { duration: cardDial.tuck.fadeIn, ease: "easeOut" },
+            boxShadow: { duration: cardDial.tuck.fadeIn * 1.4, ease: "easeOut" },
             // Comes over the card that's leaving once that one is lifted.
             zIndex: {
               delay: cardDial.style === "tuck" ? cardDial.tuck.duration * 0.3 : 0,
@@ -599,6 +615,9 @@ export function EventsView({
               y: [0, -cardDial.tuck.lift, cardDial.tuck.distance],
               scale: [1, 1.03, cardDial.tuck.deckScale],
               rotate: [0, -cardDial.tuck.tilt, cardDial.tuck.tilt * 0.3],
+              // Its shadow deepens as it's picked up, then slowly fades as
+              // it settles into the pile.
+              boxShadow: [SHADOW_REST, SHADOW_LIFT, SHADOW_NONE],
               // Over the deck while it's lifted, then under it — a single
               // delayed step each (keyframes on these don't animate).
               opacity: 0,
@@ -618,6 +637,7 @@ export function EventsView({
               y: cardDial.tuck.deckOffset,
               scale: cardDial.tuck.deckScale,
               opacity: 0,
+              boxShadow: SHADOW_NONE,
               zIndex: 0,
               transition: { duration: cardDial.tuck.duration * 0.7, ease: "easeOut" },
             }
@@ -1954,6 +1974,7 @@ export function EventsView({
                       initial={reduceMotion ? false : "enter"}
                       animate="center"
                       exit={reduceMotion ? undefined : "exit"}
+                      className="rounded-card"
                       style={{
                         transformPerspective: cardDial.flip.perspective,
                         transformOrigin:
