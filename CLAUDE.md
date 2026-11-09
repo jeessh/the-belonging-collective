@@ -528,7 +528,8 @@ can open.
 - **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
   organizations (Organization Management's page header *is* "Create an
   organization" — the unboxed name + **head's** email fields under it, then
-  invitations waiting, then the Organizations table); the organization's **head** —
+  two tabs: **Organizations** (the table, with the superadmin count) and
+  **Invitations waiting (N)**); the organization's **head** —
   its own login, the account that invite creates — adds and removes its
   team (invite / withdraw / remove refuse anyone else with 403, a
   superadmin aside) and has the normal admin rights; **team members**

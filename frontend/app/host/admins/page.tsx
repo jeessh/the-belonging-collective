@@ -53,6 +53,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
+  const [tab, setTab] = useState<"orgs" | "invites">("orgs");
   // Superadmins plus superadmin invitations still waiting: the cap counts both.
   const superSeats =
     admins.filter((a) => a.is_admin).length +
@@ -99,9 +100,48 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         onSent={() => void load()}
       />
 
-      {invites.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-fg">Organization invitations waiting</h2>
+      {/* Organizations | Invitations waiting, one at a time. */}
+      <div role="tablist" aria-label="Organizations" className="-mb-2 flex gap-6 border-b border-line">
+        {(
+          [
+            ["orgs", "Organizations"],
+            ["invites", `Invitations waiting${invites.length ? ` (${invites.length})` : ""}`],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            id={`orgtab-${key}`}
+            aria-selected={tab === key}
+            aria-controls={`orgpanel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
+            onClick={() => setTab(key)}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+              const next = key === "orgs" ? "invites" : "orgs";
+              setTab(next);
+              document.getElementById(`orgtab-${next}`)?.focus();
+            }}
+            className={`-mb-px border-b-2 pb-3 pt-1 text-base ${
+              tab === key
+                ? "border-fg font-medium text-fg"
+                : "border-transparent text-fg-muted hover:text-fg"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "invites" ? (
+        <div role="tabpanel" id="orgpanel-invites" aria-labelledby="orgtab-invites">
+          {invites.length === 0 ? (
+            <p className="py-10 text-center text-lg text-fg-muted">
+              No invitations waiting.
+            </p>
+          ) : (
+              <section className="flex flex-col gap-3">
           <TableCard
             caption="Organizations invited but not yet signed up, and whether each invitation is still open"
             head={["Organization", "Email", "Status", ""]}
@@ -139,8 +179,15 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             ))}
           </TableCard>
         </section>
-      )}
-
+          )}
+        </div>
+      ) : (
+        <div
+          role="tabpanel"
+          id="orgpanel-orgs"
+          aria-labelledby="orgtab-orgs"
+          className="flex flex-col gap-8"
+        >
       <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-medium text-fg">Organizations</h2>
         {/* Rare and powerful, so its own button and form rather than a box
@@ -252,6 +299,8 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             })
           )}
         </TableCard>
+      )}
+        </div>
       )}
 
       {addingSuper && (
