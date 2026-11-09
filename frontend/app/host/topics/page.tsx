@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -116,32 +116,11 @@ function Topics() {
     );
   }
 
-  // Swap sort_order with the neighbour. Two PATCHes; the list re-reads after.
-  function move(index: number, dir: -1 | 1) {
-    const a = rows[index];
-    const b = rows[index + dir];
-    if (!a || !b) return;
-    void act(
-      a.slug,
-      () =>
-        Promise.all([
-          updateCategory(a.slug, { sort_order: b.sort_order }),
-          updateCategory(b.slug, { sort_order: a.sort_order }),
-        ]),
-      "Couldn't reorder. Please try again.",
-    );
-  }
-
   return (
     <div className="flex flex-col gap-8">
 
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">Topics</h1>
-        <p className="text-xl text-fg">
-          Members pick these as interests, and organizations sort programs by
-          them. Renaming a topic keeps every match. Archiving one moves its
-          programs to a topic you choose.
-        </p>
       </div>
 
       <form
@@ -176,37 +155,19 @@ function Topics() {
         </p>
       ) : (
         <TableCard
-          caption="Topics in the order members and hosts see them, with how many live programs use each."
-          head={["Order", "Topic", "Programs", ""]}
+          caption="Topics, with how many live programs use each."
+          head={["Topic", "Programs", ""]}
         >
           {loading ? (
-            <EmptyRow colSpan={4} text="Loading…" />
+            <EmptyRow colSpan={3} text="Loading…" />
           ) : rows.length === 0 ? (
-            <EmptyRow colSpan={4} text="No topics yet." />
+            <EmptyRow colSpan={3} text="No topics yet." />
           ) : (
-            rows.map((c, i) => {
+            rows.map((c) => {
               const isBusy = busy !== null;
               const isEditing = editing?.slug === c.slug;
               return (
                 <tr key={c.slug} className="align-middle">
-                  <td className="px-3 py-3">
-                    <span className="inline-flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        aria-label={`Move ${c.label} up`}
-                        disabled={isBusy || i === 0}
-                        onClick={() => move(i, -1)}
-                        leadingIcon={<ArrowUp />}
-                      />
-                      <Button
-                        variant="ghost"
-                        aria-label={`Move ${c.label} down`}
-                        disabled={isBusy || i === rows.length - 1}
-                        onClick={() => move(i, 1)}
-                        leadingIcon={<ArrowDown />}
-                      />
-                    </span>
-                  </td>
                   <th scope="row" className="px-3 py-3 font-normal">
                     {isEditing ? (
                       <form

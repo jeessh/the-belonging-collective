@@ -867,8 +867,9 @@ can open.
   `deleted_at`), and the slug is the identity.** `events.categories` (with
   `events.category` mirroring its first entry), `users.interest_categories`
   and interest matching (`lib/feed.ts`, `FeedFilters`) all hold and compare
-  **slugs**; the label is display-only. Superadmins rename, reorder, add and
-  archive topics on `/host/topics` (`GET /categories` is public; the rest is
+  **slugs**; the label is display-only. Superadmins rename, add and
+  archive topics on `/host/topics` (no reordering there any more —
+  `sort_order` stays as it is; the API still accepts it) (`GET /categories` is public; the rest is
   `require_admin`) — a rename changes what's printed and nothing about who
   matches, and archiving a topic that live programs use requires
   `reassign_to`, moving those programs *and* members' interests in the same
