@@ -2020,7 +2020,7 @@ export function EventsView({
                 ref={deckRef}
                 // The card + arrows group (880 + gap + 96px), centred on the
                 // page; the heading block above is the same box.
-                className="mx-auto mt-2 flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:mt-4 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
+                className="mx-auto flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
