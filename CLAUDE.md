@@ -526,10 +526,11 @@ can open.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
 - **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
-  organizations (Organization Management: the page header "Organization
-  Management", the unboxed name + **head's** email fields under it, then
-  two tabs: **Organizations** (the table, with the superadmin count) and
-  **Invitations waiting (N)**); the organization's **head** —
+  organizations (Organization Management: the page header, then two tabs —
+  **Organizations** (a 24px heading, the superadmin count, "Add a KWHab
+  superadmin" and the primary **Add organization**, which opens a dialog
+  with the organization name + **head's** email) and **Invitations
+  waiting (N)**); the organization's **head** —
   its own login, the account that invite creates — adds and removes its
   team (invite / withdraw / remove refuse anyone else with 403, a
   superadmin aside) and has the normal admin rights; **team members**

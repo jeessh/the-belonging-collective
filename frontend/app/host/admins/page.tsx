@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -54,6 +54,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
   const [tab, setTab] = useState<"orgs" | "invites">("orgs");
+  const [addingOrg, setAddingOrg] = useState(false);
   // Superadmins plus superadmin invitations still waiting: the cap counts both.
   const superSeats =
     admins.filter((a) => a.is_admin).length +
@@ -95,9 +96,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </h1>
       </div>
 
-      <InviteForm
-        onSent={() => void load()}
-      />
 
       {/* Organizations | Invitations waiting, one at a time. */}
       <div role="tablist" aria-label="Organizations" className="-mb-2 flex gap-6 border-b border-line">
@@ -188,7 +186,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           className="flex flex-col gap-8"
         >
       <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-medium text-fg">Organizations</h2>
+        <h2 className="text-2xl font-medium text-fg">Organizations</h2>
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
         <div className="flex items-center gap-3">
@@ -204,6 +202,13 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             onClick={() => setAddingSuper(true)}
           >
             Add a KWHab superadmin
+          </Button>
+          <Button
+            variant="primary"
+            leadingIcon={<Plus />}
+            onClick={() => setAddingOrg(true)}
+          >
+            Add organization
           </Button>
         </div>
       </div>
@@ -302,6 +307,14 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         </div>
       )}
 
+      {addingOrg && (
+        <Modal title="Add organization" onClose={() => setAddingOrg(false)}>
+          <div className="mt-4">
+            <InviteForm onSent={() => void load()} />
+          </div>
+        </Modal>
+      )}
+
       {addingSuper && (
         <SuperadminModal
           onClose={() => setAddingSuper(false)}
@@ -379,8 +392,8 @@ function InviteForm({
   }
 
   return (
-    // Unboxed, straight under the page's "Create an organization" header.
-    <section aria-label="Create an organization" className="flex max-w-[1026px] flex-col gap-4">
+    // In the "Add organization" dialog.
+    <section aria-label="Add organization" className="flex flex-col gap-4">
 
       {sent && (
         <div
@@ -426,10 +439,9 @@ function InviteForm({
           if (!busy && organization.trim() && email.trim()) void send();
         }}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-4">
           <TextField
             label="Organization"
-            className="flex-1 [&>label]:sr-only"
             value={organization}
             onChange={(e) => setOrganization(e.target.value)}
             placeholder="Organization name"
@@ -437,7 +449,6 @@ function InviteForm({
           />
           <TextField
             label="Head's email"
-            className="flex-1 [&>label]:sr-only"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -446,8 +457,8 @@ function InviteForm({
           />
           <Button
             type="submit"
-            variant="secondary"
-            className="min-h-12"
+            variant="primary"
+            className="mt-2 w-full"
             disabled={busy || !organization.trim() || !email.trim()}
             trailingIcon={<SendHorizontal />}
           >
