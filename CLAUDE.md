@@ -355,7 +355,11 @@ can open.
   (`ghostX` / `ghostY` / `ghostScale` / `ghostRotate`) gets the anticipation,
   flight curve and style (spin / arc / pop) on its way into the newest slot,
   then the celebration. Zero-motion: reduced motion skips all of it. Keyframes on
-  `opacity` / `zIndex` in an exit don't animate — use delayed single steps.
+  `opacity` / `zIndex` in an exit don't animate — use delayed single steps. And a
+  single value (pointerEvents, rotateY…) under a transition whose default
+  has 3-step `times` never finishes — the exit never completes and turned
+  cards piled up, one stuck over the ↑ / ↓ buttons; give each its own
+  `{ duration: 0 }`.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,

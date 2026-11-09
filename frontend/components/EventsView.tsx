@@ -652,6 +652,9 @@ export function EventsView({
                 times: [0, 0.45, 1],
                 ease: "easeInOut",
               },
+              // Single values under the 3-step `times` never finished.
+              pointerEvents: { duration: 0 },
+              rotateY: { duration: 0 },
               // Visible almost at once — fading in slowly while it was still
               // hidden behind the top card made ↑ feel late.
               opacity: { duration: cardDial.tuck.duration * 0.3, ease: "easeOut" },
@@ -722,6 +725,10 @@ export function EventsView({
               zIndex: 0,
               transition: {
                 default: { duration: cardDial.tuck.duration, times: [0, 0.45, 1], ease: "easeInOut" },
+                // One-step values get their own instant timing: under the
+                // 3-step `times` above, they never finished — the exit never
+                // completed and turned cards piled up under the top one.
+                pointerEvents: { duration: 0 },
                 zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
                 // Seen sliding under the new card first, then gone.
                 opacity: {
@@ -746,6 +753,7 @@ export function EventsView({
                   delay: cardDial.tuck.duration * 0.45,
                   ease: [0.33, 0, 0.2, 1],
                 },
+                pointerEvents: { duration: 0 },
                 // Stays above the arriving card until that one has risen.
                 zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
               },
