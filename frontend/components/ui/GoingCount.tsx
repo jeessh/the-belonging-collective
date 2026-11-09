@@ -46,9 +46,20 @@ export function GoingCount({
     <span className={`inline-flex items-center gap-3 text-fg-muted ${className}`}>
       <Bookmark aria-hidden="true" className={`shrink-0 text-fg-muted ${iconClassName}`} />
       {/* With an attendee limit, the line is the places left instead. */}
-      {capacity != null
-        ? `${Math.max(capacity - count, 0)}/${capacity} spots left`
-        : `${count} ${count === 1 ? "person" : "people"} saved this event`}
+      {/* The number stands out (bold, the text colour); the words stay grey. */}
+      {capacity != null ? (
+        <span>
+          <span className="font-semibold text-fg">
+            {Math.max(capacity - count, 0)}/{capacity}
+          </span>{" "}
+          spots left
+        </span>
+      ) : (
+        <span>
+          <span className="font-semibold text-fg">{count}</span>{" "}
+          {count === 1 ? "person" : "people"} saved this event
+        </span>
+      )}
     </span>
   );
 }
