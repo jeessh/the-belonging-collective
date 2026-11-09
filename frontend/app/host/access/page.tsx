@@ -376,20 +376,21 @@ function GroupPanel({
           {isSuper && <p className="text-lg text-fg-muted">{group.host_name}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* The organization already knows who belongs: adding someone
+          {/* Archive, Rename, then the primary Add people at the far right.
+              The organization already knows who belongs: adding someone
               puts them straight in, no request or approval. */}
+          <Button variant="ghost" leadingIcon={<Archive />} onClick={onArchive}>
+            Archive
+          </Button>
+          <Button leadingIcon={<Pencil />} onClick={onRename}>
+            Rename
+          </Button>
           <Button
             variant="primary"
             leadingIcon={<UserPlus />}
             onClick={() => setAdding(true)}
           >
             Add people
-          </Button>
-          <Button leadingIcon={<Pencil />} onClick={onRename}>
-            Rename
-          </Button>
-          <Button variant="ghost" leadingIcon={<Archive />} onClick={onArchive}>
-            Archive
           </Button>
         </div>
       </div>
