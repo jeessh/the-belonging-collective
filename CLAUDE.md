@@ -533,7 +533,8 @@ can open.
   superadmin aside) and has the normal admin rights; **team members**
   (staff logins) post and manage the organization's events but not the
   team. The Team page and its side-panel entry are named after the
-  organization ("{Org} team" in the nav, the org's name as the title);
+  organization ("{Org} team" in the nav, the org's name as the title,
+  "Your organization's team. Every member can create or delete events." under it);
   rows say Head / Team member, and only the head (or a superadmin) sees
   the invite form, Remove and Withdraw.
 - `/host/team` is the organization's logins: the shared one, each staff

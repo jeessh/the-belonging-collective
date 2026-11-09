@@ -82,9 +82,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         <div className="flex max-w-[840px] flex-col gap-3">
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">{org.name}</h1>
           <p className="text-xl text-fg">
-            {canManage
-              ? `Your team. As the head, you add people and remove them; everyone on the team can post and manage ${org.name}'s events.`
-              : `Your team. Everyone here can post and manage ${org.name}'s events; ${org.name}'s head adds and removes people.`}
+            Your organization&apos;s team. Every member can create or delete events.
           </p>
         </div>
         {ctx.isSuper && orgs.length > 0 && (
