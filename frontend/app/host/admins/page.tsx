@@ -87,13 +87,15 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
 
       <div className="flex flex-col gap-3">
+        {/* The page's one big header: creating organizations is what it's
+            for. The invite fields, invitations waiting and the table of
+            organizations all sit under it. */}
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
-          Organizations
+          Create an organization
         </h1>
         <p className="text-xl text-fg">
-          Create an organization's team and name its head. The head adds and
-          manages their own team members; everyone on the team can post the
-          organization&apos;s events.
+          Name the organization and its head. We&apos;ll email the head a link
+          to set up their login; they then add and manage their own team.
         </p>
       </div>
 
@@ -144,7 +146,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
       )}
 
       <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-medium text-fg">Organization Admins</h2>
+        <h2 className="text-xl font-medium text-fg">Organizations</h2>
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
         <div className="flex items-center gap-3">
@@ -333,15 +335,8 @@ function InviteForm({
   }
 
   return (
-    // Boxed: adding an organization is its own task on this page.
-    <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-      <div>
-        <h2 className="text-xl font-medium text-fg">Create an organization</h2>
-        <p className="text-xl text-fg">
-          We&apos;ll email the head a link to set up their login. They can then
-          add their team.
-        </p>
-      </div>
+    // Unboxed, straight under the page's "Create an organization" header.
+    <section aria-label="Create an organization" className="flex max-w-[1026px] flex-col gap-4">
 
       {sent && (
         <div

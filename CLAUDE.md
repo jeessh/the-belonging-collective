@@ -526,8 +526,9 @@ can open.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
 - **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
-  organizations (Organization Management's "Create an organization" —
-  organization name + the **head's** email); the organization's **head** —
+  organizations (Organization Management's page header *is* "Create an
+  organization" — the unboxed name + **head's** email fields under it, then
+  invitations waiting, then the Organizations table); the organization's **head** —
   its own login, the account that invite creates — adds and removes its
   team (invite / withdraw / remove refuse anyone else with 403, a
   superadmin aside) and has the normal admin rights; **team members**
