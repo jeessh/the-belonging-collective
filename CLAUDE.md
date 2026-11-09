@@ -319,10 +319,14 @@ can open.
   layout; DialKit hides it in production). Two panels in EventsView:
   **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
-  the top card off the deck, drops it behind and slides it to the bottom of
-  the page while it fades, as the card beneath rises into place; "Back"
+  the top card off the deck, then settles it back into the deck — down a
+  little (`tuck.distance`, 26px), behind the new top card, fading — as the
+  card beneath rises into place; "Back"
   brings a card up from the bottom), **flip** (turns over like a playing
-  card, `rotateY`) or **slide**; past the last card the deck **shuffles**
+  card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
+  `stack.layers` (4) full-size cards under the top one, each nudged
+  (`offsetY` 7px, `offsetX` 2px) and tilted ±`tilt`° — always full, since
+  turned cards go back into it (replaces the two narrower layers); past the last card the deck **shuffles**
   (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
   declarative keyframe restarted on every re-render). **Save animation**
   (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):

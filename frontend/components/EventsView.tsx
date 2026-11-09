@@ -161,7 +161,8 @@ export function EventsView({
     },
     tuck: {
       lift: [36, 0, 160, 1],
-      distance: [320, 60, 800, 5],
+      // How far down it sinks as it goes back into the deck (not off the page).
+      distance: [26, 0, 200, 1],
       tilt: [4, 0, 20, 0.5],
       duration: [0.6, 0.2, 1.5, 0.05],
       deckScale: [0.95, 0.8, 1, 0.01],
@@ -185,6 +186,13 @@ export function EventsView({
     startOpacity: [1, 0, 1, 0.05],
     startScale: [1, 0.8, 1.1, 0.01],
     spring: { type: "spring", stiffness: 260, damping: 26, mass: 1 },
+    // The pile under the top card: full-size cards, each nudged and tilted.
+    stack: {
+      layers: [4, 0, 8, 1],
+      offsetY: [7, 0, 24, 0.5],
+      offsetX: [2, -12, 12, 0.5],
+      tilt: [1.4, 0, 6, 0.1],
+    },
     // Past the last card: the deck riffles before card 1 comes back.
     shuffle: {
       offset: [70, 0, 240, 1],
@@ -586,10 +594,11 @@ export function EventsView({
       cardDial.style === "tuck"
         ? d > 0
           ? {
-              // Picked up off the top, then slid under the deck to the bottom.
+              // Picked up off the top, then slipped back into the deck: it
+              // settles down onto the pile, behind the new top card.
               y: [0, -cardDial.tuck.lift, cardDial.tuck.distance],
-              scale: [1, 1.03, 0.9],
-              rotate: [0, -cardDial.tuck.tilt, cardDial.tuck.tilt * 0.5],
+              scale: [1, 1.03, cardDial.tuck.deckScale],
+              rotate: [0, -cardDial.tuck.tilt, cardDial.tuck.tilt * 0.3],
               // Over the deck while it's lifted, then under it — a single
               // delayed step each (keyframes on these don't animate).
               opacity: 0,
@@ -1870,31 +1879,44 @@ export function EventsView({
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
                 >
-                  {/* The deck beneath: up to two more event cards, each a little
-                      narrower and lower, peeking out under the one on top —
-                      white cards with the same edge and shadow, so it reads
-                      as a stack of events. Only as many as are left. Purely
-                      decorative. */}
-                  {feed.length - i - 1 >= 2 && (
-                    <motion.div
-                      key={`deck2:${shuffleTick}`}
-                      aria-hidden
-                      // On a shuffle the deck riffles in from both sides.
-                      initial={shuffling && !reduceMotion ? { x: cardDial.shuffle.offset, rotate: cardDial.shuffle.rotate } : false}
-                      animate={{ x: 0, rotate: 0 }}
-                      transition={{ duration: cardDial.shuffle.duration * 0.8, ease: "easeOut" }}
-                      className="absolute inset-x-10 -bottom-6 top-16 rounded-card border border-line-card/80 bg-[#FAFAFA] shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:inset-x-16 sm:-bottom-7"
-                    />
-                  )}
-                  {feed.length - i - 1 >= 1 && (
-                    <motion.div
-                      key={`deck1:${shuffleTick}`}
-                      aria-hidden
-                      initial={shuffling && !reduceMotion ? { x: -cardDial.shuffle.offset * 0.8, rotate: -cardDial.shuffle.rotate * 0.8 } : false}
-                      animate={{ x: 0, rotate: 0 }}
-                      transition={{ duration: cardDial.shuffle.duration * 0.9, ease: "easeOut" }}
-                      className="absolute inset-x-5 -bottom-3 top-12 rounded-card border border-line-card bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.07)] sm:inset-x-8 sm:-bottom-3.5"
-                    />
+                  {/* The deck: a pile of full-size event cards under the top
+                      one, each nudged down (and a touch sideways) and tilted a
+                      little either way, like a real stack. The deck cycles —
+                      a turned card goes back into it — so it stays full.
+                      DialKit "Card transition" → stack. Purely decorative. */}
+                  {Array.from(
+                    { length: Math.min(Math.max(feed.length - 1, 0), cardDial.stack.layers) },
+                    (_, k) => {
+                      const n = k + 1;
+                      const tilt = (n % 2 ? 1 : -1) * cardDial.stack.tilt * (0.6 + 0.4 * (n / cardDial.stack.layers));
+                      return (
+                        <motion.div
+                          key={`deck${n}:${shuffleTick}`}
+                          aria-hidden
+                          // On a shuffle each card riffles in from alternate sides.
+                          initial={
+                            shuffling && !reduceMotion
+                              ? {
+                                  x: (n % 2 ? 1 : -1) * cardDial.shuffle.offset,
+                                  rotate: (n % 2 ? 1 : -1) * cardDial.shuffle.rotate,
+                                }
+                              : false
+                          }
+                          animate={{
+                            x: n * cardDial.stack.offsetX,
+                            y: n * cardDial.stack.offsetY,
+                            rotate: tilt,
+                          }}
+                          transition={{
+                            duration: cardDial.shuffle.duration * (0.6 + 0.1 * n),
+                            ease: "easeOut",
+                          }}
+                          // Under the top card (its wrapper is z-10), deeper ones lower.
+                          style={{ zIndex: 9 - n }}
+                          className="absolute inset-0 rounded-card border-2 border-line-card bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                        />
+                      );
+                    },
                   )}
                   <motion.div
                     ref={cardWrapRef}
