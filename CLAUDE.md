@@ -321,7 +321,9 @@ can open.
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
   the top card off the deck and **swings it out to the side** (`tuck.swing`,
   180px), then slides it back in **under** the new top card — their z swaps
-  at the swing's furthest point — darkening (`tuck.dim`) and only fading
+  at the swing's furthest point — darkening (`tuck.dim`; leaving and
+  swinging cards are `pointerEvents: none` till settled, as the swing
+  passes over the ↑ / ↓ buttons) and only fading
   once it's tucked into the pile (`tuck.distance`, 26px down), as the
   next card emerges from the deck's top card: after `tuck.revealDelay`
   (0.18s, once the old card is lifted clear) it eases up from the stack's
