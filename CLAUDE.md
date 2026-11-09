@@ -195,7 +195,10 @@ can open.
   Save on events that need it):
   **no chips and no filter column**, in the card view's box (so the
   margins match): search, **Filter** (a dropdown under the button — not a modal;
-  Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
+  Escape or a click outside closes it — holding `FilterPanel memberView`:
+  the console's groups bar Status and Posted by — Date posted, Non-Profit
+  Org., Price, Registration Type, Event Type, Topics, What you need; OR
+  within a group, AND across groups — "N filters applied" with removable chips, count
   badges; the button shows "Filter (N)" and the accent's soft fill while any
   are on) share one row, over the cards — **no Sort**; the cards keep the
   feed's own order. It is handed `listFeed`

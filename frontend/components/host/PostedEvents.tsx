@@ -23,7 +23,8 @@ import { Checkbox } from "@/components/ui/Checkbox";
 
 /**
  * The console's own groups, beside the feed's dimensions: when an event was
- * posted, who posted it, and where it stands. Members never filter by these.
+ * posted, who posted it, and where it stands. Members filter by Date posted
+ * too (FilterPanel `memberView`).
  */
 type ExtraKey = "posted" | "postedBy" | "status";
 type FilterKey = DimensionKey | ExtraKey;
@@ -170,8 +171,11 @@ export const FilterPanel = memo(function FilterPanel({
   }
 
   // The console's groups first (status, when, who), then the feed's.
+  // Members get the console's groups too, bar two: Status (they only ever
+  // see published events) and Posted by (for them it's the organization —
+  // Non-Profit Org. already, since a member never sees which person posted).
   const groups: FilterKey[] = memberView
-    ? DIMENSIONS.map((d) => d.key)
+    ? ["posted", ...DIMENSIONS.map((d) => d.key)]
     : [
         ...(showStatus ? (["status"] as const) : []),
         "posted",
