@@ -634,12 +634,15 @@ export function EventsView({
             zIndex: 1,
             boxShadow: [SHADOW_NONE, SHADOW_LIFT, SHADOW_REST],
             transition: {
+              // The same length and shape as Next, so ↑ and ↓ feel alike.
               default: {
-                duration: cardDial.tuck.duration + cardDial.tuck.fadeIn * 0.3,
-                times: [0, 0.5, 1],
+                duration: cardDial.tuck.duration,
+                times: [0, 0.45, 1],
                 ease: "easeInOut",
               },
-              opacity: { duration: cardDial.tuck.fadeIn, ease: [0.33, 0, 0.2, 1] },
+              // Visible almost at once — fading in slowly while it was still
+              // hidden behind the top card made ↑ feel late.
+              opacity: { duration: cardDial.tuck.duration * 0.3, ease: "easeOut" },
               // Over the old top card once it has risen clear of the pile.
               zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
             },
