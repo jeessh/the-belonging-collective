@@ -980,9 +980,9 @@ can open.
   *public* programs — special-access ones are excluded whoever holds the link.
 - **Google Calendar: connected when configured, subscribed otherwise.** Both
   "Google Calendar" buttons (sidebar and All Saved Events) and the profile's
-  card go through `lib/calendar.googleCalendarButton(Me.google_calendar)` — labelled **"Connect to Calendar"** until the member's
-  calendar is connected (`google_calendar !== "connected"`; signed out too),
-  then "Open Google Calendar":
+  card go through `lib/calendar.googleCalendarButton(Me.google_calendar)` — labelled **"Google Calendar"** by default (signed out,
+  or connected) and **"Connect to Calendar"** while a signed-in member
+  hasn't connected (`google_calendar !== "connected"`):
   - `available` / `connected` (GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET set):
     `GET /google-calendar/connect` → Google consent (scope
     `calendar.app.created` only — the app's own calendars, nothing else in the

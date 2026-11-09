@@ -161,9 +161,11 @@ export const SavedSidebar = memo(
           ? "Calendar"
           : owner
             ? "Download calendar"
-            : googleCalendar === "connected"
-              ? "Open Google Calendar"
-              : "Connect to Calendar"}
+            : // "Google Calendar" by default (signed out, or connected);
+              // "Connect to Calendar" only while a signed-in member hasn't.
+              signedIn && googleCalendar !== "connected"
+              ? "Connect to Calendar"
+              : "Google Calendar"}
       </>
     );
     const calendar =
