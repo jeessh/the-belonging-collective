@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Copy, Plus, SendHorizontal, ShieldCheck, Trash2 } from "lucide-react";
 import {
   ApiError,
   apiMessage,
@@ -40,6 +41,9 @@ export default function AdminsPage() {
   );
 }
 
+/** The superadmin cap (backend `core/superadmins.MAX_SUPERADMINS`). */
+const MAX_SUPERADMINS = 3;
+
 function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
   const { show } = useToast();
@@ -50,6 +54,12 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
+  const [tab, setTab] = useState<"orgs" | "invites">("orgs");
+  const [addingOrg, setAddingOrg] = useState(false);
+  // Superadmins plus superadmin invitations still waiting: the cap counts both.
+  const superSeats =
+    admins.filter((a) => a.is_admin).length +
+    invites.filter((i) => i.is_admin && !i.expired).length;
 
   async function load() {
     try {
@@ -80,22 +90,56 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
     <div className="flex flex-col gap-8">
 
       <div className="flex flex-col gap-3">
+        {/* The page's one big header; the create-an-organization fields,
+            then the Organizations / Invitations waiting tabs, sit under it. */}
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
-          Organizations
+          Organization Management
         </h1>
-        <p className="text-xl text-fg">
-          Every organization posting on the platform, each managing its own
-          events, team and special access
-        </p>
       </div>
 
-      <InviteForm
-        onSent={() => void load()}
-      />
 
-      {invites.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-fg">Organization invitations waiting</h2>
+      {/* Organizations | Invitations waiting, one at a time. */}
+      <div role="tablist" aria-label="Organizations" className="-mb-2 flex gap-6 border-b border-line">
+        {(
+          [
+            ["orgs", "Organizations"],
+            ["invites", `Invitations waiting${invites.length ? ` (${invites.length})` : ""}`],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            id={`orgtab-${key}`}
+            aria-selected={tab === key}
+            aria-controls={`orgpanel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
+            onClick={() => setTab(key)}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+              const next = key === "orgs" ? "invites" : "orgs";
+              setTab(next);
+              document.getElementById(`orgtab-${next}`)?.focus();
+            }}
+            className={`-mb-px border-b-2 pb-3 pt-1 text-base ${
+              tab === key
+                ? "border-fg font-medium text-fg"
+                : "border-transparent text-fg-muted hover:text-fg"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "invites" ? (
+        <div role="tabpanel" id="orgpanel-invites" aria-labelledby="orgtab-invites">
+          {invites.length === 0 ? (
+            <p className="py-10 text-center text-lg text-fg-muted">
+              No invitations waiting.
+            </p>
+          ) : (
+              <section className="flex flex-col gap-3">
           <TableCard
             caption="Organizations invited but not yet signed up, and whether each invitation is still open"
             head={["Organization", "Email", "Status", ""]}
@@ -133,20 +177,45 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             ))}
           </TableCard>
         </section>
-      )}
-
+          )}
+        </div>
+      ) : (
+        <div
+          role="tabpanel"
+          id="orgpanel-orgs"
+          aria-labelledby="orgtab-orgs"
+          className="flex flex-col gap-8"
+        >
       <div className="-mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-medium text-fg">Organization Admins</h2>
+        <h2 className="text-2xl font-medium text-fg">Organizations</h2>
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
-        <Button
-          variant="secondary"
-          leadingIcon={<ShieldCheck />}
-          onClick={() => setAddingSuper(true)}
-        >
-          Add a KWHab superadmin
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* At most three (backend core/superadmins), waiting invitations
+              included. */}
+          <Button
+            variant="secondary"
+            leadingIcon={<ShieldCheck />}
+            disabled={superSeats >= MAX_SUPERADMINS}
+            onClick={() => setAddingSuper(true)}
+          >
+            Add a superadmin
+          </Button>
+          <Button
+            variant="primary"
+            leadingIcon={<Plus />}
+            onClick={() => setAddingOrg(true)}
+          >
+            Add organization
+          </Button>
+        </div>
       </div>
+      {superSeats >= MAX_SUPERADMINS && (
+        <p className="-mb-5 text-sm text-fg-muted">
+          There can be at most {MAX_SUPERADMINS} superadmins. Remove one, or
+          withdraw a waiting invitation, to add another.
+        </p>
+      )}
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load organizations — refresh to try again
@@ -168,9 +237,23 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
               const isMe = a.id === ctx.org.id;
               const busy = busyId === a.id;
               return (
-                <tr key={a.id} className="align-middle">
+                // The whole row opens the organization's team page (its
+                // name is the link, for the keyboard); its buttons don't.
+                <tr
+                  key={a.id}
+                  className="cursor-pointer align-middle transition-colors hover:bg-surface-subtle/60"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a")) return;
+                    router.push(`/host/team?org=${a.id}`);
+                  }}
+                >
                   <th scope="row" className="px-3 py-3 font-normal">
-                    {a.name}
+                    <Link
+                      href={`/host/team?org=${a.id}`}
+                      className="font-medium text-fg underline-offset-4 hover:underline"
+                    >
+                      {a.name}
+                    </Link>
                     {isMe && (
                       <span className="ml-3">
                         <Pill tone="good">You</Pill>
@@ -206,7 +289,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                   </td>
                   <td className="px-3 py-3">
                     {/* Shown, not changed here: a superadmin is added on
-                        purpose, with "Add a KWHab superadmin". */}
+                        purpose, with "Add a superadmin". */}
                     <Pill tone={a.is_admin ? "warn" : "neutral"}>
                       {a.is_admin ? "Superadmin" : "Admin"}
                     </Pill>
@@ -232,6 +315,16 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             })
           )}
         </TableCard>
+      )}
+        </div>
+      )}
+
+      {addingOrg && (
+        <Modal title="Add organization" onClose={() => setAddingOrg(false)}>
+          <div className="mt-4">
+            <InviteForm onSent={() => void load()} />
+          </div>
+        </Modal>
       )}
 
       {addingSuper && (
@@ -311,16 +404,8 @@ function InviteForm({
   }
 
   return (
-    // Boxed: adding an organization is its own task on this page.
-    <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-      <div>
-        <h2 className="text-xl font-medium text-fg">
-          Invite Organization to the Belonging Collective
-        </h2>
-        <p className="text-xl text-fg">
-          We&apos;ll email them a link to set up their login and password
-        </p>
-      </div>
+    // In the "Add organization" dialog.
+    <section aria-label="Add organization" className="flex flex-col gap-4">
 
       {sent && (
         <div
@@ -366,28 +451,26 @@ function InviteForm({
           if (!busy && organization.trim() && email.trim()) void send();
         }}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-4">
           <TextField
             label="Organization"
-            className="flex-1 [&>label]:sr-only"
             value={organization}
             onChange={(e) => setOrganization(e.target.value)}
             placeholder="Organization name"
             autoComplete="organization"
           />
           <TextField
-            label="Email"
-            className="flex-1 [&>label]:sr-only"
+            label="Head's email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Organization's email"
+            placeholder="Head's email"
             autoComplete="off"
           />
           <Button
             type="submit"
-            variant="secondary"
-            className="min-h-12"
+            variant="primary"
+            className="mt-2 w-full"
             disabled={busy || !organization.trim() || !email.trim()}
             trailingIcon={<SendHorizontal />}
           >
@@ -518,7 +601,7 @@ function SuperadminModal({
   }
 
   return (
-    <Modal title="Add a KWHab superadmin" onClose={onClose}>
+    <Modal title="Add a superadmin" onClose={onClose}>
       {sent ? (
         <div className="mt-4 flex flex-col gap-4">
           <p className="text-lg text-fg">

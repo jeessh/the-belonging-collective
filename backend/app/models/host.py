@@ -102,6 +102,14 @@ class Host(Base):
         return False if self.org_id is not None else self.is_admin
 
 
+def can_manage_team(host: Host, org_id: uuid.UUID) -> bool:
+    """Three roles: a superadmin creates organizations (and can manage any
+    team); an organization's head — its own login, the account the
+    superadmin invited — adds and removes its team; a team member (a staff
+    login) posts and manages the organization's events but not the team."""
+    return host.is_superadmin or (host.org_id is None and host.id == org_id)
+
+
 def org_id_of(host: Host) -> uuid.UUID:
     """The organization a login acts for. Every ownership check goes through
     this, so a staff login and the shared login see the same programs."""

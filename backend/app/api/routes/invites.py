@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin, set_auth_cookie
+from app.core import superadmins
 from app.core.config import settings
 from app.core.org_space import unique_slug
 from app.core.mail import send as send_mail
@@ -19,7 +20,7 @@ from app.core.security import (
     credential_fingerprint,
     hash_password,
 )
-from app.models.host import Host, org_id_of
+from app.models.host import Host, can_manage_team
 from app.models.invite import HostInvite
 
 router = APIRouter(prefix="/invites", tags=["invites"])
@@ -107,9 +108,12 @@ def create_invite(
     _email_free(db, email, current)
 
     if body.org_id is not None:
-        # Staff invitation. Your own organization, or any for a superadmin.
-        if body.org_id != org_id_of(current) and not current.is_superadmin:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
+        # A team member: the organization's head adds them (or a superadmin).
+        if not can_manage_team(current, body.org_id):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Only your organization's head can add people to the team.",
+            )
         org = db.get(Host, body.org_id)
         if not org or org.deleted_at is not None or org.org_id is not None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
@@ -139,6 +143,8 @@ def create_invite(
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY, "Organization can't be blank"
             )
+        if body.is_admin:
+            superadmins.require_seat(db)
         invite = HostInvite(
             token_hash="",
             organization=organization,
@@ -227,7 +233,9 @@ def revoke_invite(
     invite = db.get(HostInvite, invite_id)
     if not invite or invite.accepted_at is not None:
         return
-    if not current.is_superadmin and invite.org_id != org_id_of(current):
+    if not current.is_superadmin and (
+        invite.org_id is None or not can_manage_team(current, invite.org_id)
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your invitation")
     db.delete(invite)
     db.commit()
@@ -303,6 +311,10 @@ def accept_invite(
             org_id=invite.org_id,
         )
     else:
+        # The seat may have gone since it was sent; this invite is one of
+        # the waiting ones, so count live superadmins only.
+        if invite.is_admin:
+            superadmins.require_seat(db, counting_invites=False)
         host = Host(
             name=invite.organization,
             email=invite.email,

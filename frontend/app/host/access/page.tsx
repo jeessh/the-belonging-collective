@@ -122,20 +122,7 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">
             Special Access
           </h1>
-          <p className="text-xl text-fg">
-            Some programs are only for the people in a group. Add people by
-            email and they&apos;re in straight away, or answer requests members
-            send from a program&apos;s page. Anyone in a group can see and save
-            every program in it.
-          </p>
         </div>
-        <Button
-          variant="primary"
-          trailingIcon={<Plus />}
-          onClick={() => setCreating(true)}
-        >
-          New group
-        </Button>
       </div>
 
       {loadError ? (
@@ -167,6 +154,15 @@ function SpecialAccess({ ctx }: { ctx: ConsoleContext }) {
             aria-label="Groups"
             className="w-full rounded-control border border-line bg-surface p-2.5 lg:w-[320px] lg:shrink-0"
           >
+            {/* New group, at the top of the groups column. */}
+            <Button
+              variant="primary"
+              className="mb-2 w-full"
+              trailingIcon={<Plus />}
+              onClick={() => setCreating(true)}
+            >
+              New group
+            </Button>
             <ul className="flex flex-col gap-1">
               {shownGroups.map((g) => {
                 const on = g.id === selectedId;
@@ -380,20 +376,21 @@ function GroupPanel({
           {isSuper && <p className="text-lg text-fg-muted">{group.host_name}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* The organization already knows who belongs: adding someone
+          {/* Archive, Rename, then the primary Add people at the far right.
+              The organization already knows who belongs: adding someone
               puts them straight in, no request or approval. */}
+          <Button variant="ghost" leadingIcon={<Archive />} onClick={onArchive}>
+            Archive
+          </Button>
+          <Button leadingIcon={<Pencil />} onClick={onRename}>
+            Rename
+          </Button>
           <Button
             variant="primary"
             leadingIcon={<UserPlus />}
             onClick={() => setAdding(true)}
           >
             Add people
-          </Button>
-          <Button leadingIcon={<Pencil />} onClick={onRename}>
-            Rename
-          </Button>
-          <Button variant="ghost" leadingIcon={<Archive />} onClick={onArchive}>
-            Archive
           </Button>
         </div>
       </div>

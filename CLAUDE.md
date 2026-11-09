@@ -195,7 +195,10 @@ can open.
   Save on events that need it):
   **no chips and no filter column**, in the card view's box (so the
   margins match): search, **Filter** (a dropdown under the button — not a modal;
-  Escape or a click outside closes it — holding `FilterPanel memberView` — "N filters applied" with removable chips, count
+  Escape or a click outside closes it — holding `FilterPanel memberView`:
+  the console's groups bar Status and Posted by — Date posted, Non-Profit
+  Org., Price, Registration Type, Event Type, Topics, What you need; OR
+  within a group, AND across groups — "N filters applied" with removable chips, count
   badges; the button shows "Filter (N)" and the accent's soft fill while any
   are on) share one row, over the cards — **no Sort**; the cards keep the
   feed's own order. It is handed `listFeed`
@@ -513,7 +516,7 @@ can open.
   organization invite always makes an ordinary agency (`is_admin: false`),
   and inviting is the console's only way to add one — the "Create an
   organization" form (set a temporary password in person) was removed;
-  `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
+  `POST /hosts` remains in the API; "Add a superadmin" (beside the Organization Admins heading on Organization Management)
   is its own form (what a superadmin can do, a pointer to KWHab's Team page
   for colleagues who should only maintain events — staff are normal
   admins — then an emailed invite with `is_admin: true`). The Organizations table only shows each tier — there is no
@@ -522,6 +525,22 @@ can open.
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
+- **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
+  organizations (Organization Management: the page header, then two tabs —
+  **Organizations** (a 24px heading, "Add a KWHab
+  superadmin" and the primary **Add organization**, which opens a dialog
+  with the organization name + **head's** email) and **Invitations
+  waiting (N)**; each organization's row — its name a link — opens its
+  team page, `/host/team?org={id}`); the organization's **head** —
+  its own login, the account that invite creates — adds and removes its
+  team (invite / withdraw / remove refuse anyone else with 403, a
+  superadmin aside) and has the normal admin rights; **team members**
+  (staff logins) post and manage the organization's events but not the
+  team. The Team page and its side-panel entry are named after the
+  organization ("{Org} team" in the nav, the org's name as the title,
+  "Your organization's team. Every member can create or delete events." under it);
+  rows say Head / Team member, and only the head (or a superadmin) sees
+  the invite form, Remove and Withdraw.
 - `/host/team` is the organization's logins: the shared one, each staff
   login, and staff invitations waiting (name + email → `POST /invites` with
   `org_id`; the accept page at `/host/invite/[token]` reads `staff` from the
@@ -848,8 +867,9 @@ can open.
   `deleted_at`), and the slug is the identity.** `events.categories` (with
   `events.category` mirroring its first entry), `users.interest_categories`
   and interest matching (`lib/feed.ts`, `FeedFilters`) all hold and compare
-  **slugs**; the label is display-only. Superadmins rename, reorder, add and
-  archive topics on `/host/topics` (`GET /categories` is public; the rest is
+  **slugs**; the label is display-only. Superadmins rename, add and
+  archive topics on `/host/topics` (no reordering there any more —
+  `sort_order` stays as it is; the API still accepts it) (`GET /categories` is public; the rest is
   `require_admin`) — a rename changes what's printed and nothing about who
   matches, and archiving a topic that live programs use requires
   `reassign_to`, moving those programs *and* members' interests in the same
@@ -1118,7 +1138,7 @@ Everything a staff login does is done *as the organization*:
   `Host.is_superadmin` is the organization row's `is_admin` and always false
   for a staff row, so someone added to KWHab's Team maintains KWHab's events
   like any agency's staff (no Organization / Member Management, Topics or
-  Import). Superadmins are added on purpose ("Add a KWHab superadmin").
+  Import). Superadmins are added on purpose ("Add a superadmin").
   `deps.load_live_host` loads the org alongside the login (and treats a
   login whose org is archived as archived). Use `is_superadmin`, not the
   `is_admin` column, when deciding what a caller may do.
@@ -1186,6 +1206,11 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   (`DELETE /hosts/team/{id}`) archives just that row. `hosts.email` is unique
   over live rows only (`uq_hosts_email_live`), so an archived account
   releases its address and an agency that left can be invited back under it.
+- **At most three superadmins** (`core/superadmins.MAX_SUPERADMINS`), waiting
+  superadmin invitations included: `require_seat` 409s on `POST /hosts`
+  with `is_admin`, promoting through `PATCH /hosts/{id}`, sending a
+  superadmin invite, and accepting one (live superadmins only, since that
+  invite is one of the waiting). "Add a superadmin" is disabled at three (with a note saying why).
 - **A superadmin can't demote or delete themselves — or their own
   organization.** The guards compare the target against both `current.id` and
   `org_id_of(current)`, so a staff login of a superadmin org can't archive or

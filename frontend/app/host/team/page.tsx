@@ -40,7 +40,12 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
   const { show } = useToast();
   // A superadmin may look at any organization's team; everyone else sees
   // their own. Undefined = own.
-  const [orgId, setOrgId] = useState<string | undefined>(undefined);
+  // ?org={id} — Organization Management links each organization here.
+  const [orgId, setOrgId] = useState<string | undefined>(() =>
+    typeof window === "undefined"
+      ? undefined
+      : new URLSearchParams(window.location.search).get("org") ?? undefined,
+  );
   const [orgs, setOrgs] = useState<AdminAccount[]>([]);
   const [team, setTeam] = useState<Team | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -72,16 +77,18 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
   }, [ctx.isSuper]);
 
   const org = team?.org ?? ctx.org;
+  // Three roles: superadmins create organizations; the organization's head
+  // (its own login) adds and removes its team; team members post events.
+  const canManage = ctx.isSuper || ctx.me.id === org.id;
 
   return (
-    <div className="flex flex-col gap-8">
+    // Event Management's margins: centred, 1200px of content at most.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-[840px] flex-col gap-3">
-          <h1 className="text-3xl font-medium text-fg sm:text-4xl">Team</h1>
+          <h1 className="text-3xl font-medium text-fg sm:text-4xl">{org.name}</h1>
           <p className="text-xl text-fg">
-            Everyone who can sign in for {org.name}. Use the shared login, give
-            each person their own, or both. Every login can post and manage
-            your programs.
+            Your organization&apos;s team. Every member can create or delete events.
           </p>
         </div>
         {ctx.isSuper && orgs.length > 0 && (
@@ -104,11 +111,13 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         )}
       </div>
 
-      <InviteStaffForm
-        orgId={org.id}
-        orgName={org.name}
-        onSent={() => void load()}
-      />
+      {canManage && (
+        <InviteStaffForm
+          orgId={org.id}
+          orgName={org.name}
+          onSent={() => void load()}
+        />
+      )}
 
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
@@ -116,7 +125,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         </p>
       ) : (
         <TableCard
-          caption={`Logins for ${org.name}: the shared login, each staff member, and invitations still waiting.`}
+          caption={`${org.name}'s team: its head, each team member, and invitations still waiting.`}
           head={["Name", "Email", "Status", ""]}
         >
           {!team ? (
@@ -135,7 +144,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                   {team.org.email}
                 </td>
                 <td className="px-3 py-3">
-                  <Pill tone="neutral">Shared login</Pill>
+                  <Pill tone="good">Head</Pill>
                 </td>
                 <td className="px-3 py-3" />
               </tr>
@@ -150,11 +159,11 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                   </th>
                   <td className="whitespace-nowrap px-3 py-3">{s.email}</td>
                   <td className="px-3 py-3">
-                    <Pill tone="neutral">Staff</Pill>
+                    <Pill tone="neutral">Team member</Pill>
                   </td>
                   <td className="px-3 py-3">
                     {/* The API refuses removing your own login. */}
-                    {ctx.me.id !== s.id && (
+                    {canManage && ctx.me.id !== s.id && (
                       <span className="flex justify-end">
                         <Button
                           variant="ghost"
@@ -184,6 +193,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                     </Pill>
                   </td>
                   <td className="px-3 py-3">
+                    {canManage && (
                     <span className="flex justify-end">
                       <Button
                         variant="ghost"
@@ -213,6 +223,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                         </span>
                       </Button>
                     </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -297,11 +308,7 @@ function InviteStaffForm({
   return (
     <section className="flex max-w-[1026px] flex-col gap-3">
       <div>
-        <h2 className="text-xl font-medium text-fg">Add a staff member</h2>
-        <p className="text-xl text-fg">
-          Someone who works at {orgName}. They get an email with a link,
-          choose their own password, and manage {orgName}&apos;s programs.
-        </p>
+        <h2 className="text-xl font-medium text-fg">Add a team member</h2>
       </div>
 
       {sent && (

@@ -79,8 +79,12 @@ const ITEMS: Item[] = [
 export function ConsoleNav({
   isSuper,
   pendingAccess = 0,
+  teamLabel,
 }: {
   isSuper: boolean;
+  /** The Team entry is named after the organization ("Karis Disability
+      Services team"). */
+  teamLabel?: string;
   /** Special-access requests waiting — the badge on that entry. */
   pendingAccess?: number;
 }) {
@@ -90,7 +94,7 @@ export function ConsoleNav({
   // ordinary organization) stands on its own in the parent's place.
   const items = ITEMS.flatMap((i) =>
     visible(i) ? [i] : (i.children ?? []).filter(visible),
-  );
+  ).map((i) => (i.href === "/host/team" && teamLabel ? { ...i, label: teamLabel } : i));
   // On a narrow screen the row scrolls sideways: bring the current section
   // into view, or the last one in the list opens off the edge.
   const currentRef = useRef<HTMLAnchorElement>(null);

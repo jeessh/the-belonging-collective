@@ -142,7 +142,11 @@ export function AdminShell({
         }
       />
       <div className="lg:flex">
-      <ConsoleNav isSuper={ctx.isSuper} pendingAccess={pendingAccess} />
+      <ConsoleNav
+        isSuper={ctx.isSuper}
+        pendingAccess={pendingAccess}
+        teamLabel={`${ctx.org.name} team`}
+      />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-9">
         {requireSuperadmin && !ctx.isSuper ? (
           <div className="py-16 text-center">
