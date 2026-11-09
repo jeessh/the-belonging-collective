@@ -182,6 +182,13 @@ can open.
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
   {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
   Me). The View toggle still switches card / list on its own.
+  **Sign-up ends by offering Google Calendar**: after the account (and, for
+  a caregiver, the person they support) a `calendar` step in
+  `MemberAuthFlow` — "Add your events to Google Calendar?" · Not now |
+  Connect — runs `googleCalendarButton` with the new account's
+  `google_calendar`: connected mode leaves for Google's consent and lands
+  back on the feed (`/?calendar=connected`); the feed mode opens Google's
+  subscribe page and carries on to "Account creation complete!".
   **List view is the console's layout for everyone** — signed out,
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
