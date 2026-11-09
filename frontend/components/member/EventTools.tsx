@@ -15,31 +15,41 @@ import { PrintPreview } from "@/components/member/PrintPreview";
 export function EventTools({
   event,
   lead = false,
+  printLeads = false,
 }: {
   event: Event;
+  /** A shared list's dialog, where nothing can be saved: Print is the
+      primary button at the very right, Share secondary beside it. */
+  printLeads?: boolean;
   /** Once the event is saved, Share and Print lead (primary, secondary)
       and Un-save drops to tertiary; otherwise they are quiet ghosts. */
   lead?: boolean;
 }) {
   const [open, setOpen] = useState<"share" | "print" | null>(null);
+  const big = lead || printLeads;
   const url = typeof window === "undefined" ? "" : publicEventUrl(event.id);
 
   return (
     <>
       {/* Saved (`lead`): Print, then Share at the very right, each its own
           width. Otherwise two quiet ghosts. */}
-      <div className={`flex ${lead ? "w-full flex-row-reverse gap-3" : "flex-wrap gap-1"}`}>
+      <div
+        className={`flex ${big ? "w-full flex-row-reverse gap-3" : "flex-wrap gap-1"} ${
+          printLeads ? "[&>*:first-child]:order-2" : ""
+        }`}
+      >
         <Button
-          variant={lead ? "primary" : "ghost"}
-          size={lead ? "lg" : "md"}
+          variant={lead ? "primary" : printLeads ? "secondary" : "ghost"}
+          size={big ? "lg" : "md"}
           onClick={() => setOpen("share")}
           trailingIcon={<Send />}
         >
           Share
         </Button>
         <Button
-          variant={lead ? "secondary" : "ghost"}
-          size={lead ? "lg" : "md"}
+          variant={printLeads ? "primary" : lead ? "secondary" : "ghost"}
+          size={big ? "lg" : "md"}
+          className={printLeads ? "order-1" : ""}
           onClick={() => setOpen("print")}
           trailingIcon={<Printer />}
         >

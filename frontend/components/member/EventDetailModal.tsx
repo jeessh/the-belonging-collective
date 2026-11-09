@@ -29,7 +29,11 @@ export function EventDetailModal({
   onLeaveWaitlist,
   onRequestAccess,
   onSignIn,
+  readOnly = false,
 }: {
+  /** A shared list's dialog: nothing to save, only Print (primary) and
+      Share at the bottom right. */
+  readOnly?: boolean;
   /** A full program: join, or leave, its waitlist. */
   onJoinWaitlist: (event: Event) => void;
   onLeaveWaitlist: (event: Event) => void;
@@ -73,9 +77,15 @@ export function EventDetailModal({
           titleId={TITLE_ID}
           going={<GoingCount capacity={event.capacity} count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
-          tools={<EventTools event={event} lead={saved && canSave} />}
-          toolsFill={saved && canSave}
-          actions={
+          tools={
+            <EventTools
+              event={event}
+              lead={!readOnly && saved && canSave}
+              printLeads={readOnly}
+            />
+          }
+          toolsFill={readOnly || (saved && canSave)}
+          actions={readOnly ? undefined : (
             <>
               {!canSave ? (
                 <AccessAction
@@ -128,7 +138,7 @@ export function EventDetailModal({
                 </Button>
               )}
             </>
-          }
+          )}
         />
       </Modal>
     </div>

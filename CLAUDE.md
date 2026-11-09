@@ -182,6 +182,13 @@ can open.
   Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
   {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
   Me). The View toggle still switches card / list on its own.
+  **Sign-up ends by offering Google Calendar**: after the account (and, for
+  a caregiver, the person they support) a `calendar` step in
+  `MemberAuthFlow` — "Add your events to Google Calendar?" · Not now |
+  Connect — runs `googleCalendarButton` with the new account's
+  `google_calendar`: connected mode leaves for Google's consent and lands
+  back on the feed (`/?calendar=connected`); the feed mode opens Google's
+  subscribe page and carries on to "Account creation complete!".
   **List view is the console's layout for everyone** — signed out,
   Simplified or Advanced (`member/CaregiverFeed`; `ListFeed` and the "For
   you this week" section are no longer drawn, and Register stands in for
@@ -348,7 +355,9 @@ can open.
   count (`_public_view` blanks it for anyone else). `saved_count` is
   otherwise sent to everyone, signed in or not (just a count, no names —
   the shared-list page too), and
-  `ui/GoingCount` shows "N people saved this event" (bookmark icon; the
+  `ui/GoingCount` shows "N people saved this event" — the number regular in the
+  text colour, the words in the muted grey, like
+  the time under the date (bookmark icon; the
   sidebar shows no count) — at zero too ("0 people saved this event");
   nothing only where the count is withheld. Members and console say it
   the same way; nothing says "going" any more. There is no "See who
@@ -378,8 +387,12 @@ can open.
   Google Maps in a new tab; not for a virtual event). `ShareModal`'s Send posts to `POST /share/email` (or, with `organizer`,
   the console's `POST /share/email/organizer`: the same cards under the
   organizer's name, same daily cap — the console's Share opens this same sheet)
-  (`routes/share.py`): the site mails the designed cards (logo, photo,
-  button) from MAIL_FROM under "{first name} via …", Reply-To the member,
+  (`routes/share.py`): the site mails **the site's own event card**
+  (`member_mail.site_card`, passed as `mail.send(cards=…)`: picture, title
+  with the Free / Paid and Registration required pills in the tag colours,
+  "Monday · November 9, 2026" over the time in grey, where, the saved count
+  or "5/20 spots left", "Posted by {organization}"; title and picture link
+  to the program) under the logo, plus the button from MAIL_FROM under "{first name} via …", Reply-To the member,
   signed-in members only, 20 a day. A caregiver sharing a member's list
   passes `for_member`, so it is filtered by the member's access. The
   sender's first name is in the From name and subject, which is why
@@ -396,7 +409,8 @@ can open.
   the sheets portal to `document.body` — keep both if you add another.
 - **Who posted it, under the title, everywhere members see an event**
   (`EventSummary`'s heading; on the list cards, the card's **bottom
-  right**, 16px): `host/PostedBy` — the
+  right**, 16px, pinned there `sm:absolute` so it doesn't widen the tools
+  column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
 - **Every event summary shows three facts and no more: when, where and
@@ -465,7 +479,15 @@ can open.
   Link (the public `/shared/[token]` page, minted when the sheet opens; see
   "Holds, member email, sharing"). A caregiver viewing someone else's list
   gets email only. Jesse's call: no privacy gate, it's only a list. The
-  page is `noindex` and server-rendered; `/profile` (from the account menu)
+  page is `noindex`, server-fetched, and **is the All Saved Events page,
+  read-only** (`components/SharedListView`; no Back to events — the
+  recipient didn't come from the feed): "{name}'s Saved Events" — subtext
+  "{name} shared their list of events with you!" — with
+  the bookmark icon and count, search with Share and Print, the same cards
+  grouped by `byWhen` with Share / Print icons, a card opening the same
+  `EventDetailModal readOnly` — no Save / Register / waitlist there, just
+  Share (secondary) and Print (primary, at the very right) at the bottom
+  right (`EventTools printLeads`) — and no trash icon; `/profile` (from the account menu)
   is where a member sets their email, picture and copies the same link.
 
 ### Admin console (`/host/*`)
@@ -958,7 +980,9 @@ can open.
   *public* programs — special-access ones are excluded whoever holds the link.
 - **Google Calendar: connected when configured, subscribed otherwise.** Both
   "Google Calendar" buttons (sidebar and All Saved Events) and the profile's
-  card go through `lib/calendar.googleCalendarButton(Me.google_calendar)`:
+  card go through `lib/calendar.googleCalendarButton(Me.google_calendar)` — labelled **"Google Calendar"** by default (signed out,
+  or connected) and **"Connect to Calendar"** while a signed-in member
+  hasn't connected (`google_calendar !== "connected"`):
   - `available` / `connected` (GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET set):
     `GET /google-calendar/connect` → Google consent (scope
     `calendar.app.created` only — the app's own calendars, nothing else in the

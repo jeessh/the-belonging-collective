@@ -9,7 +9,16 @@ import {
 } from "react";
 import Link from "next/link";
 import { CircleCheck, Mic } from "lucide-react";
-import { ApiError, api, apiMessage, shortName, updateMe } from "@/lib/api";
+import {
+  ApiError,
+  api,
+  apiMessage,
+  shortName,
+  updateMe,
+  type GoogleCalendarState,
+} from "@/lib/api";
+import { googleCalendarButton } from "@/lib/calendar";
+import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { INVALID_EMAIL, looksLikeEmail } from "@/lib/email";
 import { knownAccountHint, rememberAccount } from "@/lib/knownDevice";
 import { NAME_MAX } from "@/lib/names";
@@ -41,6 +50,8 @@ type Step =
   | "care-choice"
   | "care-create"
   | "care-link"
+  // Offer Google Calendar, so saves land there from day one.
+  | "calendar"
   | "complete";
 
 /** What the surface around the flow draws: a heading, an optional line under it, and the step itself. */
@@ -179,6 +190,25 @@ export function MemberAuthFlow({
     setStep(next);
   }
 
+  // Google Calendar, offered once the account exists: the same button as
+  // the saved panel's (connect when the server has Google keys, subscribe
+  // to the feed otherwise). Connecting leaves for Google and lands back on
+  // the feed; subscribing opens Google in a new tab and carries on here.
+  const [connecting, setConnecting] = useState(false);
+  async function connectCalendar() {
+    setConnecting(true);
+    try {
+      const me = await api<{ google_calendar?: GoogleCalendarState }>("/users/me");
+      await googleCalendarButton(me.google_calendar, toast.show);
+      if (me.google_calendar !== "available") setStep("complete");
+    } catch (err) {
+      toast.show({ title: apiMessage(err, "Couldn't open Google Calendar."), tone: "alert" });
+      setStep("complete");
+    } finally {
+      setConnecting(false);
+    }
+  }
+
   function enterLogin() {
     setPassword("");
     go("credentials");
@@ -190,7 +220,7 @@ export function MemberAuthFlow({
       onSignedIn({ mode });
       return;
     }
-    setStep("complete");
+    setStep("calendar");
   }
 
   async function submitPassword(e: FormEvent) {
@@ -618,7 +648,7 @@ export function MemberAuthFlow({
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => setStep("complete")}
+              onClick={() => setStep("calendar")}
             >
               Skip
             </Button>
@@ -638,7 +668,7 @@ export function MemberAuthFlow({
             onCancel={inFooter ? () => setStep("care-choice") : undefined}
             onDone={(result) => {
               setCareResult(result);
-              setStep("complete");
+              setStep("calendar");
             }}
           />
         ),
@@ -656,7 +686,27 @@ export function MemberAuthFlow({
             onCancel={inFooter ? () => setStep("care-choice") : undefined}
             onDone={(result) => {
               setCareResult(result);
-              setStep("complete");
+              setStep("calendar");
+            }}
+          />
+        ),
+      };
+      break;
+
+    case "calendar":
+      view = {
+        back: null,
+        title: "Add your events to Google Calendar?",
+        subtitle:
+          "Everything you save will show up in your calendar on its own. You can do this later from your profile.",
+        icon: <GoogleCalendarIcon className="mb-6 size-12" />,
+        body: (
+          <FormFooter
+            secondary={{ label: "Not now", onClick: () => setStep("complete") }}
+            primary={{
+              label: connecting ? "Opening Google…" : "Connect",
+              disabled: connecting,
+              onClick: () => void connectCalendar(),
             }}
           />
         ),
