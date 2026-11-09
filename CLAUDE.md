@@ -479,10 +479,13 @@ can open.
   Link (the public `/shared/[token]` page, minted when the sheet opens; see
   "Holds, member email, sharing"). A caregiver viewing someone else's list
   gets email only. Jesse's call: no privacy gate, it's only a list. The
-  page is `noindex` and server-rendered and draws the list view's card
-  (picture, title and tags, when / where / saved, Posted by at the bottom
-  right, the whole card opening the program, a Google Calendar icon for
-  people without an account); `/profile` (from the account menu)
+  page is `noindex`, server-fetched, and **is the All Saved Events page,
+  read-only** (`components/SharedListView`): "{name}'s Saved Events" with
+  the bookmark icon and count, search with Share and Print, the same cards
+  grouped by `byWhen` with Share / Print icons, a card opening the same
+  `EventDetailModal` — and no trash icon; Save / Register / Join waitlist /
+  Request access there go through `/signup?next=/events/{id}?save=1` (or
+  `access=1`), finishing on the event's page; `/profile` (from the account menu)
   is where a member sets their email, picture and copies the same link.
 
 ### Admin console (`/host/*`)
