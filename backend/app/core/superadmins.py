@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.models.host import Host
 from app.models.invite import HostInvite
 
-MAX_SUPERADMINS = 5
+MAX_SUPERADMINS = 3
 
 FULL = (
     f"There can be at most {MAX_SUPERADMINS} superadmins. Remove one (or "

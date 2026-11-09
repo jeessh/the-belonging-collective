@@ -41,7 +41,7 @@ export default function AdminsPage() {
 }
 
 /** The superadmin cap (backend `core/superadmins.MAX_SUPERADMINS`). */
-const MAX_SUPERADMINS = 5;
+const MAX_SUPERADMINS = 3;
 
 function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
@@ -190,7 +190,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
         <div className="flex items-center gap-3">
-          {/* At most five (backend core/superadmins), waiting invitations
+          {/* At most three (backend core/superadmins), waiting invitations
               included. */}
           <Button
             variant="secondary"
