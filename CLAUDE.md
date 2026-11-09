@@ -527,7 +527,7 @@ can open.
   so a page that decides a request can move it without a reload.
 - **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
   organizations (Organization Management: the page header, then two tabs —
-  **Organizations** (a 24px heading, the superadmin count, "Add a KWHab
+  **Organizations** (a 24px heading, "Add a KWHab
   superadmin" and the primary **Add organization**, which opens a dialog
   with the organization name + **head's** email) and **Invitations
   waiting (N)**); the organization's **head** —

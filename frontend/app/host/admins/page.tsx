@@ -192,9 +192,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         <div className="flex items-center gap-3">
           {/* At most five (backend core/superadmins), waiting invitations
               included. */}
-          <span className="text-sm text-fg-muted">
-            {superSeats} of {MAX_SUPERADMINS} superadmins
-          </span>
           <Button
             variant="secondary"
             leadingIcon={<ShieldCheck />}
