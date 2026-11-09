@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin, set_auth_cookie
+from app.core import superadmins
 from app.core.config import settings
 from app.core.org_space import unique_slug
 from app.core.mail import send as send_mail
@@ -139,6 +140,8 @@ def create_invite(
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY, "Organization can't be blank"
             )
+        if body.is_admin:
+            superadmins.require_seat(db)
         invite = HostInvite(
             token_hash="",
             organization=organization,
@@ -303,6 +306,10 @@ def accept_invite(
             org_id=invite.org_id,
         )
     else:
+        # The seat may have gone since it was sent; this invite is one of
+        # the waiting ones, so count live superadmins only.
+        if invite.is_admin:
+            superadmins.require_seat(db, counting_invites=False)
         host = Host(
             name=invite.organization,
             email=invite.email,

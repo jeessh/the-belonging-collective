@@ -1189,6 +1189,12 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   (`DELETE /hosts/team/{id}`) archives just that row. `hosts.email` is unique
   over live rows only (`uq_hosts_email_live`), so an archived account
   releases its address and an agency that left can be invited back under it.
+- **At most five superadmins** (`core/superadmins.MAX_SUPERADMINS`), waiting
+  superadmin invitations included: `require_seat` 409s on `POST /hosts`
+  with `is_admin`, promoting through `PATCH /hosts/{id}`, sending a
+  superadmin invite, and accepting one (live superadmins only, since that
+  invite is one of the waiting). Organization Management shows "N of 5
+  superadmins" beside "Add a KWHab superadmin", disabled at five.
 - **A superadmin can't demote or delete themselves — or their own
   organization.** The guards compare the target against both `current.id` and
   `org_id_of(current)`, so a staff login of a superadmin org can't archive or

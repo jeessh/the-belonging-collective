@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_host, get_db, require_admin
 from app.api.routes.invites import email_taken
+from app.core import superadmins
 from app.core.org_space import org_by_slug, unique_slug
 from app.core.security import hash_password
 from app.models.access import AccessGroup
@@ -243,6 +244,8 @@ def create_host(
     reason = email_taken(db, email, current)
     if reason:
         raise HTTPException(status.HTTP_409_CONFLICT, reason)
+    if body.is_admin:
+        superadmins.require_seat(db)
     host = Host(
         name=body.name,  # already trimmed and non-blank by the schema
         email=email,
@@ -303,6 +306,9 @@ def update_host(
         # a superadmin and can't be the target (guarded above), so a superadmin
         # target means at least two exist. It's here to narrow the window on
         # two superadmins concurrently demoting each other.
+        # Promoting: at most MAX_SUPERADMINS (core/superadmins).
+        if fields["is_admin"]:
+            superadmins.require_seat(db)
         if not fields["is_admin"] and _superadmin_count(db) <= 1:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,

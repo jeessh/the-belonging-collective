@@ -40,6 +40,9 @@ export default function AdminsPage() {
   );
 }
 
+/** The superadmin cap (backend `core/superadmins.MAX_SUPERADMINS`). */
+const MAX_SUPERADMINS = 5;
+
 function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const router = useRouter();
   const { show } = useToast();
@@ -50,6 +53,10 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addingSuper, setAddingSuper] = useState(false);
   const [removing, setRemoving] = useState<AdminAccount | null>(null);
+  // Superadmins plus superadmin invitations still waiting: the cap counts both.
+  const superSeats =
+    admins.filter((a) => a.is_admin).length +
+    invites.filter((i) => i.is_admin && !i.expired).length;
 
   async function load() {
     try {
@@ -139,14 +146,28 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         <h2 className="text-xl font-medium text-fg">Organization Admins</h2>
         {/* Rare and powerful, so its own button and form rather than a box
             to tick on every agency's invitation. */}
-        <Button
-          variant="secondary"
-          leadingIcon={<ShieldCheck />}
-          onClick={() => setAddingSuper(true)}
-        >
-          Add a KWHab superadmin
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* At most five (backend core/superadmins), waiting invitations
+              included. */}
+          <span className="text-sm text-fg-muted">
+            {superSeats} of {MAX_SUPERADMINS} superadmins
+          </span>
+          <Button
+            variant="secondary"
+            leadingIcon={<ShieldCheck />}
+            disabled={superSeats >= MAX_SUPERADMINS}
+            onClick={() => setAddingSuper(true)}
+          >
+            Add a KWHab superadmin
+          </Button>
+        </div>
       </div>
+      {superSeats >= MAX_SUPERADMINS && (
+        <p className="-mb-5 text-sm text-fg-muted">
+          There can be at most {MAX_SUPERADMINS} superadmins. Remove one, or
+          withdraw a waiting invitation, to add another.
+        </p>
+      )}
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
           Couldn&apos;t load organizations — refresh to try again
