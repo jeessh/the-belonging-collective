@@ -485,9 +485,9 @@ can open.
   "{name} shared their list of events with you!" — with
   the bookmark icon and count, search with Share and Print, the same cards
   grouped by `byWhen` with Share / Print icons, a card opening the same
-  `EventDetailModal` — and no trash icon; Save / Register / Join waitlist /
-  Request access there go through `/signup?next=/events/{id}?save=1` (or
-  `access=1`), finishing on the event's page; `/profile` (from the account menu)
+  `EventDetailModal readOnly` — no Save / Register / waitlist there, just
+  Share (secondary) and Print (primary, at the very right) at the bottom
+  right (`EventTools printLeads`) — and no trash icon; `/profile` (from the account menu)
   is where a member sets their email, picture and copies the same link.
 
 ### Admin console (`/host/*`)

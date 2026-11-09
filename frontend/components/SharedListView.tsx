@@ -109,6 +109,7 @@ export function SharedListView({
           onLeaveWaitlist={() => {}}
           onRequestAccess={async (ev) => viaSignIn(ev, "access")}
           onSignIn={() => viaSignIn(open)}
+          readOnly
         />
       )}
 
