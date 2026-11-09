@@ -347,7 +347,10 @@ can open.
   classic / spin / arc / pop flight with anticipation, curve, end scale,
   spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
   sparkles, hearts, ring) where the newest save lands, and "Preview (doesn't
-  save)". Zero-motion: reduced motion skips all of it. Keyframes on
+  save)". **Drag-and-drop saves use the same dials**: the mini card
+  (`ghostX` / `ghostY` / `ghostScale` / `ghostRotate`) gets the anticipation,
+  flight curve and style (spin / arc / pop) on its way into the newest slot,
+  then the celebration. Zero-motion: reduced motion skips all of it. Keyframes on
   `opacity` / `zIndex` in an exit don't animate — use delayed single steps.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.

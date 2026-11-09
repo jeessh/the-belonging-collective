@@ -377,12 +377,14 @@ export function EventsView({
   const ghostY = useMotionValue(0);
   const ghostT = useMotionValue(0);
   const ghostScale = useMotionValue(1);
+  const ghostRotate = useMotionValue(-2);
   const resetGhost = useCallback(() => {
     ghostT.set(0);
     ghostScale.set(1);
+    ghostRotate.set(-2);
     cardOpacity.set(1);
     setGhosting(false);
-  }, [ghostT, ghostScale, cardOpacity]);
+  }, [ghostT, ghostScale, ghostRotate, cardOpacity]);
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
@@ -1254,13 +1256,42 @@ export function EventsView({
         setFlying(true);
         cardOpacity.set(0);
         const drop = target.getBoundingClientRect();
-        const EASE = [0.4, 0, 0.2, 1] as const;
+        // The mini card follows the same "Save animation" dials as a card
+        // saved with the button: anticipation, the flight curve, and the
+        // style (spin / arc / pop), landing in the newest slot.
+        const d = saveDial;
+        const pop = d.style === "pop";
+        await animate(ghostT, 1, { duration: 0.12 });
+        if (d.anticipation.duration > 0)
+          await animate(
+            ghostScale,
+            (pop ? Math.max(d.anticipation.scale, 1.18) : d.anticipation.scale) * ghostScale.get(),
+            { duration: d.anticipation.duration, ease: pop ? [0.34, 1.56, 0.64, 1] : "easeOut" },
+          );
+        const curve = toMotionTransition(d.flight.curve) as ValueAnimationTransition<number>;
+        const secs =
+          d.flight.curve.type === "easing"
+            ? d.flight.curve.duration
+            : (d.flight.curve as { visualDuration?: number }).visualDuration ?? 0.5;
+        const tween = {
+          duration: secs,
+          ease: d.flight.curve.type === "easing" ? d.flight.curve.ease : [0.4, 0, 0.2, 1],
+        } as ValueAnimationTransition<number>;
+        // Into the top-left slot, where the newest save goes.
+        const toX = drop.left + 4;
+        const toY = drop.top + 16;
+        const fromY = ghostY.get();
         await Promise.all([
-          animate(ghostT, 1, { duration: 0.15 }),
-          // Into the top-left slot, where the newest save goes.
-          animate(ghostX, drop.left + 4, { duration: 0.4, ease: EASE }),
-          animate(ghostY, drop.top + 16, { duration: 0.4, ease: EASE }),
-          animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
+          animate(ghostX, toX, curve),
+          d.style === "arc"
+            ? animate(
+                ghostY,
+                [fromY, Math.min(fromY, toY) - d.flight.arcHeight, toY],
+                { ...tween, times: [0, 0.4, 1] },
+              )
+            : animate(ghostY, toY, curve),
+          animate(ghostScale, 0.9, curve),
+          animate(ghostRotate, d.style === "spin" ? -2 + d.flight.spin : 0, curve),
         ]);
         await animate(ghostT, 0, { duration: 0.15 });
         celebrate();
@@ -1298,6 +1329,8 @@ export function EventsView({
       flyCard,
       celebrate,
       settleCard,
+      saveDial,
+      ghostRotate,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
@@ -2182,7 +2215,7 @@ export function EventsView({
                               y: ghostY,
                               opacity: ghostT,
                               scale: ghostScale,
-                              rotate: -2,
+                              rotate: ghostRotate,
                               width: BOARD_CARD_W,
                               zIndex: 60,
                             }}
