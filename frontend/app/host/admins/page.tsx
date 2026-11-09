@@ -93,10 +93,6 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
         <h1 className="text-3xl font-medium text-fg sm:text-4xl">
           Create an organization
         </h1>
-        <p className="text-xl text-fg">
-          Name the organization and its head. We&apos;ll email the head a link
-          to set up their login; they then add and manage their own team.
-        </p>
       </div>
 
       <InviteForm
