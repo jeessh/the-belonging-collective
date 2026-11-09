@@ -8,7 +8,6 @@ import { oneCardPerProgram } from "@/lib/feed";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
 import { GoingCount } from "@/components/ui/GoingCount";
-import { BackButton } from "@/components/ui/BackButton";
 import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
 import { EventDetailModal } from "@/components/member/EventDetailModal";
 import { ShareModal } from "@/components/member/ShareModal";
@@ -43,8 +42,8 @@ export function SharedListView({
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
+      {/* No "Back to events": the recipient didn't come from the feed. */}
       <div className="flex flex-col gap-3">
-        <BackButton label="Back to events" href="/" />
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[32px]">
             <BookmarkCheck aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />

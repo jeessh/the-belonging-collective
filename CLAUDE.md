@@ -480,7 +480,8 @@ can open.
   "Holds, member email, sharing"). A caregiver viewing someone else's list
   gets email only. Jesse's call: no privacy gate, it's only a list. The
   page is `noindex`, server-fetched, and **is the All Saved Events page,
-  read-only** (`components/SharedListView`): "{name}'s Saved Events" with
+  read-only** (`components/SharedListView`; no Back to events — the
+  recipient didn't come from the feed): "{name}'s Saved Events" with
   the bookmark icon and count, search with Share and Print, the same cards
   grouped by `byWhen` with Share / Print icons, a card opening the same
   `EventDetailModal` — and no trash icon; Save / Register / Join waitlist /
