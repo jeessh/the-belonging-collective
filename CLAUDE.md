@@ -322,7 +322,10 @@ can open.
   `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
   the top card off the deck, then settles it back into the deck — down a
   little (`tuck.distance`, 26px), behind the new top card, fading — as the
-  next card fades in where it sits (no rise or pop, `tuck.fadeIn`). The
+  next card emerges from the deck's top card: after `tuck.revealDelay`
+  (0.18s, once the old card is lifted clear) it eases up from the stack's
+  first layer and fades in over `tuck.fadeIn` (0.6s) on a soft ease — no
+  spring, no pop. The
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
   out as it settles into the deck, and fades in with the new card; **Back

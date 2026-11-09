@@ -177,8 +177,11 @@ export function EventsView({
       duration: [0.6, 0.2, 1.5, 0.05],
       deckScale: [0.95, 0.8, 1, 0.01],
       deckOffset: [14, 0, 60, 1],
-      // The new top card fades in (no pop), its shadow with it.
-      fadeIn: [0.4, 0, 1.5, 0.05],
+      // The new top card emerges from the deck's top card: it waits until
+      // the old one has lifted clear (`revealDelay`, s), then fades in
+      // slowly as it eases up from the stack's first layer — no pop.
+      fadeIn: [0.6, 0, 1.5, 0.05],
+      revealDelay: [0.18, 0, 1, 0.01],
     },
     flip: {
       angle: [100, 0, 180, 1],
@@ -570,9 +573,17 @@ export function EventsView({
       cardDial.style === "tuck"
           ? d > 0
             ? // The next card is already under it: it rises from the deck.
-              // Under the lifted card until it drops below (see `center`),
-              // then fades in where it sits — no rise, no pop.
-              { y: 0, scale: 1, opacity: 0, boxShadow: SHADOW_NONE, zIndex: 0 }
+              // From where the deck's top card sits (the stack's first
+              // layer), under the lifted card; it eases up into place as it
+              // fades in (see `center`).
+              {
+                x: cardDial.stack.offsetX,
+                y: cardDial.stack.offsetY,
+                scale: 0.985,
+                opacity: 0,
+                boxShadow: SHADOW_NONE,
+                zIndex: 0,
+              }
             : // Back: the mirror of Next — it starts inside the deck, behind
               // the top card (see `center`).
               {
@@ -627,9 +638,24 @@ export function EventsView({
           zIndex: 1,
           boxShadow: SHADOW_REST,
           transition: {
-            ...toMotionTransition(cardDial.spring),
-            opacity: { duration: cardDial.tuck.fadeIn, ease: "easeOut" },
-            boxShadow: { duration: cardDial.tuck.fadeIn * 1.4, ease: "easeOut" },
+            // A gentle ease up, not the spring's snap, so it doesn't pop.
+            ...(cardDial.style === "tuck"
+              ? {
+                  duration: cardDial.tuck.fadeIn,
+                  delay: cardDial.tuck.revealDelay,
+                  ease: [0.22, 1, 0.36, 1],
+                }
+              : toMotionTransition(cardDial.spring)),
+            opacity: {
+              duration: cardDial.tuck.fadeIn,
+              delay: cardDial.style === "tuck" ? cardDial.tuck.revealDelay : 0,
+              ease: [0.33, 0, 0.2, 1],
+            },
+            boxShadow: {
+              duration: cardDial.tuck.fadeIn * 1.4,
+              delay: cardDial.style === "tuck" ? cardDial.tuck.revealDelay : 0,
+              ease: "easeOut",
+            },
             // Comes over the card that's leaving once that one is lifted.
             zIndex: {
               delay: cardDial.style === "tuck" ? cardDial.tuck.duration * 0.3 : 0,
