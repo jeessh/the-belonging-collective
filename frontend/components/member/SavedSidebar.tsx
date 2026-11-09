@@ -163,7 +163,7 @@ export const SavedSidebar = memo(
             ? "Download calendar"
             : googleCalendar === "connected"
               ? "Open Google Calendar"
-              : "Google Calendar"}
+              : "Connect to Calendar"}
       </>
     );
     const calendar =

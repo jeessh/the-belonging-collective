@@ -547,7 +547,7 @@ export default function ProfilePage() {
                   leadingIcon={<GoogleCalendarIcon />}
                   onClick={() => void googleCalendarButton("available")}
                 >
-                  Connect Google Calendar
+                  Connect to Calendar
                 </Button>
               )}
             </div>
