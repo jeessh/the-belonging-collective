@@ -631,6 +631,9 @@ export function EventsView({
             scale: [0.985, 1.02, 1],
             rotate: [0, cardDial.tuck.tilt, 0],
             filter: [`brightness(${cardDial.tuck.dim})`, "brightness(1)", "brightness(1)"],
+            // Click-through while it swings past the arrows; live once landed.
+            pointerEvents: "none" as const,
+            transitionEnd: { pointerEvents: "auto" as const },
             rotateY: 0,
             opacity: 1,
             zIndex: 1,
@@ -700,6 +703,9 @@ export function EventsView({
               scale: [1, 1.02, cardDial.tuck.deckScale],
               rotate: [0, cardDial.tuck.tilt, cardDial.tuck.tilt * 0.3],
               filter: ["brightness(1)", "brightness(1)", `brightness(${cardDial.tuck.dim})`],
+              // Click-through on its way out: its swing passes over the ↑ / ↓
+              // buttons, and a quick second press landed on it.
+              pointerEvents: "none" as const,
               // Its shadow deepens as it's picked up, then slowly fades as
               // it settles into the pile.
               boxShadow: [SHADOW_REST, SHADOW_LIFT, SHADOW_NONE],
@@ -721,6 +727,7 @@ export function EventsView({
           : {
               // Back: the old top card stays where it is while the other
               // card comes over it, then becomes part of the deck below.
+              pointerEvents: "none" as const,
               y: cardDial.stack.offsetY,
               scale: 1,
               opacity: 0,
@@ -737,7 +744,7 @@ export function EventsView({
               },
             }
         : // Other styles have no exit: the card before is simply gone.
-          { opacity: 0, transition: { duration: 0 } },
+          { opacity: 0, pointerEvents: "none" as const, transition: { duration: 0 } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [cardDialKey]);
   const next = useCallback(() => {
