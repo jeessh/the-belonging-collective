@@ -295,7 +295,9 @@ can open.
   turns a card, then nothing counts until 700ms have passed AND the wheel
   has been still for 300ms, so a swipe's momentum — gaps and all — can't
   turn a second card; pinch-zoom and sideways swipes pass by). A new save path should call `flyToDrop`,
-  not `attend`, or it skips the animation. A save shows no toast (Jesse's
+  not `attend`, or it skips the animation. An event that's already saved never flies: the
+  card springs back and an info toast says "{title} is already saved"
+  (`flyToDrop`'s saved branch — drag, ← hold, voice and head alike). A save shows no toast (Jesse's
   call) — the card's button turning to **"Share event"** (primary; opens
   the share sheet — the card no longer un-saves, that's in More information
   and on the saved page) and the live region say it; only
