@@ -77,7 +77,8 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
   const canManage = ctx.isSuper || ctx.me.id === org.id;
 
   return (
-    <div className="flex flex-col gap-8">
+    // Event Management's margins: centred, 1200px of content at most.
+    <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8 sm:px-4 sm:py-2 lg:px-12 lg:py-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-[840px] flex-col gap-3">
           <h1 className="text-3xl font-medium text-fg sm:text-4xl">{org.name}</h1>
