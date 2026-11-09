@@ -403,7 +403,8 @@ can open.
   the sheets portal to `document.body` — keep both if you add another.
 - **Who posted it, under the title, everywhere members see an event**
   (`EventSummary`'s heading; on the list cards, the card's **bottom
-  right**, 16px): `host/PostedBy` — the
+  right**, 16px, pinned there `sm:absolute` so it doesn't widen the tools
+  column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
 - **Every event summary shows three facts and no more: when, where and

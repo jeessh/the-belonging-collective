@@ -462,13 +462,14 @@ function MemberEventCard({
         </div>
         {/* No Save here: an event is saved from its details (click the
             card). Saved, the trash icon above un-saves it. */}
-        {/* Who posted it, at the card's bottom right. */}
-        {event.host_name && (
-          <p className="text-base text-fg-muted max-sm:order-3 max-sm:w-full sm:text-right">
-            <PostedBy event={event} />
-          </p>
-        )}
       </div>
+      {/* Who posted it, pinned to the card's bottom right (from sm) so it
+          doesn't widen this column — the title and facts keep the room. */}
+      {event.host_name && (
+        <p className="col-span-2 text-base text-fg-muted sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
+          <PostedBy event={event} />
+        </p>
+      )}
 
       {ghost &&
         createPortal(
