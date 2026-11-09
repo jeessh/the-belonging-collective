@@ -1208,8 +1208,7 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   superadmin invitations included: `require_seat` 409s on `POST /hosts`
   with `is_admin`, promoting through `PATCH /hosts/{id}`, sending a
   superadmin invite, and accepting one (live superadmins only, since that
-  invite is one of the waiting). Organization Management shows "N of 5
-  superadmins" beside "Add a superadmin", disabled at five.
+  invite is one of the waiting). "Add a superadmin" is disabled at five (with a note saying why).
 - **A superadmin can't demote or delete themselves — or their own
   organization.** The guards compare the target against both `current.id` and
   `org_id_of(current)`, so a staff login of a superadmin org can't archive or
