@@ -91,8 +91,9 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
           Organizations
         </h1>
         <p className="text-xl text-fg">
-          Every organization posting on the platform, each managing its own
-          events, team and special access
+          Create an organization's team and name its head. The head adds and
+          manages their own team members; everyone on the team can post the
+          organization&apos;s events.
         </p>
       </div>
 
@@ -335,11 +336,10 @@ function InviteForm({
     // Boxed: adding an organization is its own task on this page.
     <section className="flex max-w-[1026px] flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
       <div>
-        <h2 className="text-xl font-medium text-fg">
-          Invite Organization to the Belonging Collective
-        </h2>
+        <h2 className="text-xl font-medium text-fg">Create an organization</h2>
         <p className="text-xl text-fg">
-          We&apos;ll email them a link to set up their login and password
+          We&apos;ll email the head a link to set up their login. They can then
+          add their team.
         </p>
       </div>
 
@@ -397,12 +397,12 @@ function InviteForm({
             autoComplete="organization"
           />
           <TextField
-            label="Email"
+            label="Head's email"
             className="flex-1 [&>label]:sr-only"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Organization's email"
+            placeholder="Head's email"
             autoComplete="off"
           />
           <Button

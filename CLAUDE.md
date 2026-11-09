@@ -525,6 +525,17 @@ can open.
   never `session.id`**, which is the person's own login when they're staff.
   The badge count lives there too (`pendingAccess`, `refreshPendingAccess`)
   so a page that decides a request can move it without a reload.
+- **Three roles** (`models/host.can_manage_team`): a **superadmin** creates
+  organizations (Organization Management's "Create an organization" —
+  organization name + the **head's** email); the organization's **head** —
+  its own login, the account that invite creates — adds and removes its
+  team (invite / withdraw / remove refuse anyone else with 403, a
+  superadmin aside) and has the normal admin rights; **team members**
+  (staff logins) post and manage the organization's events but not the
+  team. The Team page and its side-panel entry are named after the
+  organization ("{Org} team" in the nav, the org's name as the title);
+  rows say Head / Team member, and only the head (or a superadmin) sees
+  the invite form, Remove and Withdraw.
 - `/host/team` is the organization's logins: the shared one, each staff
   login, and staff invitations waiting (name + email → `POST /invites` with
   `org_id`; the accept page at `/host/invite/[token]` reads `staff` from the

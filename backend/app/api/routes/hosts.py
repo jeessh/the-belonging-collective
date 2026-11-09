@@ -13,7 +13,7 @@ from app.core.org_space import org_by_slug, unique_slug
 from app.core.security import hash_password
 from app.models.access import AccessGroup
 from app.models.event import Event
-from app.models.host import Host, org_id_of
+from app.models.host import can_manage_team, Host, org_id_of
 from app.models.invite import HostInvite
 from app.schemas.host import (
     HostCreate,
@@ -162,8 +162,11 @@ def remove_staff(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "You can't remove your own login."
         )
-    if not current.is_superadmin and staff.org_id != org_id_of(current):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
+    if not can_manage_team(current, staff.org_id):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only your organization's head can remove people from the team.",
+        )
     staff.deleted_at = datetime.now(timezone.utc)
     db.commit()
 

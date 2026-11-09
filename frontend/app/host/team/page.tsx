@@ -72,16 +72,19 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
   }, [ctx.isSuper]);
 
   const org = team?.org ?? ctx.org;
+  // Three roles: superadmins create organizations; the organization's head
+  // (its own login) adds and removes its team; team members post events.
+  const canManage = ctx.isSuper || ctx.me.id === org.id;
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-[840px] flex-col gap-3">
-          <h1 className="text-3xl font-medium text-fg sm:text-4xl">Team</h1>
+          <h1 className="text-3xl font-medium text-fg sm:text-4xl">{org.name}</h1>
           <p className="text-xl text-fg">
-            Everyone who can sign in for {org.name}. Use the shared login, give
-            each person their own, or both. Every login can post and manage
-            your programs.
+            {canManage
+              ? `Your team. As the head, you add people and remove them; everyone on the team can post and manage ${org.name}'s events.`
+              : `Your team. Everyone here can post and manage ${org.name}'s events; ${org.name}'s head adds and removes people.`}
           </p>
         </div>
         {ctx.isSuper && orgs.length > 0 && (
@@ -104,11 +107,13 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         )}
       </div>
 
-      <InviteStaffForm
-        orgId={org.id}
-        orgName={org.name}
-        onSent={() => void load()}
-      />
+      {canManage && (
+        <InviteStaffForm
+          orgId={org.id}
+          orgName={org.name}
+          onSent={() => void load()}
+        />
+      )}
 
       {loadError ? (
         <p role="alert" className="text-lg text-danger-fg">
@@ -116,7 +121,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
         </p>
       ) : (
         <TableCard
-          caption={`Logins for ${org.name}: the shared login, each staff member, and invitations still waiting.`}
+          caption={`${org.name}'s team: its head, each team member, and invitations still waiting.`}
           head={["Name", "Email", "Status", ""]}
         >
           {!team ? (
@@ -135,7 +140,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                   {team.org.email}
                 </td>
                 <td className="px-3 py-3">
-                  <Pill tone="neutral">Shared login</Pill>
+                  <Pill tone="good">Head</Pill>
                 </td>
                 <td className="px-3 py-3" />
               </tr>
@@ -150,11 +155,11 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                   </th>
                   <td className="whitespace-nowrap px-3 py-3">{s.email}</td>
                   <td className="px-3 py-3">
-                    <Pill tone="neutral">Staff</Pill>
+                    <Pill tone="neutral">Team member</Pill>
                   </td>
                   <td className="px-3 py-3">
                     {/* The API refuses removing your own login. */}
-                    {ctx.me.id !== s.id && (
+                    {canManage && ctx.me.id !== s.id && (
                       <span className="flex justify-end">
                         <Button
                           variant="ghost"
@@ -184,6 +189,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                     </Pill>
                   </td>
                   <td className="px-3 py-3">
+                    {canManage && (
                     <span className="flex justify-end">
                       <Button
                         variant="ghost"
@@ -213,6 +219,7 @@ function TeamView({ ctx }: { ctx: ConsoleContext }) {
                         </span>
                       </Button>
                     </span>
+                    )}
                   </td>
                 </tr>
               ))}

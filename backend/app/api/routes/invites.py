@@ -20,7 +20,7 @@ from app.core.security import (
     credential_fingerprint,
     hash_password,
 )
-from app.models.host import Host, org_id_of
+from app.models.host import Host, can_manage_team
 from app.models.invite import HostInvite
 
 router = APIRouter(prefix="/invites", tags=["invites"])
@@ -108,9 +108,12 @@ def create_invite(
     _email_free(db, email, current)
 
     if body.org_id is not None:
-        # Staff invitation. Your own organization, or any for a superadmin.
-        if body.org_id != org_id_of(current) and not current.is_superadmin:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your organization")
+        # A team member: the organization's head adds them (or a superadmin).
+        if not can_manage_team(current, body.org_id):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Only your organization's head can add people to the team.",
+            )
         org = db.get(Host, body.org_id)
         if not org or org.deleted_at is not None or org.org_id is not None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
@@ -230,7 +233,9 @@ def revoke_invite(
     invite = db.get(HostInvite, invite_id)
     if not invite or invite.accepted_at is not None:
         return
-    if not current.is_superadmin and invite.org_id != org_id_of(current):
+    if not current.is_superadmin and (
+        invite.org_id is None or not can_manage_team(current, invite.org_id)
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your invitation")
     db.delete(invite)
     db.commit()
