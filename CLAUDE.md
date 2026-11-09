@@ -325,7 +325,11 @@ can open.
   next card fades in where it sits (no rise or pop, `tuck.fadeIn`). The
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
-  out as it settles into the deck, and fades in with the new card; "Back"
+  out as it settles into the deck, and fades in with the new card; **Back
+  (↑) is the same motion in reverse**: the previous card rises out of the
+  deck, lifts over the pile (shadow growing) and lands on top while the old
+  top card becomes part of the deck (`center` is a function of `d`; the
+  variants are memoised on the dial values); "Back"
   brings a card up from the bottom), **flip** (turns over like a playing
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one, each nudged

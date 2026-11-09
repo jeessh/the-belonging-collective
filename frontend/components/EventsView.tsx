@@ -562,7 +562,10 @@ export function EventsView({
    *  slide  the old slide from the travel direction
    *  shuffle (past the last card) the deck riffles before card 1 returns
    * ─────────────────────────────────────────────────────────────────── */
-  const turnVariants = {
+  // Memoised on the dial values: a fresh variants object on every render
+  // restarted keyframed turns mid-way (they stalled at their first frame).
+  const cardDialKey = JSON.stringify(cardDial);
+  const turnVariants = useMemo(() => ({
     enter: (d: number) =>
       cardDial.style === "tuck"
           ? d > 0
@@ -570,8 +573,16 @@ export function EventsView({
               // Under the lifted card until it drops below (see `center`),
               // then fades in where it sits — no rise, no pop.
               { y: 0, scale: 1, opacity: 0, boxShadow: SHADOW_NONE, zIndex: 0 }
-            : // Back: it comes up from the bottom of the deck.
-              { y: cardDial.tuck.distance, scale: 0.95, opacity: 0, boxShadow: SHADOW_NONE, zIndex: 2 }
+            : // Back: the mirror of Next — it starts inside the deck, behind
+              // the top card (see `center`).
+              {
+                y: cardDial.tuck.distance,
+                scale: cardDial.tuck.deckScale,
+                rotate: cardDial.tuck.tilt * 0.3,
+                opacity: 0,
+                boxShadow: SHADOW_NONE,
+                zIndex: 0,
+              }
           : cardDial.style === "flip"
             ? {
                 rotateY: d > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
@@ -586,7 +597,27 @@ export function EventsView({
                 scale: cardDial.startScale,
                 zIndex: 1,
               },
-    center: {
+    center: (d: number) =>
+      cardDial.style === "tuck" && d < 0
+        ? {
+            // Back: pulled out of the deck, lifted over the pile, and laid on
+            // top — Next played in reverse, its shadow growing as it lifts.
+            x: 0,
+            y: [cardDial.tuck.distance, -cardDial.tuck.lift, 0],
+            scale: [cardDial.tuck.deckScale, 1.03, 1],
+            rotate: [cardDial.tuck.tilt * 0.3, -cardDial.tuck.tilt, 0],
+            rotateY: 0,
+            opacity: 1,
+            zIndex: 1,
+            boxShadow: [SHADOW_NONE, SHADOW_LIFT, SHADOW_REST],
+            transition: {
+              default: { duration: cardDial.tuck.duration, times: [0, 0.7, 1], ease: "easeInOut" },
+              opacity: { duration: cardDial.tuck.duration * 0.35, ease: "easeOut" },
+              // Over the old top card once it has risen clear of the pile.
+              zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
+            },
+          }
+        : {
           x: 0,
           y: 0,
           rotate: 0,
@@ -633,17 +664,23 @@ export function EventsView({
               },
             }
           : {
-              // Back: the top card settles down into the deck.
-              y: cardDial.tuck.deckOffset,
-              scale: cardDial.tuck.deckScale,
+              // Back: the old top card stays where it is while the other
+              // card comes over it, then becomes part of the deck below.
+              y: cardDial.stack.offsetY,
+              scale: 1,
               opacity: 0,
               boxShadow: SHADOW_NONE,
               zIndex: 0,
-              transition: { duration: cardDial.tuck.duration * 0.7, ease: "easeOut" },
+              transition: {
+                default: { duration: cardDial.tuck.duration * 0.4, delay: cardDial.tuck.duration * 0.6, ease: "easeOut" },
+                // Stays above the arriving card until that one has risen.
+                zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
+              },
             }
         : // Other styles have no exit: the card before is simply gone.
           { opacity: 0, transition: { duration: 0 } },
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [cardDialKey]);
   const next = useCallback(() => {
     setDir(1);
     const len = Math.max(feedLenRef.current, 1);
