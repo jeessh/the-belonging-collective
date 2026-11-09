@@ -201,7 +201,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
             disabled={superSeats >= MAX_SUPERADMINS}
             onClick={() => setAddingSuper(true)}
           >
-            Add a KWHab superadmin
+            Add a superadmin
           </Button>
           <Button
             variant="primary"
@@ -277,7 +277,7 @@ function Accounts({ ctx }: { ctx: ConsoleContext }) {
                   </td>
                   <td className="px-3 py-3">
                     {/* Shown, not changed here: a superadmin is added on
-                        purpose, with "Add a KWHab superadmin". */}
+                        purpose, with "Add a superadmin". */}
                     <Pill tone={a.is_admin ? "warn" : "neutral"}>
                       {a.is_admin ? "Superadmin" : "Admin"}
                     </Pill>
@@ -589,7 +589,7 @@ function SuperadminModal({
   }
 
   return (
-    <Modal title="Add a KWHab superadmin" onClose={onClose}>
+    <Modal title="Add a superadmin" onClose={onClose}>
       {sent ? (
         <div className="mt-4 flex flex-col gap-4">
           <p className="text-lg text-fg">

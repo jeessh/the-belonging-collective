@@ -516,7 +516,7 @@ can open.
   organization invite always makes an ordinary agency (`is_admin: false`),
   and inviting is the console's only way to add one — the "Create an
   organization" form (set a temporary password in person) was removed;
-  `POST /hosts` remains in the API; "Add a KWHab superadmin" (beside the Organization Admins heading on Organization Management)
+  `POST /hosts` remains in the API; "Add a superadmin" (beside the Organization Admins heading on Organization Management)
   is its own form (what a superadmin can do, a pointer to KWHab's Team page
   for colleagues who should only maintain events — staff are normal
   admins — then an emailed invite with `is_admin: true`). The Organizations table only shows each tier — there is no
@@ -1136,7 +1136,7 @@ Everything a staff login does is done *as the organization*:
   `Host.is_superadmin` is the organization row's `is_admin` and always false
   for a staff row, so someone added to KWHab's Team maintains KWHab's events
   like any agency's staff (no Organization / Member Management, Topics or
-  Import). Superadmins are added on purpose ("Add a KWHab superadmin").
+  Import). Superadmins are added on purpose ("Add a superadmin").
   `deps.load_live_host` loads the org alongside the login (and treats a
   login whose org is archived as archived). Use `is_superadmin`, not the
   `is_admin` column, when deciding what a caller may do.
@@ -1209,7 +1209,7 @@ Two invariants worth knowing before touching `app/api/routes/hosts.py`:
   with `is_admin`, promoting through `PATCH /hosts/{id}`, sending a
   superadmin invite, and accepting one (live superadmins only, since that
   invite is one of the waiting). Organization Management shows "N of 5
-  superadmins" beside "Add a KWHab superadmin", disabled at five.
+  superadmins" beside "Add a superadmin", disabled at five.
 - **A superadmin can't demote or delete themselves — or their own
   organization.** The guards compare the target against both `current.id` and
   `org_id_of(current)`, so a staff login of a superadmin org can't archive or
