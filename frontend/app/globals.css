@@ -395,11 +395,10 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .tour-arrow { animation: tour-arrow 3.8s linear infinite; }
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
 
-/* The member app's top bar (EventsView's header): a very soft wash of KW
-   Habilitation's pink (#D70B7D) with a slightly deeper pink line under it.
-   Light enough that the usual dark text and the controls' own white
-   backgrounds need no changes. */
+/* The member app's top bar (EventsView's header): the primary button's
+   light blue (`primary.light`, #CCF5FF) with the buttons' hover cyan
+   (`primary`, #94EAFF) as the line under it. The usual dark text. */
 .nav-tint {
-  background: #FDF1F7;
-  border-color: #F5D6E6;
+  background: #CCF5FF;
+  border-color: #94EAFF;
 }

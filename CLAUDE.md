@@ -152,9 +152,9 @@ can open.
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
   in list view).
-- **The bar spans the whole width** and is **a very subtle pink**
-  (`.nav-tint` in globals.css: #FDF1F7 with a #F5D6E6 line under it, a
-  wash of KW Hab's #D70B7D; the usual dark text and controls), over the saved panel and the events
+- **The bar spans the whole width** and is **the buttons' light blue**
+  (`.nav-tint` in globals.css: `primary.light` #CCF5FF with a `primary`
+  #94EAFF line under it; the usual dark text and controls), over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
