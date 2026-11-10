@@ -112,7 +112,7 @@ export function CareSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Saving for ${current}`}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
+        className={`nav-solid inline-flex min-h-11 items-center gap-2 rounded-control border px-3 py-1 text-base transition-colors sm:max-w-none sm:text-xl ${
           fill ? "w-full" : "max-w-[11rem]"
         } ${
           selected

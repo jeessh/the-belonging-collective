@@ -396,27 +396,24 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
 
 /* The member app's top bar: KW Habilitation's pink (#D70B7D, from the
-   logo; white on it is about 5:1), white text (EventsView's header).
-   Everything inside turns light — the account button, "Saving for" and the
-   Card / List toggle — except the menus that drop down from it, which stay
-   the usual white panels. */
+   logo; white on it is about 5:1), white text (EventsView's header). The
+   account button's name and role turn white; the Card / List toggle and
+   "Saving for" keep their own white background and dark text, and so do
+   the menus that drop down from the bar. */
 .nav-dark {
   background: #D70B7D;
   border-color: #D70B7D;
 }
-.nav-dark :where(.text-fg):not([role="menu"] *) { color: #FFFFFF; }
-.nav-dark :where(.text-fg-muted, .text-fg-icon):not([role="menu"] *) {
-  color: rgba(255, 255, 255, 0.78);
+.nav-dark :where(.text-fg):not(:is([role="menu"], [role="radiogroup"], .nav-solid) *) {
+  color: #FFFFFF;
 }
-.nav-dark button:not([role="menu"] *):hover { background-color: rgba(255, 255, 255, 0.1); }
-/* "Saving for" and the View toggle's track: an outline on the blue. */
-.nav-dark [role="radiogroup"],
-.nav-dark [aria-haspopup="menu"].border {
-  background-color: transparent;
-  border-color: rgba(255, 255, 255, 0.35);
+.nav-dark :where(.text-fg-muted, .text-fg-icon):not(:is([role="menu"], [role="radiogroup"], .nav-solid) *) {
+  color: rgba(255, 255, 255, 0.85);
 }
-/* The selected view: a light fill with a white edge, white text. */
-.nav-dark [role="radio"][aria-checked="true"] {
-  background-color: rgba(255, 255, 255, 0.2);
+.nav-dark button:not(:is([role="menu"], [role="radiogroup"]) *):not(.nav-solid):hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+/* A white edge on the controls that sit on the pink. */
+.nav-dark :is([role="radiogroup"], .nav-solid) {
   border-color: #FFFFFF;
 }

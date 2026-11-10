@@ -153,8 +153,10 @@ can open.
   screen readers there since the live region reads it; "47 Unique Events"
   in list view).
 - **The bar spans the whole width** and is **KW Hab pink with white text**
-  (`.nav-dark` in globals.css: #D70B7D, the logo's pink; its text, the Saving for and View
-  toggle outlines turn light — the menus that drop from it stay white), over the saved panel and the events
+  (`.nav-dark` in globals.css: #D70B7D, the logo's pink; the account's name and role turn
+  white; the Card / List toggle and "Saving for" (`.nav-solid`) keep a white
+  background and dark text with a white edge, as do the menus that drop
+  from it), over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
