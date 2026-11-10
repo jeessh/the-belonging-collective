@@ -20,7 +20,9 @@ export function FormFooter({
   // row and the buttons at their full height.
   const half = "flex-1 max-sm:px-4 max-sm:text-lg";
   return (
-    <div className={`flex gap-4 ${className}`}>
+    // `modal-footer`: pinned to the foot of a dialog (globals.css), a plain
+    // row anywhere else.
+    <div className={`modal-footer flex gap-4 ${className}`}>
       {secondary && (
         <Button
           variant="secondary"

@@ -216,8 +216,9 @@ class EventCreate(EventBase):
 
 class EventUpdate(BaseModel):
     title: str | None = None
-    description: str | None = Field(None, max_length=DESCRIPTION_MAX)
-    _description_lines = field_validator("description")(check_description)
+    # No limit here: an older program whose description is already past it
+    # must still save. update_event checks it only when it changes.
+    description: str | None = None
     notes: str | None = None
     categories: list[str] | None = None
     category: str | None = None

@@ -281,6 +281,8 @@ const WHOLE = /^\d+$/;
 export function missingRequired(
   v: EventFormValues,
   mode: "create" | "edit",
+  /** The description the event already had: one past the limit may stay. */
+  savedDescription?: string,
 ): Problem[] {
   const out: Problem[] = [];
   const need = (field: string, text: string, error = "This is required.") =>
@@ -293,7 +295,10 @@ export function missingRequired(
   // A virtual program happens online; there is no place to give.
   if (!v.isVirtual && !v.location.trim()) need("location", "location");
   if (!v.description.trim()) need("description", "description");
-  if (v.description.length > DESCRIPTION_MAX)
+  const descriptionKept = savedDescription !== undefined && v.description === savedDescription;
+  if (descriptionKept) {
+    /* posted before the limit, and unchanged: fine as it is */
+  } else if (v.description.length > DESCRIPTION_MAX)
     need("description", `a description under ${DESCRIPTION_MAX} characters`);
   else if (v.description.trim().split("\n").length > DESCRIPTION_LINES)
     need("description", `a description of ${DESCRIPTION_LINES} lines at most`);
@@ -505,7 +510,10 @@ export function EventForm({
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
-  const problems = missingRequired(values, mode);
+  // The description it opened with: an older event's, already past the
+  // limit, saves as it is until someone changes it.
+  const savedDescription = useRef(mode === "edit" ? values.description : undefined).current;
+  const problems = missingRequired(values, mode, savedDescription);
   const missing = problems.map((p) => p.text);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>

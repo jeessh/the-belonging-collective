@@ -111,7 +111,9 @@ export function EventDetails({
   const access = (event.accessibility_tags ?? []).filter((t) => !isDerivedTag(t));
 
   return (
-    <div className="flex flex-col gap-8">
+    // `modal-own-footer`: in a dialog its button row pins itself
+    // (`stickyActions`); the rest of the details is not a footer.
+    <div className="modal-own-footer flex flex-col gap-8">
       <EventSummary
         event={event}
         layout="detail"
@@ -208,7 +210,7 @@ export function EventDetails({
                 // above, stuck to the very bottom: the panel has no bottom
                 // padding of its own (sticky stops above padding, and the
                 // details showed through underneath), so this is its foot.
-                "sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface px-4 pb-6 pt-4 sm:-mx-8 sm:px-8"
+                "modal-footer"
               : ""
           }`}
         >

@@ -397,3 +397,29 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 
 /* The member's text size (lib/textScale.ts) never reaches the console. */
 .console { --text-scale: 1; }
+
+/* Dialogs (components/Modal.tsx) fit the screen: the panel scrolls, and the
+   row of buttons at its foot stays in view. A dialog's last block is taken
+   as its footer when it is a row of nothing but buttons (Cancel | Confirm…),
+   directly or as the last block of its form; `FormFooter` (Back | Next) and
+   the event details' `stickyActions` row carry `.modal-footer` themselves,
+   and the details opt out of the guess with `.modal-own-footer`. The footer reaches the panel's edges (`--modal-pad`)
+   and sits on white over whatever scrolls under it. */
+.modal-panel .modal-footer,
+.modal-panel > .modal-body > :last-child:not(.modal-own-footer):has(> button, > a):not(:has(> :not(button, a))),
+.modal-panel > .modal-body > form:last-child > :last-child:has(> button, > a):not(:has(> :not(button, a))) {
+  position: sticky;
+  /* Sticky stops at the panel's padding; this takes it to the very edge. */
+  bottom: calc(-1 * var(--modal-pad, 24px));
+  z-index: 10;
+  margin-inline: calc(-1 * var(--modal-pad, 24px));
+  margin-bottom: calc(-1 * var(--modal-pad, 24px));
+  padding: 16px var(--modal-pad, 24px) var(--modal-pad, 24px);
+  background-color: #ffffff;
+}
+/* A soft edge over it reads as "more above" without a hard rule. */
+.modal-panel .modal-footer,
+.modal-panel > .modal-body > :last-child:not(.modal-own-footer):has(> button, > a):not(:has(> :not(button, a))),
+.modal-panel > .modal-body > form:last-child > :last-child:has(> button, > a):not(:has(> :not(button, a))) {
+  box-shadow: 0 -12px 16px -12px rgba(0, 0, 0, 0.12);
+}
