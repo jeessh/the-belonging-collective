@@ -1,13 +1,15 @@
 "use client";
 
 import { forwardRef, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   Bookmark,
   ChevronsLeft,
   ChevronsRight,
   CirclePlus,
+  Trash2,
 } from "lucide-react";
 import { apiMessage, type Event, type GoogleCalendarState } from "@/lib/api";
 import { googleCalendarButton } from "@/lib/calendar";
@@ -16,6 +18,7 @@ import { TIME_ZONE } from "@/lib/time";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
+import { Modal } from "@/components/Modal";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-base";
@@ -45,6 +48,9 @@ type Props = {
   googleCalendar?: GoogleCalendarState;
   onOpenSaved: () => void;
   onOpenEvent: (event: Event) => void;
+  /** Un-save, after the member drags a mini card off the open panel and
+      confirms. */
+  onUnsaveEvent?: (event: Event) => void;
   onSignIn: () => void;
   /** "Saving for", under the open panel's heading (a caregiver with
       linked members only). */
@@ -72,6 +78,7 @@ export const SavedSidebar = memo(
       googleCalendar,
       onOpenSaved,
       onOpenEvent,
+      onUnsaveEvent,
       onSignIn,
       careSwitcher = null,
     },
@@ -259,7 +266,12 @@ export const SavedSidebar = memo(
                       <div
                         className="no-scrollbar -mx-[2px] min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
                       >
-                        <Board events={events} onOpen={onOpenEvent} reduceMotion={reduceMotion} />
+                        <Board
+                          events={events}
+                          onOpen={onOpenEvent}
+                          onUnsave={onUnsaveEvent}
+                          reduceMotion={reduceMotion}
+                        />
                       </div>
                     )}
                     {events.length === 0 && (
@@ -461,14 +473,50 @@ function Thumb({
   return null;
 }
 
-/** The open panel's saved programs: two even columns of mini cards. */
+/** Where the board's own order is kept (this browser only, try/catch). */
+const ORDER_KEY = "tbc.board_order";
+function readOrder(): string[] {
+  try {
+    const raw = window.localStorage.getItem(ORDER_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function writeOrder(ids: string[]) {
+  try {
+    window.localStorage.setItem(ORDER_KEY, JSON.stringify(ids));
+  } catch {
+    /* private window — the order just won't outlive the page */
+  }
+}
+
+/** Pixels the pointer must travel before a press becomes a drag. */
+const DRAG_START = 6;
+/** After a swap, the cards' layout animation runs this long; hits are
+    ignored meanwhile so a card sliding away can't swap straight back. */
+const SWAP_COOLDOWN = 260;
+
+/**
+ * The open panel's saved programs: two even columns of mini cards.
+ *
+ * Each card can be picked up: dropped on another card it takes that card's
+ * place (the others slide aside as it passes over them), so the member
+ * arranges the board themselves; dropped outside the panel it asks
+ * "Unsave …?" first. A press without movement still opens the event.
+ * The card in hand is a portalled copy, since the board's scroll box would
+ * clip it at the panel's edge.
+ */
 function Board({
   events,
   onOpen,
+  onUnsave,
   reduceMotion,
 }: {
   events: Event[];
   onOpen: (event: Event) => void;
+  onUnsave?: (event: Event) => void;
   reduceMotion: boolean | null;
 }) {
   const transition = reduceMotion
@@ -478,8 +526,11 @@ function Board({
   // Newest save first, at the top left. The list has no saved-at time, so
   // the board remembers the order cards arrived in: whatever appears that
   // wasn't there before goes in front (a whole first load keeps its own
-  // order), and an un-saved card simply drops out.
-  const order = useRef<string[]>([]);
+  // order), and an un-saved card simply drops out. A member's own
+  // rearranging is kept the same way, and in localStorage across reloads.
+  const order = useRef<string[] | null>(null);
+  if (order.current === null) order.current = typeof window === "undefined" ? [] : readOrder();
+  const [, rerender] = useState(0);
   const ids = events.map((ev) => ev.id);
   const known = new Set(order.current);
   const fresh = ids.filter((id) => !known.has(id));
@@ -487,28 +538,197 @@ function Board({
   order.current = [...fresh, ...order.current.filter((id) => live.has(id))];
   const byId = new Map(events.map((ev) => [ev.id, ev]));
   const shown = order.current.map((id) => byId.get(id)!).filter(Boolean);
+  const orderKey = order.current.join(",");
+  useEffect(() => {
+    if (orderKey) writeOrder(orderKey.split(","));
+  }, [orderKey]);
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<{
+    event: Event;
+    w: number;
+    outside: boolean;
+  } | null>(null);
+  const [confirm, setConfirm] = useState<Event | null>(null);
+  const ghostX = useMotionValue(0);
+  const ghostY = useMotionValue(0);
+  const suppressClick = useRef(false);
+
+  function moveBefore(dragged: string, target: string) {
+    const list = order.current!.filter((id) => id !== dragged);
+    const from = order.current!.indexOf(dragged);
+    const to = order.current!.indexOf(target);
+    // Moving down the board lands after the target, up lands before it —
+    // either way the dragged card ends up where the target was.
+    list.splice(list.indexOf(target) + (from < to ? 1 : 0), 0, dragged);
+    order.current = list;
+    rerender((n) => n + 1);
+  }
+
+  function onPointerDown(e: React.PointerEvent<HTMLButtonElement>, ev: Event) {
+    if (e.button !== 0 || e.pointerType === "touch") return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const offX = sx - rect.left;
+    const offY = sy - rect.top;
+    const panel = rootRef.current?.closest("aside");
+    let started = false;
+    let outside = false;
+    let lastSwap = 0;
+
+    const move = (m: PointerEvent) => {
+      if (!started) {
+        if (Math.hypot(m.clientX - sx, m.clientY - sy) < DRAG_START) return;
+        started = true;
+        document.body.style.cursor = "grabbing";
+        setDrag({ event: ev, w: rect.width, outside: false });
+      }
+      ghostX.set(m.clientX - offX);
+      ghostY.set(m.clientY - offY);
+      const pr = panel?.getBoundingClientRect();
+      const nowOutside =
+        !!pr &&
+        (m.clientX < pr.left || m.clientX > pr.right || m.clientY < pr.top || m.clientY > pr.bottom);
+      if (nowOutside !== outside) {
+        outside = nowOutside;
+        setDrag((d) => (d ? { ...d, outside } : d));
+      }
+      if (outside || performance.now() - lastSwap < SWAP_COOLDOWN) return;
+      const hit = document
+        .elementsFromPoint(m.clientX, m.clientY)
+        .find((n): n is HTMLElement => n instanceof HTMLElement && !!n.dataset.boardId);
+      const target = hit?.dataset.boardId;
+      if (target && target !== ev.id) {
+        moveBefore(ev.id, target);
+        lastSwap = performance.now();
+      }
+    };
+    const end = (cancelled: boolean) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      if (!started) return;
+      document.body.style.cursor = "";
+      // The click that follows a drag isn't a press on the card.
+      suppressClick.current = true;
+      window.setTimeout(() => (suppressClick.current = false), 0);
+      setDrag(null);
+      if (!cancelled && outside && onUnsave) setConfirm(ev);
+    };
+    const up = () => end(false);
+    const cancel = () => end(true);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  }
 
   return (
     // 16px between the cards both ways; room above each for its magnet.
-    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 pb-4 pt-4">
+    <div ref={rootRef} className="grid grid-cols-2 items-start gap-x-4 gap-y-6 pb-4 pt-4">
       <AnimatePresence initial={false}>
-        {shown.map((ev) => (
-          <motion.button
-            key={ev.id}
-            type="button"
-            layout={!reduceMotion}
-            onClick={() => onOpen(ev)}
-            aria-label={`Open ${ev.title}`}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={transition}
-            className={`relative w-full transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted motion-reduce:transition-none ${MINI_CARD}`}
-          >
-            <MiniCardFace event={ev} />
-          </motion.button>
-        ))}
+        {shown.map((ev) => {
+          const held = drag?.event.id === ev.id;
+          return (
+            <motion.button
+              key={ev.id}
+              type="button"
+              data-board-id={ev.id}
+              layout={!reduceMotion}
+              onPointerDown={(e) => onPointerDown(e, ev)}
+              onClick={() => {
+                if (!suppressClick.current) onOpen(ev);
+              }}
+              aria-label={`Open ${ev.title}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: held ? 0.35 : 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={transition}
+              className={`relative w-full cursor-grab select-none transition-[transform,border-color,box-shadow] duration-150 ease-out motion-reduce:transition-none ${
+                held
+                  ? "!border-dashed !border-fg-icon-muted"
+                  : drag
+                    ? ""
+                    : "hover:-translate-y-1 hover:!border-fg-icon-muted hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-visible:-translate-y-1 focus-visible:!border-fg-icon-muted"
+              } ${MINI_CARD}`}
+            >
+              <MiniCardFace event={ev} />
+            </motion.button>
+          );
+        })}
       </AnimatePresence>
+
+      {drag &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <motion.div
+            aria-hidden="true"
+            className="pointer-events-none fixed left-0 top-0 z-[80]"
+            style={{ x: ghostX, y: ghostY, width: drag.w }}
+          >
+            <motion.div
+              initial={{ scale: 1, rotate: 0 }}
+              animate={{
+                scale: 1.05,
+                rotate: drag.outside ? -4 : 2,
+                opacity: drag.outside ? 0.85 : 1,
+              }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.15 }}
+              className={`${MINI_CARD} shadow-[0_12px_32px_rgba(0,0,0,0.18)] ${
+                drag.outside ? "!border-danger-border" : ""
+              }`}
+            >
+              <MiniCardFace event={drag.event} />
+            </motion.div>
+            {drag.outside && (
+              <span className="mt-2 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-control bg-fg px-2 py-1 text-base text-surface">
+                <Trash2 aria-hidden="true" className="size-4" />
+                Let go to unsave
+              </span>
+            )}
+          </motion.div>,
+          document.body,
+        )}
+
+      {confirm && (
+        <UnsaveConfirm
+          event={confirm}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => {
+            onUnsave?.(confirm);
+            setConfirm(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** "Unsave …?" — asked when a mini card is dragged off the saved panel. */
+function UnsaveConfirm({
+  event,
+  onConfirm,
+  onClose,
+}: {
+  event: Event;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="relative z-[70]">
+      <Modal title={`Unsave ${event.title}?`} onClose={onClose}>
+        <p className="mt-2 text-xl leading-[1.4] text-fg-muted">
+          It will come off your saved events. You can save it again from the feed.
+        </p>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
+          <Button size="lg" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" size="lg" onClick={onConfirm} trailingIcon={<Trash2 />}>
+            Unsave
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

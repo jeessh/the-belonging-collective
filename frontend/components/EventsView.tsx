@@ -1886,6 +1886,7 @@ export function EventsView({
             googleCalendar={me?.google_calendar}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
+            onUnsaveEvent={(ev) => void unsave(ev)}
             onSignIn={() => toSignIn()}
           />
         )}

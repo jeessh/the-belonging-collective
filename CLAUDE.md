@@ -120,10 +120,19 @@ can open.
   bottom — miniature feed cards (picture and title), no pins or magnets
   and no shadow (the drag ghost
   neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
-  (a plain grid, 16px apart; no dragging or saved positions any more),
+  (a plain grid, 16px apart),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight
-  lands there); a click opens one. Its forwarded ref is the drop target every save
+  lands there); a click opens one. **Mini cards can be picked up**
+  (pointer, not touch; 6px before a press is a drag): over another card
+  it takes that card's place, the others sliding aside (`layout`; hits
+  are ignored for `SWAP_COOLDOWN` after a swap so a card sliding away
+  can't swap straight back), and the member's order is kept in
+  `localStorage` (`tbc.board_order`, try/catch). Dropped outside the
+  panel's `aside` it asks **"Unsave {title}?"** (`UnsaveConfirm`, Cancel |
+  Unsave) → `onUnsaveEvent` → EventsView's `unsave` (with its Undo). The
+  card in hand is a portalled copy (the board's scroll box clips), tilting
+  and showing "Let go to unsave" once it leaves the panel. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
