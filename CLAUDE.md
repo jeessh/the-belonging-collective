@@ -308,8 +308,13 @@ can open.
   the share sheet — the card no longer un-saves, that's in More information
   and on the saved page) and the live region say it; only
   errors and the un-save's Undo toast come from `attend` / `unsave`.
-  A save from the card (`attend(ev, true)`) leaves the saved card up for
-  0.5 s, then advances, unless the member has already moved on.
+  A save from the card (`attend(ev, true)`) goes **straight to the next
+  event, with no turn** (`showNextNow`, unless the member has already
+  moved on): it bumps `deckEpoch`, the key of the card's AnimatePresence,
+  which starts over with `initial={false}`. That remount also clears
+  turned cards a save used to strand — after a save, AnimatePresence
+  stopped removing finished exits (every one reported done) and they
+  piled up under the top card.
   **Dragged toward the saved board (not on a phone), the card turns into a
   mini card**: a `MiniCardFace` ghost (portalled, `ghostT` etc. in
   EventsView) follows the pointer and fades in as the big card fades out,
@@ -348,7 +353,9 @@ can open.
   variants are memoised on the dial values); "Back"
   brings a card up from the bottom), **flip** (turns over like a playing
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
-  `stack.layers` (4) full-size cards under the top one, each nudged
+  `stack.layers` (4) full-size cards under the top one — the first of them
+  **is the next event** (`upNext`, a look-only `FeedCard preview`, inert),
+  so a card picked up or turning shows what's under it — each nudged
   (`offsetY` 7px, `offsetX` 2px) and tilted ±`tilt`° — always full, since
   turned cards go back into it (replaces the two narrower layers); past the
   last card, card 1 simply comes round with the usual turn (no shuffle

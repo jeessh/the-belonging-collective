@@ -526,6 +526,8 @@ export function EventsView({
   }, [feed.length]);
 
   const current = feed[i];
+  // The event under it, drawn on the deck's top layer (null with only one).
+  const upNext = feed.length > 1 ? feed[(i + 1) % feed.length] : null;
 
   // The cards either side are fetched ahead, so the one that slides in
   // never arrives as a grey box that fills a moment later.
@@ -538,6 +540,10 @@ export function EventsView({
 
   // +1 = advancing (next slides up from below), -1 = going back.
   const [dir, setDir] = useState(1);
+  // Bumped after a save: the card's AnimatePresence starts over (keyed on
+  // it, `initial={false}`), so the next event is simply there — no turn —
+  // and no exit the save left unfinished can hold turned cards on screen.
+  const [deckEpoch, setDeckEpoch] = useState(0);
   const feedLenRef = useRef(feed.length);
   feedLenRef.current = feed.length;
 
@@ -736,6 +742,13 @@ export function EventsView({
     const len = Math.max(feedLenRef.current, 1);
     setI((n) => (n + 1) % len);
   }, []);
+  /** Straight to the next event, with no turn (after a save). */
+  const showNextNow = useCallback(() => {
+    setDir(1);
+    setDeckEpoch((e) => e + 1);
+    const len = Math.max(feedLenRef.current, 1);
+    setI((n) => (n + 1) % len);
+  }, []);
   const prev = useCallback(() => {
     setDir(-1);
     setI(
@@ -812,12 +825,12 @@ export function EventsView({
 
   const advanceAfterSave = useCallback(
     (ev: Event) => {
+      // Straight on to the next event — no turn, no wait (the saved card
+      // has just flown to the board).
       clearTimeout(advanceTimer.current);
-      advanceTimer.current = setTimeout(() => {
-        if (currentIdRef.current === ev.id) next();
-      }, 500);
+      if (currentIdRef.current === ev.id) showNextNow();
     },
-    [next],
+    [showNextNow],
   );
 
   // Sign in over the feed rather than navigating away: the program stays on
@@ -1297,6 +1310,9 @@ export function EventsView({
       await flyCard(fromX);
       celebrate();
       await attend(ev, true);
+      // Let the next event render before the (hidden) card is shown again,
+      // or the saved one flashes back for a frame.
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
       settleCard();
     },
     [
@@ -2030,8 +2046,33 @@ export function EventsView({
                           }}
                           // Under the top card (its wrapper is z-10), deeper ones lower.
                           style={{ zIndex: 9 - n }}
-                          className="absolute inset-0 rounded-card border-2 border-line-card bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                        />
+                          // The deck's top layer is the next event itself, so
+                          // a card picked up (or turning) shows what's under
+                          // it. Look only: inert, nothing in it can be pressed.
+                          className={`absolute inset-0 overflow-hidden rounded-card bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.06)] ${
+                            n === 1 && upNext ? "" : "border-2 border-line-card"
+                          }`}
+                          ref={(el: HTMLDivElement | null) => {
+                            // React 18 drops an `inert` prop; set it here so
+                            // the copy's buttons can't take keyboard focus.
+                            if (el) el.toggleAttribute("inert", n === 1 && !!upNext);
+                          }}
+                        >
+                          {n === 1 && upNext && (
+                            <div className="pointer-events-none">
+                              <FeedCard
+                                preview
+                                event={upNext}
+                                saved={saved.has(upNext.id)}
+                                recommended={recommendedKeys.has(programKey(upNext))}
+                                onMoreInfo={() => {}}
+                                onSave={() => {}}
+                                onUnsave={() => {}}
+                                onSignIn={() => {}}
+                              />
+                            </div>
+                          )}
+                        </motion.div>
                       );
                     },
                   )}
@@ -2058,7 +2099,7 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
-                    <AnimatePresence initial={false} custom={dir} mode="popLayout">
+                    <AnimatePresence key={`turns${deckEpoch}`} initial={false} custom={dir} mode="popLayout">
                     <motion.div
                       key={current.id}
                       custom={dir}
