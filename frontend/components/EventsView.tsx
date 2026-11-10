@@ -1915,7 +1915,7 @@ export function EventsView({
                     region already reads it per card, and a line that changes
                     on every arrow is noise. */}
                 <div className="flex min-w-0 flex-col gap-1">
-                  <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                  <h1 className="text-3xl font-medium text-fg lg:text-[calc(2rem*var(--text-scale,1))]">
                     Discover Events
                   </h1>
                   <p

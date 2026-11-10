@@ -198,7 +198,7 @@ export function EventSummary({
       id={titleId}
       className={`font-medium leading-tight text-fg ${
         feed
-          ? "text-2xl sm:text-3xl lg:text-[32px] short:!text-[28px]"
+          ? "text-2xl sm:text-3xl lg:text-[calc(2rem*var(--text-scale,1))] short:!text-[calc(1.75rem*var(--text-scale,1))]"
           : card
             ? "text-2xl sm:text-3xl"
             : "text-2xl"

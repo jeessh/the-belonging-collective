@@ -4,6 +4,7 @@ import { MotionRoot } from "@/components/MotionRoot";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SkipLink } from "@/components/SkipLink";
 import { DevDials } from "@/components/DevDials";
+import { TextScaleRoot } from "@/components/TextScaleRoot";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
         <MotionRoot>
           <ToastProvider>{children}</ToastProvider>
           <DevDials />
+          <TextScaleRoot />
         </MotionRoot>
       </body>
     </html>

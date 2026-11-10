@@ -15,6 +15,21 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Tailwind's own sizes, times the member's text size (Accessibility
+      // Tools → Text size; lib/textScale.ts). 1 unless they change it, and
+      // the console pins it to 1.
+      fontSize: {
+      "xs": ["calc(0.75rem * var(--text-scale, 1))", { lineHeight: "calc(1rem * var(--text-scale, 1))" }],
+      "sm": ["calc(0.875rem * var(--text-scale, 1))", { lineHeight: "calc(1.25rem * var(--text-scale, 1))" }],
+      "base": ["calc(1rem * var(--text-scale, 1))", { lineHeight: "calc(1.5rem * var(--text-scale, 1))" }],
+      "lg": ["calc(1.125rem * var(--text-scale, 1))", { lineHeight: "calc(1.75rem * var(--text-scale, 1))" }],
+      "xl": ["calc(1.25rem * var(--text-scale, 1))", { lineHeight: "calc(1.75rem * var(--text-scale, 1))" }],
+      "2xl": ["calc(1.5rem * var(--text-scale, 1))", { lineHeight: "calc(2rem * var(--text-scale, 1))" }],
+      "3xl": ["calc(1.875rem * var(--text-scale, 1))", { lineHeight: "calc(2.25rem * var(--text-scale, 1))" }],
+      "4xl": ["calc(2.25rem * var(--text-scale, 1))", { lineHeight: "calc(2.5rem * var(--text-scale, 1))" }],
+      "5xl": ["calc(3rem * var(--text-scale, 1))", { lineHeight: "1" }],
+      "6xl": ["calc(3.75rem * var(--text-scale, 1))", { lineHeight: "1" }],
+      },
       colors: {
         // Legacy — see above.
         paper: "#EEEBF5",

@@ -366,6 +366,14 @@ can open.
   has 3-step `times` never finishes — the exit never completes and turned
   cards piled up, one stuck over the ↑ / ↓ buttons; give each its own
   `{ duration: 0 }`.
+- **Text size** (Accessibility Tools, card view): a slider, 100–150% in 10%
+  steps (`TextSizeSlider` in FeedHeader, `lib/textScale.ts`). It sets
+  `--text-scale` on `<html>`, and every Tailwind `text-*` size is
+  `calc(… * var(--text-scale, 1))` (tailwind.config.ts `fontSize`), so text
+  grows and spacing doesn't; arbitrary sizes need the same calc (the page
+  titles' `lg:text-[calc(2rem*var(--text-scale,1))]`). Kept per browser
+  (`tbc.text_scale`, try/catch; `TextScaleRoot` in the layout applies it on
+  load); `.console` pins it to 1.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,

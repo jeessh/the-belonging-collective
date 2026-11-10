@@ -186,7 +186,7 @@ export const SavedEvents = memo(function SavedEvents({
             <BackButton label="Back to events" onClick={onClose} />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[32px]">
+                <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[calc(2rem*var(--text-scale,1))]">
                   {/* The saved bookmark, as on the sidebar's Saved Events. */}
                   <BookmarkCheck aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
                   {care && me && care.members.length > 0 ? (

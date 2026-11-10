@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { TEXT_SCALE, useTextScale } from "@/lib/textScale";
 import { shortName, type CarePerson } from "@/lib/api";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
@@ -443,6 +444,8 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           </>
           )}
 
+          <TextSizeSlider />
+
           <Button
             className={`w-full ${listView ? "" : "mt-4"}`}
             onClick={onShowTour}
@@ -505,6 +508,53 @@ function MenuToggle({
           />
         </span>
       </button>
+    </div>
+  );
+}
+
+/** Accessibility Tools → Text size: 100% to 150%, in 10% steps, for every
+    member page in this browser (lib/textScale.ts). */
+function TextSizeSlider() {
+  const [scale, setScale] = useTextScale();
+  const pct = Math.round(scale * 100);
+  return (
+    <div className="mt-6 flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor="text-size" className="text-xl font-medium text-fg">
+          Text size
+        </label>
+        <span className="text-lg text-fg-muted" aria-hidden="true">
+          {pct}%
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span aria-hidden="true" className="text-base font-medium text-fg-muted">
+          A
+        </span>
+        <input
+          id="text-size"
+          type="range"
+          min={TEXT_SCALE.min}
+          max={TEXT_SCALE.max}
+          step={TEXT_SCALE.step}
+          value={scale}
+          aria-valuetext={`${pct}%`}
+          onChange={(e) => setScale(parseFloat(e.target.value))}
+          className="h-11 min-w-0 flex-1 cursor-pointer accent-primary-strong"
+        />
+        <span aria-hidden="true" className="text-2xl font-medium text-fg-muted">
+          A
+        </span>
+      </div>
+      {scale !== 1 && (
+        <button
+          type="button"
+          onClick={() => setScale(1)}
+          className="self-start text-base text-fg-muted underline underline-offset-4 hover:text-fg"
+        >
+          Reset to 100%
+        </button>
+      )}
     </div>
   );
 }
