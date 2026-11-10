@@ -431,7 +431,7 @@ can open.
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
   LINKS (`event.links` plus the organizer's `registration_url`; one
-  bordered card per link — label, site name, external-link icon, the whole
+  bordered card per link — label (two lines at most, `line-clamp-2`; the full label is its title), site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" dialog
   (`member/EventDetailModal`, a centred `Modal`; its title row is padded
