@@ -514,7 +514,10 @@ can open.
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
   view's conventions**: the card's width (880px) centred, the title (with a
-  bookmark-check icon before it) with
+  bookmark-check icon before it) — "{Name}'s Saved Events"; for a
+  caregiver with linked members it is a menu (`WhoseList`: their own and
+  each member's list, setting the same `careFor` as "Saving for", which
+  the page itself doesn't show) — with
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
   `tools` prop, in place of the list view's Filter and Sort; both cover the
