@@ -161,9 +161,10 @@ can open.
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
   the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
-  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) always sits
-  beside the account in the top bar (`careInPanel` is false; the panel slot
-  is unused).
+  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits in the
+  open saved panel, under "Saved Events" (`careInPanel`: not on a phone
+  and not on All Saved Events, where it stays beside the account), and
+  folds away with the panel when it is collapsed to the rail.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and the name at 20px, with
   "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the

@@ -1711,9 +1711,11 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
-  // "Saving for" always sits beside the account in the top bar now —
-  // never under the saved panel's heading.
-  const careInPanel = false;
+  // "Saving for" lives in the saved panel, under its heading, wherever the
+  // panel is beside the feed — and folds away with it when the panel is
+  // collapsed to the rail. On a phone (no panel) and on the All Saved
+  // Events page (panel steps aside) it sits beside the account instead.
+  const careInPanel = !phone && view !== "saved";
 
   // Accessibility Tools, on the right of the bar over the event column.
   const a11yMenu = (
