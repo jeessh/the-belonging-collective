@@ -394,3 +394,28 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 }
 .tour-arrow { animation: tour-arrow 3.8s linear infinite; }
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
+
+/* The member app's top bar: dark blue, white text (EventsView's header).
+   Everything inside turns light — the account button, "Saving for" and the
+   Card / List toggle — except the menus that drop down from it, which stay
+   the usual white panels. */
+.nav-dark {
+  background: #0F2E4C;
+  border-color: #0F2E4C;
+}
+.nav-dark :where(.text-fg):not([role="menu"] *) { color: #FFFFFF; }
+.nav-dark :where(.text-fg-muted, .text-fg-icon):not([role="menu"] *) {
+  color: rgba(255, 255, 255, 0.78);
+}
+.nav-dark button:not([role="menu"] *):hover { background-color: rgba(255, 255, 255, 0.1); }
+/* "Saving for" and the View toggle's track: an outline on the blue. */
+.nav-dark [role="radiogroup"],
+.nav-dark [aria-haspopup="menu"].border {
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+/* The selected view: a light fill with the cyan edge, white text. */
+.nav-dark [role="radio"][aria-checked="true"] {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: #00CDFF;
+}
