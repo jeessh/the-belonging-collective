@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  AnimatePresence,
   animate,
   motion,
   useMotionValue,
@@ -76,8 +77,27 @@ import {
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
 import { FeedCard } from "@/components/member/FeedCard";
 import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
+import { useDialKit, type TransitionConfig } from "dialkit";
+import type { Transition, ValueAnimationTransition } from "framer-motion";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
+
+/* The top card's shadow lives on its turn wrapper (not on FeedCard), so a
+   turn can deepen it as the card lifts and let it fade as the card goes back
+   into the deck. Same layer count in each, so they animate between. */
+const SHADOW_REST =
+  "0 2px 6px -2px rgba(60,40,15,0.12), 0 14px 32px -12px rgba(60,40,15,0.22)";
+const SHADOW_LIFT =
+  "0 8px 16px -4px rgba(60,40,15,0.18), 0 30px 50px -12px rgba(60,40,15,0.32)";
+const SHADOW_NONE =
+  "0 0px 0px 0px rgba(60,40,15,0), 0 0px 0px 0px rgba(60,40,15,0)";
+
+/** DialKit's transition union → framer-motion's (easing = tween). */
+function toMotionTransition(curve: TransitionConfig): Transition {
+  return curve.type === "easing"
+    ? { type: "tween", duration: curve.duration, ease: curve.ease }
+    : curve;
+}
 
 /** How far from the saved board (px) the dragged card starts turning into a mini card. */
 const MORPH_DISTANCE = 320;
@@ -134,6 +154,126 @@ export function EventsView({
   space?: OrgSpace | null;
 }) {
   const reduceMotion = useReducedMotion();
+  // The card-turn animation, live-tunable in development (DialKit panel,
+  // bottom left; hidden in production). Defaults are the shipped values:
+  // an 80px slide from the travel direction on a 320 / 34 spring.
+  const cardDial = useDialKit("Card transition", {
+    // Flip: the next card turns over onto the deck, like a playing card.
+    // Slide: the old 80px slide from the travel direction.
+    style: {
+      type: "select",
+      options: [
+        { value: "tuck", label: "Top card to the bottom" },
+        { value: "flip", label: "Flip (deck)" },
+        { value: "slide", label: "Slide" },
+      ],
+      default: "tuck",
+    },
+    tuck: {
+      lift: [89, 0, 160, 1],
+      // How far down it sinks as it goes back into the deck (not off the page).
+      distance: [26, 0, 200, 1],
+      tilt: [8, 0, 20, 0.5],
+      // Out to the side while it's lifted, so it can slide back in UNDER
+      // the new top card — that's what makes "behind" readable.
+      swing: [100, 0, 500, 5],
+      // How much it darkens as it goes behind (1 = not at all).
+      dim: [0.88, 0.5, 1, 0.01],
+      duration: [0.55, 0.2, 1.5, 0.05],
+      deckScale: [0.95, 0.8, 1, 0.01],
+      deckOffset: [14, 0, 60, 1],
+      // The new top card emerges from the deck's top card: it waits until
+      // the old one has lifted clear (`revealDelay`, s), then fades in
+      // slowly as it eases up from the stack's first layer — no pop.
+      fadeIn: [0.25, 0, 1.5, 0.05],
+      revealDelay: [0.3, 0, 1, 0.01],
+    },
+    flip: {
+      angle: [100, 0, 180, 1],
+      perspective: [1400, 300, 3000, 10],
+      origin: {
+        type: "select",
+        options: [
+          { value: "left", label: "Left edge (like a book)" },
+          { value: "center", label: "Centre" },
+          { value: "top", label: "Top edge" },
+        ],
+        default: "left",
+      },
+      lift: [24, 0, 120, 1],
+    },
+    distance: [80, 0, 240, 1],
+    startOpacity: [1, 0, 1, 0.05],
+    startScale: [1, 0.8, 1.1, 0.01],
+    spring: { type: "spring", stiffness: 260, damping: 26, mass: 1 },
+    // The pile under the top card: full-size cards, each nudged and tilted.
+    stack: {
+      layers: [4, 0, 8, 1],
+      offsetY: [7, 0, 24, 0.5],
+      offsetX: [2, -12, 12, 0.5],
+      tilt: [1.4, 0, 6, 0.1],
+    },
+    // Past the last card: the deck riffles before card 1 comes back.
+    shuffle: {
+      offset: [70, 0, 240, 1],
+      rotate: [9, 0, 30, 0.5],
+      duration: [0.75, 0.2, 2, 0.05],
+    },
+  },
+  // Kept in this browser (localStorage) across reloads and code edits.
+  { id: "tbc:card-transition", persist: true });
+  // The save: how the card flies into Saved Events, and what celebrates
+  // its landing. Its own DialKit panel; "Preview" plays it without saving.
+  const previewSaveRef = useRef<() => void>(() => {});
+  const saveDial = useDialKit(
+    "Save animation",
+    {
+      style: {
+        type: "select",
+        options: [
+          { value: "classic", label: "Classic (shrink & fade)" },
+          { value: "spin", label: "Spin" },
+          { value: "arc", label: "Arc (toss)" },
+          { value: "pop", label: "Pop" },
+        ],
+        default: "classic",
+      },
+      anticipation: {
+        scale: [1.06, 1, 1.4, 0.01],
+        duration: [0.12, 0, 0.5, 0.01],
+      },
+      flight: {
+        curve: { type: "easing", duration: 0.46, ease: [0.4, 0, 0.2, 1] },
+        endScale: [0.1, 0, 1, 0.01],
+        spin: [360, 0, 1080, 15],
+        arcHeight: [160, 0, 400, 5],
+      },
+      celebration: {
+        effect: {
+          type: "select",
+          options: [
+            { value: "none", label: "None" },
+            { value: "confetti", label: "Confetti" },
+            { value: "sparkles", label: "Sparkles" },
+            { value: "hearts", label: "Hearts" },
+            { value: "ring", label: "Ring" },
+          ],
+          default: "none",
+        },
+        count: [18, 0, 60, 1],
+        spread: [110, 20, 300, 5],
+        duration: [0.9, 0.2, 2, 0.05],
+      },
+      preview: { type: "action", label: "Preview (doesn't save)" },
+    },
+    {
+      onAction: (path) => path === "preview" && previewSaveRef.current(),
+      // Kept in this browser (localStorage) across reloads and code edits.
+      id: "tbc:save-animation",
+      persist: true,
+    },
+  );
+  const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
   const toast = useToast();
   const [me, setMe] = useState<Me | null>(initialMe);
 
@@ -233,6 +373,7 @@ export function EventsView({
   const flyY = useMotionValue(0);
   const cardScale = useMotionValue(1);
   const cardOpacity = useMotionValue(1);
+  const flyRotate = useMotionValue(0);
   // The mini card the feed card turns into as it is dragged toward the
   // saved board: it follows the pointer, fading in as the card fades out
   // (desktop and tablet; a phone's drop zone is the bar under the feed).
@@ -243,12 +384,14 @@ export function EventsView({
   const ghostY = useMotionValue(0);
   const ghostT = useMotionValue(0);
   const ghostScale = useMotionValue(1);
+  const ghostRotate = useMotionValue(-2);
   const resetGhost = useCallback(() => {
     ghostT.set(0);
     ghostScale.set(1);
+    ghostRotate.set(-2);
     cardOpacity.set(1);
     setGhosting(false);
-  }, [ghostT, ghostScale, cardOpacity]);
+  }, [ghostT, ghostScale, ghostRotate, cardOpacity]);
 
   const cardWrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null); // fly target: the sidebar's zone
@@ -403,9 +546,230 @@ export function EventsView({
   const [dir, setDir] = useState(1);
   const feedLenRef = useRef(feed.length);
   feedLenRef.current = feed.length;
+  // Going past the last card shuffles the deck (DialKit "Card transition"
+  // → shuffle) before card 1 comes back round.
+  const [shuffleTick, setShuffleTick] = useState(0);
+  const [shuffling, setShuffling] = useState(false);
+  const shuffleRef = useRef<HTMLDivElement>(null);
+  const iRef = useRef(0);
+  iRef.current = i;
+  // A shuffle plays once, then turns are flips again.
+  useEffect(() => {
+    if (!shuffleTick) return;
+    const el = shuffleRef.current;
+    if (el && !reduceMotion) {
+      const o = cardDial.shuffle.offset;
+      const rot = cardDial.shuffle.rotate;
+      void animate(
+        el,
+        { x: [-o, o * 0.7, -o * 0.35, 0], rotate: [-rot, rot * 0.7, -rot * 0.3, 0], y: [16, 8, 2, 0] },
+        { duration: cardDial.shuffle.duration, ease: "easeInOut" },
+      );
+    }
+    const t = window.setTimeout(() => setShuffling(false), cardDial.shuffle.duration * 1000 + 50);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shuffleTick]);
+
+  /* ── A card turn (DialKit "Card transition") ──────────────────────────
+   *  tuck   next: the top card lifts off the deck and goes under it, to
+   *         the bottom; the card beneath rises into its place. Back: the
+   *         card comes up from the bottom of the deck onto the top.
+   *  flip   the next card turns over onto the deck, like a playing card
+   *  slide  the old slide from the travel direction
+   *  shuffle (past the last card) the deck riffles before card 1 returns
+   * ─────────────────────────────────────────────────────────────────── */
+  // Memoised on the dial values: a fresh variants object on every render
+  // restarted keyframed turns mid-way (they stalled at their first frame).
+  const cardDialKey = JSON.stringify(cardDial);
+  const turnVariants = useMemo(() => ({
+    enter: (d: number) =>
+      cardDial.style === "tuck"
+          ? d > 0
+            ? // The next card is already under it: it rises from the deck.
+              // From where the deck's top card sits (the stack's first
+              // layer), under the lifted card; it eases up into place as it
+              // fades in (see `center`).
+              {
+                x: cardDial.stack.offsetX,
+                y: cardDial.stack.offsetY,
+                scale: 0.985,
+                opacity: 0,
+                boxShadow: SHADOW_NONE,
+                zIndex: 0,
+              }
+            : // Back: the mirror of Next — it starts inside the deck, behind
+              // the top card (see `center`).
+              {
+                x: cardDial.stack.offsetX,
+                y: cardDial.stack.offsetY,
+                scale: 0.985,
+                rotate: 0,
+                opacity: 0,
+                boxShadow: SHADOW_NONE,
+                zIndex: 0,
+              }
+          : cardDial.style === "flip"
+            ? {
+                rotateY: d > 0 ? cardDial.flip.angle : -cardDial.flip.angle,
+                y: -cardDial.flip.lift,
+                opacity: cardDial.startOpacity,
+                scale: cardDial.startScale,
+                zIndex: 1,
+              }
+            : {
+                y: d > 0 ? cardDial.distance : -cardDial.distance,
+                opacity: cardDial.startOpacity,
+                scale: cardDial.startScale,
+                zIndex: 1,
+              },
+    center: (d: number) =>
+      cardDial.style === "tuck" && d < 0
+        ? {
+            // Back: pulled out of the deck, lifted over the pile, and laid on
+            // top — Next played in reverse, its shadow growing as it lifts.
+            // Same softness as Next: it fades in slowly as it slides out
+            // of the deck, lifts over the pile and eases down on top — no
+            // spring, no pop.
+            // Slides out from under the top card to the side (still behind
+            // it, darker), then swings back over it and lands on top.
+            x: [cardDial.stack.offsetX, cardDial.tuck.swing, 0],
+            y: [cardDial.stack.offsetY, -cardDial.tuck.lift, 0],
+            scale: [0.985, 1.02, 1],
+            rotate: [0, cardDial.tuck.tilt, 0],
+            filter: [`brightness(${cardDial.tuck.dim})`, "brightness(1)", "brightness(1)"],
+            // Click-through while it swings past the arrows; live once landed.
+            pointerEvents: "none" as const,
+            transitionEnd: { pointerEvents: "auto" as const },
+            rotateY: 0,
+            opacity: 1,
+            zIndex: 1,
+            boxShadow: [SHADOW_NONE, SHADOW_LIFT, SHADOW_REST],
+            transition: {
+              // The same length and shape as Next, so ↑ and ↓ feel alike.
+              default: {
+                duration: cardDial.tuck.duration,
+                times: [0, 0.45, 1],
+                ease: "easeInOut",
+              },
+              // Single values under the 3-step `times` never finished.
+              pointerEvents: { duration: 0 },
+              rotateY: { duration: 0 },
+              // Visible almost at once — fading in slowly while it was still
+              // hidden behind the top card made ↑ feel late.
+              opacity: { duration: cardDial.tuck.duration * 0.3, ease: "easeOut" },
+              // Over the old top card once it has risen clear of the pile.
+              zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
+            },
+          }
+        : {
+          x: 0,
+          y: 0,
+          rotate: 0,
+          rotateY: 0,
+          opacity: 1,
+          scale: 1,
+          zIndex: 1,
+          boxShadow: SHADOW_REST,
+          // Always full brightness on top: a card turned back to while it
+          // was still dimming its way under the deck kept that grey tint.
+          filter: "brightness(1)",
+          transition: {
+            // A gentle ease up, not the spring's snap, so it doesn't pop.
+            ...(cardDial.style === "tuck"
+              ? {
+                  duration: cardDial.tuck.fadeIn,
+                  delay: cardDial.tuck.revealDelay,
+                  ease: [0.22, 1, 0.36, 1],
+                }
+              : toMotionTransition(cardDial.spring)),
+            opacity: {
+              duration: cardDial.tuck.fadeIn,
+              delay: cardDial.style === "tuck" ? cardDial.tuck.revealDelay : 0,
+              ease: [0.33, 0, 0.2, 1],
+            },
+            boxShadow: {
+              duration: cardDial.tuck.fadeIn * 1.4,
+              delay: cardDial.style === "tuck" ? cardDial.tuck.revealDelay : 0,
+              ease: "easeOut",
+            },
+            // Comes over the card that's leaving at its swing's furthest point.
+            zIndex: {
+              delay: cardDial.style === "tuck" ? cardDial.tuck.duration * 0.45 : 0,
+              duration: 0,
+            },
+          },
+        },
+    exit: (d: number) =>
+      cardDial.style === "tuck"
+        ? d > 0
+          ? {
+              // Picked up off the top and swung out to the side, then slid
+              // back in UNDER the new top card (its z drops at the swing's
+              // furthest point), darkening as it goes behind, and only then
+              // fading into the pile.
+              x: [0, cardDial.tuck.swing, cardDial.stack.offsetX],
+              y: [0, -cardDial.tuck.lift, cardDial.tuck.distance],
+              scale: [1, 1.02, cardDial.tuck.deckScale],
+              rotate: [0, cardDial.tuck.tilt, cardDial.tuck.tilt * 0.3],
+              filter: ["brightness(1)", "brightness(1)", `brightness(${cardDial.tuck.dim})`],
+              // Click-through on its way out: its swing passes over the ↑ / ↓
+              // buttons, and a quick second press landed on it.
+              pointerEvents: "none" as const,
+              // Its shadow deepens as it's picked up, then slowly fades as
+              // it settles into the pile.
+              boxShadow: [SHADOW_REST, SHADOW_LIFT, SHADOW_NONE],
+              // Over the deck while it's lifted, then under it — a single
+              // delayed step each (keyframes on these don't animate).
+              opacity: 0,
+              zIndex: 0,
+              transition: {
+                default: { duration: cardDial.tuck.duration, times: [0, 0.45, 1], ease: "easeInOut" },
+                // One-step values get their own instant timing: under the
+                // 3-step `times` above, they never finished — the exit never
+                // completed and turned cards piled up under the top one.
+                pointerEvents: { duration: 0 },
+                zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
+                // Seen sliding under the new card first, then gone.
+                opacity: {
+                  delay: cardDial.tuck.duration * 0.8,
+                  duration: cardDial.tuck.duration * 0.3,
+                  ease: "easeIn",
+                },
+              },
+            }
+          : {
+              // Back: the old top card stays where it is while the other
+              // card comes over it, then becomes part of the deck below.
+              pointerEvents: "none" as const,
+              y: cardDial.stack.offsetY,
+              scale: 1,
+              opacity: 0,
+              boxShadow: SHADOW_NONE,
+              zIndex: 0,
+              transition: {
+                default: {
+                  duration: cardDial.tuck.fadeIn,
+                  delay: cardDial.tuck.duration * 0.45,
+                  ease: [0.33, 0, 0.2, 1],
+                },
+                pointerEvents: { duration: 0 },
+                // Stays above the arriving card until that one has risen.
+                zIndex: { delay: cardDial.tuck.duration * 0.45, duration: 0 },
+              },
+            }
+        : // Other styles have no exit: the card before is simply gone.
+          { opacity: 0, pointerEvents: "none" as const, transition: { duration: 0 } },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [cardDialKey]);
   const next = useCallback(() => {
     setDir(1);
-    setI((n) => (n + 1) % Math.max(feedLenRef.current, 1));
+    const len = Math.max(feedLenRef.current, 1);
+    if (len > 1 && iRef.current + 1 >= len) {
+      setShuffling(true);
+      setShuffleTick((t) => t + 1);
+    }
+    setI((n) => (n + 1) % len);
   }, []);
   const prev = useCallback(() => {
     setDir(-1);
@@ -784,6 +1148,103 @@ export function EventsView({
    * tracking — so they all end in the same place. `fromX` is where the card
    * already is when a drag or hold hands it over.
    */
+  /* ── The save flight (DialKit "Save animation") ────────────────────────
+   *  anticipation  the card swells (scale, duration)
+   *  flight        it travels to Saved Events on `flight.curve`, shrinking
+   *                to `endScale` and fading; per style:
+   *                  classic  straight in
+   *                  spin     turning `spin` degrees on the way
+   *                  arc      tossed up `arcHeight` px, then down in
+   *                  pop      a bigger swell, staying solid till the end
+   *  celebration   a burst where the newest save lands
+   * ─────────────────────────────────────────────────────────────────── */
+  const flyCard = useCallback(
+    async (fromX = 0) => {
+      const wrap = cardWrapRef.current;
+      const target = dropRef.current;
+      if (!wrap || !target) return;
+      const d = saveDial;
+      setFlying(true);
+      setDragActive(true);
+      liftCard();
+      // The wrapper's box is where the card rests; the drag moved only the
+      // inner element, so the hand-off puts that offset on the wrapper.
+      const card = wrap.getBoundingClientRect();
+      const drop = target.getBoundingClientRect();
+      const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
+      const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
+      x.set(0);
+      flyX.set(fromX);
+
+      const pop = d.style === "pop";
+      const swell = pop ? Math.max(d.anticipation.scale, 1.18) : d.anticipation.scale;
+      if (d.anticipation.duration > 0)
+        await animate(cardScale, swell, {
+          duration: d.anticipation.duration,
+          ease: pop ? [0.34, 1.56, 0.64, 1] : "easeOut",
+        });
+      const curve = toMotionTransition(d.flight.curve) as ValueAnimationTransition<number>;
+      // Keyframed paths (the arc, pop's late fade) need a tween; a spring
+      // curve lends them its visual duration.
+      const secs =
+        d.flight.curve.type === "easing"
+          ? d.flight.curve.duration
+          : (d.flight.curve as { visualDuration?: number }).visualDuration ?? 0.5;
+      const tween = {
+        duration: secs,
+        ease: d.flight.curve.type === "easing" ? d.flight.curve.ease : [0.4, 0, 0.2, 1],
+      } as ValueAnimationTransition<number>;
+      await Promise.all([
+        animate(flyX, dx, curve),
+        d.style === "arc"
+          ? animate(flyY, [0, -d.flight.arcHeight, dy], { ...tween, times: [0, 0.4, 1] })
+          : animate(flyY, dy, curve),
+        animate(cardScale, d.flight.endScale, curve),
+        animate(flyRotate, d.style === "spin" ? d.flight.spin : 0, curve),
+        pop
+          ? animate(cardOpacity, [1, 1, 0], { ...tween, times: [0, 0.75, 1] })
+          : animate(cardOpacity, 0, { duration: secs, ease: "easeIn" }),
+      ]);
+    },
+    [saveDial, liftCard, x, flyX, flyY, cardScale, cardOpacity, flyRotate],
+  );
+
+  /** The card back where it rests, after a flight. */
+  const settleCard = useCallback(() => {
+    flyX.set(0);
+    flyY.set(0);
+    flyRotate.set(0);
+    cardScale.set(1);
+    cardOpacity.set(1);
+    setLift(null);
+    setDragActive(false);
+    setFlying(false);
+  }, [flyX, flyY, flyRotate, cardScale, cardOpacity]);
+
+  /** The celebration where the newest save lands (top left of the board). */
+  const celebrate = useCallback(() => {
+    if (saveDial.celebration.effect === "none" || reduceMotion) return;
+    const drop = dropRef.current?.getBoundingClientRect();
+    if (!drop) return;
+    setBurst({
+      key: Date.now(),
+      x: drop.left + Math.min(90, drop.width / 2),
+      y: drop.top + Math.min(70, drop.height / 2),
+    });
+  }, [saveDial.celebration.effect, reduceMotion]);
+
+  // DialKit's "Preview": the whole save animation on the card showing,
+  // without saving it.
+  previewSaveRef.current = () => {
+    if (flyingRef.current || !cardWrapRef.current) return;
+    void (async () => {
+      await flyCard(0);
+      celebrate();
+      await new Promise((res) => setTimeout(res, 350));
+      settleCard();
+    })();
+  };
+
   const flyToDrop = useCallback(
     async (fromX = 0) => {
       const ev = feed[i];
@@ -820,15 +1281,45 @@ export function EventsView({
         setFlying(true);
         cardOpacity.set(0);
         const drop = target.getBoundingClientRect();
-        const EASE = [0.4, 0, 0.2, 1] as const;
+        // The mini card follows the same "Save animation" dials as a card
+        // saved with the button: anticipation, the flight curve, and the
+        // style (spin / arc / pop), landing in the newest slot.
+        const d = saveDial;
+        const pop = d.style === "pop";
+        await animate(ghostT, 1, { duration: 0.12 });
+        if (d.anticipation.duration > 0)
+          await animate(
+            ghostScale,
+            (pop ? Math.max(d.anticipation.scale, 1.18) : d.anticipation.scale) * ghostScale.get(),
+            { duration: d.anticipation.duration, ease: pop ? [0.34, 1.56, 0.64, 1] : "easeOut" },
+          );
+        const curve = toMotionTransition(d.flight.curve) as ValueAnimationTransition<number>;
+        const secs =
+          d.flight.curve.type === "easing"
+            ? d.flight.curve.duration
+            : (d.flight.curve as { visualDuration?: number }).visualDuration ?? 0.5;
+        const tween = {
+          duration: secs,
+          ease: d.flight.curve.type === "easing" ? d.flight.curve.ease : [0.4, 0, 0.2, 1],
+        } as ValueAnimationTransition<number>;
+        // Into the top-left slot, where the newest save goes.
+        const toX = drop.left + 4;
+        const toY = drop.top + 16;
+        const fromY = ghostY.get();
         await Promise.all([
-          animate(ghostT, 1, { duration: 0.15 }),
-          // Into the top-left slot, where the newest save goes.
-          animate(ghostX, drop.left + 4, { duration: 0.4, ease: EASE }),
-          animate(ghostY, drop.top + 16, { duration: 0.4, ease: EASE }),
-          animate(ghostScale, 0.9, { duration: 0.4, ease: EASE }),
+          animate(ghostX, toX, curve),
+          d.style === "arc"
+            ? animate(
+                ghostY,
+                [fromY, Math.min(fromY, toY) - d.flight.arcHeight, toY],
+                { ...tween, times: [0, 0.4, 1] },
+              )
+            : animate(ghostY, toY, curve),
+          animate(ghostScale, 0.9, curve),
+          animate(ghostRotate, d.style === "spin" ? -2 + d.flight.spin : 0, curve),
         ]);
         await animate(ghostT, 0, { duration: 0.15 });
+        celebrate();
         x.set(0);
         setLift(null);
         await attend(ev, true);
@@ -838,35 +1329,10 @@ export function EventsView({
         return;
       }
 
-      setFlying(true);
-      setDragActive(true);
-      liftCard();
-      // The wrapper's box is where the card rests; the drag moved only the
-      // inner element, so the hand-off puts that offset on the wrapper.
-      const card = wrap.getBoundingClientRect();
-      const drop = target.getBoundingClientRect();
-      const dx = drop.left + drop.width / 2 - (card.left + card.width / 2);
-      const dy = drop.top + drop.height / 2 - (card.top + card.height / 2);
-      x.set(0);
-      flyX.set(fromX);
-
-      const EASE = [0.4, 0, 0.2, 1] as const;
-      await animate(cardScale, 1.06, { duration: 0.12, ease: "easeOut" });
-      await Promise.all([
-        animate(flyX, dx, { duration: 0.46, ease: EASE }),
-        animate(flyY, dy, { duration: 0.46, ease: EASE }),
-        animate(cardScale, 0.1, { duration: 0.46, ease: EASE }),
-        animate(cardOpacity, 0, { duration: 0.46, ease: "easeIn" }),
-      ]);
-
+      await flyCard(fromX);
+      celebrate();
       await attend(ev, true);
-      flyX.set(0);
-      flyY.set(0);
-      cardScale.set(1);
-      cardOpacity.set(1);
-      setLift(null);
-      setDragActive(false);
-      setFlying(false);
+      settleCard();
     },
     [
       feed,
@@ -885,6 +1351,11 @@ export function EventsView({
       ghostScale,
       resetGhost,
       toast,
+      flyCard,
+      celebrate,
+      settleCard,
+      saveDial,
+      ghostRotate,
     ],
   );
   // Stable identity for the voice / head handlers and the Save button.
@@ -1275,9 +1746,9 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
-  // "Saving for" sits under the saved panel's heading while it is open;
-  // folded, on a phone or on All Saved Events it sits beside the account.
-  const careInPanel = !phone && view !== "saved" && sidebarOpen;
+  // "Saving for" always sits beside the account in the top bar now —
+  // never under the saved panel's heading.
+  const careInPanel = false;
 
   // Accessibility Tools, on the right of the bar over the event column.
   const a11yMenu = (
@@ -1415,6 +1886,7 @@ export function EventsView({
             googleCalendar={me?.google_calendar}
             onOpenSaved={openSaved}
             onOpenEvent={setDetailFor}
+            onUnsaveEvent={(ev) => void unsave(ev)}
             onSignIn={() => toSignIn()}
           />
         )}
@@ -1571,28 +2043,50 @@ export function EventsView({
                 ref={deckRef}
                 // The card + arrows group (880 + gap + 96px), centred on the
                 // page; the heading block above is the same box.
-                className="mx-auto mt-2 flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:mt-4 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
+                className="mx-auto flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
                   style={lift ? { height: lift.height } : undefined}
                 >
-                  {/* The deck beneath: up to two more event cards, each a little
-                      narrower and lower, peeking out under the one on top —
-                      white cards with the same edge and shadow, so it reads
-                      as a stack of events. Only as many as are left. Purely
-                      decorative. */}
-                  {feed.length - i - 1 >= 2 && (
-                    <div
-                      aria-hidden
-                      className="absolute inset-x-10 -bottom-6 top-16 rounded-card border border-line-card/80 bg-[#FAFAFA] shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:inset-x-16 sm:-bottom-7"
-                    />
-                  )}
-                  {feed.length - i - 1 >= 1 && (
-                    <div
-                      aria-hidden
-                      className="absolute inset-x-5 -bottom-3 top-12 rounded-card border border-line-card bg-surface shadow-[0_1px_4px_rgba(0,0,0,0.07)] sm:inset-x-8 sm:-bottom-3.5"
-                    />
+                  {/* The deck: a pile of full-size event cards under the top
+                      one, each nudged down (and a touch sideways) and tilted a
+                      little either way, like a real stack. The deck cycles —
+                      a turned card goes back into it — so it stays full.
+                      DialKit "Card transition" → stack. Purely decorative. */}
+                  {Array.from(
+                    { length: Math.min(Math.max(feed.length - 1, 0), cardDial.stack.layers) },
+                    (_, k) => {
+                      const n = k + 1;
+                      const tilt = (n % 2 ? 1 : -1) * cardDial.stack.tilt * (0.6 + 0.4 * (n / cardDial.stack.layers));
+                      return (
+                        <motion.div
+                          key={`deck${n}:${shuffleTick}`}
+                          aria-hidden
+                          // On a shuffle each card riffles in from alternate sides.
+                          initial={
+                            shuffling && !reduceMotion
+                              ? {
+                                  x: (n % 2 ? 1 : -1) * cardDial.shuffle.offset,
+                                  rotate: (n % 2 ? 1 : -1) * cardDial.shuffle.rotate,
+                                }
+                              : false
+                          }
+                          animate={{
+                            x: n * cardDial.stack.offsetX,
+                            y: n * cardDial.stack.offsetY,
+                            rotate: tilt,
+                          }}
+                          transition={{
+                            duration: cardDial.shuffle.duration * (0.6 + 0.1 * n),
+                            ease: "easeOut",
+                          }}
+                          // Under the top card (its wrapper is z-10), deeper ones lower.
+                          style={{ zIndex: 9 - n }}
+                          className="absolute inset-0 rounded-card border-2 border-line-card bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                        />
+                      );
+                    },
                   )}
                   <motion.div
                     ref={cardWrapRef}
@@ -1601,6 +2095,7 @@ export function EventsView({
                       y: flyY,
                       scale: cardScale,
                       opacity: cardOpacity,
+                      rotate: flyRotate,
                       ...(lift && {
                         position: "fixed",
                         left: lift.left,
@@ -1616,11 +2111,32 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
+                    {/* Past the last card, the whole top card riffles (started
+                        once per shuffle, imperatively — see shuffleRef). */}
+                    <div ref={shuffleRef}>
+                    <AnimatePresence initial={false} custom={dir} mode="popLayout">
                     <motion.div
+                      // A new key on a shuffle too, so card 1 replays even
+                      // when it's the only card.
                       key={current.id}
-                      initial={reduceMotion ? false : { y: dir > 0 ? 80 : -80 }}
-                      animate={{ y: 0 }}
-                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                      custom={dir}
+                      variants={turnVariants}
+                      initial={reduceMotion ? false : "enter"}
+                      animate="center"
+                      exit={reduceMotion ? undefined : "exit"}
+                      className="rounded-card"
+                      style={{
+                        transformPerspective: cardDial.flip.perspective,
+                        transformOrigin:
+                          cardDial.style === "flip"
+                            ? cardDial.flip.origin === "left"
+                              ? "left center"
+                              : cardDial.flip.origin === "top"
+                                ? "center top"
+                                : "center"
+                            : "center",
+                        position: "relative",
+                      }}
                     >
                       <motion.div
                         // On a phone the card drags left only — a finger
@@ -1725,7 +2241,7 @@ export function EventsView({
                               y: ghostY,
                               opacity: ghostT,
                               scale: ghostScale,
-                              rotate: -2,
+                              rotate: ghostRotate,
                               width: BOARD_CARD_W,
                               zIndex: 60,
                             }}
@@ -1756,6 +2272,8 @@ export function EventsView({
                           document.body,
                         )}
                     </motion.div>
+                    </AnimatePresence>
+                    </div>
                   </motion.div>
                 </div>
 

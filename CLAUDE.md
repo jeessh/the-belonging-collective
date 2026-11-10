@@ -120,10 +120,19 @@ can open.
   bottom — miniature feed cards (picture and title), no pins or magnets
   and no shadow (the drag ghost
   neither; on hover it lifts 4px with a darker edge and a faint shadow, like the list cards), flush with the "Saved Events" heading's left edge, in two even columns
-  (a plain grid, 16px apart; no dragging or saved positions any more),
+  (a plain grid, 16px apart),
   **newest save first, at the top left** (the list has no saved-at time,
   so `Board` remembers arrival order in a ref; the mini card's flight
-  lands there); a click opens one. Its forwarded ref is the drop target every save
+  lands there); a click opens one. **Mini cards can be picked up**
+  (pointer, not touch; 6px before a press is a drag): over another card
+  it takes that card's place, the others sliding aside (`layout`; hits
+  are ignored for `SWAP_COOLDOWN` after a swap so a card sliding away
+  can't swap straight back), and the member's order is kept in
+  `localStorage` (`tbc.board_order`, try/catch). Dropped outside the
+  panel's `aside` it asks **"Unsave {title}?"** (`UnsaveConfirm`, Cancel |
+  Unsave) → `onUnsaveEvent` → EventsView's `unsave` (with its Undo). The
+  card in hand is a portalled copy (the board's scroll box clips), tilting
+  and showing "Let go to unsave" once it leaves the panel. Its forwarded ref is the drop target every save
   animates into, whichever layout is showing — attached by a callback that
   never nulls it, since the two layouts overlap while they cross-fade), `FeedFilters` (FREE +
   topic chips; one scrolling row on a phone), `FeedCard` (the one card, on
@@ -148,10 +157,9 @@ can open.
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
   the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
-  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits
-  beside the account — except while the saved panel is open (`careInPanel`),
-  when it sits under the panel's heading and Close button, the board's full
-  width.
+  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) always sits
+  beside the account in the top bar (`careInPanel` is false; the panel slot
+  is unused).
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and the name at 20px, with
   "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the
@@ -261,7 +269,8 @@ can open.
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
   column stays plain white; the feed
-  card has a soft shadow, kept straight (`FeedCard`; no pin or magnet).
+  card has a soft shadow — drawn by its turn wrapper in EventsView, not
+  FeedCard — kept straight (no pin or magnet).
   The card's text and buttons are untouched.
 - **Card view has a 40px cursor** (`.big-cursor` in globals.css, put on
   the feed column while `viewMode === "card"`): the usual cursors at twice
@@ -314,6 +323,52 @@ can open.
   fixed` where it sits, `z-index: 50`, with the deck holding its height. The
   feed column is a scroll container, so its overflow clips the card at the
   saved column's edge — no z-index on the card can fix that.
+- **Card turns and saves are tuned with DialKit** (`dialkit@2.0.0`; both
+  panels `persist: true` under `dialkit:tbc:card-transition` /
+  `dialkit:tbc:save-animation` in localStorage, so tuning survives reloads;
+  dev only — `components/DevDials.tsx` mounts `DialRoot` bottom left from the
+  layout; DialKit hides it in production). Two panels in EventsView:
+  **Card transition** (`cardDial` → `turnVariants` on the keyed card inside
+  `AnimatePresence mode="popLayout"`): style **tuck** (default — "Next" lifts
+  the top card off the deck and **swings it out to the side** (`tuck.swing`,
+  100px; lift 89px, tilt 8°, 0.55s — the tuned defaults), then slides it back in **under** the new top card — their z swaps
+  at the swing's furthest point — darkening (`tuck.dim`; leaving and
+  swinging cards are `pointerEvents: none` till settled, as the swing
+  passes over the ↑ / ↓ buttons) and only fading
+  once it's tucked into the pile (`tuck.distance`, 26px down), as the
+  next card emerges from the deck's top card: after `tuck.revealDelay`
+  (0.18s, once the old card is lifted clear) it eases up from the stack's
+  first layer and fades in over `tuck.fadeIn` (0.25s, after a 0.3s
+  `revealDelay`) on a soft ease — no
+  spring, no pop. The
+  top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
+  `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
+  out as it settles into the deck, and fades in with the new card; **Back
+  (↑) is the same motion in reverse**, just as soft: the previous card
+  starts at the stack's first layer, fades in over `tuck.fadeIn` as it
+  lifts over the pile (shadow growing) and eases down on top — no spring while the old
+  top card becomes part of the deck (`center` is a function of `d`; the
+  variants are memoised on the dial values); "Back"
+  brings a card up from the bottom), **flip** (turns over like a playing
+  card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
+  `stack.layers` (4) full-size cards under the top one, each nudged
+  (`offsetY` 7px, `offsetX` 2px) and tilted ±`tilt`° — always full, since
+  turned cards go back into it (replaces the two narrower layers); past the last card the deck **shuffles**
+  (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
+  declarative keyframe restarted on every re-render). **Save animation**
+  (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):
+  classic / spin / arc / pop flight with anticipation, curve, end scale,
+  spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
+  sparkles, hearts, ring) where the newest save lands, and "Preview (doesn't
+  save)". **Drag-and-drop saves use the same dials**: the mini card
+  (`ghostX` / `ghostY` / `ghostScale` / `ghostRotate`) gets the anticipation,
+  flight curve and style (spin / arc / pop) on its way into the newest slot,
+  then the celebration. Zero-motion: reduced motion skips all of it. Keyframes on
+  `opacity` / `zIndex` in an exit don't animate — use delayed single steps. And a
+  single value (pointerEvents, rotateY…) under a transition whose default
+  has 3-step `times` never finishes — the exit never completes and turned
+  cards piled up, one stuck over the ↑ / ↓ buttons; give each its own
+  `{ duration: 0 }`.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,
