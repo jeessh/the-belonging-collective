@@ -493,8 +493,9 @@ can open.
   In-person / Virtual are no longer pills on any surface — the facts and
   filters still carry them. `EventSummary` draws title + tags as one
   wrapping row (`heading`), the event page included — except the card
-  view's feed card, whose tags hover over the top left of its picture
-  (with a soft shadow).
+  view's feed card and the `detail` layout (the "More information" dialog,
+  the event page, print), whose tags hover over the top left of the
+  picture (with a soft shadow).
 - **Icon sizes in the member app:** facts on the feed card and the event
   dialog / page are 28px beside 20px text (`EventSummary` `icon`; the
   dialog's and page's `GoingCount` pass `size-7`), smaller rows 24px, and

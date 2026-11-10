@@ -141,6 +141,7 @@ export function EventSummary({
   // The feed's one card, sized to the Figma frame; `short` tightens it on a
   // window too short for the frame (see tailwind.config.ts).
   const feed = layout === "card";
+  const detail = layout === "detail";
   const tile = layout === "tile";
   const when = whenLine(event, { fixed: fixedDates });
   const where = placeLabel(event);
@@ -180,9 +181,15 @@ export function EventSummary({
       event={event}
       recommended={recommended}
       saved={saved}
-      // On the feed card they sit over the picture: a soft shadow lifts
-      // them off any photo.
-      className={feed ? "shadow-[0_1px_4px_rgba(0,0,0,0.18)] lg:text-xl short:!text-lg" : ""}
+      // On the feed card and the details they sit over the picture: a soft
+      // shadow lifts them off any photo.
+      className={
+        feed
+          ? "shadow-[0_1px_4px_rgba(0,0,0,0.18)] lg:text-xl short:!text-lg"
+          : detail
+            ? "shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
+            : ""
+      }
     />
   );
 
@@ -212,8 +219,8 @@ export function EventSummary({
         }`}
       >
         {title}
-        {/* The feed card shows its tags over the picture instead. */}
-        {!feed && tags}
+        {/* The feed card and the details show their tags over the picture. */}
+        {!(feed || detail) && tags}
       </div>
       {/* Who posted it, as the console shows it: the organization and its
           logo (members never see which person on a team posted it). */}
@@ -317,8 +324,9 @@ export function EventSummary({
             }`}
           >
             {img}
-            {/* The feed card's tags hover over its picture, top left. */}
-            {feed && (
+            {/* The feed card's and the details' tags hover over the
+                picture, top left. */}
+            {(feed || detail) && (
               <div className="absolute left-3 top-3 right-3 flex flex-wrap items-start gap-2">
                 {tags}
               </div>
