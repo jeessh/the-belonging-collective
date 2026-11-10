@@ -394,11 +394,3 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 }
 .tour-arrow { animation: tour-arrow 3.8s linear infinite; }
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
-
-/* The member app's top bar (EventsView's header): the primary button's
-   light blue (`primary.light`, #CCF5FF) with the buttons' hover cyan
-   (`primary`, #94EAFF) as the line under it. The usual dark text. */
-.nav-tint {
-  background: #CCF5FF;
-  border-color: #94EAFF;
-}
