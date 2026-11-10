@@ -8,8 +8,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { BookmarkCheck, Printer, Search, Send } from "lucide-react";
-import { createShareLink, sharedListUrl, type Event, type Me } from "@/lib/api";
+import { BookmarkCheck, Check, ChevronDown, Printer, Search, Send } from "lucide-react";
+import { createShareLink, sharedListUrl, shortName, type Event, type Me } from "@/lib/api";
+import { Avatar } from "@/components/ui/Avatar";
+import type { CareChoice } from "@/components/member/FeedHeader";
 import { oneCardPerProgram } from "@/lib/feed";
 import { isUpcoming } from "@/lib/time";
 import { FOCUSABLE, isTopmostDialog } from "@/components/Modal";
@@ -58,6 +60,9 @@ type Props = {
   owner?: string | null;
   /** That person's id: a share of their list is filtered by their access. */
   ownerId?: string | null;
+  /** A caregiver with linked members: the title becomes a menu of whose
+      saved events to show (the same choice as the panel's "Saving for"). */
+  care?: CareChoice | null;
   onClose: () => void;
   onSignIn: () => void;
   onOpen: (event: Event) => void;
@@ -76,6 +81,7 @@ export const SavedEvents = memo(function SavedEvents({
   events,
   owner = null,
   ownerId = null,
+  care = null,
   onClose,
   onSignIn,
   onOpen,
@@ -180,10 +186,14 @@ export const SavedEvents = memo(function SavedEvents({
             <BackButton label="Back to events" onClick={onClose} />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[32px]">
+                <h1 className="flex items-center gap-3 text-3xl font-medium text-fg lg:text-[calc(2rem*var(--text-scale,1))]">
                   {/* The saved bookmark, as on the sidebar's Saved Events. */}
                   <BookmarkCheck aria-hidden="true" className="size-8 shrink-0 text-fg-icon" />
-                  {owner ? listTitle : "All Saved Events"}
+                  {care && me && care.members.length > 0 ? (
+                    <WhoseList care={care} me={me} title={listTitle} />
+                  ) : (
+                    listTitle
+                  )}
                 </h1>
                 <p className="text-xl text-fg-muted">
                   {me ? total : 0} Saved {(me ? total : 0) === 1 ? "Event" : "Events"}
@@ -311,5 +321,90 @@ function Empty({
         {action}
       </Button>
     </div>
+  );
+}
+
+/**
+ * The saved page's title as a menu, for a caregiver: "Sam R.'s Saved
+ * Events ▾", listing themselves and each member they support. Picking one
+ * shows that person's list (it is the feed's "Saving for" choice, so the
+ * panel follows when they go back).
+ */
+function WhoseList({ care, me, title }: { care: CareChoice; me: Me; title: string }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        // Close the menu, not the page under it.
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [open]);
+
+  const people = [
+    { id: null as string | null, label: `${me.first_name}'s Saved Events`, avatar: { name: me.first_name, src: me.avatar_url, emblem: me.avatar_emblem }, person: null },
+    ...care.members.map((m) => ({
+      id: m.id as string | null,
+      label: `${shortName(m)}'s Saved Events`,
+      avatar: { name: shortName(m), src: m.avatar_url, emblem: m.avatar_emblem },
+      person: m,
+    })),
+  ];
+  const current = care.selected?.id ?? null;
+
+  return (
+    <span ref={wrapRef} className="relative min-w-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="-mx-2 inline-flex min-w-0 items-center gap-2 rounded-control px-2 text-left transition-colors hover:bg-surface-subtle"
+      >
+        <span className="truncate">{title}</span>
+        <ChevronDown aria-hidden="true" className="size-7 shrink-0 text-fg-icon" />
+      </button>
+      {open && (
+        <span
+          role="menu"
+          aria-label="Whose saved events"
+          className="absolute left-0 top-full z-30 mt-2 flex min-w-[300px] flex-col overflow-hidden rounded-control border border-line bg-surface py-1 shadow-lift"
+        >
+          {people.map((p) => {
+            const on = p.id === current;
+            return (
+              <button
+                key={p.id ?? "me"}
+                type="button"
+                role="menuitemradio"
+                aria-checked={on}
+                onClick={() => {
+                  setOpen(false);
+                  care.onSelect(p.person);
+                }}
+                className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-lg font-normal text-fg transition-colors hover:bg-surface-subtle"
+              >
+                <Avatar name={p.avatar.name} src={p.avatar.src} emblem={p.avatar.emblem} size={28} />
+                <span className="flex-1 truncate">{p.label}</span>
+                {on && <Check aria-hidden="true" className="size-5" />}
+              </button>
+            );
+          })}
+        </span>
+      )}
+    </span>
   );
 }

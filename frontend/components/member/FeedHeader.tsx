@@ -8,12 +8,12 @@ import {
   Compass,
   LogOut,
   PersonStanding,
-  Settings,
   UserRound,
   Mic,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { TEXT_SCALE, useTextScale } from "@/lib/textScale";
 import { shortName, type CarePerson } from "@/lib/api";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
@@ -310,12 +310,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   listView = false,
   onSignIn,
   onShowTour,
-  advanced = false,
-  onChangeExperience,
 }: {
-  /** Signed in: the member's experience — Advanced is a caregiver account. */
-  advanced?: boolean;
-  onChangeExperience?: (advanced: boolean) => void;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   ttsEnabled: boolean;
@@ -403,26 +398,6 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           // the last of the topics under it.
           className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift max-sm:max-h-[calc(100dvh-12rem)]"
         >
-          {signedIn && onChangeExperience && (
-            <>
-              <h2 className="text-xl font-medium text-fg">
-                I am a {advanced ? "caregiver" : "community member"}
-              </h2>
-              <p className="text-base text-fg-muted">
-                To change your role, go to settings.
-              </p>
-              {/* Switching role is deliberate: it lives in Profile. */}
-              <Link
-                href="/profile#role"
-                onClick={() => onOpenChange(false)}
-                className={buttonClass("secondary", "md", "mt-3 w-full")}
-              >
-                <Settings aria-hidden="true" className="size-6" />
-                Go to settings
-              </Link>
-              <div className="mt-6" />
-            </>
-          )}
           {/* Read aloud, voice and head tracking all drive the one card, so
               list view doesn't offer them. */}
           {!listView && (
@@ -468,6 +443,8 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           </div>
           </>
           )}
+
+          <TextSizeSlider />
 
           <Button
             className={`w-full ${listView ? "" : "mt-4"}`}
@@ -531,6 +508,53 @@ function MenuToggle({
           />
         </span>
       </button>
+    </div>
+  );
+}
+
+/** Accessibility Tools → Text size: 100% to 150%, in 10% steps, for every
+    member page in this browser (lib/textScale.ts). */
+function TextSizeSlider() {
+  const [scale, setScale] = useTextScale();
+  const pct = Math.round(scale * 100);
+  return (
+    <div className="mt-6 flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor="text-size" className="text-xl font-medium text-fg">
+          Text size
+        </label>
+        <span className="text-lg text-fg-muted" aria-hidden="true">
+          {pct}%
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span aria-hidden="true" className="text-base font-medium text-fg-muted">
+          A
+        </span>
+        <input
+          id="text-size"
+          type="range"
+          min={TEXT_SCALE.min}
+          max={TEXT_SCALE.max}
+          step={TEXT_SCALE.step}
+          value={scale}
+          aria-valuetext={`${pct}%`}
+          onChange={(e) => setScale(parseFloat(e.target.value))}
+          className="h-11 min-w-0 flex-1 cursor-pointer accent-primary-strong"
+        />
+        <span aria-hidden="true" className="text-2xl font-medium text-fg-muted">
+          A
+        </span>
+      </div>
+      {scale !== 1 && (
+        <button
+          type="button"
+          onClick={() => setScale(1)}
+          className="self-start text-base text-fg-muted underline underline-offset-4 hover:text-fg"
+        >
+          Reset to 100%
+        </button>
+      )}
     </div>
   );
 }

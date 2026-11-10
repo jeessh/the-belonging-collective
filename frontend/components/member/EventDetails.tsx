@@ -127,7 +127,8 @@ export function EventDetails({
         <section className="flex flex-col gap-3">
           <h3 className={HEADING}>Details</h3>
           {event.description && (
-            <p className="whitespace-pre-line text-lg leading-relaxed text-fg-muted">
+            // Three lines at most (the console caps it to fit, too).
+            <p className="line-clamp-3 whitespace-pre-line text-lg leading-relaxed text-fg-muted">
               {event.description}
             </p>
           )}
@@ -180,7 +181,11 @@ export function EventDetails({
                   className="group flex h-full min-h-[72px] items-center justify-between gap-4 rounded-card border border-line bg-surface px-4 py-3 transition-[border-color,background-color,box-shadow] hover:border-fg-icon-muted hover:bg-surface-subtle/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
                 >
                   <span className="flex min-w-0 flex-col">
-                    <span className="break-words text-lg font-medium text-fg group-hover:underline">
+                    {/* Two lines at most; the full label is its title. */}
+                    <span
+                      title={link.label}
+                      className="line-clamp-2 break-words text-lg font-medium text-fg group-hover:underline"
+                    >
                       {link.label}
                     </span>
                     <span className="truncate text-base text-fg-muted">

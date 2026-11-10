@@ -152,14 +152,15 @@ can open.
   under it as grey 20px subtext ("Event 3 of 47" in card view, hidden from
   screen readers there since the live region reads it; "47 Unique Events"
   in list view).
-- **The bar spans the whole width**, over the saved panel and the events
+- **The bar spans the whole width** (white, the grey line under it), over the saved panel and the events
   (in EventsView, before the panel / feed row): the account button
   (`FeedAccount` in `member/FeedHeader.tsx`) on the left, in line with the
   panel's "Saved Events" heading, and the Card View / List View toggle at
   the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
-  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) always sits
-  beside the account in the top bar (`careInPanel` is false; the panel slot
-  is unused).
+  the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits in the
+  open saved panel, under "Saved Events" (`careInPanel`; on a phone it
+  sits beside the account, `careInHeader`; All Saved Events has none), and
+  folds away with the panel when it is collapsed to the rail.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and the name at 20px, with
   "Community member" or "Caregiver" (`is_caregiver`) in 16px grey under it, the size of "Accessibility Tools" and the
@@ -168,12 +169,11 @@ can open.
 - **Community member or caregiver** (was "Simplified / Advanced"). The
   sign-up flow's account step asks "Are you a community member or a
   caregiver?": a **community member** gets card view (one card at a time),
-  a **caregiver** list view. **Switching role is deliberate**: Accessibility
-  Tools only says "I am a caregiver / community member" with a **Go to
-  settings** button (`/profile#role`); the switch itself (Community member |
-  Caregiver) is the Profile page's "Your role" card (`changeRole`: `PATCH
-  /users/me {is_caregiver, preferred_view}`). The profile also shows it
-  under the name. **In list view Accessibility Tools has no Read aloud,
+  a **caregiver** list view. **The role can't be switched**: it is chosen
+  at sign-up (or a member becomes a caregiver by accepting a caregiver
+  invitation). There is no "Your role" card on the profile and nothing in
+  Accessibility Tools, and `PATCH /users/me` ignores `is_caregiver` (it
+  isn't in `UserPrefsUpdate`). The profile shows the role under the name. **In list view Accessibility Tools has no Read aloud,
   Voice commands or Head tracking — **list view has no Accessibility Tools
   at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
   The card view's chips (`FeedFilters`) show in card view only. The Filter dropdown
@@ -184,12 +184,9 @@ can open.
   `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
-  `is_caregiver` plus `preferred_view`, written together — at sign-up
+  `is_caregiver` plus `preferred_view`, written together at sign-up
   (`is_caregiver` on the sign-up call, then `PATCH /users/me
-  {preferred_view}`) and from the "Your experience" toggle at the top of
-  Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
-  {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
-  Me). The View toggle still switches card / list on its own.
+  {preferred_view}`). The View toggle still switches card / list on its own.
   **Sign-up ends by offering Google Calendar**: after the account (and, for
   a caregiver, the person they support) a `calendar` step in
   `MemberAuthFlow` — "Add your events to Google Calendar?" · Not now |
@@ -353,9 +350,9 @@ can open.
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one, each nudged
   (`offsetY` 7px, `offsetX` 2px) and tilted ±`tilt`° — always full, since
-  turned cards go back into it (replaces the two narrower layers); past the last card the deck **shuffles**
-  (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
-  declarative keyframe restarted on every re-render). **Save animation**
+  turned cards go back into it (replaces the two narrower layers); past the
+  last card, card 1 simply comes round with the usual turn (no shuffle
+  animation any more). **Save animation**
   (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):
   classic / spin / arc / pop flight (arc, the tuned default) with anticipation, curve, end scale,
   spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
@@ -369,6 +366,14 @@ can open.
   has 3-step `times` never finishes — the exit never completes and turned
   cards piled up, one stuck over the ↑ / ↓ buttons; give each its own
   `{ duration: 0 }`.
+- **Text size** (Accessibility Tools, card view): a slider, 100–150% in 10%
+  steps (`TextSizeSlider` in FeedHeader, `lib/textScale.ts`). It sets
+  `--text-scale` on `<html>`, and every Tailwind `text-*` size is
+  `calc(… * var(--text-scale, 1))` (tailwind.config.ts `fontSize`), so text
+  grows and spacing doesn't; arbitrary sizes need the same calc (the page
+  titles' `lg:text-[calc(2rem*var(--text-scale,1))]`). Kept per browser
+  (`tbc.text_scale`, try/catch; `TextScaleRoot` in the layout applies it on
+  load); `.console` pins it to 1.
 - **Accessibility modes are per-member toggles**, persisted on the user (`Me.tts_enabled`,
   `voice_commands_enabled`, `eye_tracking_enabled`) and loaded from `GET /auth/me`.
   Each is a hook in `lib/`: `useTextToSpeech`, `useSpeechCommands`,
@@ -426,7 +431,7 @@ can open.
   full program — summary, DETAILS, POSTER (`event.poster_url`, opened in a new
   tab: a thumbnail for an image, a file icon and "Poster (PDF)" by extension),
   LINKS (`event.links` plus the organizer's `registration_url`; one
-  bordered card per link — label, site name, external-link icon, the whole
+  bordered card per link — label (two lines at most, `line-clamp-2`; the full label is its title), site name, external-link icon, the whole
   card clickable — two to a row from `sm`) — for the
   "More information" dialog
   (`member/EventDetailModal`, a centred `Modal`; its title row is padded
@@ -434,7 +439,7 @@ can open.
   / `sm:pr-14`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
-  — ghost buttons on the actions' row: **not saved yet**, Share and Print
+  — ghost buttons on the actions' row, the same large size as Save Event: **not saved yet**, Share and Print
   sit on the left (words in line with the text) and Save / Register at the
   bottom right, its own width; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
@@ -473,8 +478,15 @@ can open.
   column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
+- **An event's description is three lines at most.** The console caps it
+  at 240 characters and three lines of its own (`DESCRIPTION_MAX` /
+  `DESCRIPTION_LINES` in EventForm and `schemas/event.py`, whose
+  `check_description` refuses a fourth line; a calendar import runs a
+  longer one's paragraphs together and moves the overflow to notes), and
+  `EventDetails` clamps it (`line-clamp-3`) for older, longer ones.
 - **Every event summary shows three facts and no more: when, where and
-  the saved count** (`EventSummary`, every layout — feed card, list, dialog,
+  the saved count** — except the card view's feed card, which leaves the
+  saved count out (it is in "More information") (`EventSummary`, every layout — feed card, list, dialog,
   event page, print). Cost and registration are the tags beside the title;
   there is no price line, no repeats line, no ages or spots. `EventDetails`
   labels the organizer's link "Sign up on …" when sign-up is needed.
@@ -490,7 +502,10 @@ can open.
   gets no tag; plus Special access and For you where they apply). Drop-in and
   In-person / Virtual are no longer pills on any surface — the facts and
   filters still carry them. `EventSummary` draws title + tags as one
-  wrapping row (`heading`), the event page included.
+  wrapping row (`heading`), the event page included — except the card
+  view's feed card and the `detail` layout (the "More information" dialog,
+  the event page, print), whose tags hover over the top left of the
+  picture (with a soft shadow).
 - **Icon sizes in the member app:** facts on the feed card and the event
   dialog / page are 28px beside 20px text (`EventSummary` `icon`; the
   dialog's and page's `GoingCount` pass `size-7`), smaller rows 24px, and
@@ -513,7 +528,10 @@ can open.
   `strokeWidth` (2) there; the console keeps its own lighter scale.
 - `components/SavedEvents.tsx` ("All Saved Events") **follows the list
   view's conventions**: the card's width (880px) centred, the title (with a
-  bookmark-check icon before it) with
+  bookmark-check icon before it) — "{Name}'s Saved Events"; for a
+  caregiver with linked members it is a menu (`WhoseList`: their own and
+  each member's list, setting the same `careFor` as "Saving for", which
+  the page itself doesn't show) — with
   "N Saved Events" in grey under it, and the list view's own component
   (`CaregiverFeed`) — search with **Share** and **Print** beside it (the
   `tools` prop, in place of the list view's Filter and Sort; both cover the
@@ -1103,8 +1121,8 @@ can open.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
-  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
-  profile's "Your role" card; the profile lists "People I support" for an
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or by
+  accepting a caregiver invitation — never switched afterwards; the profile lists "People I support" for an
   account that is one). **The member keeps their own account and their own
   credential**; a caregiver never signs in as them. `care_links(caregiver_id,
   member_id, created_at, removed_at)` (migration `0021_caregivers`,

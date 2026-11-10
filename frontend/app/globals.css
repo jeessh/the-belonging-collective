@@ -394,3 +394,6 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 }
 .tour-arrow { animation: tour-arrow 3.8s linear infinite; }
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
+
+/* The member's text size (lib/textScale.ts) never reaches the console. */
+.console { --text-scale: 1; }

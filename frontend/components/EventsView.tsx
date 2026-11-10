@@ -213,12 +213,6 @@ export function EventsView({
       offsetX: [2, -12, 12, 0.5],
       tilt: [1.4, 0, 6, 0.1],
     },
-    // Past the last card: the deck riffles before card 1 comes back.
-    shuffle: {
-      offset: [70, 0, 240, 1],
-      rotate: [9, 0, 30, 0.5],
-      duration: [0.75, 0.2, 2, 0.05],
-    },
   },
   // Kept in this browser (localStorage) across reloads and code edits.
   { id: "tbc:card-transition", persist: true });
@@ -546,30 +540,6 @@ export function EventsView({
   const [dir, setDir] = useState(1);
   const feedLenRef = useRef(feed.length);
   feedLenRef.current = feed.length;
-  // Going past the last card shuffles the deck (DialKit "Card transition"
-  // → shuffle) before card 1 comes back round.
-  const [shuffleTick, setShuffleTick] = useState(0);
-  const [shuffling, setShuffling] = useState(false);
-  const shuffleRef = useRef<HTMLDivElement>(null);
-  const iRef = useRef(0);
-  iRef.current = i;
-  // A shuffle plays once, then turns are flips again.
-  useEffect(() => {
-    if (!shuffleTick) return;
-    const el = shuffleRef.current;
-    if (el && !reduceMotion) {
-      const o = cardDial.shuffle.offset;
-      const rot = cardDial.shuffle.rotate;
-      void animate(
-        el,
-        { x: [-o, o * 0.7, -o * 0.35, 0], rotate: [-rot, rot * 0.7, -rot * 0.3, 0], y: [16, 8, 2, 0] },
-        { duration: cardDial.shuffle.duration, ease: "easeInOut" },
-      );
-    }
-    const t = window.setTimeout(() => setShuffling(false), cardDial.shuffle.duration * 1000 + 50);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shuffleTick]);
 
   /* ── A card turn (DialKit "Card transition") ──────────────────────────
    *  tuck   next: the top card lifts off the deck and goes under it, to
@@ -577,7 +547,6 @@ export function EventsView({
    *         card comes up from the bottom of the deck onto the top.
    *  flip   the next card turns over onto the deck, like a playing card
    *  slide  the old slide from the travel direction
-   *  shuffle (past the last card) the deck riffles before card 1 returns
    * ─────────────────────────────────────────────────────────────────── */
   // Memoised on the dial values: a fresh variants object on every render
   // restarted keyframed turns mid-way (they stalled at their first frame).
@@ -765,10 +734,6 @@ export function EventsView({
   const next = useCallback(() => {
     setDir(1);
     const len = Math.max(feedLenRef.current, 1);
-    if (len > 1 && iRef.current + 1 >= len) {
-      setShuffling(true);
-      setShuffleTick((t) => t + 1);
-    }
     setI((n) => (n + 1) % len);
   }, []);
   const prev = useCallback(() => {
@@ -1446,18 +1411,6 @@ export function EventsView({
     setI(0);
   }, []);
 
-  const advanced = me?.is_caregiver ?? false;
-  // The experience: Simplified (community member, the card) or Advanced
-  // (caregiver, the list). One write sets both.
-  const changeExperience = useCallback(
-    (advanced: boolean) => {
-      const mode: ViewMode = advanced ? "list" : "card";
-      setViewMode(mode);
-      if (!advanced) setCareFor(null);
-      void setPref({ is_caregiver: advanced, preferred_view: mode });
-    },
-    [setPref],
-  );
 
   // The view sticks: on the profile, or in this browser without one.
   const changeView = useCallback(
@@ -1746,9 +1699,12 @@ export function EventsView({
         : "No events"
       : `${feed.length} Unique ${feed.length === 1 ? "Event" : "Events"}`;
 
-  // "Saving for" always sits beside the account in the top bar now —
-  // never under the saved panel's heading.
-  const careInPanel = false;
+  // "Saving for" lives in the saved panel, under its heading, wherever the
+  // panel is beside the feed — and folds away with it when the panel is
+  // collapsed to the rail. On a phone (no panel) it sits beside the
+  // account instead; the All Saved Events page has none.
+  const careInPanel = !phone && view !== "saved";
+  const careInHeader = phone && view !== "saved";
 
   // Accessibility Tools, on the right of the bar over the event column.
   const a11yMenu = (
@@ -1773,8 +1729,6 @@ export function EventsView({
         signedIn={signedIn}
         listView={viewMode === "list"}
         onShowTour={showTour}
-        advanced={me?.is_caregiver ?? false}
-        onChangeExperience={changeExperience}
         onSignIn={() => {
           // The sign-in overlay covers this menu; leaving it open left a
           // hidden dialog still listening for Escape.
@@ -1840,7 +1794,7 @@ export function EventsView({
             name={name}
             avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
             role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
-            care={careInPanel ? null : careChoice}
+            care={careInHeader ? careChoice : null}
             onSignIn={() => toSignIn()}
             onSignOut={() => void doLogout()}
           />
@@ -1902,6 +1856,7 @@ export function EventsView({
             events={savedEvents}
             owner={listOwner}
             ownerId={careFor?.id ?? null}
+            care={careChoice}
             onClose={closeSaved}
             onSignIn={() => {
               closeSaved();
@@ -1960,7 +1915,7 @@ export function EventsView({
                     region already reads it per card, and a line that changes
                     on every arrow is noise. */}
                 <div className="flex min-w-0 flex-col gap-1">
-                  <h1 className="text-3xl font-medium text-fg lg:text-[32px]">
+                  <h1 className="text-3xl font-medium text-fg lg:text-[calc(2rem*var(--text-scale,1))]">
                     Discover Events
                   </h1>
                   <p
@@ -2061,24 +2016,16 @@ export function EventsView({
                       const tilt = (n % 2 ? 1 : -1) * cardDial.stack.tilt * (0.6 + 0.4 * (n / cardDial.stack.layers));
                       return (
                         <motion.div
-                          key={`deck${n}:${shuffleTick}`}
+                          key={`deck${n}`}
                           aria-hidden
-                          // On a shuffle each card riffles in from alternate sides.
-                          initial={
-                            shuffling && !reduceMotion
-                              ? {
-                                  x: (n % 2 ? 1 : -1) * cardDial.shuffle.offset,
-                                  rotate: (n % 2 ? 1 : -1) * cardDial.shuffle.rotate,
-                                }
-                              : false
-                          }
+                          initial={false}
                           animate={{
                             x: n * cardDial.stack.offsetX,
                             y: n * cardDial.stack.offsetY,
                             rotate: tilt,
                           }}
                           transition={{
-                            duration: cardDial.shuffle.duration * (0.6 + 0.1 * n),
+                            duration: 0.3,
                             ease: "easeOut",
                           }}
                           // Under the top card (its wrapper is z-10), deeper ones lower.
@@ -2111,13 +2058,8 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
-                    {/* Past the last card, the whole top card riffles (started
-                        once per shuffle, imperatively — see shuffleRef). */}
-                    <div ref={shuffleRef}>
                     <AnimatePresence initial={false} custom={dir} mode="popLayout">
                     <motion.div
-                      // A new key on a shuffle too, so card 1 replays even
-                      // when it's the only card.
                       key={current.id}
                       custom={dir}
                       variants={turnVariants}
@@ -2273,7 +2215,6 @@ export function EventsView({
                         )}
                     </motion.div>
                     </AnimatePresence>
-                    </div>
                   </motion.div>
                 </div>
 

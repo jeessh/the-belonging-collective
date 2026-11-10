@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 from app.core.pricing import PricingError
 from app.core.pricing import validate as _validate_pricing
@@ -75,8 +75,18 @@ class EventImageOut(EventImageIn):
     id: uuid.UUID
 
 
-# The standardized pitch every listing has. Anything longer belongs in `notes`.
-DESCRIPTION_MAX = 1000
+# The standardized pitch every listing has: three lines on the event's
+# details, so 240 characters and at most three lines of its own. Anything
+# longer belongs in `notes`.
+DESCRIPTION_MAX = 240
+DESCRIPTION_LINES = 3
+
+
+def check_description(value: str | None) -> str | None:
+    """No more than DESCRIPTION_LINES lines (the length is the Field's)."""
+    if value is not None and value.strip().count("\n") >= DESCRIPTION_LINES:
+        raise ValueError(f"The description can be at most {DESCRIPTION_LINES} lines.")
+    return value
 # Important links per program. Three is what the form offers.
 LINKS_MAX = 3
 
@@ -100,7 +110,10 @@ class EventLink(BaseModel):
 
 class EventBase(BaseModel):
     title: str
-    description: str = Field("", max_length=DESCRIPTION_MAX)
+    # No length or line limit here: EventOut inherits this, and a program
+    # written before the limit (or imported) must still be served. Only
+    # what is written is checked — EventCreate / EventUpdate.
+    description: str = ""
     notes: str | None = None
     # The topics it's about. `category` is the first of these and is written
     # from them, so callers set one field and every existing read path — the
@@ -171,6 +184,8 @@ def _sync_category(model) -> None:
 
 
 class EventCreate(EventBase):
+    description: str = Field("", max_length=DESCRIPTION_MAX)
+    _description_lines = field_validator("description")(check_description)
     gallery: list[EventImageIn] = []
     # once | weekly | biweekly | monthly | annual. Anything but "once" creates
     # a dated row per occurrence, all sharing one series_id.
@@ -202,6 +217,7 @@ class EventCreate(EventBase):
 class EventUpdate(BaseModel):
     title: str | None = None
     description: str | None = Field(None, max_length=DESCRIPTION_MAX)
+    _description_lines = field_validator("description")(check_description)
     notes: str | None = None
     categories: list[str] | None = None
     category: str | None = None

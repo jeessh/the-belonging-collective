@@ -40,7 +40,8 @@ export function EventTools({
       >
         <Button
           variant={lead ? "primary" : printLeads ? "secondary" : "ghost"}
-          size={big ? "lg" : "md"}
+          // Save Event's size, ghost or not.
+          size="lg"
           onClick={() => setOpen("share")}
           trailingIcon={<Send />}
         >
@@ -48,7 +49,8 @@ export function EventTools({
         </Button>
         <Button
           variant={printLeads ? "primary" : lead ? "secondary" : "ghost"}
-          size={big ? "lg" : "md"}
+          // Save Event's size, ghost or not.
+          size="lg"
           className={printLeads ? "order-1" : ""}
           onClick={() => setOpen("print")}
           trailingIcon={<Printer />}
