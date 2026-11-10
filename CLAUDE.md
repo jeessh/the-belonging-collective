@@ -860,7 +860,8 @@ can open.
   pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
 - **Dialogs fit the screen** (`Modal`, centred): the panel is at most the
   screen's height less a margin and scrolls inside, and its button row is
-  pinned to its foot on white with a soft edge (`.modal-footer` in
+  pinned to its foot on white with a soft edge and snug padding — 12px
+  over the buttons, half the panel padding under (`.modal-footer` in
   globals.css, `--modal-pad` = the panel padding). The footer is a dialog's
   last block when that block is nothing but buttons (or the last block of
   its form); `FormFooter` and the event details' `stickyActions` row carry
