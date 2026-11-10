@@ -24,7 +24,10 @@ export const FeedCard = memo(function FeedCard({
   onRegister,
   onJoinWaitlist,
   onLeaveWaitlist,
+  preview = false,
 }: {
+  /** A look-only copy (the deck's next card): no tour target. */
+  preview?: boolean;
   /** A full program: join, or leave, its waitlist (WaitlistAction). */
   onJoinWaitlist?: () => void;
   onLeaveWaitlist?: () => void;
@@ -49,7 +52,7 @@ export const FeedCard = memo(function FeedCard({
   // A phone-width column is narrower than the design's 20px labels.
   const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
   return (
-    <div data-tour="card" className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
+    <div data-tour={preview ? undefined : "card"} className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
       <EventSummary
         event={event}
         layout="card"
