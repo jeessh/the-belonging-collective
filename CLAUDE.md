@@ -353,9 +353,9 @@ can open.
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one, each nudged
   (`offsetY` 7px, `offsetX` 2px) and tilted ±`tilt`° — always full, since
-  turned cards go back into it (replaces the two narrower layers); past the last card the deck **shuffles**
-  (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
-  declarative keyframe restarted on every re-render). **Save animation**
+  turned cards go back into it (replaces the two narrower layers); past the
+  last card, card 1 simply comes round with the usual turn (no shuffle
+  animation any more). **Save animation**
   (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):
   classic / spin / arc / pop flight (arc, the tuned default) with anticipation, curve, end scale,
   spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
