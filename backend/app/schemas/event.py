@@ -110,8 +110,10 @@ class EventLink(BaseModel):
 
 class EventBase(BaseModel):
     title: str
-    description: str = Field("", max_length=DESCRIPTION_MAX)
-    _description_lines = field_validator("description")(check_description)
+    # No length or line limit here: EventOut inherits this, and a program
+    # written before the limit (or imported) must still be served. Only
+    # what is written is checked — EventCreate / EventUpdate.
+    description: str = ""
     notes: str | None = None
     # The topics it's about. `category` is the first of these and is written
     # from them, so callers set one field and every existing read path — the
@@ -182,6 +184,8 @@ def _sync_category(model) -> None:
 
 
 class EventCreate(EventBase):
+    description: str = Field("", max_length=DESCRIPTION_MAX)
+    _description_lines = field_validator("description")(check_description)
     gallery: list[EventImageIn] = []
     # once | weekly | biweekly | monthly | annual. Anything but "once" creates
     # a dated row per occurrence, all sharing one series_id.
