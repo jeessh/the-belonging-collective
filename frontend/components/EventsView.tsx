@@ -1801,7 +1801,7 @@ export function EventsView({
       {/* The bar across the whole width, over the saved panel and the
           events: who you are on the left (in line with the panel's "Saved
           Events" heading), Accessibility Tools on the right. */}
-      <header className="nav-dark flex shrink-0 items-center justify-between gap-2 border-b-2 px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
+      <header className="nav-tint flex shrink-0 items-center justify-between gap-2 border-b-2 px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
         <div className="-ml-2 min-w-0">
           <FeedAccount
             name={name}
