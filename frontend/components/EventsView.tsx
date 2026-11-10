@@ -1713,9 +1713,10 @@ export function EventsView({
 
   // "Saving for" lives in the saved panel, under its heading, wherever the
   // panel is beside the feed — and folds away with it when the panel is
-  // collapsed to the rail. On a phone (no panel) and on the All Saved
-  // Events page (panel steps aside) it sits beside the account instead.
+  // collapsed to the rail. On a phone (no panel) it sits beside the
+  // account instead; the All Saved Events page has none.
   const careInPanel = !phone && view !== "saved";
+  const careInHeader = phone && view !== "saved";
 
   // Accessibility Tools, on the right of the bar over the event column.
   const a11yMenu = (
@@ -1807,7 +1808,7 @@ export function EventsView({
             name={name}
             avatar={me ? { url: me.avatar_url, emblem: me.avatar_emblem } : null}
             role={me ? (me.is_caregiver ? "Caregiver" : "Community member") : null}
-            care={careInPanel ? null : careChoice}
+            care={careInHeader ? careChoice : null}
             onSignIn={() => toSignIn()}
             onSignOut={() => void doLogout()}
           />

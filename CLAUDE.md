@@ -158,8 +158,8 @@ can open.
   panel's "Saved Events" heading, and the Card View / List View toggle at
   the far right; Accessibility Tools (`a11yMenu`, card view only) sits on
   the "Discover Events" row, at its right; the saved panel starts under it. "Saving for" (`CareSwitcher`) sits in the
-  open saved panel, under "Saved Events" (`careInPanel`: not on a phone
-  and not on All Saved Events, where it stays beside the account), and
+  open saved panel, under "Saved Events" (`careInPanel`; on a phone it
+  sits beside the account, `careInHeader`; All Saved Events has none), and
   folds away with the panel when it is collapsed to the rail.
 - The feed's account button (`FeedAccount`'s `AccountButton`) is the
   member header's one size: a 36px picture and the name at 20px, with
