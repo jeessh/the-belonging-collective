@@ -357,7 +357,7 @@ can open.
   (`shuffleTick`; a riffle on `shuffleRef`, started imperatively once — a
   declarative keyframe restarted on every re-render). **Save animation**
   (`saveDial` → `flyCard` / `celebrate` / `settleCard`, used by `flyToDrop`):
-  classic / spin / arc / pop flight with anticipation, curve, end scale,
+  classic / spin / arc / pop flight (arc, the tuned default) with anticipation, curve, end scale,
   spin, arc height, plus a celebration (`member/SaveBurst`: confetti,
   sparkles, hearts, ring) where the newest save lands, and "Preview (doesn't
   save)". **Drag-and-drop saves use the same dials**: the mini card

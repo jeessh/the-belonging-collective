@@ -236,7 +236,7 @@ export function EventsView({
           { value: "arc", label: "Arc (toss)" },
           { value: "pop", label: "Pop" },
         ],
-        default: "classic",
+        default: "arc",
       },
       anticipation: {
         scale: [1.06, 1, 1.4, 0.01],
