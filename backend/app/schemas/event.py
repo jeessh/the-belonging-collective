@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.pricing import PricingError
 from app.core.pricing import validate as _validate_pricing
@@ -75,18 +75,10 @@ class EventImageOut(EventImageIn):
     id: uuid.UUID
 
 
-# The standardized pitch every listing has: three lines on the event's
-# details, so 240 characters and at most three lines of its own. Anything
-# longer belongs in `notes`.
-DESCRIPTION_MAX = 240
-DESCRIPTION_LINES = 3
-
-
-def check_description(value: str | None) -> str | None:
-    """No more than DESCRIPTION_LINES lines (the length is the Field's)."""
-    if value is not None and value.strip().count("\n") >= DESCRIPTION_LINES:
-        raise ValueError(f"The description can be at most {DESCRIPTION_LINES} lines.")
-    return value
+# The standardized pitch every listing has: 500 characters for a new or
+# changed one. An older description already longer may stay (see
+# update_event); anything longer belongs in `notes`.
+DESCRIPTION_MAX = 500
 # Important links per program. Three is what the form offers.
 LINKS_MAX = 3
 
@@ -185,7 +177,6 @@ def _sync_category(model) -> None:
 
 class EventCreate(EventBase):
     description: str = Field("", max_length=DESCRIPTION_MAX)
-    _description_lines = field_validator("description")(check_description)
     gallery: list[EventImageIn] = []
     # once | weekly | biweekly | monthly | annual. Anything but "once" creates
     # a dated row per occurrence, all sharing one series_id.

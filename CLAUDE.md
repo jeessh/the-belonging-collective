@@ -485,17 +485,15 @@ can open.
   column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
-- **An event's description is three lines at most.** The console caps it
-  at 240 characters and three lines of its own (`DESCRIPTION_MAX` /
-  `DESCRIPTION_LINES` in EventForm and `schemas/event.py`, whose
-  `check_description` refuses a fourth line; a calendar import runs a
-  longer one's paragraphs together and moves the overflow to notes), and
-  `EventDetails` clamps it (`line-clamp-3`) for older, longer ones. The
-  limit is checked on what is written, never on what is served (`EventOut`
-  has none — the event list once 500'd on older descriptions), and **an
-  older description already past it saves as it is**: `EventUpdate` has no
-  limit, `update_event` checks only a changed description, and the form
-  skips the check while the description is the one it opened with.
+- **An event's description is 500 characters at most** for a new or
+  changed one (`DESCRIPTION_MAX` in EventForm and `schemas/event.py`; a
+  calendar import moves the overflow to notes). Members see it in full.
+  The limit is checked on what is written, never on what is served
+  (`EventOut` has none — the event list once 500'd on older descriptions),
+  and **an older description already past it saves as it is**:
+  `EventUpdate` has no limit, `update_event` checks only a changed
+  description, and the form skips the check while the description is the
+  one it opened with.
 - **Every event summary shows three facts and no more: when, where and
   the saved count** — except the card view's feed card, which leaves the
   saved count out (it is in "More information") (`EventSummary`, every layout — feed card, list, dialog,
