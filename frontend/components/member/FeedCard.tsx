@@ -8,7 +8,6 @@ import { WaitlistAction, waitlistState } from "@/components/member/WaitlistActio
 import type { Event } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { EventSummary } from "@/components/ui/EventSummary";
-import { GoingCount } from "@/components/ui/GoingCount";
 
 /**
  * The one card on screen. The buttons stop pointer-down so pressing one is
@@ -56,15 +55,8 @@ export const FeedCard = memo(function FeedCard({
         layout="card"
         recommended={recommended}
         saved={saved}
-        going={
-          // The feed card's fact icons are 28px (EventSummary's `icon`).
-          <GoingCount
-            count={event.saved_count}
-            capacity={event.capacity}
-            onSignIn={onSignIn}
-            iconClassName="size-7"
-          />
-        }
+        // No "N people saved this event" on the card itself — it's in the
+        // details ("More information").
         actions={
           <>
             <Button
