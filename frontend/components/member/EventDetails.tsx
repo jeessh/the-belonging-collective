@@ -127,7 +127,8 @@ export function EventDetails({
         <section className="flex flex-col gap-3">
           <h3 className={HEADING}>Details</h3>
           {event.description && (
-            <p className="whitespace-pre-line text-lg leading-relaxed text-fg-muted">
+            // Three lines at most (the console caps it to fit, too).
+            <p className="line-clamp-3 whitespace-pre-line text-lg leading-relaxed text-fg-muted">
               {event.description}
             </p>
           )}

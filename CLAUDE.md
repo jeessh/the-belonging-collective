@@ -478,6 +478,12 @@ can open.
   column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
+- **An event's description is three lines at most.** The console caps it
+  at 240 characters and three lines of its own (`DESCRIPTION_MAX` /
+  `DESCRIPTION_LINES` in EventForm and `schemas/event.py`, whose
+  `check_description` refuses a fourth line; a calendar import runs a
+  longer one's paragraphs together and moves the overflow to notes), and
+  `EventDetails` clamps it (`line-clamp-3`) for older, longer ones.
 - **Every event summary shows three facts and no more: when, where and
   the saved count** — except the card view's feed card, which leaves the
   saved count out (it is in "More information") (`EventSummary`, every layout — feed card, list, dialog,
