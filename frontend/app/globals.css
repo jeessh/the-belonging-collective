@@ -395,14 +395,14 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .tour-arrow { animation: tour-arrow 3.8s linear infinite; }
 .tour-grab { animation: tour-grab 3.8s linear infinite; }
 
-/* The member app's top bar: KW Habilitation's pink (#D70B7D, from the
-   logo; white on it is about 5:1), white text (EventsView's header). The
+/* The member app's top bar: dark blue (#0F2E4C), white text
+   (EventsView's header). The
    account button's name and role turn white; the Card / List toggle and
    "Saving for" keep their own white background and dark text, and so do
    the menus that drop down from the bar. */
 .nav-dark {
-  background: #D70B7D;
-  border-color: #D70B7D;
+  background: #0F2E4C;
+  border-color: #0F2E4C;
 }
 .nav-dark :where(.text-fg):not(:is([role="menu"], [role="radiogroup"], .nav-solid) *) {
   color: #FFFFFF;
@@ -413,7 +413,7 @@ svg.lucide:not(.console *) :is(path, line, polyline, polygon, circle, ellipse, r
 .nav-dark button:not(:is([role="menu"], [role="radiogroup"]) *):not(.nav-solid):hover {
   background-color: rgba(255, 255, 255, 0.12);
 }
-/* A white edge on the controls that sit on the pink. */
+/* A white edge on the controls that sit on the blue. */
 .nav-dark :is([role="radiogroup"], .nav-solid) {
   border-color: #FFFFFF;
 }
