@@ -485,12 +485,15 @@ can open.
   column and the title and facts fill the card): `host/PostedBy` — the
   organization's logo and "Posted by {organization}", the console's own
   line; members never get the person (`created_by_name` is organizer-only).
-- **An event's description is three lines at most.** The console caps it
-  at 240 characters and three lines of its own (`DESCRIPTION_MAX` /
-  `DESCRIPTION_LINES` in EventForm and `schemas/event.py`, whose
-  `check_description` refuses a fourth line; a calendar import runs a
-  longer one's paragraphs together and moves the overflow to notes), and
-  `EventDetails` clamps it (`line-clamp-3`) for older, longer ones.
+- **An event's description is 500 characters at most** for a new or
+  changed one (`DESCRIPTION_MAX` in EventForm and `schemas/event.py`; a
+  calendar import moves the overflow to notes). Members see it in full.
+  The limit is checked on what is written, never on what is served
+  (`EventOut` has none — the event list once 500'd on older descriptions),
+  and **an older description already past it saves as it is**:
+  `EventUpdate` has no limit, `update_event` checks only a changed
+  description, and the form skips the check while the description is the
+  one it opened with.
 - **Every event summary shows three facts and no more: when, where and
   the saved count** — except the card view's feed card, which leaves the
   saved count out (it is in "More information") (`EventSummary`, every layout — feed card, list, dialog,
@@ -855,6 +858,15 @@ can open.
   radii all to 8px, and the branded emails (`core/mail.py`) match.
   `rounded-full` stays round (avatars, the round tool buttons, badges,
   pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
+- **Dialogs fit the screen** (`Modal`, centred): the panel is at most the
+  screen's height less a margin and scrolls inside, and its button row is
+  pinned to its foot on white with a soft edge (`.modal-footer` in
+  globals.css, `--modal-pad` = the panel padding). The footer is a dialog's
+  last block when that block is nothing but buttons (or the last block of
+  its form); `FormFooter` and the event details' `stickyActions` row carry
+  `.modal-footer` themselves (scoped to `.modal-panel`, so a `FormFooter`
+  on a page is a plain row). A last block mixing buttons with text or
+  fields (the sign-in chooser, the share sheet) just scrolls.
 - **One back control everywhere: `ui/BackButton`** — an arrow and its
   words ("← Back to events", "← Back"), a link or a button, on its own line
   **above** the title (`TitleWithBack`, or `PageHeader`'s `backHref`).

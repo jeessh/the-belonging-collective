@@ -172,14 +172,18 @@ export function Modal({
           className={
             sheet
               ? `relative max-h-[90dvh] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-t-[16px] border border-b-0 ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface px-4 pt-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none sm:px-8`
-              : `relative my-auto w-full ${SIZE[size]} shrink-0 rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none ${snug ? "sm:p-8" : "sm:p-12"}`
+              : // Never taller than the screen: the panel scrolls inside,
+                // and its button row (`.modal-footer`, globals.css) stays
+                // pinned to its foot. `--modal-pad` is the padding, so the
+                // footer can reach the panel's edges.
+                `modal-panel relative my-auto max-h-[calc(100dvh-2rem)] w-full ${SIZE[size]} shrink-0 overflow-y-auto rounded-card border ${tone === "danger" ? "border-danger-border" : "border-line"} bg-surface p-6 shadow-lift outline-none [--modal-pad:24px] sm:max-h-[calc(100dvh-4rem)] ${snug ? "sm:p-8 sm:[--modal-pad:32px]" : "sm:p-12 sm:[--modal-pad:48px]"}`
           }
         >
           {sheet && (
             // The sheet's handle: says "this came up from the bottom".
             <span aria-hidden="true" className="mx-auto mb-5 block h-1.5 w-12 rounded-full bg-line" />
           )}
-          <div className={sheet ? "relative w-full" : "contents"}>
+          <div className={sheet ? "relative w-full" : "modal-body contents"}>
           {title == null ? null : typeof title === "string" ? (
             <h2
               id={headingId}

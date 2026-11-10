@@ -29,7 +29,7 @@ from app.core.categories import require_live_slugs
 from app.models.category import Category
 from app.models.event import Event
 from app.models.host import Host
-from app.schemas.event import DESCRIPTION_LINES, DESCRIPTION_MAX, normalize_url
+from app.schemas.event import DESCRIPTION_MAX, normalize_url
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
@@ -199,10 +199,6 @@ def commit(
         resolve_group_for_host(db, p.access_group_id, p.host_id)
 
         description = p.description.strip()
-        # Three lines at most (schemas/event.check_description): a calendar's
-        # paragraphs run together into one.
-        if description.count("\n") >= DESCRIPTION_LINES:
-            description = " ".join(description.split())
         notes_parts = []
         if p.who:
             notes_parts.append(f"Who: {p.who}")

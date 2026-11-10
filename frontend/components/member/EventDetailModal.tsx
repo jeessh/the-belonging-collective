@@ -77,6 +77,7 @@ export function EventDetailModal({
           titleId={TITLE_ID}
           going={<GoingCount capacity={event.capacity} count={event.saved_count} onSignIn={onSignIn} iconClassName="size-7" />}
           insetForClose
+          stickyActions
           tools={
             <EventTools
               event={event}

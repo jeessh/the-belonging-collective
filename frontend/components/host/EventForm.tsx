@@ -48,18 +48,10 @@ import { PageHeader } from "@/components/host/PageHeader";
 /** A location that is a meeting app or plainly online, not a place. */
 const ONLINE_PLACE = /\b(online|virtual|zoom|teams|google meet|meet\.google|webex|skype)\b/i;
 
-/** Mirrors DESCRIPTION_MAX and LINKS_MAX in app/schemas/event.py. */
-// Three lines on the event's details (backend schemas/event.py): 240
-// characters and no more than three lines of its own.
-export const DESCRIPTION_MAX = 240;
-export const DESCRIPTION_LINES = 3;
-/** Keeps a typed or pasted description to DESCRIPTION_LINES lines. */
-const capLines = (text: string) => {
-  const lines = text.split("\n");
-  return lines.length > DESCRIPTION_LINES
-    ? [...lines.slice(0, DESCRIPTION_LINES - 1), lines.slice(DESCRIPTION_LINES - 1).join(" ")].join("\n")
-    : text;
-};
+/** Mirrors DESCRIPTION_MAX and LINKS_MAX in app/schemas/event.py: a new or
+    changed description is 500 characters at most; an older, longer one
+    saves as it is. */
+export const DESCRIPTION_MAX = 500;
 export const LINKS_MAX = 3;
 
 export type EventFormValues = {
@@ -281,6 +273,8 @@ const WHOLE = /^\d+$/;
 export function missingRequired(
   v: EventFormValues,
   mode: "create" | "edit",
+  /** The description the event already had: one past the limit may stay. */
+  savedDescription?: string,
 ): Problem[] {
   const out: Problem[] = [];
   const need = (field: string, text: string, error = "This is required.") =>
@@ -293,10 +287,11 @@ export function missingRequired(
   // A virtual program happens online; there is no place to give.
   if (!v.isVirtual && !v.location.trim()) need("location", "location");
   if (!v.description.trim()) need("description", "description");
-  if (v.description.length > DESCRIPTION_MAX)
+  const descriptionKept = savedDescription !== undefined && v.description === savedDescription;
+  if (descriptionKept) {
+    /* posted before the limit, and unchanged: fine as it is */
+  } else if (v.description.length > DESCRIPTION_MAX)
     need("description", `a description under ${DESCRIPTION_MAX} characters`);
-  else if (v.description.trim().split("\n").length > DESCRIPTION_LINES)
-    need("description", `a description of ${DESCRIPTION_LINES} lines at most`);
   // Only new programs: older ones were posted before an image was required,
   // and refusing every edit to them until one is found helps nobody.
   if (mode === "create" && !v.coverImageUrl) need("coverImageUrl", "image");
@@ -505,7 +500,10 @@ export function EventForm({
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const { categories } = useCategories();
-  const problems = missingRequired(values, mode);
+  // The description it opened with: an older event's, already past the
+  // limit, saves as it is until someone changes it.
+  const savedDescription = useRef(mode === "edit" ? values.description : undefined).current;
+  const problems = missingRequired(values, mode, savedDescription);
   const missing = problems.map((p) => p.text);
   /** A field's own message, once the summary is showing. */
   const fieldError = (field: string) =>
@@ -710,7 +708,7 @@ export function EventForm({
         <div className="flex min-w-0 flex-col gap-8 lg:order-1">
           <Group title="Description">
             <Field
-              label={`Brief Description (Max ${DESCRIPTION_MAX} Characters, ${DESCRIPTION_LINES} Lines)`}
+              label={`Brief Description (Max ${DESCRIPTION_MAX} Characters)`}
               required
               aside={
                 <span
@@ -726,10 +724,10 @@ export function EventForm({
               }
             >
               <TextArea
-                rows={3}
+                rows={6}
                 maxLength={DESCRIPTION_MAX}
                 value={values.description}
-                onChange={(e) => set("description", capLines(e.target.value))}
+                onChange={(e) => set("description", e.target.value)}
                 placeholder="Type out your description here…"
               />
             </Field>

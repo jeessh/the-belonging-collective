@@ -40,6 +40,7 @@ from app.models.user import User
 from app.core.recurrence import RecurrenceError, describe as describe_recurrence
 from app.core.recurrence import occurrences
 from app.schemas.event import (
+    DESCRIPTION_MAX,
     EventCreate,
     EventOut,
     EventUpdate,
@@ -506,6 +507,15 @@ def update_event(
     if not _owns_or_admin(host, event):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your event")
     fields = body.model_dump(exclude_unset=True)
+    # The description limit (DESCRIPTION_MAX characters) applies to a new or
+    # changed description; one already past it may stay as it is.
+    new_description = fields.get("description")
+    if new_description is not None and new_description != (event.description or ""):
+        if len(new_description) > DESCRIPTION_MAX:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"The description can be at most {DESCRIPTION_MAX} characters.",
+            )
     shared = {f: v for f, v in fields.items() if f not in _SCHEDULE_FIELDS}
     # Queried before any row is touched (see the autoflush note below).
     later: list[Event] = []
