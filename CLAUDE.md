@@ -439,7 +439,7 @@ can open.
   / `sm:pr-14`; `Modal sheet` and
   `EventDetails stickyActions` remain for a bottom panel, unused now), the public `/events/[id]` page and the print
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
-  — ghost buttons on the actions' row: **not saved yet**, Share and Print
+  — ghost buttons on the actions' row, the same large size as Save Event: **not saved yet**, Share and Print
   sit on the left (words in line with the text) and Save / Register at the
   bottom right, its own width; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
