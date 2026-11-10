@@ -169,12 +169,11 @@ can open.
 - **Community member or caregiver** (was "Simplified / Advanced"). The
   sign-up flow's account step asks "Are you a community member or a
   caregiver?": a **community member** gets card view (one card at a time),
-  a **caregiver** list view. **Switching role is deliberate**: Accessibility
-  Tools only says "I am a caregiver / community member" with a **Go to
-  settings** button (`/profile#role`); the switch itself (Community member |
-  Caregiver) is the Profile page's "Your role" card (`changeRole`: `PATCH
-  /users/me {is_caregiver, preferred_view}`). The profile also shows it
-  under the name. **In list view Accessibility Tools has no Read aloud,
+  a **caregiver** list view. **The role can't be switched**: it is chosen
+  at sign-up (or a member becomes a caregiver by accepting a caregiver
+  invitation). There is no "Your role" card on the profile and nothing in
+  Accessibility Tools, and `PATCH /users/me` ignores `is_caregiver` (it
+  isn't in `UserPrefsUpdate`). The profile shows the role under the name. **In list view Accessibility Tools has no Read aloud,
   Voice commands or Head tracking — **list view has no Accessibility Tools
   at all** (`viewMode === "card" && a11yMenu`); they drive the one card.
   The card view's chips (`FeedFilters`) show in card view only. The Filter dropdown
@@ -185,12 +184,9 @@ can open.
   `ui/Checkbox` has 3px corners (not 8px) so it reads as a square box. Signing up or in through the feed's own sign-in sheet
   switches the feed to the account's `preferred_view` straight away
   (`handleSignedIn`), so a new caregiver lands in the list. It is
-  `is_caregiver` plus `preferred_view`, written together — at sign-up
+  `is_caregiver` plus `preferred_view`, written together at sign-up
   (`is_caregiver` on the sign-up call, then `PATCH /users/me
-  {preferred_view}`) and from the "Your experience" toggle at the top of
-  Accessibility Tools (`changeExperience` in EventsView: `PATCH /users/me
-  {is_caregiver, preferred_view}`; Simplified also resets "Saving for" to
-  Me). The View toggle still switches card / list on its own.
+  {preferred_view}`). The View toggle still switches card / list on its own.
   **Sign-up ends by offering Google Calendar**: after the account (and, for
   a caregiver, the person they support) a `calendar` step in
   `MemberAuthFlow` — "Add your events to Google Calendar?" · Not now |
@@ -1111,8 +1107,8 @@ can open.
 
 ## Caregivers and care links (support, not proxy)
 - A **caregiver** is a password member account with `users.is_caregiver`
-  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or from the
-  profile's "Your role" card; the profile lists "People I support" for an
+  (set at sign-up via `is_caregiver` on `POST /auth/signup/user`, or by
+  accepting a caregiver invitation — never switched afterwards; the profile lists "People I support" for an
   account that is one). **The member keeps their own account and their own
   credential**; a caregiver never signs in as them. `care_links(caregiver_id,
   member_id, created_at, removed_at)` (migration `0021_caregivers`,

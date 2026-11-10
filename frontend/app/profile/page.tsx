@@ -44,7 +44,6 @@ import { CareLinkForm, type CareLinkResult } from "@/components/member/CareLinkF
 import { FormFooter } from "@/components/member/FormFooter";
 import { Glyph } from "@/components/ui/Glyph";
 import { BackButton } from "@/components/ui/BackButton";
-import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 
 /**
  * The member's own settings: email, picture, list link, and the people on
@@ -59,7 +58,7 @@ export default function ProfilePage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [busy, setBusy] = useState<
-    "email" | "picture" | "link" | "care" | "calendar" | "role" | null
+    "email" | "picture" | "link" | "care" | "calendar" | null
   >(null);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   // The caregiver's add / link sheet, and the key it hands back.
@@ -148,28 +147,6 @@ export default function ProfilePage() {
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  // The role: community member (card view) or caregiver (list view). It
-  // lives here, not in Accessibility Tools, so it isn't switched by accident;
-  // one write sets both, the way sign-up does.
-  async function changeRole(caregiver: boolean) {
-    if (!me || caregiver === me.is_caregiver) return;
-    setBusy("role");
-    try {
-      setMe(
-        await updateMe({
-          is_caregiver: caregiver,
-          preferred_view: caregiver ? "list" : "card",
-        }),
-      );
-      show({ title: caregiver ? "You're now a caregiver" : "You're now a community member" });
-    } catch (err) {
-      if (signedOut(err)) return;
-      show({ title: apiMessage(err, "That didn't save. Please try again."), tone: "alert" });
-    } finally {
-      setBusy(null);
     }
   }
 
@@ -348,28 +325,6 @@ export default function ProfilePage() {
             <Avatar name={short} src={me.avatar_url} emblem={me.avatar_emblem} size={72} />
           }
         />
-
-        <div id="role" className="scroll-mt-6">
-          <Card
-            title="Your role"
-            subtitle={
-              me.is_caregiver
-                ? "Caregiver: every event in a list, and saving for someone you support."
-                : "Community member: one event at a time, big and clear."
-            }
-          >
-            <SegmentedToggle<"member" | "caregiver">
-              className="w-full sm:w-auto sm:self-start"
-              label="I am a"
-              value={me.is_caregiver ? "caregiver" : "member"}
-              onChange={(v) => void changeRole(v === "caregiver")}
-              segments={[
-                { value: "member", label: "Community member" },
-                { value: "caregiver", label: "Caregiver" },
-              ]}
-            />
-          </Card>
-        </div>
 
         <Card
           as="form"

@@ -8,7 +8,6 @@ import {
   Compass,
   LogOut,
   PersonStanding,
-  Settings,
   UserRound,
   Mic,
 } from "lucide-react";
@@ -310,12 +309,7 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
   listView = false,
   onSignIn,
   onShowTour,
-  advanced = false,
-  onChangeExperience,
 }: {
-  /** Signed in: the member's experience — Advanced is a caregiver account. */
-  advanced?: boolean;
-  onChangeExperience?: (advanced: boolean) => void;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   ttsEnabled: boolean;
@@ -403,26 +397,6 @@ export const AccessibilityMenu = memo(function AccessibilityMenu({
           // the last of the topics under it.
           className="absolute right-0 top-full z-50 mt-2 max-h-[80vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-lift max-sm:max-h-[calc(100dvh-12rem)]"
         >
-          {signedIn && onChangeExperience && (
-            <>
-              <h2 className="text-xl font-medium text-fg">
-                I am a {advanced ? "caregiver" : "community member"}
-              </h2>
-              <p className="text-base text-fg-muted">
-                To change your role, go to settings.
-              </p>
-              {/* Switching role is deliberate: it lives in Profile. */}
-              <Link
-                href="/profile#role"
-                onClick={() => onOpenChange(false)}
-                className={buttonClass("secondary", "md", "mt-3 w-full")}
-              >
-                <Settings aria-hidden="true" className="size-6" />
-                Go to settings
-              </Link>
-              <div className="mt-6" />
-            </>
-          )}
           {/* Read aloud, voice and head tracking all drive the one card, so
               list view doesn't offer them. */}
           {!listView && (

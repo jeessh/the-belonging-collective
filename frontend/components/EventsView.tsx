@@ -1411,18 +1411,6 @@ export function EventsView({
     setI(0);
   }, []);
 
-  const advanced = me?.is_caregiver ?? false;
-  // The experience: Simplified (community member, the card) or Advanced
-  // (caregiver, the list). One write sets both.
-  const changeExperience = useCallback(
-    (advanced: boolean) => {
-      const mode: ViewMode = advanced ? "list" : "card";
-      setViewMode(mode);
-      if (!advanced) setCareFor(null);
-      void setPref({ is_caregiver: advanced, preferred_view: mode });
-    },
-    [setPref],
-  );
 
   // The view sticks: on the profile, or in this browser without one.
   const changeView = useCallback(
@@ -1741,8 +1729,6 @@ export function EventsView({
         signedIn={signedIn}
         listView={viewMode === "list"}
         onShowTour={showTour}
-        advanced={me?.is_caregiver ?? false}
-        onChangeExperience={changeExperience}
         onSignIn={() => {
           // The sign-in overlay covers this menu; leaving it open left a
           // hidden dialog still listening for Escape.

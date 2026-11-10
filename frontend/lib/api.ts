@@ -261,7 +261,6 @@ export type MePrefs = Partial<
     | "dismissed_program_ids"
     | "email"
     | "avatar_emblem"
-    | "is_caregiver"
   >
 > & {
   /** `true` stamps `onboarded_at` with now; `false` is ignored. */
