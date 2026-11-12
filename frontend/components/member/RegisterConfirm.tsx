@@ -30,9 +30,22 @@ export function RegisterConfirm({
     <div className="relative z-[70]">
       <Modal title={`Register for ${event.title}?`} onClose={onClose}>
         <p className="mt-2 text-xl leading-[1.4] text-fg-muted">
-          {external
-            ? `This event asks you to register on ${site}. We'll open their page in a new tab so you can finish there, and add it to your saved events.`
-            : "We'll register you and add it to your saved events."}
+          {external ? (
+            <>
+              This event asks you to register on{" "}
+              <a
+                href={event.registration_url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-medium text-fg underline underline-offset-4"
+              >
+                {site}
+              </a>
+              . Are you sure you want to continue?
+            </>
+          ) : (
+            "We'll register you and add it to your saved events."
+          )}
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row [&>*]:flex-1">
           <Button size="lg" onClick={onClose}>
@@ -44,7 +57,8 @@ export function RegisterConfirm({
             onClick={onConfirm}
             trailingIcon={external ? <ExternalLink /> : <ClipboardPen />}
           >
-            {external ? `Register on ${site}` : "Register"}
+            {/* Short, so the pair fits any width (the site is named above). */}
+            {external ? "Continue" : "Register"}
           </Button>
         </div>
       </Modal>

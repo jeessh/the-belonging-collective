@@ -257,8 +257,13 @@ can open.
   framer wouldn't animate the images' opacity). Not on a phone or with
   reduced motion.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
-  (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
-  on the x axis only (`touch-action: pan-y`, so a finger still scrolls);
+  (< 640) stacks: the card goes image-over-text and **swiping is how it
+  turns** — up for the next card, down for the one before (`PHONE_SWIPE`,
+  60px), left to save; there are no ↑ / ↓ arrows, and the card's buttons
+  (`FeedCardActions`, `FeedCard actionsBelow`) sit under the deck, outside
+  the card, so they don't ride the swipe. The card takes the touch
+  (`touch-action: none`); the page scrolls from anywhere else. The tour's
+  first step points at the card there ("Swipe the card up…");
   `Modal` becomes a full-height sheet with 16px gutters; `EventSummary` rows
   stack everywhere they are used. Tablet keeps the desktop shapes with
   tighter gutters. Anything that has to swap components rather than classes
@@ -282,7 +287,9 @@ can open.
   event with `requires_signup` shows **Register** in place of Save (feed
   card, event dialog, public page's `EventActions`) until it is saved;
   pressing it opens `member/RegisterConfirm` ("Register for …?" · Cancel |
-  Register). Confirming saves it (the card on screen through `flyToDrop`,
+  Register; for an organizer's own page: "This event asks you to register
+  on {site, linked}. Are you sure you want to continue?" · Cancel |
+  Continue — a short label, so the pair always fits). Confirming saves it (the card on screen through `flyToDrop`,
   otherwise `attend`) and, when `registration_mode === "external"` with a
   `registration_url`, opens that page in a new tab (`openRegistration`,
   counted as a registration click). Saved, it shows Unsave as usual.
@@ -860,7 +867,9 @@ can open.
   pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
 - **Dialogs fit the screen** (`Modal`, centred): the panel is at most the
   screen's height less a margin and scrolls inside, and its button row is
-  pinned to its foot on white with a soft edge and snug padding — 12px
+  pinned to its foot on white with snug padding, and a soft edge over it
+  only while the panel actually scrolls (`data-overflow`, set by Modal's
+  ResizeObserver) — 12px
   over the buttons, half the panel padding under (`.modal-footer` in
   globals.css, `--modal-pad` = the panel padding). The footer is a dialog's
   last block when that block is nothing but buttons (or the last block of

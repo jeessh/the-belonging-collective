@@ -75,7 +75,7 @@ import {
   useDragHint,
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
-import { FeedCard } from "@/components/member/FeedCard";
+import { FeedCard, FeedCardActions } from "@/components/member/FeedCard";
 import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
 import { useDialKit, type TransitionConfig } from "dialkit";
 import type { Transition, ValueAnimationTransition } from "framer-motion";
@@ -103,6 +103,7 @@ function toMotionTransition(curve: TransitionConfig): Transition {
 const MORPH_DISTANCE = 320;
 const DROP_THRESHOLD = 150; // drag-left px to save
 const SWIPE_THRESHOLD = 90; // drag up/down px to page
+const PHONE_SWIPE = 60; // a phone's swipe up / down, px
 const HOLD_MS = 1000; // ← held this long saves
 const HOLD_TRAVEL = 140; // how far the card slides toward the sidebar while held
 
@@ -2062,6 +2063,7 @@ export function EventsView({
                             <div className="pointer-events-none">
                               <FeedCard
                                 preview
+                                actionsBelow={phone}
                                 event={upNext}
                                 saved={saved.has(upNext.id)}
                                 recommended={recommendedKeys.has(programKey(upNext))}
@@ -2125,14 +2127,16 @@ export function EventsView({
                         // On a phone the card drags left only — a finger
                         // moving up or down is scrolling the page, and the
                         // ↑ / ↓ buttons under the card do the paging.
-                        drag={flying ? false : phone ? "x" : true}
+                        // A phone swipes both ways too: up / down turn the
+                        // card (there are no arrows there), left saves it.
+                        drag={flying ? false : true}
                         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
                         dragElastic={0.65}
                         style={{
                           x,
                           y,
                           rotate: reduceMotion ? 0 : rotate,
-                          touchAction: phone ? "pan-y" : "none",
+                          touchAction: "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
                         onDragStart={() => {
@@ -2188,7 +2192,15 @@ export function EventsView({
                             void animate(cardOpacity, 1, { duration: 0.15 }).then(resetGhost);
                           }
                           if (Math.abs(dx) > Math.abs(dy)) return;
-                          // Vertical travel pages, like the ↑ / ↓ buttons.
+                          // Vertical travel pages, like the ↑ / ↓ buttons. On a
+                          // phone it reads like a feed: swipe up for the next
+                          // card, down for the one before, and a shorter swipe
+                          // counts.
+                          if (phone) {
+                            if (dy < -PHONE_SWIPE) next();
+                            else if (dy > PHONE_SWIPE) prev();
+                            return;
+                          }
                           if (dy > SWIPE_THRESHOLD) next();
                           else if (dy < -SWIPE_THRESHOLD) prev();
                         }}
@@ -2199,6 +2211,7 @@ export function EventsView({
                         } rounded-card`}
                       >
                         <FeedCard
+                          actionsBelow={phone}
                           event={current}
                           saved={saved.has(current.id)}
                           recommended={recommendedKeys.has(programKey(current))}
@@ -2261,6 +2274,22 @@ export function EventsView({
 
                 {/* The top padding lines the arrows up with the card; the tour
                     target sits inside it so its highlight hugs the buttons. */}
+                {phone ? (
+                  // On a phone swiping turns the cards (up for the next, down
+                  // for the one before), so there are no arrows; the card's
+                  // buttons sit here, under the deck, outside the card.
+                  <div className="mt-5 flex w-full gap-3 self-stretch [&>*]:flex-1">
+                    <FeedCardActions
+                      event={current}
+                      saved={saved.has(current.id)}
+                      onMoreInfo={setDetailFor}
+                      onSave={saveFromButton}
+                      onRegister={() => setRegisterFor(current)}
+                      onJoinWaitlist={() => void attend(current)}
+                      onLeaveWaitlist={() => void leaveWaitlist(current)}
+                    />
+                  </div>
+                ) : (
                 <div className="flex shrink-0 sm:pt-[102px] short:!pt-16">
                   <div className="flex gap-6 sm:flex-col" data-tour="arrows">
                     <button
@@ -2283,6 +2312,7 @@ export function EventsView({
                     </button>
                   </div>
                 </div>
+                )}
               </div>
             )}
           </div>

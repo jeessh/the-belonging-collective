@@ -81,6 +81,19 @@ export function Modal({
   const headingId = labelId ?? generatedId;
   const reduceMotion = useReducedMotion();
 
+  // `data-overflow` while the panel is taller than it can show: only then
+  // does its pinned button row get the soft edge (globals.css).
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof ResizeObserver === "undefined") return;
+    const check = () => panel.toggleAttribute("data-overflow", panel.scrollHeight > panel.clientHeight + 1);
+    const ro = new ResizeObserver(check);
+    ro.observe(panel);
+    for (const child of Array.from(panel.children)) ro.observe(child);
+    check();
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     restoreRef.current = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
