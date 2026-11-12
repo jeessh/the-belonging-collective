@@ -455,7 +455,8 @@ can open.
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons on the actions' row, the same large size as Save Event: **not saved yet**, Share and Print
   sit on the left (words in line with the text) and Save / Register at the
-  bottom right, its own width; once the
+  bottom right, its own width — on a phone Share and Print split their own
+  row evenly, lined up with the full-width Save above them; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
   (tertiary) button in red text, its own width, its words in line with
   DETAILS (`-ml-6`) — then Print (secondary),

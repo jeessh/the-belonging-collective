@@ -230,7 +230,7 @@ export function EventDetails({
             {tools && (
               <div
                 className={`flex items-center gap-1 ${
-                  toolsFill ? "min-w-0 flex-1" : "-ml-4 shrink-0 flex-wrap sm:order-1"
+                  toolsFill ? "min-w-0 flex-1" : "shrink-0 flex-wrap sm:-ml-4 sm:order-1 max-sm:w-full"
                 }`}
               >
                 {tools}
