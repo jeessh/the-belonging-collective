@@ -219,7 +219,9 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-[26px] sm:top-[26px] ${
+            // On a phone the picture runs under the ×, so it sits on its own
+            // white tile with a soft edge, readable over any photo.
+            className={`absolute right-4 top-4 z-20 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle max-sm:border max-sm:border-line max-sm:bg-surface max-sm:shadow-[0_2px_8px_rgba(0,0,0,0.15)] sm:right-[26px] sm:top-[26px] ${
               closeOutside && !sheet
                 ? "xl:-right-[76px] xl:top-0 xl:size-[52px] xl:rounded-full xl:border xl:border-line xl:bg-surface"
                 : ""

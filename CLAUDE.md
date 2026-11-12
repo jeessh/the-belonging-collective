@@ -878,7 +878,8 @@ can open.
   radii all to 8px, and the branded emails (`core/mail.py`) match.
   `rounded-full` stays round (avatars, the round tool buttons, badges,
   pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
-- **Dialogs fit the screen** (`Modal`, centred): the panel is at most the
+- **Dialogs fit the screen** (`Modal`, centred; on a phone its × sits on a
+  white tile with a soft edge, since the picture runs under it): the panel is at most the
   screen's height less a margin and scrolls inside, and its button row is
   pinned to its foot on white with snug padding, and a soft edge over it
   only while the panel actually scrolls (`data-overflow`, set by Modal's
