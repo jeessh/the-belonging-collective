@@ -486,6 +486,19 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **A frame baked into an event's picture is cut off where it's shown**
+  (`lib/trimBorder.ts`: `useTrimmedSrc`, and `ui/EventImg` for a plain
+  `<img>`; used by `EventSummary`, the saved panel's thumbs and mini cards,
+  list cards and the console's card and details page). Pictures copied
+  from a shop or flyer — KW Hab's marketplace photos carry a green frame —
+  showed a border we never drew. On load the picture is sampled (240px):
+  if the four corners agree on a colour and a band of it runs along at
+  least three sides (up to 18% of each), the picture is redrawn without
+  it into a blob URL (once per address) and that is shown instead. Our
+  stock photos are skipped; a picture whose pixels can't be read (a host
+  without CORS — fine on a self-hosted site, whose `/uploads` are
+  same-origin) shows as it is. Display only: the stored file and the
+  share emails' server-made cards are untouched.
 - **Who posted it, under the title, everywhere members see an event**
   (`EventSummary`'s heading; on the list cards, the card's **bottom
   right**, 16px, pinned there `sm:absolute` so it doesn't widen the tools

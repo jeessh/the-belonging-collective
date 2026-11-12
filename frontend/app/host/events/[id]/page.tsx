@@ -43,6 +43,7 @@ import {
   restoreEvent,
   unpublishedToast,
 } from "@/components/host/UnpublishModal";
+import { EventImg } from "@/components/ui/EventImg";
 
 /**
  * The read-only view of one program. Its own organization (or a superadmin)
@@ -326,8 +327,7 @@ function EventDetails({ id, ctx }: { id: string; ctx: ConsoleContext }) {
         {/* The form's picture: on the right from lg, large and staying in
             view; first in one column. */}
         <div className="h-[300px] w-full overflow-hidden rounded-control bg-surface-subtle lg:sticky lg:top-6 lg:order-2 lg:h-[520px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={eventImage(event)} alt="" className="h-full w-full object-cover" />
+          <EventImg event={event} className="h-full w-full object-cover" />
         </div>
 
         <div className="flex min-w-0 flex-col gap-8 lg:order-1">
