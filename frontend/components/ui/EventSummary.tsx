@@ -12,6 +12,7 @@ import type { Event } from "@/lib/api";
 import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
+import { useTrimmedSrc } from "@/lib/trimBorder";
 
 /**
  * "Ages 18+", "Ages 12–17", "Up to 12"; null when the program sets no ages.
@@ -147,7 +148,8 @@ export function EventSummary({
   const where = placeLabel(event);
   const mapLink =
     layout === "detail" && !event.is_virtual ? mapsUrl(event.location) : null;
-  const image = eventImage(event);
+  // Any frame baked into the picture is cut off (lib/trimBorder).
+  const image = useTrimmedSrc(eventImage(event));
   // Ages and spots left are no longer shown to members (the data stays).
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over

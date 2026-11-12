@@ -19,6 +19,8 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { GoogleCalendarIcon } from "@/components/ui/GoogleCalendarIcon";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/Modal";
+import { EventImg } from "@/components/ui/EventImg";
+import { useTrimmedSrc } from "@/lib/trimBorder";
 
 /** The rail's stacked icon-over-label button. */
 const RAIL = "w-full flex-col gap-1.5 px-1 py-1.5 text-base";
@@ -423,7 +425,7 @@ function Thumb({
   onOpen: (event: Event) => void;
   layout: "row" | "rail";
 }) {
-  const image = eventImage(event);
+  const image = useTrimmedSrc(eventImage(event));
   // Hover (and keyboard focus) darkens the photo: the thumbnail opens.
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -746,13 +748,7 @@ export function MiniCardFace({ event }: { event: Event }) {
         aria-hidden="true"
         className="pointer-events-none relative block aspect-[3/2] w-full overflow-hidden rounded-control bg-surface-subtle"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={eventImage(event)}
-          alt=""
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <EventImg event={event} className="absolute inset-0 h-full w-full object-cover" />
       </span>
       {/* Always two lines tall (clamped at two), so every card is the same
           height whatever its title. */}

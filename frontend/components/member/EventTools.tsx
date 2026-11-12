@@ -34,7 +34,8 @@ export function EventTools({
       {/* Saved (`lead`): Print, then Share at the very right, each its own
           width. Otherwise two quiet ghosts. */}
       <div
-        className={`flex ${big ? "w-full flex-row-reverse gap-3" : "flex-wrap gap-1"} ${
+        // On a phone the row has the width to itself: the two share it.
+        className={`flex max-sm:w-full max-sm:[&>*]:flex-1 ${big ? "w-full flex-row-reverse gap-3" : "flex-wrap gap-1 max-sm:flex-nowrap"} ${
           printLeads ? "[&>*:first-child]:order-2" : ""
         }`}
       >

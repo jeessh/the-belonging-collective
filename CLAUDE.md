@@ -257,8 +257,13 @@ can open.
   framer wouldn't animate the images' opacity). Not on a phone or with
   reduced motion.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
-  (< 640) stacks: the card goes image-over-text with ↑ / ↓ under it and drags
-  on the x axis only (`touch-action: pan-y`, so a finger still scrolls);
+  (< 640) stacks: the card goes image-over-text and **swiping is how it
+  turns** — up for the next card, down for the one before (`PHONE_SWIPE`,
+  60px), left to save; there are no ↑ / ↓ arrows, and the card's buttons
+  (`FeedCardActions`, `FeedCard actionsBelow`) sit under the deck, outside
+  the card, so they don't ride the swipe. The card takes the touch
+  (`touch-action: none`); the page scrolls from anywhere else. The tour's
+  first step points at the card there ("Swipe the card up…");
   `Modal` becomes a full-height sheet with 16px gutters; `EventSummary` rows
   stack everywhere they are used. Tablet keeps the desktop shapes with
   tighter gutters. Anything that has to swap components rather than classes
@@ -282,7 +287,9 @@ can open.
   event with `requires_signup` shows **Register** in place of Save (feed
   card, event dialog, public page's `EventActions`) until it is saved;
   pressing it opens `member/RegisterConfirm` ("Register for …?" · Cancel |
-  Register). Confirming saves it (the card on screen through `flyToDrop`,
+  Register; for an organizer's own page: "This event asks you to register
+  on {site, linked}. Are you sure you want to continue?" · Cancel |
+  Continue — a short label, so the pair always fits). Confirming saves it (the card on screen through `flyToDrop`,
   otherwise `attend`) and, when `registration_mode === "external"` with a
   `registration_url`, opens that page in a new tab (`openRegistration`,
   counted as a registration click). Saved, it shows Unsave as usual.
@@ -448,7 +455,8 @@ can open.
   preview. Each hands in its own `tools` (`member/EventTools`: Share / Print
   — ghost buttons on the actions' row, the same large size as Save Event: **not saved yet**, Share and Print
   sit on the left (words in line with the text) and Save / Register at the
-  bottom right, its own width; once the
+  bottom right, its own width — on a phone Share and Print split their own
+  row evenly, lined up with the full-width Save above them; once the
   event is saved (`lead`, `toolsFill`) the row is Un-Save Event — a ghost
   (tertiary) button in red text, its own width, its words in line with
   DETAILS (`-ml-6`) — then Print (secondary),
@@ -479,6 +487,19 @@ can open.
   `/shared` page) passes `fixedDates`: "Monday", never "Tomorrow". Nested dialogs work because `Modal` only
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
+- **A frame baked into an event's picture is cut off where it's shown**
+  (`lib/trimBorder.ts`: `useTrimmedSrc`, and `ui/EventImg` for a plain
+  `<img>`; used by `EventSummary`, the saved panel's thumbs and mini cards,
+  list cards and the console's card and details page). Pictures copied
+  from a shop or flyer — KW Hab's marketplace photos carry a green frame —
+  showed a border we never drew. On load the picture is sampled (240px):
+  if the four corners agree on a colour and a band of it runs along at
+  least three sides (up to 18% of each), the picture is redrawn without
+  it into a blob URL (once per address) and that is shown instead. Our
+  stock photos are skipped; a picture whose pixels can't be read (a host
+  without CORS — fine on a self-hosted site, whose `/uploads` are
+  same-origin) shows as it is. Display only: the stored file and the
+  share emails' server-made cards are untouched.
 - **Who posted it, under the title, everywhere members see an event**
   (`EventSummary`'s heading; on the list cards, the card's **bottom
   right**, 16px, pinned there `sm:absolute` so it doesn't widen the tools
@@ -858,9 +879,12 @@ can open.
   radii all to 8px, and the branded emails (`core/mail.py`) match.
   `rounded-full` stays round (avatars, the round tool buttons, badges,
   pills; the event cards' tool buttons are square now); the browser-tab icon keeps its own shape.
-- **Dialogs fit the screen** (`Modal`, centred): the panel is at most the
+- **Dialogs fit the screen** (`Modal`, centred; on a phone its × sits on a
+  white tile with a soft edge, since the picture runs under it): the panel is at most the
   screen's height less a margin and scrolls inside, and its button row is
-  pinned to its foot on white with a soft edge and snug padding — 12px
+  pinned to its foot on white with snug padding, and a soft edge over it
+  only while the panel actually scrolls (`data-overflow`, set by Modal's
+  ResizeObserver) — 12px
   over the buttons, half the panel padding under (`.modal-footer` in
   globals.css, `--modal-pad` = the panel padding). The footer is a dialog's
   last block when that block is nothing but buttons (or the last block of

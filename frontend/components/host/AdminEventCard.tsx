@@ -19,6 +19,7 @@ import { EventStatus, type EventState } from "@/components/host/EventStatus";
 import { savedLine } from "@/components/host/ConsoleCounts";
 import { eventUrl } from "@/components/CopyLinkButton";
 import { ShareModal } from "@/components/member/ShareModal";
+import { EventImg } from "@/components/ui/EventImg";
 
 /**
  * The component sheet's "Admin – Listed Event": a square image, the title
@@ -162,13 +163,7 @@ export const AdminEventCard = memo(function AdminEventCard({
       className="event-card relative grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[160px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5"
     >
       <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={eventImage(event)}
-          alt=""
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <EventImg event={event} className="absolute inset-0 h-full w-full object-cover" />
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">

@@ -33,13 +33,16 @@ type Step = {
   fullWidth?: boolean;
 };
 
-function stepsFor(): Step[] {
+function stepsFor(phone = false): Step[] {
   return [
     {
       icon: <ArrowUpDown />,
       title: "Find programs",
-      body: "Use the arrows, or swipe, to see each one.",
-      targets: ["arrows"],
+      // A phone has no arrows: swiping the card is how it turns.
+      body: phone
+        ? "Swipe the card up to see the next one, down to go back."
+        : "Use the arrows, or swipe, to see each one.",
+      targets: phone ? ["card"] : ["arrows"],
     },
     {
       icon: <Bookmark />,
@@ -200,7 +203,7 @@ export function Tour({
   onClose: (finished: boolean) => void;
 }) {
   const reduceMotion = useReducedMotion();
-  const steps = useMemo(() => stepsFor(), []);
+  const steps = useMemo(() => stepsFor(phone), [phone]);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [demo, setDemo] = useState<DragPath | null>(null);

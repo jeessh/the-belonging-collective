@@ -81,6 +81,19 @@ export function Modal({
   const headingId = labelId ?? generatedId;
   const reduceMotion = useReducedMotion();
 
+  // `data-overflow` while the panel is taller than it can show: only then
+  // does its pinned button row get the soft edge (globals.css).
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof ResizeObserver === "undefined") return;
+    const check = () => panel.toggleAttribute("data-overflow", panel.scrollHeight > panel.clientHeight + 1);
+    const ro = new ResizeObserver(check);
+    ro.observe(panel);
+    for (const child of Array.from(panel.children)) ro.observe(child);
+    check();
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     restoreRef.current = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
@@ -206,7 +219,9 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className={`absolute right-4 top-4 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle sm:right-[26px] sm:top-[26px] ${
+            // On a phone the picture runs under the ×, so it sits on its own
+            // white tile with a soft edge, readable over any photo.
+            className={`absolute right-4 top-4 z-20 grid size-11 place-items-center rounded-control text-fg-icon hover:bg-surface-subtle max-sm:border max-sm:border-line max-sm:bg-surface max-sm:shadow-[0_2px_8px_rgba(0,0,0,0.15)] sm:right-[26px] sm:top-[26px] ${
               closeOutside && !sheet
                 ? "xl:-right-[76px] xl:top-0 xl:size-[52px] xl:rounded-full xl:border xl:border-line xl:bg-surface"
                 : ""
