@@ -38,16 +38,15 @@ function stepsFor(phone = false): Step[] {
     {
       icon: <ArrowUpDown />,
       title: "Find programs",
-      // A phone has no arrows: swiping the card is how it turns.
-      body: phone
-        ? "Swipe the card up to see the next one, down to go back."
-        : "Use the arrows, or swipe, to see each one.",
-      targets: phone ? ["card"] : ["arrows"],
+      body: "Use the arrows, or swipe, to see each one.",
+      targets: ["arrows"],
     },
     {
       icon: <Bookmark />,
       title: "Save what you like",
-      body: "Drag an event into Saved Events on the left to save it. Or tap \u201cSave event\u201d.",
+      body: phone
+        ? "Tap \u201cSave event\u201d, or swipe the card to the left."
+        : "Drag an event into Saved Events on the left to save it. Or tap \u201cSave event\u201d.",
       targets: ["card", "saved"],
       dragDemo: true,
       fullWidth: true,
@@ -55,7 +54,9 @@ function stepsFor(phone = false): Step[] {
     {
       icon: <Info />,
       title: "Learn more",
-      body: "Tap More information for details, map, share and print.",
+      body: phone
+        ? "Tap More info, or the card, for details, map, share and print."
+        : "Tap More information for details, map, share and print.",
       targets: ["more"],
     },
     {
@@ -67,7 +68,9 @@ function stepsFor(phone = false): Step[] {
     {
       icon: <BookmarkCheck />,
       title: "Your saved events",
-      body: "Saved events are your bookmarks. Find them here anytime.",
+      body: phone
+        ? "Saved events are your bookmarks. Tap the bookmark button at the bottom, anytime."
+        : "Saved events are your bookmarks. Find them here anytime.",
       targets: ["saved"],
     },
     {
@@ -170,7 +173,8 @@ function unionRect(names: string[]): Rect | null {
   let box: Rect | null = null;
   for (const name of names) {
     const el = document.querySelector<HTMLElement>(`[data-tour="${name}"]`);
-    if (!el || el.offsetParent === null) continue;
+    // Not `offsetParent`: a fixed element (the phone's saved button) has none.
+    if (!el || el.getClientRects().length === 0) continue;
     const r = el.getBoundingClientRect();
     if (!box) {
       box = { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -289,8 +293,18 @@ export function Tour({
   // Beside the spotlight where it fits — below, else above — otherwise the
   // bottom corner, which is also where it goes when there is nothing to light.
   let place: React.CSSProperties;
+  // On a phone the sheet is at the foot, unless what it points at is a small
+  // control down there (the saved button, bottom right): then it moves to the
+  // top, so it never covers the thing it is describing.
+  const sheetOnTop =
+    phone &&
+    !!rect &&
+    rect.height < window.innerHeight / 3 &&
+    rect.top + rect.height / 2 > window.innerHeight / 2;
   if (phone) {
-    place = { left: 0, right: 0, bottom: 0 };
+    place = sheetOnTop
+      ? { left: 0, right: 0, top: 0 }
+      : { left: 0, right: 0, bottom: 0 };
   } else if (rect) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -341,7 +355,11 @@ export function Tour({
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
         style={place}
         className={`absolute flex flex-col gap-4 border border-line bg-surface p-5 shadow-lift outline-none sm:p-6 ${
-          phone ? "rounded-t-card" : "w-[360px] rounded-card"
+          phone
+            ? sheetOnTop
+              ? "rounded-b-card"
+              : "rounded-t-card"
+            : "w-[360px] rounded-card"
         }`}
       >
         <div className="flex items-center gap-4">

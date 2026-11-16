@@ -26,9 +26,14 @@ export const FeedCard = memo(function FeedCard({
   onLeaveWaitlist,
   preview = false,
   actionsBelow = false,
+  moreLast = false,
 }: {
-  /** On a phone: the buttons are drawn under the deck, not in the card. */
+  /** The buttons drawn under the deck, not in the card (no longer used on a
+      phone: Save is in the card). */
   actionsBelow?: boolean;
+  /** On a phone: Save / Register first and "More info" after it, as the
+      secondary button on the right (it is first on a wider screen). */
+  moreLast?: boolean;
   /** A look-only copy (the deck's next card): no tour target. */
   preview?: boolean;
   /** A full program: join, or leave, its waitlist (WaitlistAction). */
@@ -49,7 +54,7 @@ export const FeedCard = memo(function FeedCard({
   onSignIn: () => void;
 }) {
   return (
-    <div data-tour={preview ? undefined : "card"} className="relative rounded-card border-2 border-line-card bg-surface p-4 sm:p-6 lg:p-8 short:!p-6">
+    <div data-tour={preview ? undefined : "card"} className="relative rounded-card border-2 border-line-card bg-surface p-4 max-sm:p-3 sm:p-6 lg:p-8 short:!p-6">
       <EventSummary
         event={event}
         layout="card"
@@ -58,11 +63,11 @@ export const FeedCard = memo(function FeedCard({
         // No "N people saved this event" on the card itself — it's in the
         // details ("More information").
         actions={
-          // On a phone the buttons sit under the deck instead (EventsView).
           actionsBelow ? undefined : (
             <FeedCardActions
               event={event}
               saved={saved}
+              moreLast={moreLast}
               onMoreInfo={onMoreInfo}
               onSave={onSave}
               onRegister={onRegister}
@@ -78,12 +83,13 @@ export const FeedCard = memo(function FeedCard({
 
 /**
  * The card's two buttons: More information, and Save / Register / Join
- * waitlist / Share event. Inside the card, or — on a phone — under the
- * deck, outside the card (EventsView), where they don't ride the swipe.
+ * waitlist / Share event. Inside the card, or under the deck, outside the
+ * card (EventsView `actionsBelow`).
  */
 export function FeedCardActions({
   event,
   saved,
+  moreLast = false,
   onMoreInfo,
   onSave,
   onRegister,
@@ -92,6 +98,10 @@ export function FeedCardActions({
 }: {
   event: Event;
   saved: boolean;
+  /** More information after the main button instead of before it. The DOM
+      order follows the screen, so Tab and a screen reader meet them in the
+      order they are drawn. */
+  moreLast?: boolean;
   onMoreInfo: (event: Event) => void;
   onSave: () => void;
   onRegister?: () => void;
@@ -102,76 +112,88 @@ export function FeedCardActions({
   const [sharing, setSharing] = useState(false);
   // The admin set "needs registration": Register (with a confirm), not Save.
   const register = !!onRegister && event.requires_signup && !saved;
-  // A phone-width column is narrower than the design's 20px labels.
-  const size = "max-sm:gap-2 max-sm:px-3 max-sm:text-base short:!min-h-12 short:!py-2";
+  // A phone-width card is narrower than the design's 20px labels, and two
+  // buttons share its row: 16px text, snug sides, a small gap to the icon.
+  // On a phone 4px less above and below the label (48px tall, not 56).
+  const size =
+    "max-sm:gap-1.5 max-sm:px-2 max-sm:text-base max-sm:!min-h-12 max-sm:!py-2 short:!min-h-12 short:!py-2";
+
+  const more = (
+    <Button
+      variant="secondary"
+      size="lg"
+      className={size}
+      onClick={() => onMoreInfo(event)}
+      onPointerDown={stop}
+      trailingIcon={<MoveRight />}
+      data-tour="more"
+      aria-label="More information"
+    >
+      {/* Short on a phone, so it shares a row with Save. */}
+      <span className="sm:hidden">More info</span>
+      <span className="max-sm:hidden">More information</span>
+    </Button>
+  );
+
+  const main =
+    waitlistState(event) && onJoinWaitlist && onLeaveWaitlist ? (
+      <WaitlistAction
+        event={event}
+        className={size}
+        onPointerDown={stop}
+        onJoin={onJoinWaitlist}
+        onLeave={onLeaveWaitlist}
+      />
+    ) : register ? (
+      // Registering is asked to confirm first (RegisterConfirm);
+      // confirming saves it too.
+      <Button
+        variant="primary"
+        size="lg"
+        className={size}
+        onClick={onRegister}
+        onPointerDown={stop}
+        trailingIcon={<ClipboardPen />}
+        data-tour="save"
+        aria-label={`Register for ${event.title}`}
+      >
+        Register
+      </Button>
+    ) : saved ? (
+      // Saved: sharing it is the next thing to do (un-saving is in
+      // More information and on the saved page).
+      <Button
+        variant="primary"
+        size="lg"
+        className={size}
+        onClick={() => setSharing(true)}
+        onPointerDown={stop}
+        trailingIcon={<Send />}
+        data-tour="save"
+        aria-label={`Share ${event.title}`}
+      >
+        Share event
+      </Button>
+    ) : (
+      <Button
+        variant="primary"
+        size="lg"
+        className={size}
+        onClick={onSave}
+        onPointerDown={stop}
+        trailingIcon={<Bookmark />}
+        data-tour="save"
+      >
+        Save event
+      </Button>
+    );
+
   return (
     <>
-        <Button
-          variant="secondary"
-          size="lg"
-          className={size}
-          onClick={() => onMoreInfo(event)}
-          onPointerDown={stop}
-          trailingIcon={<MoveRight />}
-          data-tour="more"
-          aria-label="More information"
-        >
-          {/* Short on a phone, so it shares a row with Save. */}
-          <span className="sm:hidden">More info</span>
-          <span className="max-sm:hidden">More information</span>
-        </Button>
-        {waitlistState(event) && onJoinWaitlist && onLeaveWaitlist ? (
-          <WaitlistAction
-            event={event}
-            className={size}
-            onPointerDown={stop}
-            onJoin={onJoinWaitlist}
-            onLeave={onLeaveWaitlist}
-          />
-        ) : register ? (
-          // Registering is asked to confirm first (RegisterConfirm);
-          // confirming saves it too.
-          <Button
-            variant="primary"
-            size="lg"
-            className={size}
-            onClick={onRegister}
-            onPointerDown={stop}
-            trailingIcon={<ClipboardPen />}
-            data-tour="save"
-            aria-label={`Register for ${event.title}`}
-          >
-            Register
-          </Button>
-        ) : saved ? (
-          // Saved: sharing it is the next thing to do (un-saving is in
-          // More information and on the saved page).
-          <Button
-            variant="primary"
-            size="lg"
-            className={size}
-            onClick={() => setSharing(true)}
-            onPointerDown={stop}
-            trailingIcon={<Send />}
-            data-tour="save"
-            aria-label={`Share ${event.title}`}
-          >
-            Share event
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            size="lg"
-            className={size}
-            onClick={onSave}
-            onPointerDown={stop}
-            trailingIcon={<Bookmark />}
-            data-tour="save"
-          >
-            Save event
-          </Button>
-        )}
-    {sharing && (
+      {!moreLast && more}
+      {main}
+      {moreLast && more}
+      {sharing && (
         <ShareModal
           title="Share this event?"
           eventIds={[event.id]}

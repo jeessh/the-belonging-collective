@@ -157,8 +157,10 @@ export function EventSummary({
   // The feed card's facts are 20px at every size, on a 1.4 line.
   // The event's dialog and page (`detail`) use the feed card's facts too:
   // 20px text, 28px icons, so the icons match across the member app.
+  // On a phone the feed card's facts drop 4px (20 → 16), so the card and its
+  // Save button fit the first screen.
   const meta = feed
-    ? "text-xl leading-[1.4]"
+    ? "text-xl max-sm:text-base leading-[1.4]"
     : card
     ? "text-xl leading-[1.4]"
     : tile
@@ -166,7 +168,7 @@ export function EventSummary({
       : "text-lg";
   // The fact icons (when, where, ages, spots) are a neutral grey: they mark
   // the facts, the words carry them.
-  const icon = feed || card ? "size-7" : "size-6";
+  const icon = feed ? "size-7 max-sm:size-6" : card ? "size-7" : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -200,7 +202,7 @@ export function EventSummary({
       id={titleId}
       className={`font-medium leading-tight text-fg ${
         feed
-          ? "text-2xl sm:text-3xl lg:text-[calc(2rem*var(--text-scale,1))] short:!text-[calc(1.75rem*var(--text-scale,1))]"
+          ? "text-xl sm:text-3xl lg:text-[calc(2rem*var(--text-scale,1))] short:!text-[calc(1.75rem*var(--text-scale,1))]"
           : card
             ? "text-2xl sm:text-3xl"
             : "text-2xl"
@@ -236,7 +238,7 @@ export function EventSummary({
 
   const facts = (
     // On the feed card: 16px between facts, the date and its time 4px apart.
-    <div className={`flex flex-col ${feed ? "gap-4" : "gap-3"} ${meta}`}>
+    <div className={`flex flex-col ${feed ? "gap-4 max-sm:gap-3" : "gap-3"} ${meta}`}>
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
@@ -320,7 +322,9 @@ export function EventSummary({
             className={`relative w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
               // A wider, shorter picture on a phone feed card keeps its
               // buttons on the first screen.
-              feed ? "aspect-[3/1]" : "aspect-[2/1]"
+              // (A phone's card is narrow beside the arrows: the picture
+              // keeps 96px so its two tags, stacked, are not cut off.)
+              feed ? "aspect-[7/2] max-sm:min-h-24" : "aspect-[2/1]"
             } ${
               detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
             }`}
@@ -334,7 +338,7 @@ export function EventSummary({
               </div>
             )}
           </div>
-          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5" : "gap-4"}`}>
+          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5 max-sm:gap-4" : "gap-4"}`}>
             {aboveTitle}
             {heading}
             {facts}
@@ -344,7 +348,9 @@ export function EventSummary({
           // The feed card's two buttons share a row on a phone too: stacked,
           // Save started below the first screen, behind the saved bar.
           <div
-            className={`flex gap-4 [&>*]:flex-1 ${feed ? "flex-row flex-wrap gap-3 sm:gap-4" : "flex-col sm:flex-row sm:flex-wrap"}`}
+            // (On a phone the two buttons are 12px apart — the card's own
+            // padding.)
+            className={`flex [&>*]:flex-1 ${feed ? "flex-row flex-wrap gap-3 sm:gap-4" : "flex-col gap-4 sm:flex-row sm:flex-wrap"}`}
           >
             {actions}
           </div>

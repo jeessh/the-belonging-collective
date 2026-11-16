@@ -75,7 +75,8 @@ import {
   useDragHint,
 } from "@/components/member/SavedSidebar";
 import { FeedFilters, passesFilters } from "@/components/member/FeedFilters";
-import { FeedCard, FeedCardActions } from "@/components/member/FeedCard";
+import { FeedCard } from "@/components/member/FeedCard";
+import { SavedFab } from "@/components/member/SavedFab";
 import { CaregiverFeed, byWhen } from "@/components/member/CaregiverFeed";
 import { useDialKit, type TransitionConfig } from "dialkit";
 import type { Transition, ValueAnimationTransition } from "framer-motion";
@@ -1805,7 +1806,7 @@ export function EventsView({
       {/* The bar across the whole width, over the saved panel and the
           events: who you are on the left (in line with the panel's "Saved
           Events" heading), Accessibility Tools on the right. */}
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 max-sm:py-1.5 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
         <div className="-ml-2 min-w-0">
           <FeedAccount
             name={name}
@@ -1829,6 +1830,11 @@ export function EventsView({
               }
               value={viewMode}
               onChange={changeView}
+              // On a phone: 24px tall in all — the height of the "Not Logged
+              // In" text beside it (16px text) — with 16px icons. Each
+              // segment's touch area still reaches 44px+: a pseudo-element
+              // extends it 12px above and below.
+              className="max-sm:[&_svg]:!size-4 max-sm:[&>button]:relative max-sm:[&>button]:!min-h-[22px] max-sm:[&>button]:!py-0 max-sm:[&>button]:after:absolute max-sm:[&>button]:after:inset-x-0 max-sm:[&>button]:after:-inset-y-3"
             />
           </div>
           )}
@@ -1885,8 +1891,11 @@ export function EventsView({
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
-              viewMode === "card" ? "big-cursor" : ""
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 max-sm:pb-24 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
+              // On a phone the card view's header, chips and card sit 12px
+              // apart, with 12px above, so the card, its buttons and the
+              // arrows fit the first screen under a browser's own bars.
+              viewMode === "card" ? "big-cursor max-sm:!gap-3 max-sm:!pt-3" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
@@ -1906,6 +1915,7 @@ export function EventsView({
               }`}
             >
             <div
+              // (On a phone 20px between "Event x of y" and the filters.)
               className={`flex w-full min-w-0 flex-1 flex-col gap-5 sm:gap-6 ${
                 viewMode === "card" ? "max-w-[880px]" : ""
               }`}
@@ -1931,12 +1941,12 @@ export function EventsView({
                     a screen reader skips the "Event n of m" line — the live
                     region already reads it per card, and a line that changes
                     on every arrow is noise. */}
-                <div className="flex min-w-0 flex-col gap-1">
-                  <h1 className="text-3xl font-medium text-fg lg:text-[calc(2rem*var(--text-scale,1))]">
+                <div className="flex min-w-0 flex-col gap-1 max-sm:gap-0">
+                  <h1 className="text-3xl font-medium text-fg max-sm:text-[calc(1.625rem*var(--text-scale,1))] max-sm:leading-tight lg:text-[calc(2rem*var(--text-scale,1))]">
                     Discover Events
                   </h1>
                   <p
-                    className="text-xl text-fg-muted"
+                    className="text-xl text-fg-muted max-sm:leading-snug"
                     aria-hidden={viewMode === "card" ? true : undefined}
                   >
                     {heading}
@@ -2015,7 +2025,7 @@ export function EventsView({
                 ref={deckRef}
                 // The card + arrows group (880 + gap + 96px), centred on the
                 // page; the heading block above is the same box.
-                className="mx-auto flex w-full !max-w-[1000px] flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-start lg:!max-w-[1012px] lg:gap-9"
+                className="mx-auto flex w-full !max-w-[1000px] flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-start sm:gap-6 lg:!max-w-[1012px] lg:gap-9"
               >
                 <div
                   className="relative w-full min-w-0 max-w-[880px]"
@@ -2027,7 +2037,9 @@ export function EventsView({
                       a turned card goes back into it — so it stays full.
                       DialKit "Card transition" → stack. Purely decorative. */}
                   {Array.from(
-                    { length: Math.min(Math.max(feed.length - 1, 0), cardDial.stack.layers) },
+                    // Two layers show on a phone: four hung 28px below the
+                    // card, over the arrows under it.
+                    { length: Math.min(Math.max(feed.length - 1, 0), phone ? 2 : cardDial.stack.layers) },
                     (_, k) => {
                       const n = k + 1;
                       const tilt = (n % 2 ? 1 : -1) * cardDial.stack.tilt * (0.6 + 0.4 * (n / cardDial.stack.layers));
@@ -2063,7 +2075,7 @@ export function EventsView({
                             <div className="pointer-events-none">
                               <FeedCard
                                 preview
-                                actionsBelow={phone}
+                                moreLast={phone}
                                 event={upNext}
                                 saved={saved.has(upNext.id)}
                                 recommended={recommendedKeys.has(programKey(upNext))}
@@ -2139,6 +2151,15 @@ export function EventsView({
                           touchAction: "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
+                        // On a phone a tap on the card opens its details too (as
+                        // "More info" does). A drag or swipe is not a tap, and
+                        // the buttons inside keep their own press.
+                        onTap={(e) => {
+                          if (!phone || flyingRef.current) return;
+                          const t = e.target as HTMLElement | null;
+                          if (t?.closest("button, a, input, select, textarea")) return;
+                          setDetailFor(current);
+                        }}
                         onDragStart={() => {
                           liftCard();
                           if (!phone && !reduceMotion) setGhosting(true);
@@ -2211,7 +2232,7 @@ export function EventsView({
                         } rounded-card`}
                       >
                         <FeedCard
-                          actionsBelow={phone}
+                          moreLast={phone}
                           event={current}
                           saved={saved.has(current.id)}
                           recommended={recommendedKeys.has(programKey(current))}
@@ -2274,22 +2295,9 @@ export function EventsView({
 
                 {/* The top padding lines the arrows up with the card; the tour
                     target sits inside it so its highlight hugs the buttons. */}
-                {phone ? (
-                  // On a phone swiping turns the cards (up for the next, down
-                  // for the one before), so there are no arrows; the card's
-                  // buttons sit here, under the deck, outside the card.
-                  <div className="mt-5 flex w-full gap-3 self-stretch [&>*]:flex-1">
-                    <FeedCardActions
-                      event={current}
-                      saved={saved.has(current.id)}
-                      onMoreInfo={setDetailFor}
-                      onSave={saveFromButton}
-                      onRegister={() => setRegisterFor(current)}
-                      onJoinWaitlist={() => void attend(current)}
-                      onLeaveWaitlist={() => void leaveWaitlist(current)}
-                    />
-                  </div>
-                ) : (
+                {/* On a phone the arrows are in the pinned bottom bar
+                    (SavedFab), not beside the card. */}
+                {!phone && (
                 <div className="flex shrink-0 sm:pt-[102px] short:!pt-16">
                   <div className="flex gap-6 sm:flex-col" data-tour="arrows">
                     <button
@@ -2319,19 +2327,22 @@ export function EventsView({
           </div>
         </section>
 
+        {/* On a phone the saved bar is a pinned bottom bar: the bookmark
+            button (count on its corner, and the fly-to-save target) and, in
+            card view, the ↑ / ↓ arrows. */}
         {phone && view !== "saved" && (
-          <SavedSidebar
+          <SavedFab
             ref={dropRef}
-            layout="bar"
-            onToggle={() => setSidebarChoice(!sidebarOpen)}
-            events={savedList}
-            signedIn={signedIn}
-            owner={listOwner}
-            calendarUrl={calendarUrl}
-            googleCalendar={me?.google_calendar}
-            onOpenSaved={openSaved}
-            onOpenEvent={setDetailFor}
-            onSignIn={() => toSignIn()}
+            count={savedList.length}
+            onOpen={openSaved}
+            arrows={
+              viewMode === "card" &&
+              !!current &&
+              status !== "error" &&
+              status !== "empty"
+                ? { onPrev: prev, onNext: next, disabled: flying }
+                : undefined
+            }
           />
         )}
       </div>
