@@ -309,14 +309,22 @@ export function EventSummary({
 
   if (card) {
     const detail = layout === "detail";
-    return (
+    const body = (
       <div
         className={`flex flex-col ${feed ? "gap-4 sm:gap-6 lg:gap-8 short:!gap-5" : "gap-6"} ${className}`}
       >
-        {/* Image beside the text from `sm`; on a phone it sits on top. The
-            box keeps its shape (the feed card's is the frame's 324:292), and
-            stretches taller when the text beside it is. */}
-        <div className={`flex flex-col sm:flex-row ${feed ? "gap-4 sm:gap-6" : "gap-6"}`}>
+        {/* Image beside the text; on a phone it sits on top. The feed card
+            decides by its own width (`cq-wide`, 736px): narrower than that —
+            a phone, a tablet, a desktop with the saved panel open — the
+            picture sits on top and the text runs the full width below it,
+            where the side-by-side layout pushed the date past the card's
+            edge. The box keeps its shape (the feed card's is the frame's
+            324:292), and stretches taller when the text beside it is. */}
+        <div
+          className={`flex flex-col ${
+            feed ? "cq-wide:flex-row gap-4 sm:gap-6" : "sm:flex-row gap-6"
+          }`}
+        >
           <div
             className={`relative w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
               // A wider, shorter picture on a phone feed card keeps its
@@ -325,7 +333,9 @@ export function EventSummary({
               // are not cut off.)
               feed ? "aspect-[7/2] max-sm:min-h-[88px]" : "aspect-[2/1]"
             } ${
-              detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
+              detail
+                ? "sm:aspect-square sm:w-[30%]"
+                : "cq-wide:aspect-[324/292] cq-wide:w-[43%]"
             }`}
           >
             {img}
@@ -356,6 +366,8 @@ export function EventSummary({
         )}
       </div>
     );
+    // The feed card is its own query container (see above).
+    return feed ? <div className="[container-type:inline-size]">{body}</div> : body;
   }
 
   return (

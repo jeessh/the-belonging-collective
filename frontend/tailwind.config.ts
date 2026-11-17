@@ -154,6 +154,9 @@ const config: Config = {
       addVariant("cq-md", "@container (min-width: 35rem)");
       addVariant("cq-lg", "@container (min-width: 40rem)");
       addVariant("cq-xl", "@container (min-width: 52rem)");
+      // The feed card's own width where the picture can sit beside the text
+      // (736px: the text column is then about 400px, enough for a date).
+      addVariant("cq-wide", "@container (min-width: 46rem)");
     }),
     // `short:` — a desktop window too short for the design's 1440x982 frame
     // (a laptop at 100% zoom shows ~760-800px). The card view tightens here so

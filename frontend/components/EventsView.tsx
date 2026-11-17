@@ -542,6 +542,11 @@ export function EventsView({
 
   // +1 = advancing (next slides up from below), -1 = going back.
   const [dir, setDir] = useState(1);
+  // The direction the turn animation plays. The tuck's two motions are
+  // swapped between the arrows on every screen size: ↑ sends the card on
+  // screen to the back of the deck, ↓ brings a card from the back to the
+  // front. Other turn styles follow `dir`.
+  const turnDir = cardDial.style === "tuck" ? -dir : dir;
   // Bumped after a save: the card's AnimatePresence starts over (keyed on
   // it, `initial={false}`), so the next event is simply there — no turn —
   // and no exit the save left unfinished can hold turned cards on screen.
@@ -2011,6 +2016,7 @@ export function EventsView({
                 group={byWhen}
                 removeIcon
                 printIcon
+                saveIcon
               />
                 </div>
               </div>
@@ -2113,13 +2119,10 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
-                    <AnimatePresence key={`turns${deckEpoch}`} initial={false} custom={cardDial.style === "tuck" ? 1 : dir} mode="popLayout">
+                    <AnimatePresence key={`turns${deckEpoch}`} initial={false} custom={turnDir} mode="popLayout">
                     <motion.div
                       key={current.id}
-                      // The tuck turn is one motion whichever arrow is pressed:
-                      // the card on screen flies to the back of the deck and
-                      // the next one in the order (before it, for ↑) comes up.
-                      custom={cardDial.style === "tuck" ? 1 : dir}
+                      custom={turnDir}
                       variants={turnVariants}
                       initial={reduceMotion ? false : "enter"}
                       animate="center"
