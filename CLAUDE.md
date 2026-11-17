@@ -272,11 +272,11 @@ can open.
   first step points at the card there ("Swipe the card up…");
   `Modal` becomes a full-height sheet with 16px gutters; `EventSummary` rows
   stack everywhere they are used. Tablet keeps the desktop shapes with
-  tighter gutters — **but a card lays its picture beside the text only when
-  it is wide enough**: the feed card is its own query container (`cq-wide`,
-  736px of content) and the list's cards sit in one (`cq-lg`, 640px); narrower
-  — a tablet, or a desktop with the saved panel open — the picture is on top
-  and the text runs the full width below it, as on a phone. Anything that has
+  tighter gutters — **the feed card and the list's cards put the picture on
+  the left and the text on the right on every screen wider than a phone**
+  (`sm`), the saved panel open or not; only a phone stacks picture over
+  text. (A container-query version that stacked them whenever the card was
+  narrow — a desktop with the panel open — was reverted.) Anything that has
   to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.

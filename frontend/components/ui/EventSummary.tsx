@@ -313,16 +313,13 @@ export function EventSummary({
       <div
         className={`flex flex-col ${feed ? "gap-4 sm:gap-6 lg:gap-8 short:!gap-5" : "gap-6"} ${className}`}
       >
-        {/* Image beside the text; on a phone it sits on top. The feed card
-            decides by its own width (`cq-wide`, 736px): narrower than that —
-            a phone, a tablet, a desktop with the saved panel open — the
-            picture sits on top and the text runs the full width below it,
-            where the side-by-side layout pushed the date past the card's
-            edge. The box keeps its shape (the feed card's is the frame's
-            324:292), and stretches taller when the text beside it is. */}
+        {/* Image beside the text from `sm` (every screen wider than a phone,
+            the saved panel open or not); on a phone it sits on top. The box
+            keeps its shape (the feed card's is the frame's 324:292), and
+            stretches taller when the text beside it is. */}
         <div
           className={`flex flex-col ${
-            feed ? "cq-wide:flex-row gap-4 sm:gap-6" : "sm:flex-row gap-6"
+            feed ? "sm:flex-row gap-4 sm:gap-6" : "sm:flex-row gap-6"
           }`}
         >
           <div
@@ -335,7 +332,7 @@ export function EventSummary({
             } ${
               detail
                 ? "sm:aspect-square sm:w-[30%]"
-                : "cq-wide:aspect-[324/292] cq-wide:w-[43%]"
+                : "sm:aspect-[324/292] sm:w-[43%]"
             }`}
           >
             {img}
