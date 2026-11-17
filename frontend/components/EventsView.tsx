@@ -2213,17 +2213,13 @@ export function EventsView({
                             void animate(cardOpacity, 1, { duration: 0.15 }).then(resetGhost);
                           }
                           if (Math.abs(dx) > Math.abs(dy)) return;
-                          // Vertical travel pages, like the ↑ / ↓ buttons. On a
-                          // phone it reads like a feed: swipe up for the next
-                          // card, down for the one before, and a shorter swipe
-                          // counts.
-                          if (phone) {
-                            if (dy < -PHONE_SWIPE) next();
-                            else if (dy > PHONE_SWIPE) prev();
-                            return;
-                          }
-                          if (dy > SWIPE_THRESHOLD) next();
-                          else if (dy < -SWIPE_THRESHOLD) prev();
+                          // Vertical travel pages exactly like the arrows: a swipe
+                          // down is ↓ (the next card, with ↓'s animation), a
+                          // swipe up is ↑ (the one before). A phone counts a
+                          // shorter swipe.
+                          const far = phone ? PHONE_SWIPE : SWIPE_THRESHOLD;
+                          if (dy > far) next();
+                          else if (dy < -far) prev();
                         }}
                         // An open hand over the card, a closed one while it's
                         // held (globals.css `.card-grab`).
