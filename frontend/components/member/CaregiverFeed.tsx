@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
+  Bookmark,
   CalendarDays,
   ChevronDown,
   MapPin,
@@ -70,6 +71,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   dropTarget,
   removeIcon = false,
   printIcon = false,
+  saveIcon = false,
   savedTag = true,
   group,
   tools,
@@ -85,6 +87,9 @@ export const CaregiverFeed = memo(function CaregiverFeed({
   savedTag?: boolean;
   /** The saved page: a Print icon on each card, for that event. */
   printIcon?: boolean;
+  /** A blue Save (or Register) icon after Share and Print on a card that
+      isn't saved yet. The feed's list view only. */
+  saveIcon?: boolean;
   /** A saved card: a red delete icon at each card's top right takes it
       off the list, in place of the Unsave button. */
   removeIcon?: boolean;
@@ -185,7 +190,10 @@ export const CaregiverFeed = memo(function CaregiverFeed({
       ) : (
         (() => {
           const cards = (list: Event[]) => (
-            <div className="flex flex-col gap-6">
+            // The list is the query container: a card lays its picture beside
+            // the text only when the list is 640px wide or more (`cq-lg`),
+            // else the picture sits on top, as on a phone.
+            <div className="flex flex-col gap-6 [container-type:inline-size]">
               {list.map((ev) => (
                 <MemberEventCard
                   key={ev.id}
@@ -198,6 +206,7 @@ export const CaregiverFeed = memo(function CaregiverFeed({
                   dropTarget={dropTarget}
                   removeIcon={removeIcon}
               printIcon={printIcon}
+              saveIcon={saveIcon}
               savedTag={savedTag}
                 />
               ))}
@@ -292,10 +301,12 @@ function MemberEventCard({
   dropTarget,
   removeIcon = false,
   printIcon = false,
+  saveIcon = false,
   savedTag = true,
 }: {
   removeIcon?: boolean;
   printIcon?: boolean;
+  saveIcon?: boolean;
   savedTag?: boolean;
   event: Event;
   saved: boolean;
@@ -362,13 +373,13 @@ function MemberEventCard({
         }, 0);
       }}
       data-tour="card"
-      className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5`}
+      className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted cq-lg:grid-cols-[180px_minmax(0,1fr)_auto] cq-lg:gap-x-6 cq-lg:p-5`}
     >
-      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
+      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle cq-lg:col-span-1 cq-lg:aspect-square">
         <EventImg event={event} className="absolute inset-0 h-full w-full object-cover" />
       </div>
 
-      <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
+      <div className="col-span-2 flex min-w-0 flex-col gap-3 cq-lg:col-span-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 className="text-2xl font-medium leading-tight text-fg">
           {/* The whole card opens the details: this button's ::after covers
@@ -388,7 +399,7 @@ function MemberEventCard({
 
         <div className="flex flex-col gap-2 text-lg text-fg">
           <p className="flex items-start gap-3">
-            <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
+            <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted max-sm:size-7" />
             <span>
               {when.rel}
               {when.date && ` · ${when.date}`}
@@ -396,7 +407,7 @@ function MemberEventCard({
             </span>
           </p>
           <p className="flex items-start gap-3">
-            <MapPin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
+            <MapPin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted max-sm:size-7" />
             {placeLabel(event)}
           </p>
           <GoingCount capacity={event.capacity} count={event.saved_count} />
@@ -405,7 +416,7 @@ function MemberEventCard({
 
       <div
         onPointerDownCapture={(e) => e.stopPropagation()}
-        className="relative z-10 col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-between"
+        className="relative z-10 col-span-2 flex items-center justify-between gap-3 cq-lg:col-span-1 cq-lg:flex-col cq-lg:items-end cq-lg:justify-between"
       >
         {/* Share and Google Calendar as icons, each saying what it does in
             a tooltip, then Save. */}
@@ -439,6 +450,28 @@ function MemberEventCard({
               )}
             </Tooltip>
           )}
+          {/* Save is an icon beside Share and Print, in the primary blue (the
+              list card has no drag any more). An event that needs registering
+              asks first (its name and tooltip say Register). */}
+          {saveIcon && !saved && canSave && (
+            <Tooltip text={event.requires_signup ? "Register" : "Save event"} align="end">
+              {(tip) => (
+                <button
+                  type="button"
+                  aria-label={
+                    event.requires_signup
+                      ? `Register for ${event.title}`
+                      : `Save ${event.title}`
+                  }
+                  aria-describedby={tip}
+                  onClick={() => (event.requires_signup ? onRegister() : onSave())}
+                  className="grid size-11 place-items-center rounded-control border border-primary-border bg-primary-light text-fg transition-colors hover:bg-primary"
+                >
+                  <Bookmark aria-hidden="true" className="size-6" />
+                </button>
+              )}
+            </Tooltip>
+          )}
           {removeIcon && saved && (
             <Tooltip text="Remove from saved" align="end">
               {(tip) => (
@@ -461,7 +494,7 @@ function MemberEventCard({
       {/* Who posted it, pinned to the card's bottom right (from sm) so it
           doesn't widen this column — the title and facts keep the room. */}
       {event.host_name && (
-        <p className="col-span-2 text-base text-fg-muted sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
+        <p className="col-span-2 text-base text-fg-muted cq-lg:absolute cq-lg:bottom-5 cq-lg:right-5 cq-lg:col-span-1 cq-lg:max-w-[45%] cq-lg:text-right">
           <PostedBy event={event} />
         </p>
       )}

@@ -157,8 +157,9 @@ export function EventSummary({
   // The feed card's facts are 20px at every size, on a 1.4 line.
   // The event's dialog and page (`detail`) use the feed card's facts too:
   // 20px text, 28px icons, so the icons match across the member app.
+  // (On a phone the card's facts are 18px.)
   const meta = feed
-    ? "text-xl leading-[1.4]"
+    ? "text-xl max-sm:text-lg leading-[1.4]"
     : card
     ? "text-xl leading-[1.4]"
     : tile
@@ -227,7 +228,7 @@ export function EventSummary({
       {/* Who posted it, as the console shows it: the organization and its
           logo (members never see which person on a team posted it). */}
       {event.host_name && (
-        <p className="text-lg text-fg-muted">
+        <p className="text-lg text-fg-muted max-sm:text-base">
           <PostedBy event={event} />
         </p>
       )}
@@ -236,7 +237,7 @@ export function EventSummary({
 
   const facts = (
     // On the feed card: 16px between facts, the date and its time 4px apart.
-    <div className={`flex flex-col ${feed ? "gap-4" : "gap-3"} ${meta}`}>
+    <div className={`flex flex-col ${feed ? "gap-4 max-sm:gap-3" : "gap-3"} ${meta}`}>
       <div className="flex items-start gap-3">
         <CalendarDays
           aria-hidden="true"
@@ -308,21 +309,33 @@ export function EventSummary({
 
   if (card) {
     const detail = layout === "detail";
-    return (
+    const body = (
       <div
         className={`flex flex-col ${feed ? "gap-4 sm:gap-6 lg:gap-8 short:!gap-5" : "gap-6"} ${className}`}
       >
-        {/* Image beside the text from `sm`; on a phone it sits on top. The
-            box keeps its shape (the feed card's is the frame's 324:292), and
-            stretches taller when the text beside it is. */}
-        <div className={`flex flex-col sm:flex-row ${feed ? "gap-4 sm:gap-6" : "gap-6"}`}>
+        {/* Image beside the text; on a phone it sits on top. The feed card
+            decides by its own width (`cq-wide`, 736px): narrower than that —
+            a phone, a tablet, a desktop with the saved panel open — the
+            picture sits on top and the text runs the full width below it,
+            where the side-by-side layout pushed the date past the card's
+            edge. The box keeps its shape (the feed card's is the frame's
+            324:292), and stretches taller when the text beside it is. */}
+        <div
+          className={`flex flex-col ${
+            feed ? "cq-wide:flex-row gap-4 sm:gap-6" : "sm:flex-row gap-6"
+          }`}
+        >
           <div
             className={`relative w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
               // A wider, shorter picture on a phone feed card keeps its
               // buttons on the first screen.
-              feed ? "aspect-[3/1]" : "aspect-[2/1]"
+              // (On a phone the picture keeps 88px so its two tags, stacked,
+              // are not cut off.)
+              feed ? "aspect-[7/2] max-sm:min-h-[88px]" : "aspect-[2/1]"
             } ${
-              detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
+              detail
+                ? "sm:aspect-square sm:w-[30%]"
+                : "cq-wide:aspect-[324/292] cq-wide:w-[43%]"
             }`}
           >
             {img}
@@ -334,7 +347,7 @@ export function EventSummary({
               </div>
             )}
           </div>
-          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5" : "gap-4"}`}>
+          <div className={`flex min-w-0 flex-1 flex-col ${feed ? "gap-5 max-sm:gap-4" : "gap-4"}`}>
             {aboveTitle}
             {heading}
             {facts}
@@ -344,13 +357,17 @@ export function EventSummary({
           // The feed card's two buttons share a row on a phone too: stacked,
           // Save started below the first screen, behind the saved bar.
           <div
-            className={`flex gap-4 [&>*]:flex-1 ${feed ? "flex-row flex-wrap gap-3 sm:gap-4" : "flex-col sm:flex-row sm:flex-wrap"}`}
+            // (On a phone the two buttons are 12px apart — the card's own
+            // padding.)
+            className={`flex [&>*]:flex-1 ${feed ? "flex-row flex-wrap gap-3 sm:gap-4" : "flex-col gap-4 sm:flex-row sm:flex-wrap"}`}
           >
             {actions}
           </div>
         )}
       </div>
     );
+    // The feed card is its own query container (see above).
+    return feed ? <div className="[container-type:inline-size]">{body}</div> : body;
   }
 
   return (

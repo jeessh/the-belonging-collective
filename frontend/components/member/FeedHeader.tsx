@@ -14,6 +14,7 @@ import {
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { TEXT_SCALE, useTextScale } from "@/lib/textScale";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { shortName, type CarePerson } from "@/lib/api";
 
 /** Whose list saves go into: the caregiver's own (null) or a linked member's. */
@@ -204,6 +205,9 @@ function AccountButton({
   const signedIn = name !== null;
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // On a phone the picture is 24px — the size of the organization's logo
+  // circle on the card — so the header stays slight.
+  const phone = useMediaQuery("(max-width: 639px)");
 
   useEffect(() => {
     if (!open) return;
@@ -237,11 +241,11 @@ function AccountButton({
           name={name}
           src={avatar?.url}
           emblem={avatar?.emblem}
-          size={36}
+          size={phone ? 24 : 36}
         />
         {/* The name, and under it who they are on the platform. */}
         <span className={`flex min-w-0 flex-col leading-tight ${compact ? "max-sm:sr-only" : ""}`}>
-          <span className={`truncate text-xl ${signedIn ? "text-fg" : "text-fg-muted"}`}>
+          <span className={`truncate text-xl max-sm:text-base ${signedIn ? "text-fg" : "text-fg-muted"}`}>
             {name ?? "Not Logged In"}
           </span>
           {signedIn && role && (

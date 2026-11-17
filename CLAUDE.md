@@ -222,10 +222,13 @@ can open.
   `attend` / `unsave`, so for whoever "Saving for" names). Restricted to a
   member's actions: nothing edits; a special-access program not yet
   approved has no Save (its details offer Request access).
-  **List cards have no Save / Register button and no drag any more** — an
-  event is saved from its details (click the card); a saved card shows only
-  the red trash icon. (The drag code remains, off: no `dropTarget` is
-  passed.) Previously: its cards dragged onto the saved panel too (from `sm`; a phone scrolls):
+  **List cards have no Save / Register button and no drag any more** — but
+  the feed's list view has a blue **bookmark icon** after Share and Print on
+  every card that isn't saved (`saveIcon` on `CaregiverFeed`, every screen
+  size; its name and tooltip say Register for an event that needs
+  registering, which asks first); a saved card shows only the red trash icon,
+  and the saved and shared pages have no Save. (The drag code remains, off:
+  no `dropTarget` is passed.) Previously: its cards dragged onto the saved panel too (from `sm`; a phone scrolls):
   framer `drag` held in place (zero `dragConstraints`, no elasticity — the
   card itself never moves, or it slid over the filter panel), the card
   fading while a portalled
@@ -266,7 +269,12 @@ can open.
   first step points at the card there ("Swipe the card up…");
   `Modal` becomes a full-height sheet with 16px gutters; `EventSummary` rows
   stack everywhere they are used. Tablet keeps the desktop shapes with
-  tighter gutters. Anything that has to swap components rather than classes
+  tighter gutters — **but a card lays its picture beside the text only when
+  it is wide enough**: the feed card is its own query container (`cq-wide`,
+  736px of content) and the list's cards sit in one (`cq-lg`, 640px); narrower
+  — a tablet, or a desktop with the saved panel open — the picture is on top
+  and the text runs the full width below it, as on a phone. Anything that has
+  to swap components rather than classes
   (the bar, the console's Filters sheet) reads `lib/useMediaQuery`, which is
   false on the server so the first paint is always the desktop markup.
 - **The feed side matches the saved board, lightly**: the event
@@ -353,12 +361,11 @@ can open.
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
   out as it settles into the deck, and fades in with the new card; **Back
-  (↑) is the same motion in reverse**, just as soft: the previous card
-  starts at the stack's first layer, fades in over `tuck.fadeIn` as it
-  lifts over the pile (shadow growing) and eases down on top — no spring while the old
-  top card becomes part of the deck (`center` is a function of `d`; the
-  variants are memoised on the dial values); "Back"
-  brings a card up from the bottom), **flip** (turns over like a playing
+  (↑) is the same motion in reverse**, as soft: the previous card comes up
+  from the stack's first layer onto the top — **but the arrows' roles are
+  swapped on every screen size** (`turnDir` = `-dir` for the tuck style): ↑
+  sends the card on screen to the back, ↓ brings a card from the back to the
+  front (the variants are memoised on the dial values), **flip** (turns over like a playing
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one — the first of them
   **is the next event** (`upNext`, a look-only `FeedCard preview`, inert),
