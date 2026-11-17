@@ -261,7 +261,8 @@ can open.
   reduced motion.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
   (< 640) stacks: the card goes image-over-text and **swiping is how it
-  turns** — up for the next card, down for the one before (`PHONE_SWIPE`,
+  turns** — exactly like the arrows, desktop and phone alike: a swipe down is
+  ↓ (the next card, with ↓'s animation), up is ↑ (the one before) (`PHONE_SWIPE`,
   60px), left to save; **a tap or swipe on the card never opens it** —
   "More info" is the one way into an event's details (tap-to-open caught
   short swipes and opened the details mid-swipe); there are no ↑ / ↓ arrows, and the card's buttons
