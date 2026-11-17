@@ -370,7 +370,7 @@ function MemberEventCard({
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 className="text-2xl font-medium leading-tight text-fg">
+        <h3 className="text-2xl font-medium leading-tight text-fg max-sm:text-xl">
           {/* The whole card opens the details: this button's ::after covers
               the card; the icons and Save sit above it. */}
           <button
@@ -386,7 +386,7 @@ function MemberEventCard({
           <EventTags event={event} saved={saved && savedTag} />
         </div>
 
-        <div className="flex flex-col gap-2 text-lg text-fg">
+        <div className="flex flex-col gap-2 text-lg text-fg max-sm:text-base">
           <p className="flex items-start gap-3">
             <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
             <span>
@@ -461,7 +461,7 @@ function MemberEventCard({
       {/* Who posted it, pinned to the card's bottom right (from sm) so it
           doesn't widen this column — the title and facts keep the room. */}
       {event.host_name && (
-        <p className="col-span-2 text-base text-fg-muted sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
+        <p className="col-span-2 text-base text-fg-muted max-sm:text-lg sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
           <PostedBy event={event} />
         </p>
       )}

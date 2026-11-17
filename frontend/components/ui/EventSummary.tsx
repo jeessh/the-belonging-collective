@@ -322,9 +322,9 @@ export function EventSummary({
             className={`relative w-full shrink-0 overflow-hidden rounded-control bg-surface-subtle ${
               // A wider, shorter picture on a phone feed card keeps its
               // buttons on the first screen.
-              // (A phone's card is narrow beside the arrows: the picture
-              // keeps 96px so its two tags, stacked, are not cut off.)
-              feed ? "aspect-[7/2] max-sm:min-h-24" : "aspect-[2/1]"
+              // (On a phone the picture keeps 88px so its two tags, stacked,
+              // are not cut off.)
+              feed ? "aspect-[7/2] max-sm:min-h-[88px]" : "aspect-[2/1]"
             } ${
               detail ? "sm:aspect-square sm:w-[30%]" : "sm:aspect-[324/292] sm:w-[43%]"
             }`}

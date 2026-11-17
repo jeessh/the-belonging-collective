@@ -1806,7 +1806,7 @@ export function EventsView({
       {/* The bar across the whole width, over the saved panel and the
           events: who you are on the left (in line with the panel's "Saved
           Events" heading), Accessibility Tools on the right. */}
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 max-sm:py-1.5 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-line bg-surface px-4 py-3 max-sm:py-1 sm:gap-4 sm:px-6 lg:pr-9 short:!px-6">
         <div className="-ml-2 min-w-0">
           <FeedAccount
             name={name}
@@ -1891,11 +1891,11 @@ export function EventsView({
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 max-sm:pb-24 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
-              // On a phone the card view's header, chips and card sit 12px
-              // apart, with 12px above, so the card, its buttons and the
-              // arrows fit the first screen under a browser's own bars.
-              viewMode === "card" ? "big-cursor max-sm:!gap-3 max-sm:!pt-3" : ""
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 max-sm:pb-24 max-sm:pt-3 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
+              // On a phone both views start 12px under the top bar, and the
+              // card view's header block and card sit 8px apart, so the
+              // card, its buttons and the bottom nav fit a short screen.
+              viewMode === "card" ? "big-cursor max-sm:!gap-2" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
@@ -1915,8 +1915,8 @@ export function EventsView({
               }`}
             >
             <div
-              // (On a phone 20px between "Event x of y" and the filters.)
-              className={`flex w-full min-w-0 flex-1 flex-col gap-5 sm:gap-6 ${
+              // (24px between "Event x of y" and the filters.)
+              className={`flex w-full min-w-0 flex-1 flex-col gap-6 ${
                 viewMode === "card" ? "max-w-[880px]" : ""
               }`}
             >
