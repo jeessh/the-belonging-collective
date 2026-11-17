@@ -1830,9 +1830,11 @@ export function EventsView({
               }
               value={viewMode}
               onChange={changeView}
-              // On a phone it is the bottom nav in small (bordered buttons
-              // inside a white track), 32px tall in all.
-              look={phone ? "nav" : "default"}
+              // On a phone: the same outlined segments as on a desktop (the
+              // selected one cyan), icons only, 32px tall in all. Each
+              // segment's touch area still reaches 46px: a pseudo-element
+              // extends it 8px above and below.
+              className="max-sm:[&_svg]:!size-5 max-sm:[&>button]:relative max-sm:[&>button]:!min-h-[30px] max-sm:[&>button]:!py-0 max-sm:[&>button]:after:absolute max-sm:[&>button]:after:inset-x-0 max-sm:[&>button]:after:-inset-y-2"
             />
           </div>
           )}
@@ -2111,10 +2113,13 @@ export function EventsView({
                         whole way: there is no exit, so the card before is
                         gone the frame this one mounts, and fading in from
                         0 showed the deck through an empty slot — the flash. */}
-                    <AnimatePresence key={`turns${deckEpoch}`} initial={false} custom={dir} mode="popLayout">
+                    <AnimatePresence key={`turns${deckEpoch}`} initial={false} custom={cardDial.style === "tuck" ? 1 : dir} mode="popLayout">
                     <motion.div
                       key={current.id}
-                      custom={dir}
+                      // The tuck turn is one motion whichever arrow is pressed:
+                      // the card on screen flies to the back of the deck and
+                      // the next one in the order (before it, for ↑) comes up.
+                      custom={cardDial.style === "tuck" ? 1 : dir}
                       variants={turnVariants}
                       initial={reduceMotion ? false : "enter"}
                       animate="center"

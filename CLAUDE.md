@@ -352,13 +352,11 @@ can open.
   spring, no pop. The
   top card's shadow is on the turn wrapper, not FeedCard (`SHADOW_REST` /
   `SHADOW_LIFT` / `SHADOW_NONE`): it deepens as the card lifts and fades
-  out as it settles into the deck, and fades in with the new card; **Back
-  (↑) is the same motion in reverse**, just as soft: the previous card
-  starts at the stack's first layer, fades in over `tuck.fadeIn` as it
-  lifts over the pile (shadow growing) and eases down on top — no spring while the old
-  top card becomes part of the deck (`center` is a function of `d`; the
-  variants are memoised on the dial values); "Back"
-  brings a card up from the bottom), **flip** (turns over like a playing
+  out as it settles into the deck, and fades in with the new card; **↑ and ↓
+  play the same motion** — the card on screen always flies to the back and
+  the next one in the order (the one before, for ↑) rises into its place
+  (the tuck turn's `custom` is always 1; `dir` only matters to flip and
+  slide; the variants are memoised on the dial values), **flip** (turns over like a playing
   card, `rotateY`) or **slide**. The deck is drawn as a **stack**:
   `stack.layers` (4) full-size cards under the top one — the first of them
   **is the next event** (`upNext`, a look-only `FeedCard preview`, inert),

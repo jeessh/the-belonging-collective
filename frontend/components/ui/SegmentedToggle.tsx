@@ -28,7 +28,6 @@ export function SegmentedToggle<T extends string>({
   onChange,
   shape = "square",
   size = "md",
-  look = "default",
   className = "",
 }: {
   /** Accessible name for the group, e.g. "View". */
@@ -42,13 +41,6 @@ export function SegmentedToggle<T extends string>({
    * 14px text, 36px tall, slightly squarer corners.
    */
   size?: "md" | "sm";
-  /**
-   * `nav` is the phone's bottom nav in small: a white track with a thin grey
-   * edge and 4px inside it, the segments separate bordered buttons (grey when
-   * off, the cyan fill when selected), 22px tall with a touch area that
-   * reaches 46px. The track's 12px corners are the buttons' 8px plus the 4px.
-   */
-  look?: "default" | "nav";
   className?: string;
 }) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
@@ -70,25 +62,18 @@ export function SegmentedToggle<T extends string>({
 
   const pill = shape === "pill";
   const sm = size === "sm";
-  const nav = look === "nav";
-  const track = nav
-    ? "gap-1 rounded-[12px] border border-line bg-surface p-1"
-    : pill
+  const track = pill
     ? "rounded-full border border-line bg-surface p-1"
     : `${sm ? "rounded-md" : "rounded-control"} border border-line bg-surface`;
   // The border colour lives only on the state classes: two border colours on
   // one element resolve by stylesheet order, not class order, and the
   // transparent one was winning over the selected cyan.
-  const segmentBase = nav
-    ? "relative rounded-xl border px-3 after:absolute after:inset-x-0 after:-inset-y-3 after:content-['']"
-    : pill
+  const segmentBase = pill
     ? "rounded-full border px-4 py-2"
     : sm
       ? "rounded-md border px-3 py-1.5"
       : "rounded-control border px-3 py-2 sm:px-6";
-  const type = nav
-    ? "min-h-[22px] min-w-9 gap-2 text-base"
-    : sm
+  const type = sm
     ? "min-h-9 min-w-9 gap-2 text-sm"
     : "min-h-11 min-w-11 gap-3 text-base sm:text-lg";
   const selected = pill
@@ -118,17 +103,13 @@ export function SegmentedToggle<T extends string>({
             onClick={() => onChange(seg.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={`inline-flex items-center justify-center whitespace-nowrap text-fg transition-colors ${type} ${segmentBase} ${
-              checked
-                ? selected
-                : nav
-                  ? "border-line bg-surface-subtle hover:bg-primary-soft"
-                  : "border-transparent hover:bg-surface-subtle"
+              checked ? selected : "border-transparent hover:bg-surface-subtle"
             }`}
           >
             {seg.icon && (
               <span
                 aria-hidden="true"
-                className={`shrink-0 ${sm || nav ? "[&>svg]:size-4" : "[&>svg]:size-6"}`}
+                className={`shrink-0 ${sm ? "[&>svg]:size-4" : "[&>svg]:size-6"}`}
               >
                 {seg.icon}
               </span>

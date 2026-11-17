@@ -157,8 +157,9 @@ export function EventSummary({
   // The feed card's facts are 20px at every size, on a 1.4 line.
   // The event's dialog and page (`detail`) use the feed card's facts too:
   // 20px text, 28px icons, so the icons match across the member app.
+  // (On a phone the card's facts are 18px.)
   const meta = feed
-    ? "text-xl leading-[1.4]"
+    ? "text-xl max-sm:text-lg leading-[1.4]"
     : card
     ? "text-xl leading-[1.4]"
     : tile
@@ -200,7 +201,7 @@ export function EventSummary({
       id={titleId}
       className={`font-medium leading-tight text-fg ${
         feed
-          ? "text-xl sm:text-3xl lg:text-[calc(2rem*var(--text-scale,1))] short:!text-[calc(1.75rem*var(--text-scale,1))]"
+          ? "text-2xl sm:text-3xl lg:text-[calc(2rem*var(--text-scale,1))] short:!text-[calc(1.75rem*var(--text-scale,1))]"
           : card
             ? "text-2xl sm:text-3xl"
             : "text-2xl"
