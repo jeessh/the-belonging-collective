@@ -30,7 +30,7 @@ export const SavedFab = forwardRef<
         // The count is part of the name, so a screen reader hears "3 saved
         // events" once rather than the icon and a loose number.
         aria-label={`${label}. Open saved events`}
-        className={`grid ${size} place-items-center rounded-full border border-line bg-surface text-fg transition-colors hover:bg-surface-subtle active:border-primary-border active:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg`}
+        className={`grid ${size} place-items-center rounded-full border border-line bg-surface text-fg transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg`}
       >
         <Bookmark aria-hidden="true" className="size-6" />
       </button>
@@ -62,7 +62,7 @@ export const SavedFab = forwardRef<
   }
 
   const arrow =
-    "grid h-12 flex-1 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft active:border-primary-border active:bg-primary-soft disabled:opacity-50";
+    "grid h-12 flex-1 place-items-center rounded-xl border border-line bg-surface-subtle text-fg transition-colors hover:bg-primary-soft disabled:opacity-50";
   return (
     <nav
       aria-label="Saved events and event navigation"
@@ -71,11 +71,10 @@ export const SavedFab = forwardRef<
         left: "calc(0.5rem + env(safe-area-inset-left))",
         right: "calc(0.5rem + env(safe-area-inset-right))",
       }}
-      // The view toggle's treatment (white, a thin grey edge, the same
-      // pressed state), with 12px above and below the buttons and a soft
-      // shadow. Above the card, which scrolls under it. Corners: the
-      // buttons' 8px plus the 12px of padding, so the curves run parallel.
-      className="fixed z-30 flex items-center gap-3 rounded-[20px] border border-line bg-surface px-2 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.10)]"
+      // 64px tall with 8px around the buttons and a very soft shadow. Above
+      // the card, which scrolls under it. Corners: the buttons' 8px plus the
+      // 8px of padding, so the curves run parallel.
+      className="fixed z-30 flex items-center gap-3 rounded-[16px] border border-line bg-surface p-2 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
     >
       {saved}
       {/* The design system's soft divider (the event form's rules are

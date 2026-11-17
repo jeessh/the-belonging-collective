@@ -157,10 +157,8 @@ export function EventSummary({
   // The feed card's facts are 20px at every size, on a 1.4 line.
   // The event's dialog and page (`detail`) use the feed card's facts too:
   // 20px text, 28px icons, so the icons match across the member app.
-  // On a phone the feed card's facts drop 4px (20 → 16), so the card and its
-  // Save button fit the first screen.
   const meta = feed
-    ? "text-xl max-sm:text-base leading-[1.4]"
+    ? "text-xl leading-[1.4]"
     : card
     ? "text-xl leading-[1.4]"
     : tile
@@ -168,7 +166,7 @@ export function EventSummary({
       : "text-lg";
   // The fact icons (when, where, ages, spots) are a neutral grey: they mark
   // the facts, the words carry them.
-  const icon = feed ? "size-7 max-sm:size-6" : card ? "size-7" : "size-6";
+  const icon = feed || card ? "size-7" : "size-6";
 
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -229,7 +227,7 @@ export function EventSummary({
       {/* Who posted it, as the console shows it: the organization and its
           logo (members never see which person on a team posted it). */}
       {event.host_name && (
-        <p className="text-lg text-fg-muted">
+        <p className="text-lg text-fg-muted max-sm:text-base">
           <PostedBy event={event} />
         </p>
       )}

@@ -1830,11 +1830,9 @@ export function EventsView({
               }
               value={viewMode}
               onChange={changeView}
-              // On a phone: 24px tall in all — the height of the "Not Logged
-              // In" text beside it (16px text) — with 16px icons. Each
-              // segment's touch area still reaches 44px+: a pseudo-element
-              // extends it 12px above and below.
-              className="max-sm:[&_svg]:!size-4 max-sm:[&>button]:relative max-sm:[&>button]:!min-h-[22px] max-sm:[&>button]:!py-0 max-sm:[&>button]:after:absolute max-sm:[&>button]:after:inset-x-0 max-sm:[&>button]:after:-inset-y-3"
+              // On a phone it is the bottom nav in small (bordered buttons
+              // inside a white track), 32px tall in all.
+              look={phone ? "nav" : "default"}
             />
           </div>
           )}
@@ -1891,11 +1889,11 @@ export function EventsView({
 
           <div
             // Card view gets the 48px cursor (globals.css `.big-cursor`).
-            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 max-sm:pb-24 max-sm:pt-3 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
-              // On a phone both views start 12px under the top bar, and the
-              // card view's header block and card sit 8px apart, so the
-              // card, its buttons and the bottom nav fit a short screen.
-              viewMode === "card" ? "big-cursor max-sm:!gap-2" : ""
+            className={`flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] p-4 max-sm:pb-24 max-sm:pt-2.5 sm:gap-10 sm:p-6 lg:gap-12 lg:px-16 lg:py-9 xl:px-24 short:!gap-10 short:!py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-[1200px] ${
+              // On a phone both views start 10px under the top bar (the
+              // title 64px down), and the card view's filters sit 20px above
+              // the card.
+              viewMode === "card" ? "big-cursor max-sm:!gap-5" : ""
             }`}
             style={{ pointerEvents: view === "saved" ? "none" : "auto" }}
           >
@@ -1915,8 +1913,8 @@ export function EventsView({
               }`}
             >
             <div
-              // (24px between "Event x of y" and the filters.)
-              className={`flex w-full min-w-0 flex-1 flex-col gap-6 ${
+              // (On a phone 20px between "Event x of y" and the filters.)
+              className={`flex w-full min-w-0 flex-1 flex-col gap-5 sm:gap-6 ${
                 viewMode === "card" ? "max-w-[880px]" : ""
               }`}
             >

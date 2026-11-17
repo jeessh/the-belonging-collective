@@ -386,9 +386,9 @@ function MemberEventCard({
           <EventTags event={event} saved={saved && savedTag} />
         </div>
 
-        <div className="flex flex-col gap-2 text-lg text-fg max-sm:text-base">
+        <div className="flex flex-col gap-2 text-lg text-fg max-sm:text-xl">
           <p className="flex items-start gap-3">
-            <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
+            <CalendarDays aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted max-sm:size-7" />
             <span>
               {when.rel}
               {when.date && ` · ${when.date}`}
@@ -396,10 +396,10 @@ function MemberEventCard({
             </span>
           </p>
           <p className="flex items-start gap-3">
-            <MapPin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted" />
+            <MapPin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-fg-muted max-sm:size-7" />
             {placeLabel(event)}
           </p>
-          <GoingCount capacity={event.capacity} count={event.saved_count} />
+          <GoingCount capacity={event.capacity} count={event.saved_count} className="max-sm:text-base" />
         </div>
       </div>
 
@@ -461,7 +461,7 @@ function MemberEventCard({
       {/* Who posted it, pinned to the card's bottom right (from sm) so it
           doesn't widen this column — the title and facts keep the room. */}
       {event.host_name && (
-        <p className="col-span-2 text-base text-fg-muted max-sm:text-lg sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
+        <p className="col-span-2 text-base text-fg-muted sm:absolute sm:bottom-5 sm:right-5 sm:col-span-1 sm:max-w-[45%] sm:text-right">
           <PostedBy event={event} />
         </p>
       )}
