@@ -2157,15 +2157,9 @@ export function EventsView({
                           touchAction: "none",
                         }}
                         whileDrag={reduceMotion ? undefined : { scale: 1.02 }}
-                        // On a phone a tap on the card opens its details too (as
-                        // "More info" does). A drag or swipe is not a tap, and
-                        // the buttons inside keep their own press.
-                        onTap={(e) => {
-                          if (!phone || flyingRef.current) return;
-                          const t = e.target as HTMLElement | null;
-                          if (t?.closest("button, a, input, select, textarea")) return;
-                          setDetailFor(current);
-                        }}
+                        // No tap-to-open: a swipe that barely moves counted as a
+                        // tap and opened the details mid-swipe. "More info" is
+                        // the one way into an event's details.
                         onDragStart={() => {
                           liftCard();
                           if (!phone && !reduceMotion) setGhosting(true);

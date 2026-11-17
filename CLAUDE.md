@@ -262,7 +262,9 @@ can open.
 - **Layout is desktop-first, reflowed at Tailwind's `sm` / `lg`.** Phone
   (< 640) stacks: the card goes image-over-text and **swiping is how it
   turns** — up for the next card, down for the one before (`PHONE_SWIPE`,
-  60px), left to save; there are no ↑ / ↓ arrows, and the card's buttons
+  60px), left to save; **a tap or swipe on the card never opens it** —
+  "More info" is the one way into an event's details (tap-to-open caught
+  short swipes and opened the details mid-swipe); there are no ↑ / ↓ arrows, and the card's buttons
   (`FeedCardActions`, `FeedCard actionsBelow`) sit under the deck, outside
   the card, so they don't ride the swipe. The card takes the touch
   (`touch-action: none`); the page scrolls from anywhere else. The tour's
