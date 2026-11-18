@@ -12,7 +12,7 @@ export function StatusPage({
   actions,
 }: {
   title: string;
-  message: string;
+  message: ReactNode;
   actions: ReactNode;
 }) {
   return (
@@ -23,7 +23,7 @@ export function StatusPage({
         className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-4 px-4 py-16 text-center sm:px-6"
       >
         <h1 className="text-3xl font-medium sm:text-4xl">{title}</h1>
-        <p className="text-xl text-fg-muted">{message}</p>
+        <div className="text-xl text-fg-muted">{message}</div>
         <div className="mt-4 flex flex-wrap justify-center gap-3">{actions}</div>
       </main>
     </div>

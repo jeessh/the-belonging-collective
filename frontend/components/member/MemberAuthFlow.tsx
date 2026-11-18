@@ -1,5 +1,6 @@
 "use client";
 
+import { useStepHistory } from "@/lib/placeHistory";
 import {
   useEffect,
   useRef,
@@ -117,6 +118,18 @@ export function MemberAuthFlow({
     inFooter && b ? b : undefined;
   const [step, setStep] = useState<Step>(
     initial === "chooser" ? "chooser" : initial === "login" ? "credentials" : "who",
+  );
+  // Each step is a browser history entry, so Back goes to the step before.
+  // Once the account exists (the caregiver, calendar and done steps) there's
+  // no going back into the steps that made it.
+  useStepHistory(
+    step,
+    setStep,
+    step === "care-choice" ||
+      step === "care-create" ||
+      step === "care-link" ||
+      step === "calendar" ||
+      step === "complete",
   );
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");

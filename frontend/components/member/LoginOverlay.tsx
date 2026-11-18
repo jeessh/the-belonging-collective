@@ -63,6 +63,9 @@ export function LoginOverlay({
           <Modal
             size="form"
             onClose={close}
+            // A stray click beside the sheet mustn't throw away a half-done
+            // sign-up (client feedback): × , Back or Escape close it.
+            closeOnBackdrop={false}
             subtitle={view.subtitle}
             title={
               view.icon ? (

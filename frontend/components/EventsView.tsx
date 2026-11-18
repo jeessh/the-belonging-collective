@@ -82,6 +82,7 @@ import { useDialKit, type TransitionConfig } from "dialkit";
 import type { Transition, ValueAnimationTransition } from "framer-motion";
 import { Tour } from "@/components/member/Tour";
 import { FeedLoading } from "@/components/member/FeedLoading";
+import { placeFromUrl, usePlaceHistory, type Place } from "@/lib/placeHistory";
 
 /* The top card's shadow lives on its turn wrapper (not on FeedCard), so a
    turn can deepen it as the card lifts and let it fade as the card goes back
@@ -330,6 +331,8 @@ export function EventsView({
     if (initialMe) return initialMe.preferred_view;
     return readLocal(VIEW_KEY) === "list" ? "list" : "card";
   });
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
   const [chips, setChips] = useState<Set<string>>(new Set());
   const [tourOpen, setTourOpen] = useState(false);
   // The saved column: open on a desktop while nothing is saved — the empty
@@ -352,6 +355,13 @@ export function EventsView({
   const [authFor, setAuthFor] = useState<Pending | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [detailFor, setDetailFor] = useState<Event | null>(null);
+  // History (lib/placeHistory): the moves are set up further down, once
+  // what they call exists; these refs let earlier callbacks reach them.
+  const goRef = useRef<(p: Partial<Place>) => void>(() => {});
+  const leaveRef = useRef<(what: keyof Place, closed: Partial<Place>) => void>(() => {});
+  const detailEventRef = useRef<Event | null>(null);
+  // Where the address pointed when the page loaded (a reload, a shared link).
+  const urlPlace = useRef(placeFromUrl());
   // Whose list saves go into. Null is the signed-in account's own; a linked
   // member means every save path below writes that member's row and the
   // sidebar, the saved list and the .ics show theirs. Support, not proxy:
@@ -844,7 +854,7 @@ export function EventsView({
   // screen behind the overlay.
   const toSignIn = useCallback((pending: Pending | null = null) => {
     setAuthFor(pending);
-    setAuthOpen(true);
+    goRef.current({ signin: true });
   }, []);
 
   // One program changed under us (an access request landed): every copy of
@@ -1351,8 +1361,62 @@ export function EventsView({
   flyToDropRef.current = flyToDrop;
   const saveFromButton = useCallback(() => void flyToDropRef.current(), []);
 
-  const openSaved = useCallback(() => setView("saved"), []);
-  const closeSaved = useCallback(() => setView("events"), []);
+  // ---- browser history: Back returns to the place before ----
+  const authOpenRef = useRef(authOpen);
+  authOpenRef.current = authOpen;
+  // Closing the sign-in sheet, however it closes (×, Back): after an
+  // account was made the cookie is already set, so pick the session up
+  // rather than leave a new member looking signed out.
+  const closeAuth = useCallback(() => {
+    setAuthOpen(false);
+    setAuthFor(null);
+    if (!signedInRef.current) {
+      void api<Me>("/users/me")
+        .then(() => handleSignedIn(false))
+        .catch(() => {});
+    }
+  }, [handleSignedIn]);
+  const findEvent = (id: string) =>
+    (detailEventRef.current?.id === id ? detailEventRef.current : null) ??
+    events.find((e) => e.id === id) ??
+    savedEvents.find((e) => e.id === id) ??
+    null;
+  const { go, leave } = usePlaceHistory(
+    { mode: viewMode, saved: view === "saved", event: detailFor?.id ?? null, signin: authOpen },
+    (p) => {
+      setViewMode(p.mode);
+      setView(p.saved ? "saved" : "events");
+      setDetailFor((cur) => (!p.event ? null : cur?.id === p.event ? cur : findEvent(p.event)));
+      if (!p.signin && authOpenRef.current) closeAuth();
+      // Forward into sign-in: only while signed out.
+      if (p.signin && !authOpenRef.current && !signedInRef.current) setAuthOpen(true);
+    },
+  );
+  goRef.current = go;
+  leaveRef.current = leave;
+  // A reload or a link that names a place opens it: the view at once, the
+  // saved page and an event's details once the programs are in.
+  useEffect(() => {
+    const u = urlPlace.current;
+    if (u.mode && u.mode !== viewModeRef.current) setViewMode(u.mode);
+  }, []);
+  useEffect(() => {
+    const u = urlPlace.current;
+    if (status !== "ready" || (!u.saved && !u.event)) return;
+    urlPlace.current = {};
+    if (u.saved) setView("saved");
+    const ev = u.event ? findEvent(u.event) : null;
+    if (ev) setDetailFor(ev);
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Each a history move (lib/placeHistory): Back closes the saved page.
+  const openSaved = useCallback(() => goRef.current({ saved: true }), []);
+  const closeSaved = useCallback(() => leaveRef.current("saved", { saved: false }), []);
+  const openDetail = useCallback((ev: Event) => {
+    detailEventRef.current = ev;
+    goRef.current({ event: ev.id });
+  }, []);
+  const closeDetail = useCallback(() => leaveRef.current("event", { event: null }), []);
 
   // ---- preferences (persist to profile) ----
   const setPref = useCallback(async (patch: MePrefs) => {
@@ -1438,7 +1502,7 @@ export function EventsView({
   // The view sticks: on the profile, or in this browser without one.
   const changeView = useCallback(
     (mode: ViewMode) => {
-      setViewMode(mode);
+      if (mode !== viewModeRef.current) goRef.current({ mode });
       if (signedInRef.current) void setPref({ preferred_view: mode });
       else writeLocal(VIEW_KEY, mode);
     },
@@ -1482,9 +1546,9 @@ export function EventsView({
     setCareFor(null);
     // "N going" is public, so the counts stay as they are.
     setDetailFor(null);
-    closeSaved();
+    setView("events");
     setSrMessage("Signed out.");
-  }, [closeSaved]);
+  }, []);
 
   // The four actions voice and head tracking share. In the list there is no
   // focused card, so only opening the saved list still makes sense there.
@@ -1867,7 +1931,7 @@ export function EventsView({
             calendarUrl={calendarUrl}
             googleCalendar={me?.google_calendar}
             onOpenSaved={openSaved}
-            onOpenEvent={setDetailFor}
+            onOpenEvent={openDetail}
             onUnsaveEvent={(ev) => void unsave(ev)}
             onSignIn={() => toSignIn()}
           />
@@ -1887,10 +1951,10 @@ export function EventsView({
             care={careChoice}
             onClose={closeSaved}
             onSignIn={() => {
-              closeSaved();
+              setView("events");
               toSignIn();
             }}
-            onOpen={setDetailFor}
+            onOpen={openDetail}
             onUnsave={(ev) => void unsave(ev)}
           />
 
@@ -2009,7 +2073,7 @@ export function EventsView({
               <CaregiverFeed
                 events={listFeed}
                 saved={saved}
-                onOpen={setDetailFor}
+                onOpen={openDetail}
                 onSave={(ev) => void attend(ev)}
                 onUnsave={(ev) => void unsave(ev)}
                 onRegister={setRegisterFor}
@@ -2232,7 +2296,7 @@ export function EventsView({
                           event={current}
                           saved={saved.has(current.id)}
                           recommended={recommendedKeys.has(programKey(current))}
-                          onMoreInfo={setDetailFor}
+                          onMoreInfo={openDetail}
                           onSave={saveFromButton}
                           onUnsave={() => void unsave(current)}
                           onSignIn={() => toSignIn()}
@@ -2348,7 +2412,7 @@ export function EventsView({
           // The live copy, so joining the waitlist shows at once.
           event={events.find((e) => e.id === detailFor.id) ?? detailFor}
           saved={saved.has(detailFor.id)}
-          onClose={() => setDetailFor(null)}
+          onClose={closeDetail}
           onSave={(ev) => void attend(ev)}
           onUnsave={(ev) => void unsave(ev)}
           onRegister={setRegisterFor}
@@ -2396,18 +2460,7 @@ export function EventsView({
           reaches the sign-in first. */}
       {authOpen && (
         <LoginOverlay
-          onClose={() => {
-            setAuthOpen(false);
-            setAuthFor(null);
-            // Closed after the account was made (the "complete" or caregiver
-            // step): the cookie is already set, so pick the session up
-            // rather than leave a new member looking signed out.
-            if (!signedInRef.current) {
-              void api<Me>("/users/me")
-                .then(() => handleSignedIn(false))
-                .catch(() => {});
-            }
-          }}
+          onClose={() => leaveRef.current("signin", { signin: false })}
           onSignedIn={() => void handleSignedIn()}
           onGuestSignIn={() => toSignIn()}
           onBack={() => void handleSignedIn(false)}

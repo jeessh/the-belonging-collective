@@ -146,13 +146,21 @@ function Members() {
                 <th scope="row" className="max-w-[24rem] break-words px-3 py-3 font-normal">
                   <span className="inline-flex flex-wrap items-center gap-2">
                     {m.first_name} {m.last_name}
-                    {m.is_caregiver && (
-                      <Pill tone="good">
-                        Caregiver
-                        {m.care.length > 0 ? ` · ${m.care.length} linked` : ""}
-                      </Pill>
-                    )}
+                    {m.is_caregiver && <Pill tone="good">Caregiver</Pill>}
                   </span>
+                  {/* Both sides of every care link, by name: who a caregiver
+                      supports, and who supports a member. */}
+                  {m.care.length > 0 && (
+                    <span className="mt-1 block text-sm text-fg-muted">
+                      Supports {people(m.care)}
+                    </span>
+                  )}
+                  {m.caregivers.length > 0 && (
+                    <span className="mt-1 block text-sm text-fg-muted">
+                      {m.caregivers.length === 1 ? "Caregiver" : "Caregivers"}:{" "}
+                      {people(m.caregivers)}
+                    </span>
+                  )}
                 </th>
                 <td className="px-3 py-3">
                   <span className="inline-flex flex-wrap items-center gap-3">
@@ -413,4 +421,11 @@ function MemberModal({
       </form>
     </Modal>
   );
+}
+
+/** "Sam T., Maya C." — the linked people, first name and last initial. */
+function people(list: { first_name: string; last_name: string }[]): string {
+  return list
+    .map((p) => `${p.first_name}${p.last_name ? ` ${p.last_name.trim()[0]}.` : ""}`)
+    .join(", ");
 }
