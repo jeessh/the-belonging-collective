@@ -139,6 +139,21 @@ can open.
   `ui/EventSummary`), `ListFeed` (the rows, with the "For you this week"
   section on top) and `Tour` (the first-run walk-through). The saved list
   overlay (`components/SavedEvents.tsx`) opens from "See Saved Events".
+- **The browser's Back button works inside the feed** (`lib/placeHistory`,
+  client feedback): card / list view, All Saved Events, an event's details
+  and the sign-in sheet are each a history entry with its own address
+  (`/?view=list&saved=1&event={id}&signin=1`) — `usePlaceHistory` in
+  EventsView: `go` for a member's own move (openSaved, openDetail,
+  changeView, toSignIn), `leave` for closing one with its ×/Back (steps
+  back in history, so Back after closing doesn't reopen it); anything
+  else (the profile's view, signing in) only updates the current entry.
+  The sign-in / sign-up steps are entries too (`useStepHistory` in
+  MemberAuthFlow, the `/signup` page included); once the account exists
+  (care, calendar, complete) Back no longer steps into the steps that made
+  it. A reload or link with `?saved=1` / `?event=` opens that place. A new
+  feed view or dialog should go through `go` / `leave`, not set its state
+  directly. **The sign-in sheet doesn't close on a click outside it**
+  (`Modal closeOnBackdrop={false}`) — only ×, Back or Escape.
 - **The event column has wide margins and a centred, 1200px-at-most
   content width** (64px sides from `lg`, 96px from `xl`): heading, filters,
   card and arrows / list all sit in it. In both views the heading block and
@@ -498,6 +513,10 @@ can open.
   answers Escape/Tab when it is the last `[role=dialog]` in the document, and
   the sheets portal to `document.body` — keep both if you add another.
 - **A frame baked into an event's picture is cut off where it's shown**
+  (only in the browser: the hook lives in the client component
+  `ui/EventImg`, which `EventSummary` draws — `EventSummary` itself is also
+  rendered on the server by the public event page, and calling the hook
+  there 500'd every shared event link in v1.8.3)
   (`lib/trimBorder.ts`: `useTrimmedSrc`, and `ui/EventImg` for a plain
   `<img>`; used by `EventSummary`, the saved panel's thumbs and mini cards,
   list cards and the console's card and details page). Pictures copied
@@ -542,8 +561,10 @@ can open.
   always agrees with the FREE filter; the `signup` kind — only when `requires_signup`; a drop-in
   gets no tag; plus Special access and For you where they apply). Drop-in and
   In-person / Virtual are no longer pills on any surface — the facts and
-  filters still carry them. `EventSummary` draws title + tags as one
-  wrapping row (`heading`), the event page included — except the card
+  filters still carry them. `EventSummary` draws the title and, **always on
+  the line under it**, the tags (`heading`; never beside a short title —
+  client feedback: staff coach members "line 1 is the title, line 2 the
+  tags"; list cards too), the event page included — except the card
   view's feed card and the `detail` layout (the "More information" dialog,
   the event page, print), whose tags hover over the top left of the
   picture (with a soft shadow).
@@ -624,7 +645,12 @@ can open.
   scrolling row as equals — then for superadmins Member Management
   (`/host/users`) with Special Access
   (pending-request badge) as its sub tab, then Team (`/host/team`, every
-  organization) last. A sub tab whose parent
+  organization) last. **The side panel is one flat list** — every entry a
+  page, the same size, nothing indented — with a thin rule between groups
+  (`children` only groups them now): indented sub tabs read as section
+  headings and staff missed that the top ones were pages (client
+  feedback). Member Management names both sides of every care link under
+  the member's name ("Supports Sam T., Maya C." / "Caregiver: Jordan L."). A sub tab whose parent
   is hidden (Special Access, for an ordinary organization) takes the
   parent's place at the top level. There is no
   in-page switch between those three any more — the side panel is it.

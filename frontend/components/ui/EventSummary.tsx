@@ -9,10 +9,9 @@ import {
   MapPin,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
-import { eventImage } from "@/lib/eventImage";
 import { whenLine } from "@/lib/time";
 import { Tag, eventTags } from "@/components/ui/Tag";
-import { useTrimmedSrc } from "@/lib/trimBorder";
+import { EventImg } from "@/components/ui/EventImg";
 
 /**
  * "Ages 18+", "Ages 12–17", "Up to 12"; null when the program sets no ages.
@@ -148,8 +147,6 @@ export function EventSummary({
   const where = placeLabel(event);
   const mapLink =
     layout === "detail" && !event.is_virtual ? mapsUrl(event.location) : null;
-  // Any frame baked into the picture is cut off (lib/trimBorder).
-  const image = useTrimmedSrc(eventImage(event));
   // Ages and spots left are no longer shown to members (the data stays).
 
   // The type scale, as drawn: the card's 24/32 over 20/24, the row's 24 over
@@ -169,15 +166,10 @@ export function EventSummary({
   // the facts, the words carry them.
   const icon = feed || card ? "size-7" : "size-6";
 
-  const img = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={image}
-      alt=""
-      draggable={false}
-      className="absolute inset-0 h-full w-full object-cover"
-    />
-  );
+  // Any frame baked into the picture is cut off (lib/trimBorder). EventImg
+  // is a client component: this summary is also drawn on the server (the
+  // public event page), where a hook here crashed the whole page.
+  const img = <EventImg event={event} className="absolute inset-0 h-full w-full object-cover" />;
 
   const tags = (
     <EventTags
@@ -211,13 +203,14 @@ export function EventSummary({
     </Title>
   );
 
-  // The title with its tags beside it (just "Free", and special access /
-  // For you where they apply), on one line when there's room.
+  // The title, and its tags (Free / Paid, Registration required, special
+  // access, For you) always on the line under it — never beside a short
+  // title — so every card reads the same way: title, then tags.
   const heading = (
     <div className="flex flex-col gap-2">
       {/* In a dialog, the title row keeps clear of the × in its corner. */}
       <div
-        className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${
+        className={`flex flex-col items-start gap-2 ${
           headingInset ? "pr-12 sm:pr-14" : ""
         }`}
       >

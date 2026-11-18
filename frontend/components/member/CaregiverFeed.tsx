@@ -374,12 +374,15 @@ function MemberEventCard({
       data-tour="card"
       className={`relative grid ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 rounded-card border border-line bg-surface p-4 transition-[border-color,box-shadow,background-color] hover:border-fg-icon-muted hover:bg-surface-subtle/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] focus-within:border-fg-icon-muted sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5`}
     >
-      <div className="relative col-span-2 aspect-[2/1] w-full overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square">
+      <div className="relative col-span-2 aspect-[2/1] w-full self-start overflow-hidden rounded-control bg-surface-subtle sm:col-span-1 sm:aspect-square sm:w-[180px]">
         <EventImg event={event} className="absolute inset-0 h-full w-full object-cover" />
       </div>
 
       <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Line 1 is the title, line 2 the tags (Free / Paid, Registration
+            required) — on every card, however short the title, so staff can
+            coach members to read them the same way each time. */}
+        <div className="flex flex-col items-start gap-2">
         <h3 className="text-2xl font-medium leading-tight text-fg">
           {/* The whole card opens the details: this button's ::after covers
               the card; the icons and Save sit above it. */}

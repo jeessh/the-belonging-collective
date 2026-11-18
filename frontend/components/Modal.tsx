@@ -41,7 +41,11 @@ export function Modal({
   tone = "default",
   snug = false,
   sheet = false,
+  closeOnBackdrop = true,
 }: {
+  /** False for a dialog that holds work in progress (sign-up): a click
+      outside it doesn't close it — only × , Cancel / Back or Escape do. */
+  closeOnBackdrop?: boolean;
   /** A panel that slides up from the bottom of the screen, the full width,
       as tall as it needs to be up to 90% of the screen, scrolling inside;
       its content is centred at the `size` width. The event dialog. */
@@ -159,7 +163,7 @@ export function Modal({
             : "fixed inset-0 z-30 flex flex-col items-center overflow-y-auto bg-fg/40 p-4 backdrop-blur-sm sm:py-8"
         }
         onMouseDown={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (closeOnBackdrop && e.target === e.currentTarget) onClose();
         }}
       >
         <motion.div
